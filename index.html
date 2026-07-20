@@ -986,7 +986,7 @@ function savePriceList() {
 }
 function saveApiKey() { localStorage.setItem('salesops_apikey', document.getElementById('api-key-input').value); }
 // ─── LOGO PERSONALIZADO ───────────────────────────────
-function getBrandLogo() { return localStorage.getItem('salesops_brandlogo') || ''; }
+function getBrandLogo() { return localStorage.getItem('salesops_brandlogo') || 'favicon.png'; }
 function applyBrandLogo() {
   const logo = getBrandLogo();
   const wrap = document.getElementById('brand-mark-wrap');
