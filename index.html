@@ -4163,6 +4163,7 @@ function renderImportsTab() {
 
   const { msi } = batch;
   const dynamicImporters = computeMsiImporterBreakdown(batch, importsSelectedMonths);
+  const globalImporters = computeGlobalImporterBreakdown(batch, importsSelectedMonths);
   currentImportBatchForTooltip = batch;
   const importerHeaderIdx = msi.importerTable ? msi.importerTable.header.findIndex(h => normImportHeader(h)==='IMPORTADOR') : -1;
   const hasSupplement = (msi.kpis && msi.kpis.length) || msi.importerTable || msi.modelTable || dynamicImporters;
@@ -4192,6 +4193,19 @@ function renderImportsTab() {
         <thead><tr>${msi.modelTable.header.filter(h=>h!=null&&String(h).trim()!=='').map(h=>`<th>${esc(String(h||''))}</th>`).join('')}</tr></thead>
         <tbody>${msi.modelTable.dataRows.map(r=>`<tr>${msi.modelTable.header.map((h,i)=>h!=null&&String(h).trim()!==''?`<td>${esc(formatImportValue(h, r[i]))}</td>`:'').join('')}</tr>`).join('')}</tbody>
       </table></div>` : ''}
+    ${globalImporters && globalImporters.length ? `
+    <div class="section-header" style="margin-top:1.5rem"><div class="section-title">Importadores — Marcas Globales de PC${dynamicImporters ? ' — '+esc(getMonthFilterLabel(importsSelectedMonths)) : ''}</div></div>
+    <div class="table-scroll"><table class="data-table" style="font-size:12px">
+      <thead><tr><th>#</th><th>Importador</th><th>Unidades</th><th>% del total</th><th>Marcas distintas</th>${globalImporters.some(r=>r.fob)?'<th>U$S FOB</th>':''}</tr></thead>
+      <tbody>${globalImporters.map((r,i) => `<tr>
+        <td>${i+1}</td>
+        <td><span class="client-name-hover" onmouseenter="showGlobalImporterTooltip(event,'${r.importer.replace(/'/g,"\\'")}')" onmouseleave="hideClientCompositionTooltip()">${esc(r.importer)}</span></td>
+        <td>${r.qty.toLocaleString('es-AR')}</td>
+        <td>${r.pct.toFixed(1)}%</td>
+        <td>${r.brandCount}</td>
+        ${globalImporters.some(x=>x.fob)?`<td>${r.fob?'USD '+r.fob.toLocaleString('es-AR',{maximumFractionDigits:0}):'-'}</td>`:''}
+      </tr>`).join('')}</tbody>
+    </table></div>` : ''}
   ` : '';
 }
 function computeMsiImporterBreakdown(batch, monthFilterSet) {
@@ -4210,6 +4224,23 @@ function computeMsiImporterBreakdown(batch, monthFilterSet) {
     .map(im => ({ importer:im.importer, qty:im.qty, fob:im.fob, modelCount:im.models.size, pct: total>0 ? im.qty/total*100 : 0 }))
     .sort((a,b) => b.qty-a.qty);
 }
+function computeGlobalImporterBreakdown(batch, monthFilterSet) {
+  if(!batch.transactions) return null;
+  const filter = monthFilterSet.size ? monthFilterSet : 'all';
+  const txs = batch.transactions.filter(t => isGlobalBrand(t.brand) && monthMatchesFilter(t.month, filter) && t.qty > 0);
+  const byImporter = new Map();
+  txs.forEach(t => {
+    if(!byImporter.has(t.importer)) byImporter.set(t.importer, { importer:t.importer, qty:0, fob:0, brands:new Set() });
+    const im = byImporter.get(t.importer);
+    im.qty += t.qty; im.fob += (t.fob||0);
+    im.brands.add(normDesc(t.brand));
+  });
+  const total = Array.from(byImporter.values()).reduce((s,r)=>s+r.qty,0);
+  return Array.from(byImporter.values())
+    .map(im => ({ importer:im.importer, qty:im.qty, fob:im.fob, brandCount:im.brands.size, brands:Array.from(im.brands), pct: total>0 ? im.qty/total*100 : 0 }))
+    .sort((a,b) => b.qty-a.qty);
+}
+
 let currentImportBatchForTooltip = null;
 function showImportImporterTooltip(evt, importer) {
   clearTooltipHideTimer();
@@ -4234,6 +4265,25 @@ function showImportImporterTooltip(evt, importer) {
       <div style="font-size:12px;color:var(--text3)">Este archivo no trae el detalle línea por línea — solo el total del período completo para este importador.</div>`;
   }
   tip.innerHTML = bodyHtml;
+  tip.style.display = 'block';
+  positionTooltipNearElement(evt.currentTarget);
+}
+function showGlobalImporterTooltip(evt, importer) {
+  clearTooltipHideTimer();
+  const batch = currentImportBatchForTooltip;
+  const tip = document.getElementById('client-composition-tooltip');
+  if(!batch || !batch.transactions) return;
+  const filter = importsSelectedMonths.size ? importsSelectedMonths : 'all';
+  const txs = batch.transactions.filter(t => isGlobalBrand(t.brand) && normDesc(t.importer)===normDesc(importer) && monthMatchesFilter(t.month, filter) && t.qty > 0);
+  const byBrand = new Map();
+  txs.forEach(t => { if(!byBrand.has(t.brand)) byBrand.set(t.brand, 0); byBrand.set(t.brand, byBrand.get(t.brand)+t.qty); });
+  const rows = Array.from(byBrand.entries()).sort((a,b)=>b[1]-a[1]);
+  const totalQty = rows.reduce((s,r)=>s+r[1],0);
+  tip.innerHTML = `<div style="font-size:11.5px;color:var(--text2);margin-bottom:6px;font-weight:600">${esc(importer)}</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">${totalQty.toLocaleString('es-AR')} u. marcas globales · ${esc(getMonthFilterLabel(importsSelectedMonths))}</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      ${rows.map(([brand,qty]) => `<div style="display:flex;justify-content:space-between;font-size:11px;gap:10px"><span style="color:var(--text)">${esc(brand)}</span><span style="color:var(--text2);white-space:nowrap">${qty.toLocaleString('es-AR')} u.</span></div>`).join('')}
+    </div>`;
   tip.style.display = 'block';
   positionTooltipNearElement(evt.currentTarget);
 }
