@@ -1,536 +1,3499 @@
 {
   "capturedAt": "2026-07-21T00:00:00Z",
-  "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw",
+  "lastCheck": null,
+  "changesFound": false,
+  "priceLogic": "min(colQ, colR) — uses lower of Miami Price and Market Share price",
+  "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw | Tab: LATAM",
+  "notifEmails": [
+    "rodrigomarquezmiranda@gmail.com"
+  ],
   "products": {
     "G507T-16FEC": {
       "upc": "824142452837",
       "partNumber": "G507T-16FEC",
       "name": "GeForce RTX 5070 Ti 16G FRIEREN EDITION OC",
+      "category": "VGA",
       "miamiPrice": 1200.0,
-      "category": "VGA"
-    },
-    "GGB-FE": {
-      "upc": "824142462904",
-      "partNumber": "GGB-FE",
-      "name": "MSI GAMING GEAR BUNDLE FRIEREN EDITION",
-      "miamiPrice": 1200.0,
-      "category": "MB"
+      "miamiPriceRaw": 1200.0,
+      "marketSharePrice": null,
+      "miamiStock": 873,
+      "miamiBondedStock": 0
     },
     "G5090-32SLS": {
       "upc": "824142397503",
       "partNumber": "G5090-32SLS",
       "name": "GeForce RTX 5090 32G SUPRIM LIQUID SOC",
+      "category": "VGA",
       "miamiPrice": 3900.0,
-      "category": "VGA"
+      "miamiPriceRaw": 3900.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5090-32SPS": {
       "upc": "824142397510",
       "partNumber": "G5090-32SPS",
       "name": "GeForce RTX 5090 32G SUPRIM SOC",
+      "category": "VGA",
       "miamiPrice": 3800.0,
-      "category": "VGA"
+      "miamiPriceRaw": 3800.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5090-32GTC": {
       "upc": "824142403266",
       "partNumber": "G5090-32GTC",
       "name": "GeForce RTX 5090 32G GAMING TRIO OC",
+      "category": "VGA",
       "miamiPrice": 3650.0,
-      "category": "VGA"
+      "miamiPriceRaw": 3650.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5090-32V3C": {
       "upc": "824142402986",
       "partNumber": "G5090-32V3C",
       "name": "GeForce RTX 5090 32G VENTUS 3X OC",
+      "category": "VGA",
       "miamiPrice": 3500.0,
-      "category": "VGA"
+      "miamiPriceRaw": 3500.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5080-16GTCW": {
       "upc": "824142395790",
       "partNumber": "G5080-16GTCW",
       "name": "GeForce RTX 5080 16G GAMING TRIO OC WHITE",
+      "category": "VGA",
       "miamiPrice": 1370.0,
-      "category": "VGA"
+      "miamiPriceRaw": 1370.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5080-16GTC": {
       "upc": "824142395721",
       "partNumber": "G5080-16GTC",
       "name": "GeForce RTX 5080 16G GAMING TRIO OC",
+      "category": "VGA",
       "miamiPrice": 1370.0,
-      "category": "VGA"
+      "miamiPriceRaw": 1370.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5080-16I3CB": {
       "upc": "824142455432",
       "partNumber": "G5080-16I3CB",
       "name": "GeForce RTX 5080 16G INSPIRE 3X OC BLACK",
+      "category": "VGA",
       "miamiPrice": 1350.0,
-      "category": "VGA"
+      "miamiPriceRaw": 1350.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5080-16V3CW": {
       "upc": "824142395912",
       "partNumber": "G5080-16V3CW",
       "name": "GeForce RTX 5080 16G VENTUS 3X OC WHITE",
+      "category": "VGA",
       "miamiPrice": 1320.0,
-      "category": "VGA"
+      "miamiPriceRaw": 1320.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5080-16V3CP": {
       "upc": "824142395851",
       "partNumber": "G5080-16V3CP",
       "name": "GeForce RTX 5080 16G VENTUS 3X OC PLUS",
+      "category": "VGA",
       "miamiPrice": 1300.0,
-      "category": "VGA"
+      "miamiPriceRaw": 1300.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5080-16V3C": {
       "upc": "824142406380",
       "partNumber": "G5080-16V3C",
       "name": "GeForce RTX 5080 16G VENTUS 3X OC",
+      "category": "VGA",
       "miamiPrice": 1300.0,
-      "category": "VGA"
+      "miamiPriceRaw": 1300.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5080-16S3C": {
       "upc": "824142395882",
       "partNumber": "G5080-16S3C",
       "name": "Geforce RTX 5080 16G SHADOW 3X OC",
+      "category": "VGA",
       "miamiPrice": 1280.0,
-      "category": "VGA"
+      "miamiPriceRaw": 1280.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G507T-16MEC": {
       "upc": "824142443507",
       "partNumber": "G507T-16MEC",
       "name": "GeForce RTX 5070 Ti 16G MLG EDITION OC",
+      "category": "VGA",
       "miamiPrice": 980.0,
-      "category": "VGA"
+      "miamiPriceRaw": 980.0,
+      "marketSharePrice": null,
+      "miamiStock": 660,
+      "miamiBondedStock": 0
     },
     "G507T-16GTC": {
       "upc": "824142412879",
       "partNumber": "G507T-16GTC",
       "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC",
+      "category": "VGA",
       "miamiPrice": 960.0,
-      "category": "VGA"
+      "miamiPriceRaw": 960.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G507T-16GTCW": {
       "upc": "824142402856",
       "partNumber": "G507T-16GTCW",
       "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC WHITE",
+      "category": "VGA",
       "miamiPrice": 960.0,
-      "category": "VGA"
+      "miamiPriceRaw": 960.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G507T-16V3CB": {
       "upc": "824142445006",
       "partNumber": "G507T-16V3CB",
       "name": "GeForce RTX 5070 Ti 16G VENTUS 3X OC BLACK",
+      "category": "VGA",
       "miamiPrice": 900.0,
-      "category": "VGA"
+      "miamiPriceRaw": 900.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G507T-16V3C": {
       "upc": "824142402801",
       "partNumber": "G507T-16V3C",
       "name": "Geforce RTX 5070 TI 16G VENTUS 3X OC",
+      "category": "VGA",
       "miamiPrice": 900.0,
-      "category": "VGA"
+      "miamiPriceRaw": 900.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G507T-16S3C": {
       "upc": "824142408483",
       "partNumber": "G507T-16S3C",
       "name": "Geforce RTX 5070 TI 16G SHADOW 3X OC",
+      "category": "VGA",
       "miamiPrice": 890.0,
-      "category": "VGA"
+      "miamiPriceRaw": 890.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5070-12GTC": {
       "upc": "824142404416",
       "partNumber": "G5070-12GTC",
       "name": "Geforce RTX 5070 12G GAMING TRIO OC",
+      "category": "VGA",
       "miamiPrice": 640.0,
-      "category": "VGA"
+      "miamiPriceRaw": 640.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5070-12V3C": {
       "upc": "824142405666",
       "partNumber": "G5070-12V3C",
       "name": "Geforce RTX 5070 12G VENTUS 3X OC",
+      "category": "VGA",
       "miamiPrice": 605.0,
-      "category": "VGA"
+      "miamiPriceRaw": 605.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5070-12S3C": {
       "upc": "824142405741",
       "partNumber": "G5070-12S3C",
       "name": "Geforce RTX 5070 12G SHADOW 3X OC",
+      "category": "VGA",
       "miamiPrice": 600.0,
-      "category": "VGA"
+      "miamiPriceRaw": 600.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5070-12V2CB": {
       "upc": "824142445020",
       "partNumber": "G5070-12V2CB",
       "name": "GeForce RTX 5070 12G VENTUS 2X OC BLACK",
+      "category": "VGA",
       "miamiPrice": 595.0,
-      "category": "VGA"
+      "miamiPriceRaw": 595.0,
+      "marketSharePrice": null,
+      "miamiStock": 10,
+      "miamiBondedStock": 0
     },
     "G5070-12V2C": {
       "upc": "824142405727",
       "partNumber": "G5070-12V2C",
       "name": "Geforce RTX 5070 12G VENTUS 2X OC",
+      "category": "VGA",
       "miamiPrice": 595.0,
-      "category": "VGA"
+      "miamiPriceRaw": 595.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5070-12S2C": {
       "upc": "824142405772",
       "partNumber": "G5070-12S2C",
       "name": "Geforce RTX 5070 12G SHADOW 2X OC",
+      "category": "VGA",
       "miamiPrice": 575.0,
-      "category": "VGA"
+      "miamiPriceRaw": 575.0,
+      "marketSharePrice": null,
+      "miamiStock": 2,
+      "miamiBondedStock": 0
     },
     "G506T-16GTCW": {
       "upc": "824142419373",
       "partNumber": "G506T-16GTCW",
       "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC WHITE",
+      "category": "VGA",
       "miamiPrice": 590.0,
-      "category": "VGA"
+      "miamiPriceRaw": 590.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G506T-16GTC": {
       "upc": "824142419380",
       "partNumber": "G506T-16GTC",
       "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC",
+      "category": "VGA",
       "miamiPrice": 590.0,
-      "category": "VGA"
+      "miamiPriceRaw": 590.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G506T-16GC": {
       "upc": "824142419397",
       "partNumber": "G506T-16GC",
       "name": "Geforce RTX 5060 Ti 16G GAMING OC",
+      "category": "VGA",
       "miamiPrice": 580.0,
-      "category": "VGA"
+      "miamiPriceRaw": 580.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G506T-16V3C": {
       "upc": "824142421048",
       "partNumber": "G506T-16V3C",
       "name": "Geforce RTX 5060 Ti 16G VENTUS 3X OC",
+      "category": "VGA",
       "miamiPrice": 555.0,
-      "category": "VGA"
+      "miamiPriceRaw": 555.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G506T-16V2CBP": {
       "upc": "824142445044",
       "partNumber": "G506T-16V2CBP",
       "name": "GeForce RTX 5060 Ti 16G VENTUS 2X OC BLACK PLUS",
+      "category": "VGA",
       "miamiPrice": 535.0,
-      "category": "VGA"
+      "miamiPriceRaw": 535.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G506T-16V2CP": {
       "upc": "824142418567",
       "partNumber": "G506T-16V2CP",
       "name": "Geforce RTX 5060 Ti 16G VENTUS 2X OC PLUS",
+      "category": "VGA",
       "miamiPrice": 535.0,
-      "category": "VGA"
+      "miamiPriceRaw": 535.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G506T-16S2CP": {
       "upc": "824142418598",
       "partNumber": "G506T-16S2CP",
       "name": "Geforce RTX 5060 Ti 16G SHADOW 2X OC PLUS",
+      "category": "VGA",
       "miamiPrice": 530.0,
-      "category": "VGA"
+      "miamiPriceRaw": 530.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G506T-8GTCW": {
       "upc": "824142422120",
       "partNumber": "G506T-8GTCW",
       "name": "GeForce RTX 5060 Ti 8G GAMING TRIO OC WHITE",
+      "category": "VGA",
       "miamiPrice": 448.0,
-      "category": "VGA"
+      "miamiPriceRaw": 448.0,
+      "marketSharePrice": null,
+      "miamiStock": 82,
+      "miamiBondedStock": 0
     },
     "G506T-8GTC": {
       "upc": "824142422137",
       "partNumber": "G506T-8GTC",
       "name": "Geforce RTX 5060 Ti 8G GAMING TRIO OC",
+      "category": "VGA",
       "miamiPrice": 443.0,
-      "category": "VGA"
+      "miamiPriceRaw": 443.0,
+      "marketSharePrice": null,
+      "miamiStock": 570,
+      "miamiBondedStock": 0
     },
     "G506T-8GC": {
       "upc": "824142419434",
       "partNumber": "G506T-8GC",
       "name": "Geforce RTX 5060 Ti 8G GAMING OC",
+      "category": "VGA",
       "miamiPrice": 412.0,
-      "category": "VGA"
+      "miamiPriceRaw": 412.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 476
     },
     "G506T8V2CWP": {
       "upc": "824142421307",
       "partNumber": "G506T8V2CWP",
       "name": "GeForce RTX 5060 Ti 8G VENTUS 2X OC WHITE PLUS",
+      "category": "VGA",
       "miamiPrice": 395.0,
-      "category": "VGA"
+      "miamiPriceRaw": 395.0,
+      "marketSharePrice": null,
+      "miamiStock": 718,
+      "miamiBondedStock": 0
     },
     "G506T-8V2CP": {
       "upc": "824142420997",
       "partNumber": "G506T-8V2CP",
       "name": "Geforce RTX 5060 Ti 8G VENTUS 2X OC PLUS",
+      "category": "VGA",
       "miamiPrice": 390.0,
-      "category": "VGA"
+      "miamiPriceRaw": 390.0,
+      "marketSharePrice": null,
+      "miamiStock": 3007,
+      "miamiBondedStock": 0
     },
     "G506T-8S2CP": {
       "upc": "824142421321",
       "partNumber": "G506T-8S2CP",
       "name": "GeForce RTX 5060 Ti 8G SHADOW 2X OC PLUS",
+      "category": "VGA",
       "miamiPrice": 380.0,
-      "category": "VGA"
+      "miamiPriceRaw": 380.0,
+      "marketSharePrice": null,
+      "miamiStock": 240,
+      "miamiBondedStock": 828
     },
     "G5060-8GC": {
       "upc": "824142422823",
       "partNumber": "G5060-8GC",
       "name": "Geforce RTX 5060 8G GAMING OC",
+      "category": "VGA",
       "miamiPrice": 378.0,
-      "category": "VGA"
+      "miamiPriceRaw": 378.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5060-8V3C": {
       "upc": "824142423776",
       "partNumber": "G5060-8V3C",
       "name": "Geforce RTX 5060 8G VENTUS 3X OC",
+      "category": "VGA",
       "miamiPrice": 350.0,
-      "category": "VGA"
+      "miamiPriceRaw": 350.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5060-8CC": {
       "upc": "824142430309",
       "partNumber": "G5060-8CC",
       "name": "GeForce RTX 5060 8G CYCLONE OC",
+      "category": "VGA",
       "miamiPrice": 330.0,
-      "category": "VGA"
+      "miamiPriceRaw": 330.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5060-8V2CW": {
       "upc": "824142423806",
       "partNumber": "G5060-8V2CW",
       "name": "Geforce RTX 5060 8G VENTUS 2X OC WHITE",
+      "category": "VGA",
       "miamiPrice": 348.0,
-      "category": "VGA"
+      "miamiPriceRaw": 348.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5060-8V2C": {
       "upc": "824142423837",
       "partNumber": "G5060-8V2C",
       "name": "Geforce RTX 5060 8G VENTUS 2X OC",
+      "category": "VGA",
       "miamiPrice": 348.0,
-      "category": "VGA"
+      "miamiPriceRaw": 348.0,
+      "marketSharePrice": null,
+      "miamiStock": 392,
+      "miamiBondedStock": 0
     },
     "G5060-8S2C": {
       "upc": "824142423851",
       "partNumber": "G5060-8S2C",
       "name": "Geforce RTX 5060 8G SHADOW 2X OC",
+      "category": "VGA",
       "miamiPrice": 345.0,
-      "category": "VGA"
+      "miamiPriceRaw": 345.0,
+      "marketSharePrice": null,
+      "miamiStock": 1926,
+      "miamiBondedStock": 0
     },
     "G5050-8GC": {
       "upc": "824142438343",
       "partNumber": "G5050-8GC",
       "name": "Geforce RTX 5050 8G GAMING OC",
+      "category": "VGA",
       "miamiPrice": 295.0,
-      "category": "VGA"
+      "miamiPriceRaw": 295.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5050-8V2C": {
       "upc": "824142438329",
       "partNumber": "G5050-8V2C",
       "name": "Geforce RTX 5050 8G VENTUS 2X OC",
+      "category": "VGA",
       "miamiPrice": 278.0,
-      "category": "VGA"
+      "miamiPriceRaw": 278.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G5050-8S2C": {
       "upc": "824142438336",
       "partNumber": "G5050-8S2C",
       "name": "Geforce RTX 5050 8G SHADOW 2X OC",
+      "category": "VGA",
       "miamiPrice": 275.0,
-      "category": "VGA"
+      "miamiPriceRaw": 275.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "G3060V2X12C1": {
       "upc": "824142468463",
       "partNumber": "G3060V2X12C1",
       "name": "GeForce RTX 3060 VENTUS 2X 12G OC V1",
+      "category": "VGA",
       "miamiPrice": 300.0,
-      "category": "VGA"
+      "miamiPriceRaw": 300.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": null
     },
     "G3050V2X6C": {
       "upc": "824142348710",
       "partNumber": "G3050V2X6C",
       "name": "GeForce RTX 3050 VENTUS 2X 6G OC",
+      "category": "VGA",
       "miamiPrice": 200.0,
-      "category": "VGA"
+      "miamiPriceRaw": 200.0,
+      "marketSharePrice": null,
+      "miamiStock": 2078,
+      "miamiBondedStock": 0
     },
     "G3050LP6C": {
       "upc": "824142348697",
       "partNumber": "G3050LP6C",
       "name": "GeForce RTX 3050 LP 6G OC",
+      "category": "VGA",
       "miamiPrice": 200.0,
-      "category": "VGA"
+      "miamiPriceRaw": 200.0,
+      "marketSharePrice": null,
+      "miamiStock": 6286,
+      "miamiBondedStock": 0
     },
     "G103044PC": {
       "upc": "824142327654",
       "partNumber": "G103044PC",
       "name": "GeForce GT 1030 4GD4 LP OC",
+      "category": "VGA",
       "miamiPrice": 95.0,
-      "category": "VGA"
+      "miamiPriceRaw": 95.0,
+      "marketSharePrice": null,
+      "miamiStock": 305,
+      "miamiBondedStock": 0
     },
     "G7102D3P": {
       "upc": "824142126905",
       "partNumber": "G7102D3P",
       "name": "GT 710 2GD3 LP",
+      "category": "VGA",
       "miamiPrice": 50.0,
-      "category": "VGA"
+      "miamiPriceRaw": 50.0,
+      "marketSharePrice": null,
+      "miamiStock": 695,
+      "miamiBondedStock": 0
     },
     "G2101D3": {
       "upc": "816909074901",
       "partNumber": "G2101D3",
       "name": "N210-MD1G/D3",
+      "category": "VGA",
       "miamiPrice": 30.0,
-      "category": "VGA"
+      "miamiPriceRaw": 30.0,
+      "marketSharePrice": null,
+      "miamiStock": 1131,
+      "miamiBondedStock": 0
     },
     "X870ETMAHAWKWIFPZ": {
       "upc": "824142443835",
       "partNumber": "X870ETMAHAWKWIFPZ",
       "name": "MAG X870E TOMAHAWK MAX WIFI PZ",
+      "category": "MB",
       "miamiPrice": 282.0,
-      "category": "MB"
+      "miamiPriceRaw": 282.0,
+      "marketSharePrice": null,
+      "miamiStock": 10,
+      "miamiBondedStock": 20
     },
     "PROZ890SWIFIPZ": {
       "upc": "824142394205",
       "partNumber": "PROZ890SWIFIPZ",
       "name": "PRO Z890-S WIFI PZ",
+      "category": "MB",
       "miamiPrice": 227.0,
-      "category": "MB"
+      "miamiPriceRaw": 227.0,
+      "marketSharePrice": null,
+      "miamiStock": 5,
+      "miamiBondedStock": 0
     },
     "B850GPWIFIPZ": {
       "upc": "824142433553",
       "partNumber": "B850GPWIFIPZ",
       "name": "B850 GAMING PLUS WIFI PZ",
+      "category": "MB",
       "miamiPrice": 195.0,
-      "category": "MB"
+      "miamiPriceRaw": 195.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 50
     },
     "Z890GODLIKE": {
       "upc": "824142389973",
       "partNumber": "Z890GODLIKE",
       "name": "MEG Z890 GODLIKE",
+      "category": "MB",
       "miamiPrice": 968.0,
-      "category": "MB"
+      "miamiPriceRaw": 968.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "Z890ACE": {
       "upc": "824142383780",
       "partNumber": "Z890ACE",
       "name": "MEG Z890 ACE",
+      "category": "MB",
       "miamiPrice": 550.0,
-      "category": "MB"
+      "miamiPriceRaw": 550.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "Z890CARBONWIFI": {
       "upc": "824142384343",
       "partNumber": "Z890CARBONWIFI",
       "name": "MPG Z890 CARBON WIFI",
+      "category": "MB",
       "miamiPrice": 360.0,
-      "category": "MB"
+      "miamiPriceRaw": 360.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "Z890TOMAHAWKWIFIII": {
       "upc": "824142456347",
       "partNumber": "Z890TOMAHAWKWIFIII",
       "name": "MAG Z890 TOMAHAWK WIFI II",
+      "category": "MB",
       "miamiPrice": 244.0,
-      "category": "MB"
+      "miamiPriceRaw": 244.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "Z890TOMAHAWKWIFI": {
       "upc": "824142382226",
       "partNumber": "Z890TOMAHAWKWIFI",
       "name": "MAG Z890 TOMAHAWK WIFI",
+      "category": "MB",
       "miamiPrice": 244.0,
-      "category": "MB"
+      "miamiPriceRaw": 244.0,
+      "marketSharePrice": null,
+      "miamiStock": 20,
+      "miamiBondedStock": 0
     },
-    "Z890GAMINGPLUSWIFI6E": {
+    "Z890 GAMING PLUS WIFI6E": {
       "upc": "824142456538",
-      "partNumber": "Z890GAMINGPLUSWIFI6E",
+      "partNumber": "Z890 GAMING PLUS WIFI6E",
       "name": "Z890 GAMING PLUS WIFI6E",
+      "category": "MB",
       "miamiPrice": 190.0,
-      "category": "MB"
+      "miamiPriceRaw": 190.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "Z890GAMINGPWIFI": {
       "upc": "824142381465",
       "partNumber": "Z890GAMINGPWIFI",
       "name": "Z890 GAMING PLUS WIFI",
+      "category": "MB",
       "miamiPrice": 180.0,
-      "category": "MB"
+      "miamiPriceRaw": 180.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "Z890PWIFI": {
       "upc": "824142381458",
       "partNumber": "Z890PWIFI",
       "name": "PRO Z890-P WIFI",
+      "category": "MB",
       "miamiPrice": 190.0,
-      "category": "MB"
+      "miamiPriceRaw": 190.0,
+      "marketSharePrice": null,
+      "miamiStock": 23,
+      "miamiBondedStock": 0
     },
     "Z890SWIFI": {
       "upc": "824142386569",
       "partNumber": "Z890SWIFI",
       "name": "PRO Z890-S WIFI",
+      "category": "MB",
       "miamiPrice": 180.0,
-      "category": "MB"
+      "miamiPriceRaw": 180.0,
+      "marketSharePrice": null,
+      "miamiStock": 3,
+      "miamiBondedStock": 0
     },
     "Z890SWHITEWIFI": {
       "upc": "824142390306",
       "partNumber": "Z890SWHITEWIFI",
       "name": "PRO Z890-S WIFI WHITE",
+      "category": "MB",
       "miamiPrice": 190.0,
-      "category": "MB"
+      "miamiPriceRaw": 190.0,
+      "marketSharePrice": null,
+      "miamiStock": 13,
+      "miamiBondedStock": 0
     },
     "B860TOMAHAWKWIFI": {
       "upc": "824142390177",
       "partNumber": "B860TOMAHAWKWIFI",
       "name": "MAG B860 TOMAHAWK WIFI",
+      "category": "MB",
       "miamiPrice": 170.0,
-      "category": "MB"
+      "miamiPriceRaw": 170.0,
+      "marketSharePrice": null,
+      "miamiStock": 55,
+      "miamiBondedStock": 0
     },
     "B860GPLUSWIFI": {
       "upc": "824142394854",
       "partNumber": "B860GPLUSWIFI",
       "name": "B860 GAMING PLUS WIFI",
+      "category": "MB",
       "miamiPrice": 155.0,
-      "category": "MB"
+      "miamiPriceRaw": 155.0,
+      "marketSharePrice": null,
+      "miamiStock": 80,
+      "miamiBondedStock": 0
     },
     "B860MGPW": {
       "upc": "824142392935",
       "partNumber": "B860MGPW",
       "name": "B860M GAMING PLUS WIFI",
+      "category": "MB",
       "miamiPrice": 140.0,
-      "category": "MB"
+      "miamiPriceRaw": 140.0,
+      "marketSharePrice": null,
+      "miamiStock": 130,
+      "miamiBondedStock": 0
     },
     "PROB860MB": {
       "upc": "824142449356",
       "partNumber": "PROB860MB",
       "name": "PRO B860M-E",
+      "category": "MB",
       "miamiPrice": 90.0,
-      "category": "MB"
+      "miamiPriceRaw": 90.0,
+      "marketSharePrice": null,
+      "miamiStock": 920,
+      "miamiBondedStock": 0
     },
     "PROB860MS": {
       "upc": "824142457573",
       "partNumber": "PROB860MS",
       "name": "PRO B860M-S",
+      "category": "MB",
       "miamiPrice": 75.0,
-      "category": "MB"
+      "miamiPriceRaw": 75.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "PROH810MB": {
       "upc": "824142420362",
       "partNumber": "PROH810MB",
       "name": "PRO H810M-B",
+      "category": "MB",
       "miamiPrice": 92.0,
-      "category": "MB"
+      "miamiPriceRaw": 92.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "PROH810ME": {
       "upc": "824142454008",
       "partNumber": "PROH810ME",
       "name": "PRO H810M-E",
+      "category": "MB",
       "miamiPrice": 78.0,
-      "category": "MB"
+      "miamiPriceRaw": 78.0,
+      "marketSharePrice": null,
+      "miamiStock": 850,
+      "miamiBondedStock": 1880
     },
     "PROZ790GAMPLUSWIFI": {
       "upc": "824142334898",
       "partNumber": "PROZ790GAMPLUSWIFI",
       "name": "Z790 GAMING PLUS WIFI",
+      "category": "MB",
       "miamiPrice": 195.0,
-      "category": "MB"
+      "miamiPriceRaw": 195.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
     },
     "PROZ790PWIFI": {
       "upc": "824142302125",
       "partNumber": "PROZ790PWIFI",
       "name": "PRO Z790-P WIFI",
+      "category": "MB",
       "miamiPrice": 170.0,
-      "category": "MB"
+      "miamiPriceRaw": 170.0,
+      "marketSharePrice": null,
+      "miamiStock": 80,
+      "miamiBondedStock": 0
+    },
+    "B760GPWIFI": {
+      "upc": "824142319420",
+      "partNumber": "B760GPWIFI",
+      "name": "B760 GAMING PLUS WIFI",
+      "category": "MB",
+      "miamiPrice": 115.0,
+      "miamiPriceRaw": 115.0,
+      "marketSharePrice": null,
+      "miamiStock": 7,
+      "miamiBondedStock": 0
+    },
+    "B760MGPWIFI": {
+      "upc": "824142343562",
+      "partNumber": "B760MGPWIFI",
+      "name": "B760M GAMING PLUS WIFI",
+      "category": "MB",
+      "miamiPrice": 110.0,
+      "miamiPriceRaw": 110.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 1370
+    },
+    "B760GPWIFID4": {
+      "upc": "824142377321",
+      "partNumber": "B760GPWIFID4",
+      "name": "B760 GAMING PLUS WIFI DDR4",
+      "category": "MB",
+      "miamiPrice": 115.0,
+      "miamiPriceRaw": 115.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "B760MGPWIFID4": {
+      "upc": "824142377338",
+      "partNumber": "B760MGPWIFID4",
+      "name": "B760M GAMING PLUS WIFI DDR4",
+      "category": "MB",
+      "miamiPrice": 110.0,
+      "miamiPriceRaw": 110.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "PROB760P": {
+      "upc": "824142319802",
+      "partNumber": "PROB760P",
+      "name": "PRO B760M-P",
+      "category": "MB",
+      "miamiPrice": 84.0,
+      "miamiPriceRaw": 84.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 1790
+    },
+    "PROB760E": {
+      "upc": "824142333341",
+      "partNumber": "PROB760E",
+      "name": "PRO B760M-E",
+      "category": "MB",
+      "miamiPrice": 80.0,
+      "miamiPriceRaw": 80.0,
+      "marketSharePrice": null,
+      "miamiStock": 240,
+      "miamiBondedStock": 0
+    },
+    "PROB760PD4": {
+      "upc": "824142308240",
+      "partNumber": "PROB760PD4",
+      "name": "PRO B760M-P DDR4",
+      "category": "MB",
+      "miamiPrice": 70.0,
+      "miamiPriceRaw": 70.0,
+      "marketSharePrice": null,
+      "miamiStock": 920,
+      "miamiBondedStock": 470
+    },
+    "PROB760ED4": {
+      "upc": "824142306437",
+      "partNumber": "PROB760ED4",
+      "name": "PRO B760M-E DDR4",
+      "category": "MB",
+      "miamiPrice": 68.0,
+      "miamiPriceRaw": 68.0,
+      "marketSharePrice": null,
+      "miamiStock": 980,
+      "miamiBondedStock": 0
+    },
+    "PROH610MB": {
+      "upc": "824142282762",
+      "partNumber": "PROH610MB",
+      "name": "PRO H610M-B",
+      "category": "MB",
+      "miamiPrice": 56.0,
+      "miamiPriceRaw": 56.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 1940
+    },
+    "PROH610MG": {
+      "upc": "824142282755",
+      "partNumber": "PROH610MG",
+      "name": "PRO H610M-G",
+      "category": "MB",
+      "miamiPrice": 50.0,
+      "miamiPriceRaw": 50.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 360
+    },
+    "PROH610MS": {
+      "upc": "824142447567",
+      "partNumber": "PROH610MS",
+      "name": "PRO H610M-S",
+      "category": "MB",
+      "miamiPrice": 50.0,
+      "miamiPriceRaw": 50.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 2670
+    },
+    "PRO H610MAD4": {
+      "upc": "824142436462",
+      "partNumber": "PRO H610MAD4",
+      "name": "PRO H610M-A DDR4",
+      "category": "MB",
+      "miamiPrice": 55.0,
+      "miamiPriceRaw": 55.0,
+      "marketSharePrice": null,
+      "miamiStock": 2070,
+      "miamiBondedStock": 890
+    },
+    "PROH610MGD4": {
+      "upc": "824142278789",
+      "partNumber": "PROH610MGD4",
+      "name": "PRO H610M-G DDR4",
+      "category": "MB",
+      "miamiPrice": 53.0,
+      "miamiPriceRaw": 53.0,
+      "marketSharePrice": null,
+      "miamiStock": 1515,
+      "miamiBondedStock": 0
+    },
+    "PROH610MSD4": {
+      "upc": "824142357712",
+      "partNumber": "PROH610MSD4",
+      "name": "PRO H610M-S DDR4",
+      "category": "MB",
+      "miamiPrice": 49.0,
+      "miamiPriceRaw": 53.0,
+      "marketSharePrice": 49.0,
+      "miamiStock": 980,
+      "miamiBondedStock": 0
+    },
+    "PROH410MAP": {
+      "upc": "824142218167",
+      "partNumber": "PROH410MAP",
+      "name": "H410M-A PRO",
+      "category": "MB",
+      "miamiPrice": 48.0,
+      "miamiPriceRaw": 48.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "X87EGODLIKE": {
+      "upc": "824142388747",
+      "partNumber": "X87EGODLIKE",
+      "name": "MEG X870E GODLIKE",
+      "category": "MB",
+      "miamiPrice": 968.0,
+      "miamiPriceRaw": 968.0,
+      "marketSharePrice": null,
+      "miamiStock": 2,
+      "miamiBondedStock": 0
+    },
+    "X870EACEMAX": {
+      "upc": "824142451182",
+      "partNumber": "X870EACEMAX",
+      "name": "MEG X870E ACE MAX",
+      "category": "MB",
+      "miamiPrice": 578.0,
+      "miamiPriceRaw": 578.0,
+      "marketSharePrice": null,
+      "miamiStock": 5,
+      "miamiBondedStock": 0
+    },
+    "X870E CARBON WIFI7": {
+      "upc": "824142382219",
+      "partNumber": "X870E CARBON WIFI7",
+      "name": "MPG X870E CARBON WIFI",
+      "category": "MB",
+      "miamiPrice": 440.0,
+      "miamiPriceRaw": 440.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 60
+    },
+    "MAGX870ETMW": {
+      "upc": "824142449004",
+      "partNumber": "MAGX870ETMW",
+      "name": "MAG X870E TOMAHAWK MAX WIFI",
+      "category": "MB",
+      "miamiPrice": 274.0,
+      "miamiPriceRaw": 274.0,
+      "marketSharePrice": null,
+      "miamiStock": 125,
+      "miamiBondedStock": 0
+    },
+    "X870ETOMAHAWKWIFI": {
+      "upc": "824142395660",
+      "partNumber": "X870ETOMAHAWKWIFI",
+      "name": "MAG X870E TOMAHAWK WIFI",
+      "category": "MB",
+      "miamiPrice": 264.0,
+      "miamiPriceRaw": 264.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 399
+    },
+    "X870EGPWIFI": {
+      "upc": "824142425473",
+      "partNumber": "X870EGPWIFI",
+      "name": "X870E GAMING PLUS WIFI",
+      "category": "MB",
+      "miamiPrice": 234.0,
+      "miamiPriceRaw": 234.0,
+      "marketSharePrice": null,
+      "miamiStock": 103,
+      "miamiBondedStock": 515
+    },
+    "MAGX870EGMW": {
+      "upc": "824142448717",
+      "partNumber": "MAGX870EGMW",
+      "name": "MAG X870E GAMING MAX WIFI",
+      "category": "MB",
+      "miamiPrice": 229.0,
+      "miamiPriceRaw": 229.0,
+      "marketSharePrice": null,
+      "miamiStock": 35,
+      "miamiBondedStock": 0
+    },
+    "X870ESEW": {
+      "upc": "824142450499",
+      "partNumber": "X870ESEW",
+      "name": "PRO X870E-S EVO WIFI",
+      "category": "MB",
+      "miamiPrice": 219.0,
+      "miamiPriceRaw": 219.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 490
+    },
+    "X870EPWIFI": {
+      "upc": "824142425565",
+      "partNumber": "X870EPWIFI",
+      "name": "PRO X870E-P WIFI",
+      "category": "MB",
+      "miamiPrice": 185.0,
+      "miamiPriceRaw": 185.0,
+      "marketSharePrice": null,
+      "miamiStock": 175,
+      "miamiBondedStock": 135
+    },
+    "X870PWIFI": {
+      "upc": "824142380987",
+      "partNumber": "X870PWIFI",
+      "name": "PRO X870-P WIFI",
+      "category": "MB",
+      "miamiPrice": 180.0,
+      "miamiPriceRaw": 180.0,
+      "marketSharePrice": null,
+      "miamiStock": 195,
+      "miamiBondedStock": 0
+    },
+    "B850TMAHAWKWIFIMAXII": {
+      "upc": "824142453995",
+      "partNumber": "B850TMAHAWKWIFIMAXII",
+      "name": "MAG B850 TOMAHAWK MAX WIFI II",
+      "category": "MB",
+      "miamiPrice": 212.0,
+      "miamiPriceRaw": 212.0,
+      "marketSharePrice": null,
+      "miamiStock": 355,
+      "miamiBondedStock": 0
+    },
+    "B850TMAHAWKWIFIMAX": {
+      "upc": "824142395356",
+      "partNumber": "B850TMAHAWKWIFIMAX",
+      "name": "MAG B850 TOMAHAWK MAX WIFI",
+      "category": "MB",
+      "miamiPrice": 175.0,
+      "miamiPriceRaw": 175.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "B850TMAHAWKWIFI": {
+      "upc": "824142447574",
+      "partNumber": "B850TMAHAWKWIFI",
+      "name": "MAG B850 TOMAHAWK WIFI",
+      "category": "MB",
+      "miamiPrice": 180.0,
+      "miamiPriceRaw": 180.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 95
+    },
+    "B860GPMW": {
+      "upc": "824142449363",
+      "partNumber": "B860GPMW",
+      "name": "MAG B850 GAMING PLUS MAX WIFI",
+      "category": "MB",
+      "miamiPrice": 165.0,
+      "miamiPriceRaw": 165.0,
+      "marketSharePrice": null,
+      "miamiStock": 450,
+      "miamiBondedStock": 0
+    },
+    "B850GPW": {
+      "upc": "824142392133",
+      "partNumber": "B850GPW",
+      "name": "B850 GAMING PLUS WIFI",
+      "category": "MB",
+      "miamiPrice": 168.0,
+      "miamiPriceRaw": 168.0,
+      "marketSharePrice": null,
+      "miamiStock": 150,
+      "miamiBondedStock": 550
+    },
+    "PROB850SEVOWIFI": {
+      "upc": "824142453698",
+      "partNumber": "PROB850SEVOWIFI",
+      "name": "PRO B850-S EVO WIFI",
+      "category": "MB",
+      "miamiPrice": 168.0,
+      "miamiPriceRaw": 168.0,
+      "marketSharePrice": null,
+      "miamiStock": 290,
+      "miamiBondedStock": 280
+    },
+    "PROB850PWIFI": {
+      "upc": "824142392607",
+      "partNumber": "PROB850PWIFI",
+      "name": "PRO B850-P WIFI",
+      "category": "MB",
+      "miamiPrice": 158.0,
+      "miamiPriceRaw": 158.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 225
+    },
+    "PROB850SWIFI6E": {
+      "upc": "824142433577",
+      "partNumber": "PROB850SWIFI6E",
+      "name": "PRO B850-S WIFI6E",
+      "category": "MB",
+      "miamiPrice": 150.0,
+      "miamiPriceRaw": 150.0,
+      "marketSharePrice": null,
+      "miamiStock": 170,
+      "miamiBondedStock": 0
+    },
+    "B850MGPROWIFI6E": {
+      "upc": "824142444627",
+      "partNumber": "B850MGPROWIFI6E",
+      "name": "B850M GAMING PRO WIFI6E",
+      "category": "MB",
+      "miamiPrice": 130.0,
+      "miamiPriceRaw": 130.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 710
+    },
+    "B850MGPWIFI6E": {
+      "upc": "824142433584",
+      "partNumber": "B850MGPWIFI6E",
+      "name": "B850M GAMING PLUS WIFI6E",
+      "category": "MB",
+      "miamiPrice": 155.0,
+      "miamiPriceRaw": 155.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 960
+    },
+    "PROB850MPWIFI": {
+      "upc": "824142426722",
+      "partNumber": "PROB850MPWIFI",
+      "name": "PRO B850M-P WIFI",
+      "category": "MB",
+      "miamiPrice": 115.0,
+      "miamiPriceRaw": 115.0,
+      "marketSharePrice": null,
+      "miamiStock": 25,
+      "miamiBondedStock": 0
+    },
+    "B850MGWIFI6E": {
+      "upc": "824142446836",
+      "partNumber": "B850MGWIFI6E",
+      "name": "B850M GAMING WIFI6E",
+      "category": "MB",
+      "miamiPrice": 101.0,
+      "miamiPriceRaw": 101.0,
+      "marketSharePrice": null,
+      "miamiStock": 68,
+      "miamiBondedStock": 560
+    },
+    "B850MBGEN4": {
+      "upc": "824142446348",
+      "partNumber": "B850MBGEN4",
+      "name": "PRO B850M-B GEN4",
+      "category": "MB",
+      "miamiPrice": 86.0,
+      "miamiPriceRaw": 86.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 250
+    },
+    "PROB850MEEVO": {
+      "upc": "824142456217",
+      "partNumber": "PROB850MEEVO",
+      "name": "PRO B850M-E EVO",
+      "category": "MB",
+      "miamiPrice": 76.0,
+      "miamiPriceRaw": 76.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "B840GAMINGPWIFI": {
+      "upc": "824142392966",
+      "partNumber": "B840GAMINGPWIFI",
+      "name": "B840 GAMING PLUS WIFI",
+      "category": "MB",
+      "miamiPrice": 125.0,
+      "miamiPriceRaw": 125.0,
+      "marketSharePrice": null,
+      "miamiStock": 133,
+      "miamiBondedStock": 0
+    },
+    "PROB840M-SEVOWIFI6E": {
+      "upc": "824142448045",
+      "partNumber": "PROB840M-SEVOWIFI6E",
+      "name": "PRO B840-S EVO WIFI6E",
+      "category": "MB",
+      "miamiPrice": 105.0,
+      "miamiPriceRaw": 105.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 390
+    },
+    "PROB840M-PWIFI6E": {
+      "upc": "824142431597",
+      "partNumber": "PROB840M-PWIFI6E",
+      "name": "PRO B840M-P WIFI6E",
+      "category": "MB",
+      "miamiPrice": 95.0,
+      "miamiPriceRaw": 110.0,
+      "marketSharePrice": 95.0,
+      "miamiStock": 400,
+      "miamiBondedStock": 0
+    },
+    "B840MGAMINGWIFI6E": {
+      "upc": "824142430224",
+      "partNumber": "B840MGAMINGWIFI6E",
+      "name": "B840M GAMING WIFI6E",
+      "category": "MB",
+      "miamiPrice": 95.0,
+      "miamiPriceRaw": 103.0,
+      "marketSharePrice": 95.0,
+      "miamiStock": 460,
+      "miamiBondedStock": 410
+    },
+    "PROB840MB": {
+      "upc": "824142430972",
+      "partNumber": "PROB840MB",
+      "name": "PRO B840M-B",
+      "category": "MB",
+      "miamiPrice": 65.0,
+      "miamiPriceRaw": 70.0,
+      "marketSharePrice": 65.0,
+      "miamiStock": 3420,
+      "miamiBondedStock": 150
+    },
+    "B650MGAMINGWIFI": {
+      "upc": "824142351284",
+      "partNumber": "B650MGAMINGWIFI",
+      "name": "B650M GAMING WIFI",
+      "category": "MB",
+      "miamiPrice": 98.0,
+      "miamiPriceRaw": 98.0,
+      "marketSharePrice": null,
+      "miamiStock": 180,
+      "miamiBondedStock": 0
+    },
+    "PROB650MB": {
+      "upc": "824142340400",
+      "partNumber": "PROB650MB",
+      "name": "PRO B650M-B",
+      "category": "MB",
+      "miamiPrice": 66.0,
+      "miamiPriceRaw": 66.0,
+      "marketSharePrice": null,
+      "miamiStock": 460,
+      "miamiBondedStock": 0
+    },
+    "B550GWIFI6E": {
+      "upc": "824142464649",
+      "partNumber": "B550GWIFI6E",
+      "name": "B550 GAMING WIFI6E",
+      "category": "MB",
+      "miamiPrice": 95.0,
+      "miamiPriceRaw": 95.0,
+      "marketSharePrice": null,
+      "miamiStock": 200,
+      "miamiBondedStock": 0
+    },
+    "B550MGPWIFI6E": {
+      "upc": "824142466667",
+      "partNumber": "B550MGPWIFI6E",
+      "name": "B550M GAMING PLUS WIFI6E",
+      "category": "MB",
+      "miamiPrice": 76.0,
+      "miamiPriceRaw": 76.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "B550MPVDHWIFI": {
+      "upc": "824142219393",
+      "partNumber": "B550MPVDHWIFI",
+      "name": "B550M PRO-VDH WIFI",
+      "category": "MB",
+      "miamiPrice": 73.0,
+      "miamiPriceRaw": 73.0,
+      "marketSharePrice": null,
+      "miamiStock": 25,
+      "miamiBondedStock": 0
+    },
+    "PROB550MPWIFE6E": {
+      "upc": "824142462959",
+      "partNumber": "PROB550MPWIFE6E",
+      "name": "PRO B550M-P WIFI6E",
+      "category": "MB",
+      "miamiPrice": 67.0,
+      "miamiPriceRaw": 67.0,
+      "marketSharePrice": null,
+      "miamiStock": 18,
+      "miamiBondedStock": 0
+    },
+    "B550MPVDH": {
+      "upc": "824142227213",
+      "partNumber": "B550MPVDH",
+      "name": "B550M PRO-VDH",
+      "category": "MB",
+      "miamiPrice": 62.0,
+      "miamiPriceRaw": 62.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "PROB550MP": {
+      "upc": "824142462966",
+      "partNumber": "PROB550MP",
+      "name": "PRO B550M-P",
+      "category": "MB",
+      "miamiPrice": 60.0,
+      "miamiPriceRaw": 60.0,
+      "marketSharePrice": null,
+      "miamiStock": 1150,
+      "miamiBondedStock": 0
+    },
+    "B550MB": {
+      "upc": "824142455708",
+      "partNumber": "B550MB",
+      "name": "PRO B550M-B",
+      "category": "MB",
+      "miamiPrice": 57.0,
+      "miamiPriceRaw": 57.0,
+      "marketSharePrice": null,
+      "miamiStock": 440,
+      "miamiBondedStock": 540
+    },
+    "B550MAPRO": {
+      "upc": "824142225257",
+      "partNumber": "B550MAPRO",
+      "name": "B550M-A PRO",
+      "category": "MB",
+      "miamiPrice": 56.0,
+      "miamiPriceRaw": 56.0,
+      "marketSharePrice": null,
+      "miamiStock": 360,
+      "miamiBondedStock": 0
+    },
+    "PROA620AGEVOWIFI": {
+      "upc": "824142451755",
+      "partNumber": "PROA620AGEVOWIFI",
+      "name": "PRO A620AM-G EVO WIFI",
+      "category": "MB",
+      "miamiPrice": 72.0,
+      "miamiPriceRaw": 72.0,
+      "marketSharePrice": null,
+      "miamiStock": 2080,
+      "miamiBondedStock": 0
+    },
+    "PROA620ABEVO": {
+      "upc": "824142446072",
+      "partNumber": "PROA620ABEVO",
+      "name": "PRO A620AM-B EVO",
+      "category": "MB",
+      "miamiPrice": 57.0,
+      "miamiPriceRaw": 62.0,
+      "marketSharePrice": 57.0,
+      "miamiStock": 1504,
+      "miamiBondedStock": 1340
+    },
+    "A520MAPRO": {
+      "upc": "824142224007",
+      "partNumber": "A520MAPRO",
+      "name": "A520M-A PRO",
+      "category": "MB",
+      "miamiPrice": 43.0,
+      "miamiPriceRaw": 43.0,
+      "marketSharePrice": null,
+      "miamiStock": 4030,
+      "miamiBondedStock": 0
+    },
+    "A520MPRO": {
+      "upc": "824142226063",
+      "partNumber": "A520MPRO",
+      "name": "A520M PRO",
+      "category": "MB",
+      "miamiPrice": 43.0,
+      "miamiPriceRaw": 43.0,
+      "marketSharePrice": null,
+      "miamiStock": 1120,
+      "miamiBondedStock": 0
+    },
+    "PROA520MS": {
+      "upc": "824142467664",
+      "partNumber": "PROA520MS",
+      "name": "PRO A520M-S",
+      "category": "MB",
+      "miamiPrice": 41.0,
+      "miamiPriceRaw": 41.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SM371N1500G": {
+      "upc": "824142304006",
+      "partNumber": "SM371N1500G",
+      "name": "SPATIUM M371 NVME M.2 500GB",
+      "category": "SSD",
+      "miamiPrice": 80.0,
+      "miamiPriceRaw": 80.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SM450N500V1": {
+      "upc": "824142422076",
+      "partNumber": "SM450N500V1",
+      "name": "SPATIUM M450 PCIe 4.0 NVMe M.2 500GB V1",
+      "category": "SSD",
+      "miamiPrice": 80.0,
+      "miamiPriceRaw": 80.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SM450N1TBV1": {
+      "upc": "824142396803",
+      "partNumber": "SM450N1TBV1",
+      "name": "SPATIUM M450 PCIe 4.0 NVMe M.2 1TB V1",
+      "category": "SSD",
+      "miamiPrice": 170.0,
+      "miamiPriceRaw": 170.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SM480PN1TB": {
+      "upc": "824142326909",
+      "partNumber": "SM480PN1TB",
+      "name": "SPATIUM M480 PRO PCIe 4.0 NVMe M.2 1TB",
+      "category": "SSD",
+      "miamiPrice": 240.0,
+      "miamiPriceRaw": 240.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SM480PN2TB": {
+      "upc": "824142326923",
+      "partNumber": "SM480PN2TB",
+      "name": "SPATIUM M480 PRO PCIe 4.0 NVMe M.2 2TB",
+      "category": "SSD",
+      "miamiPrice": 400.0,
+      "miamiPriceRaw": 400.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SM560N1TB": {
+      "upc": "824142388365",
+      "partNumber": "SM560N1TB",
+      "name": "SPATIUM M560 PCIe 5.0 NVMe M.2 1TB",
+      "category": "SSD",
+      "miamiPrice": 240.0,
+      "miamiPriceRaw": 240.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SM560N2TB": {
+      "upc": "824142388372",
+      "partNumber": "SM560N2TB",
+      "name": "SPATIUM M560 PCIe 5.0 NVMe M.2 2TB",
+      "category": "SSD",
+      "miamiPrice": 400.0,
+      "miamiPriceRaw": 400.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SS270S240G": {
+      "upc": "824142297728",
+      "partNumber": "SS270S240G",
+      "name": "SPATIUM S270 SATA 2.5” 240GB",
+      "category": "SSD",
+      "miamiPrice": 55.0,
+      "miamiPriceRaw": 55.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SS270S480G": {
+      "upc": "824142297735",
+      "partNumber": "SS270S480G",
+      "name": "SPATIUM S270 SATA 2.5” 480GB",
+      "category": "SSD",
+      "miamiPrice": 85.0,
+      "miamiPriceRaw": 85.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "SS270S960G": {
+      "upc": "824142297742",
+      "partNumber": "SS270S960G",
+      "name": "SPATIUM S270 SATA 2.5” 960GB",
+      "category": "SSD",
+      "miamiPrice": 135.0,
+      "miamiPriceRaw": 135.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "TBD": {
+      "upc": "824142357859",
+      "partNumber": "TBD",
+      "name": "Roamii BE Lite Mesh System- 2 Pack",
+      "category": "Networking",
+      "miamiPrice": 225.0,
+      "miamiPriceRaw": 225.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "ForceGC30V2_W": {
+      "upc": "824142256633",
+      "partNumber": "ForceGC30V2_W",
+      "name": "Force GC30 V2 WHITE",
+      "category": "Accessories",
+      "miamiPrice": 25.0,
+      "miamiPriceRaw": 25.0,
+      "marketSharePrice": null,
+      "miamiStock": 210,
+      "miamiBondedStock": 0
+    },
+    "ForceGC30V2": {
+      "upc": "824142274088",
+      "partNumber": "ForceGC30V2",
+      "name": "Force GC30 V2",
+      "category": "Accessories",
+      "miamiPrice": 25.0,
+      "miamiPriceRaw": 25.0,
+      "marketSharePrice": null,
+      "miamiStock": 65,
+      "miamiBondedStock": 0
+    },
+    "FORCEGC300WW": {
+      "upc": "824142386491",
+      "partNumber": "FORCEGC300WW",
+      "name": "FORCE GC300 W WHITE",
+      "category": "Accessories",
+      "miamiPrice": 32.0,
+      "miamiPriceRaw": 32.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 190
+    },
+    "FORCEGC300W": {
+      "upc": "824142370841",
+      "partNumber": "FORCEGC300W",
+      "name": "FORCE GC300 W",
+      "category": "Accessories",
+      "miamiPrice": 32.0,
+      "miamiPriceRaw": 32.0,
+      "marketSharePrice": null,
+      "miamiStock": 410,
+      "miamiBondedStock": 520
+    },
+    "FORGEGM320": {
+      "upc": "824142434734",
+      "partNumber": "FORGEGM320",
+      "name": "FORGE GM320",
+      "category": "Chassis",
+      "miamiPrice": 9.0,
+      "miamiPriceRaw": 9.0,
+      "marketSharePrice": null,
+      "miamiStock": 455,
+      "miamiBondedStock": 2700
+    },
+    "FORGEGM340WS": {
+      "upc": "824142454541",
+      "partNumber": "FORGEGM340WS",
+      "name": "FORGE GM340 W SKY",
+      "category": "Chassis",
+      "miamiPrice": 15.0,
+      "miamiPriceRaw": 15.0,
+      "marketSharePrice": null,
+      "miamiStock": 195,
+      "miamiBondedStock": 0
+    },
+    "FORGEGM340WV": {
+      "upc": "824142454480",
+      "partNumber": "FORGEGM340WV",
+      "name": "FORGE GM340 W VIOLET",
+      "category": "Chassis",
+      "miamiPrice": 15.0,
+      "miamiPriceRaw": 15.0,
+      "marketSharePrice": null,
+      "miamiStock": 235,
+      "miamiBondedStock": 0
+    },
+    "FORGEGM340WW": {
+      "upc": "824142454527",
+      "partNumber": "FORGEGM340WW",
+      "name": "FORGE GM340 W WHITE",
+      "category": "Chassis",
+      "miamiPrice": 15.0,
+      "miamiPriceRaw": 15.0,
+      "marketSharePrice": null,
+      "miamiStock": 215,
+      "miamiBondedStock": 0
+    },
+    "VERSA300EWW": {
+      "upc": "824142392096",
+      "partNumber": "VERSA300EWW",
+      "name": "VERSA 300 W WHITE",
+      "category": "Accessories",
+      "miamiPrice": 15.0,
+      "miamiPriceRaw": 15.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 185
+    },
+    "VERSA300W": {
+      "upc": "824142376799",
+      "partNumber": "VERSA300W",
+      "name": "VERSA 300 W",
+      "category": "Accessories",
+      "miamiPrice": 15.0,
+      "miamiPriceRaw": 15.0,
+      "marketSharePrice": null,
+      "miamiStock": 640,
+      "miamiBondedStock": 1180
+    },
+    "VERSAPROW": {
+      "upc": "824142386392",
+      "partNumber": "VERSAPROW",
+      "name": "VERSA PRO W",
+      "category": "Accessories",
+      "miamiPrice": 55.0,
+      "miamiPriceRaw": 55.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 140
+    },
+    "MAESTRO500WB": {
+      "upc": "824142456996",
+      "partNumber": "MAESTRO500WB",
+      "name": "MAESTRO 500 W BLACK",
+      "category": "Accessories",
+      "miamiPrice": 49.0,
+      "miamiPriceRaw": 49.0,
+      "marketSharePrice": null,
+      "miamiStock": 300,
+      "miamiBondedStock": 0
+    },
+    "MAESTRO500WN": {
+      "upc": "824142453858",
+      "partNumber": "MAESTRO500WN",
+      "name": "MAESTRO 500 W NAVY",
+      "category": "Accessories",
+      "miamiPrice": 49.0,
+      "miamiPriceRaw": 49.0,
+      "marketSharePrice": null,
+      "miamiStock": 500,
+      "miamiBondedStock": 0
+    },
+    "FORGEGK110US": {
+      "upc": "824142410943",
+      "partNumber": "FORGEGK110US",
+      "name": "FORGE GK110 US",
+      "category": "Chassis",
+      "miamiPrice": 11.0,
+      "miamiPriceRaw": 11.0,
+      "marketSharePrice": null,
+      "miamiStock": 1920,
+      "miamiBondedStock": 870
+    },
+    "FORGEGK600B": {
+      "upc": "824142391846",
+      "partNumber": "FORGEGK600B",
+      "name": "FORGE GK600 TKL W SKY US",
+      "category": "Chassis",
+      "miamiPrice": 49.0,
+      "miamiPriceRaw": 49.0,
+      "marketSharePrice": null,
+      "miamiStock": 2066,
+      "miamiBondedStock": 0
+    },
+    "FORGEGK600V": {
+      "upc": "824142405390",
+      "partNumber": "FORGEGK600V",
+      "name": "FORGE GK600 TKL W VIOLET US",
+      "category": "Chassis",
+      "miamiPrice": 49.0,
+      "miamiPriceRaw": 49.0,
+      "marketSharePrice": null,
+      "miamiStock": 201,
+      "miamiBondedStock": 470
+    },
+    "FORGEGK300BUS": {
+      "upc": "824142348222",
+      "partNumber": "FORGEGK300BUS",
+      "name": "FORGE GK300 BLUE US",
+      "category": "Chassis",
+      "miamiPrice": 18.0,
+      "miamiPriceRaw": 18.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 260
+    },
+    "FORGEGK300CBUS": {
+      "upc": "824142348451",
+      "partNumber": "FORGEGK300CBUS",
+      "name": "FORGE GK300 COMBO BLUE US",
+      "category": "Chassis",
+      "miamiPrice": 23.0,
+      "miamiPriceRaw": 23.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 120
+    },
+    "FORGEGK100C": {
+      "upc": "824142348840",
+      "partNumber": "FORGEGK100C",
+      "name": "FORGE GK100 COMBO US",
+      "category": "Chassis",
+      "miamiPrice": 14.0,
+      "miamiPriceRaw": 14.0,
+      "marketSharePrice": null,
+      "miamiStock": 3640,
+      "miamiBondedStock": 2750
+    },
+    "FORGEGK100CLS": {
+      "upc": "824142382745",
+      "partNumber": "FORGEGK100CLS",
+      "name": "FORGE GK100 COMBO LS",
+      "category": "Chassis",
+      "miamiPrice": 14.0,
+      "miamiPriceRaw": 14.0,
+      "marketSharePrice": null,
+      "miamiStock": 494,
+      "miamiBondedStock": 240
+    },
+    "FORGEGK110CUS": {
+      "upc": "824142420867",
+      "partNumber": "FORGEGK110CUS",
+      "name": "FORGE GK110 COMBO US",
+      "category": "Chassis",
+      "miamiPrice": 17.0,
+      "miamiPriceRaw": 17.0,
+      "marketSharePrice": null,
+      "miamiStock": 750,
+      "miamiBondedStock": 1130
+    },
+    "FORGEGK320CR": {
+      "upc": "824142412565",
+      "partNumber": "FORGEGK320CR",
+      "name": "FORGE GK320 COMBO RED US",
+      "category": "Chassis",
+      "miamiPrice": 27.0,
+      "miamiPriceRaw": 27.0,
+      "marketSharePrice": null,
+      "miamiStock": 1145,
+      "miamiBondedStock": 0
+    },
+    "FORGEK210WCWUS": {
+      "upc": "824142453391",
+      "partNumber": "FORGEK210WCWUS",
+      "name": "FORGE K210 W COMBO WHITE US",
+      "category": "Chassis",
+      "miamiPrice": 21.0,
+      "miamiPriceRaw": 21.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "FORGEK210WCUS": {
+      "upc": "824142434390",
+      "partNumber": "FORGEK210WCUS",
+      "name": "FORGE K210 W COMBO US",
+      "category": "Chassis",
+      "miamiPrice": 21.0,
+      "miamiPriceRaw": 21.0,
+      "marketSharePrice": null,
+      "miamiStock": 880,
+      "miamiBondedStock": 0
+    },
+    "FORGEK210WCWLS": {
+      "upc": "824142453568",
+      "partNumber": "FORGEK210WCWLS",
+      "name": "FORGE K210 W COMBO WHITE LS",
+      "category": "Chassis",
+      "miamiPrice": 21.0,
+      "miamiPriceRaw": 21.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": null
+    },
+    "FORGEK210WCLS": {
+      "upc": "824142437209",
+      "partNumber": "FORGEK210WCLS",
+      "name": "FORGE K210 W COMBO LS",
+      "category": "Chassis",
+      "miamiPrice": 21.0,
+      "miamiPriceRaw": 21.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MPG491CQPXQD-OLED": {
+      "upc": "824142374191",
+      "partNumber": "MPG491CQPXQD-OLED",
+      "name": "MPG 491CQPX QD-OLED",
+      "category": "Monitor",
+      "miamiPrice": 891.0,
+      "miamiPriceRaw": 891.0,
+      "marketSharePrice": null,
+      "miamiStock": 9,
+      "miamiBondedStock": 0
+    },
+    "MPG491CQPQDOLED": {
+      "upc": "824142340349",
+      "partNumber": "MPG491CQPQDOLED",
+      "name": "MPG 491CQP QD-OLED",
+      "category": "Monitor",
+      "miamiPrice": 791.0,
+      "miamiPriceRaw": 791.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MPG341CQRQD-OLEDX36": {
+      "upc": "824142448007",
+      "partNumber": "MPG341CQRQD-OLEDX36",
+      "name": "MPG 341CQR QD-OLED X36",
+      "category": "Monitor",
+      "miamiPrice": 899.0,
+      "miamiPriceRaw": 899.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MPG341CQPXQDOLED": {
+      "upc": "824142354223",
+      "partNumber": "MPG341CQPXQDOLED",
+      "name": "MPG 341CQPX QD-OLED",
+      "category": "Monitor",
+      "miamiPrice": 704.0,
+      "miamiPriceRaw": 704.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 28
+    },
+    "MPG321CURXQD-OLED": {
+      "upc": "824142378793",
+      "partNumber": "MPG321CURXQD-OLED",
+      "name": "MPG 321CURX QD-OLED",
+      "category": "Monitor",
+      "miamiPrice": 880.0,
+      "miamiPriceRaw": 880.0,
+      "marketSharePrice": null,
+      "miamiStock": 47,
+      "miamiBondedStock": 41
+    },
+    "MPG321URXQD-OLED": {
+      "upc": "824142343623",
+      "partNumber": "MPG321URXQD-OLED",
+      "name": "MPG 321URX QD-OLED",
+      "category": "Monitor",
+      "miamiPrice": 845.0,
+      "miamiPriceRaw": 845.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MPG321URXWQD-OLED": {
+      "upc": "824142385449",
+      "partNumber": "MPG321URXWQD-OLED",
+      "name": "MPG 321URXW QD-OLED",
+      "category": "Monitor",
+      "miamiPrice": 880.0,
+      "miamiPriceRaw": 880.0,
+      "marketSharePrice": null,
+      "miamiStock": 62,
+      "miamiBondedStock": 0
+    },
+    "MAG322UPQD-OLEDE16": {
+      "upc": "824142436677",
+      "partNumber": "MAG322UPQD-OLEDE16",
+      "name": "MAG 322UP QD-OLED E16",
+      "category": "Monitor",
+      "miamiPrice": 750.0,
+      "miamiPriceRaw": 750.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MPG272URXQD-OLED": {
+      "upc": "824142388471",
+      "partNumber": "MPG272URXQD-OLED",
+      "name": "MPG 272URX QD-OLED",
+      "category": "Monitor",
+      "miamiPrice": 782.0,
+      "miamiPriceRaw": 782.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG 272UPQDOLEDX24": {
+      "upc": "824142404584",
+      "partNumber": "MAG 272UPQDOLEDX24",
+      "name": "MAG 272UP QD-OLED X24",
+      "category": "Monitor",
+      "miamiPrice": 665.0,
+      "miamiPriceRaw": 665.0,
+      "marketSharePrice": null,
+      "miamiStock": 86,
+      "miamiBondedStock": 0
+    },
+    "MAG272QPQDOLEDX50": {
+      "upc": "824142405444",
+      "partNumber": "MAG272QPQDOLEDX50",
+      "name": "MAG 272QP QD-OLED X50",
+      "category": "Monitor",
+      "miamiPrice": 660.0,
+      "miamiPriceRaw": 660.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG271QPXQDOLED": {
+      "upc": "824142341063",
+      "partNumber": "MAG271QPXQDOLED",
+      "name": "MAG 271QPX QD-OLED",
+      "category": "Monitor",
+      "miamiPrice": 542.0,
+      "miamiPriceRaw": 542.0,
+      "marketSharePrice": null,
+      "miamiStock": 22,
+      "miamiBondedStock": 0
+    },
+    "MAG271QPQDOLEDX28": {
+      "upc": "824142406762",
+      "partNumber": "MAG271QPQDOLEDX28",
+      "name": "MAG 271QP QD-OLED X28",
+      "category": "Monitor",
+      "miamiPrice": 494.0,
+      "miamiPriceRaw": 494.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG272QPWQD-OLEDX28": {
+      "upc": "824142410202",
+      "partNumber": "MAG272QPWQD-OLEDX28",
+      "name": "MAG 272QPW QD-OLED X28",
+      "category": "Monitor",
+      "miamiPrice": 494.0,
+      "miamiPriceRaw": 494.0,
+      "marketSharePrice": null,
+      "miamiStock": 68,
+      "miamiBondedStock": 0
+    },
+    "MAG272QPQD-OLEDX24": {
+      "upc": "824142439739",
+      "partNumber": "MAG272QPQD-OLEDX24",
+      "name": "MAG 272QP QD-OLED X24",
+      "category": "Monitor",
+      "miamiPrice": 448.0,
+      "miamiPriceRaw": 448.0,
+      "marketSharePrice": null,
+      "miamiStock": 91,
+      "miamiBondedStock": 10
+    },
+    "MAG274QPQD-OLEDX24": {
+      "upc": "824142437360",
+      "partNumber": "MAG274QPQD-OLEDX24",
+      "name": "MAG 274QP QD-OLED X24",
+      "category": "Monitor",
+      "miamiPrice": 448.0,
+      "miamiPriceRaw": 448.0,
+      "marketSharePrice": null,
+      "miamiStock": 5,
+      "miamiBondedStock": 0
+    },
+    "MPG274URDFWE16M": {
+      "upc": "824142402757",
+      "partNumber": "MPG274URDFWE16M",
+      "name": "MPG 274URDFW E16M",
+      "category": "Monitor",
+      "miamiPrice": 440.0,
+      "miamiPriceRaw": 440.0,
+      "marketSharePrice": null,
+      "miamiStock": 5,
+      "miamiBondedStock": null
+    },
+    "MAG345CQRFE20": {
+      "upc": "824142451533",
+      "partNumber": "MAG345CQRFE20",
+      "name": "MAG 346CQDF E20",
+      "category": "Monitor",
+      "miamiPrice": 220.0,
+      "miamiPriceRaw": 220.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "MAG346CQ": {
+      "upc": "824142384800",
+      "partNumber": "MAG346CQ",
+      "name": "MAG 346CQ",
+      "category": "Monitor",
+      "miamiPrice": 220.0,
+      "miamiPriceRaw": 220.0,
+      "marketSharePrice": null,
+      "miamiStock": 50,
+      "miamiBondedStock": 0
+    },
+    "MAG321UPDE14": {
+      "upc": "824142451533",
+      "partNumber": "MAG321UPDE14",
+      "name": "MAG 321UPD E14",
+      "category": "Monitor",
+      "miamiPrice": 293.0,
+      "miamiPriceRaw": 293.0,
+      "marketSharePrice": null,
+      "miamiStock": 342,
+      "miamiBondedStock": 0
+    },
+    "MAG275UPDE14": {
+      "upc": "824142360576",
+      "partNumber": "MAG275UPDE14",
+      "name": "MAG 275UPD E14",
+      "category": "Monitor",
+      "miamiPrice": 198.0,
+      "miamiPriceRaw": 198.0,
+      "marketSharePrice": null,
+      "miamiStock": 2,
+      "miamiBondedStock": 0
+    },
+    "MAG321CQFE18": {
+      "upc": "824142410523",
+      "partNumber": "MAG321CQFE18",
+      "name": "MAG 321CQF E18",
+      "category": "Monitor",
+      "miamiPrice": 190.0,
+      "miamiPriceRaw": 190.0,
+      "marketSharePrice": null,
+      "miamiStock": 141,
+      "miamiBondedStock": 155
+    },
+    "MAG274CQPDFX32": {
+      "upc": "824142454817",
+      "partNumber": "MAG274CQPDFX32",
+      "name": "MAG 274CQPDF X32",
+      "category": "Monitor",
+      "miamiPrice": 192.0,
+      "miamiPriceRaw": 192.0,
+      "marketSharePrice": null,
+      "miamiStock": 116,
+      "miamiBondedStock": null
+    },
+    "MAG274QPFX32": {
+      "upc": "824142446386",
+      "partNumber": "MAG274QPFX32",
+      "name": "MAG 274QPF X32",
+      "category": "Monitor",
+      "miamiPrice": 192.0,
+      "miamiPriceRaw": 192.0,
+      "marketSharePrice": null,
+      "miamiStock": 158,
+      "miamiBondedStock": 0
+    },
+    "MAG274QRFWX32": {
+      "upc": "824142408162",
+      "partNumber": "MAG274QRFWX32",
+      "name": "MAG 274QRFW X32",
+      "category": "Monitor",
+      "miamiPrice": 192.0,
+      "miamiPriceRaw": 192.0,
+      "marketSharePrice": null,
+      "miamiStock": 309,
+      "miamiBondedStock": 0
+    },
+    "MAG275CQDFX24": {
+      "upc": "824142450574",
+      "partNumber": "MAG275CQDFX24",
+      "name": "MAG 275CQDF X24",
+      "category": "Monitor",
+      "miamiPrice": 148.0,
+      "miamiPriceRaw": 148.0,
+      "marketSharePrice": null,
+      "miamiStock": 36,
+      "miamiBondedStock": 0
+    },
+    "MAG274QFX24": {
+      "upc": "824142390757",
+      "partNumber": "MAG274QFX24",
+      "name": "MAG 274QF X24",
+      "category": "Monitor",
+      "miamiPrice": 145.0,
+      "miamiPriceRaw": 145.0,
+      "marketSharePrice": null,
+      "miamiStock": 156,
+      "miamiBondedStock": 0
+    },
+    "MAG275CQFE18": {
+      "upc": "824142394625",
+      "partNumber": "MAG275CQFE18",
+      "name": "MAG 275CQF E18",
+      "category": "Monitor",
+      "miamiPrice": 128.0,
+      "miamiPriceRaw": 128.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG275QFE20": {
+      "upc": "824142442531",
+      "partNumber": "MAG275QFE20",
+      "name": "MAG 275QF E20",
+      "category": "Monitor",
+      "miamiPrice": 128.0,
+      "miamiPriceRaw": 128.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG275QF": {
+      "upc": "824142360576",
+      "partNumber": "MAG275QF",
+      "name": "MAG 275QF",
+      "category": "Monitor",
+      "miamiPrice": 128.0,
+      "miamiPriceRaw": 128.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG32C6X": {
+      "upc": "824142356647",
+      "partNumber": "MAG32C6X",
+      "name": "MAG 32C6X",
+      "category": "Monitor",
+      "miamiPrice": 149.0,
+      "miamiPriceRaw": 149.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG276CXF": {
+      "upc": "824142367940",
+      "partNumber": "MAG276CXF",
+      "name": "MAG 276CXF",
+      "category": "Monitor",
+      "miamiPrice": 120.0,
+      "miamiPriceRaw": 120.0,
+      "marketSharePrice": null,
+      "miamiStock": 913,
+      "miamiBondedStock": 116
+    },
+    "MAG274CFX24": {
+      "upc": "824142423141",
+      "partNumber": "MAG274CFX24",
+      "name": "MAG 274CF X24",
+      "category": "Monitor",
+      "miamiPrice": 115.0,
+      "miamiPriceRaw": 115.0,
+      "marketSharePrice": null,
+      "miamiStock": 450,
+      "miamiBondedStock": 554
+    },
+    "MAG272PFX24": {
+      "upc": "824142419892",
+      "partNumber": "MAG272PFX24",
+      "name": "MAG 272PF X24",
+      "category": "Monitor",
+      "miamiPrice": 132.0,
+      "miamiPriceRaw": 132.0,
+      "marketSharePrice": null,
+      "miamiStock": 748,
+      "miamiBondedStock": 0
+    },
+    "MAG272FX24": {
+      "upc": "824142419793",
+      "partNumber": "MAG272FX24",
+      "name": "MAG 272F X24",
+      "category": "Monitor",
+      "miamiPrice": 125.0,
+      "miamiPriceRaw": 125.0,
+      "marketSharePrice": null,
+      "miamiStock": 415,
+      "miamiBondedStock": 0
+    },
+    "MAG276CFE20": {
+      "upc": "824142393079",
+      "partNumber": "MAG276CFE20",
+      "name": "MAG 276CF E20",
+      "category": "Monitor",
+      "miamiPrice": 112.0,
+      "miamiPriceRaw": 112.0,
+      "marketSharePrice": null,
+      "miamiStock": 76,
+      "miamiBondedStock": 0
+    },
+    "MAG274F": {
+      "upc": "824142389195",
+      "partNumber": "MAG274F",
+      "name": "MAG 274F",
+      "category": "Monitor",
+      "miamiPrice": 112.0,
+      "miamiPriceRaw": 112.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG272F": {
+      "upc": "824142394571",
+      "partNumber": "MAG272F",
+      "name": "MAG 272F",
+      "category": "Monitor",
+      "miamiPrice": 112.0,
+      "miamiPriceRaw": 112.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG255FX24": {
+      "upc": "824142445167",
+      "partNumber": "MAG255FX24",
+      "name": "MAG 255F X24",
+      "category": "Monitor",
+      "miamiPrice": 102.0,
+      "miamiPriceRaw": 102.0,
+      "marketSharePrice": null,
+      "miamiStock": 70,
+      "miamiBondedStock": 0
+    },
+    "MAG245PFX24": {
+      "upc": "824142432556",
+      "partNumber": "MAG245PFX24",
+      "name": "MAG 245PF X24",
+      "category": "Monitor",
+      "miamiPrice": 108.0,
+      "miamiPriceRaw": 108.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG245FX24": {
+      "upc": "824142432396",
+      "partNumber": "MAG245FX24",
+      "name": "MAG 245F X24",
+      "category": "Monitor",
+      "miamiPrice": 102.0,
+      "miamiPriceRaw": 102.0,
+      "marketSharePrice": null,
+      "miamiStock": 10,
+      "miamiBondedStock": 0
+    },
+    "MAG255FE20": {
+      "upc": "824142392300",
+      "partNumber": "MAG255FE20",
+      "name": "MAG 255F E20",
+      "category": "Monitor",
+      "miamiPrice": 95.0,
+      "miamiPriceRaw": 95.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG244F": {
+      "upc": "824142389119",
+      "partNumber": "MAG244F",
+      "name": "MAG 244F",
+      "category": "Monitor",
+      "miamiPrice": 102.0,
+      "miamiPriceRaw": 102.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAG245CX24": {
+      "upc": "824142445174",
+      "partNumber": "MAG245CX24",
+      "name": "MAG 245C X24",
+      "category": "Monitor",
+      "miamiPrice": 102.0,
+      "miamiPriceRaw": 102.0,
+      "marketSharePrice": null,
+      "miamiStock": 270,
+      "miamiBondedStock": 0
+    },
+    "MAG242C": {
+      "upc": "824142387061",
+      "partNumber": "MAG242C",
+      "name": "MAG 242C",
+      "category": "Monitor",
+      "miamiPrice": 90.0,
+      "miamiPriceRaw": 90.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "G242LE14": {
+      "upc": "824142394687",
+      "partNumber": "G242LE14",
+      "name": "G242L E14",
+      "category": "Monitor",
+      "miamiPrice": 70.0,
+      "miamiPriceRaw": 70.0,
+      "marketSharePrice": null,
+      "miamiStock": 80,
+      "miamiBondedStock": 0
+    },
+    "PROMAX271UPXW12G": {
+      "upc": "824142452813",
+      "partNumber": "PROMAX271UPXW12G",
+      "name": "PRO MAX 271UPXW12G",
+      "category": "Monitor",
+      "miamiPrice": 625.0,
+      "miamiPriceRaw": 625.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "PROMAX271UPX12G": {
+      "upc": "824142452486",
+      "partNumber": "PROMAX271UPX12G",
+      "name": "PRO MAX 271UPX12G",
+      "category": "Monitor",
+      "miamiPrice": 572.0,
+      "miamiPriceRaw": 572.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "PROMAX271QPHWE14": {
+      "upc": "824142445662",
+      "partNumber": "PROMAX271QPHWE14",
+      "name": "PRO MAX 271QPHW E14",
+      "category": "Monitor",
+      "miamiPrice": 202.0,
+      "miamiPriceRaw": 202.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "PROMAX271PHWE14": {
+      "upc": "824142445655",
+      "partNumber": "PROMAX271PHWE14",
+      "name": "PRO MAX 271PHW E14",
+      "category": "Monitor",
+      "miamiPrice": 176.0,
+      "miamiPriceRaw": 176.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "PROMAX 241PHWE14": {
+      "upc": "824142445648",
+      "partNumber": "PROMAX 241PHWE14",
+      "name": "PRO MAX 241PHW E14",
+      "category": "Monitor",
+      "miamiPrice": 132.0,
+      "miamiPriceRaw": 132.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "PRO MP341CQE12": {
+      "upc": "824142445242",
+      "partNumber": "PRO MP341CQE12",
+      "name": "PRO MP341CQ E12",
+      "category": "Monitor",
+      "miamiPrice": 190.0,
+      "miamiPriceRaw": 190.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "PRO MP341CQWE12": {
+      "upc": "824142445259",
+      "partNumber": "PRO MP341CQWE12",
+      "name": "PRO MP341CQW E12",
+      "category": "Monitor",
+      "miamiPrice": 190.0,
+      "miamiPriceRaw": 190.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "ProMP341CQW": {
+      "upc": "824142295311",
+      "partNumber": "ProMP341CQW",
+      "name": "PRO MP341CQW",
+      "category": "Monitor",
+      "miamiPrice": 175.0,
+      "miamiPriceRaw": 175.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "ProMP341CQ": {
+      "upc": "824142287309",
+      "partNumber": "ProMP341CQ",
+      "name": "PRO MP341CQ",
+      "category": "Monitor",
+      "miamiPrice": 175.0,
+      "miamiPriceRaw": 175.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "PROMP275PGE14": {
+      "upc": "824142415177",
+      "partNumber": "PROMP275PGE14",
+      "name": "PRO MP275PG E14",
+      "category": "Monitor",
+      "miamiPrice": 98.0,
+      "miamiPriceRaw": 98.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 60
+    },
+    "PROMP271E14A": {
+      "upc": "824142440759",
+      "partNumber": "PROMP271E14A",
+      "name": "PRO MP271 E14A",
+      "category": "Monitor",
+      "miamiPrice": 87.0,
+      "miamiPriceRaw": 87.0,
+      "marketSharePrice": null,
+      "miamiStock": 406,
+      "miamiBondedStock": 1136
+    },
+    "PROMP273WE14A": {
+      "upc": "824142426609",
+      "partNumber": "PROMP273WE14A",
+      "name": "PRO MP273W E14A",
+      "category": "Monitor",
+      "miamiPrice": 85.0,
+      "miamiPriceRaw": 85.0,
+      "marketSharePrice": null,
+      "miamiStock": 507,
+      "miamiBondedStock": 0
+    },
+    "PROMP273LE14": {
+      "upc": "824142396674",
+      "partNumber": "PROMP273LE14",
+      "name": "PRO MP273L E14",
+      "category": "Monitor",
+      "miamiPrice": 85.0,
+      "miamiPriceRaw": 85.0,
+      "marketSharePrice": null,
+      "miamiStock": 164,
+      "miamiBondedStock": 0
+    },
+    "PROMP251E14L": {
+      "upc": "824142449110",
+      "partNumber": "PROMP251E14L",
+      "name": "PRO MP251 E14L",
+      "category": "Monitor",
+      "miamiPrice": 72.0,
+      "miamiPriceRaw": 72.0,
+      "marketSharePrice": null,
+      "miamiStock": 1780,
+      "miamiBondedStock": 0
+    },
+    "ProMP251L E2": {
+      "upc": "824142393185",
+      "partNumber": "ProMP251L E2",
+      "name": "PRO MP251L E2",
+      "category": "Monitor",
+      "miamiPrice": 69.0,
+      "miamiPriceRaw": 69.0,
+      "marketSharePrice": null,
+      "miamiStock": 155,
+      "miamiBondedStock": 0
+    },
+    "PROMP245PGE14": {
+      "upc": "824142409411",
+      "partNumber": "PROMP245PGE14",
+      "name": "PRO MP245PG E14",
+      "category": "Monitor",
+      "miamiPrice": 84.0,
+      "miamiPriceRaw": 84.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 186
+    },
+    "PROMP242E14A": {
+      "upc": "824142418802",
+      "partNumber": "PROMP242E14A",
+      "name": "PRO MP242 E14A",
+      "category": "Monitor",
+      "miamiPrice": 74.0,
+      "miamiPriceRaw": 74.0,
+      "marketSharePrice": null,
+      "miamiStock": 1660,
+      "miamiBondedStock": 50
+    },
+    "PROMP243WE14": {
+      "upc": "824142424711",
+      "partNumber": "PROMP243WE14",
+      "name": "PRO MP243W E14",
+      "category": "Monitor",
+      "miamiPrice": 72.0,
+      "miamiPriceRaw": 72.0,
+      "marketSharePrice": null,
+      "miamiStock": 1450,
+      "miamiBondedStock": 0
+    },
+    "PROMP243LE14": {
+      "upc": "824142396605",
+      "partNumber": "PROMP243LE14",
+      "name": "PRO MP243L E14",
+      "category": "Monitor",
+      "miamiPrice": 72.0,
+      "miamiPriceRaw": 72.0,
+      "marketSharePrice": null,
+      "miamiStock": 112,
+      "miamiBondedStock": 0
+    },
+    "ProMP225E12VL": {
+      "upc": "824142447697",
+      "partNumber": "ProMP225E12VL",
+      "name": "PRO MP225 E12VL",
+      "category": "Monitor",
+      "miamiPrice": 55.0,
+      "miamiPriceRaw": 55.0,
+      "marketSharePrice": null,
+      "miamiStock": 145,
+      "miamiBondedStock": 0
+    },
+    "PROMP225E12L": {
+      "upc": "824142455975",
+      "partNumber": "PROMP225E12L",
+      "name": "PRO MP225 E12L",
+      "category": "Monitor",
+      "miamiPrice": 56.0,
+      "miamiPriceRaw": 56.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": null
+    },
+    "ProMP225V": {
+      "upc": "824142383056",
+      "partNumber": "ProMP225V",
+      "name": "PRO MP225V",
+      "category": "Monitor",
+      "miamiPrice": 54.0,
+      "miamiPriceRaw": 54.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "ProMP225": {
+      "upc": "824142350768",
+      "partNumber": "ProMP225",
+      "name": "PRO MP225",
+      "category": "Monitor",
+      "miamiPrice": 54.0,
+      "miamiPriceRaw": 54.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "PROMP165E6": {
+      "upc": "824142409701",
+      "partNumber": "PROMP165E6",
+      "name": "PRO MP165 E6",
+      "category": "Monitor",
+      "miamiPrice": 84.0,
+      "miamiPriceRaw": 84.0,
+      "marketSharePrice": null,
+      "miamiStock": 217,
+      "miamiBondedStock": 0
+    },
+    "MPGMT201DRV2": {
+      "upc": "824142440384",
+      "partNumber": "MPGMT201DRV2",
+      "name": "MPG MT201DR V2",
+      "category": "ARM",
+      "miamiPrice": 128.0,
+      "miamiPriceRaw": 128.0,
+      "marketSharePrice": null,
+      "miamiStock": 77,
+      "miamiBondedStock": 0
+    },
+    "MPGMT201RV2": {
+      "upc": "824142440391",
+      "partNumber": "MPGMT201RV2",
+      "name": "MPG MT201R V2",
+      "category": "ARM",
+      "miamiPrice": 104.0,
+      "miamiPriceRaw": 104.0,
+      "marketSharePrice": null,
+      "miamiStock": 85,
+      "miamiBondedStock": 0
+    },
+    "MPGMT161DR": {
+      "upc": "824142444672",
+      "partNumber": "MPGMT161DR",
+      "name": "MPG MT161DR",
+      "category": "ARM",
+      "miamiPrice": 95.0,
+      "miamiPriceRaw": 95.0,
+      "marketSharePrice": null,
+      "miamiStock": 47,
+      "miamiBondedStock": 0
+    },
+    "MPGMT161R": {
+      "upc": "824142444719",
+      "partNumber": "MPGMT161R",
+      "name": "MPG MT161R",
+      "category": "ARM",
+      "miamiPrice": 70.0,
+      "miamiPriceRaw": 70.0,
+      "marketSharePrice": null,
+      "miamiStock": 70,
+      "miamiBondedStock": 0
+    },
+    "MAGMT201DW": {
+      "upc": "824142452714",
+      "partNumber": "MAGMT201DW",
+      "name": "MAG MT201DW",
+      "category": "ARM",
+      "miamiPrice": 64.0,
+      "miamiPriceRaw": 64.0,
+      "marketSharePrice": null,
+      "miamiStock": 33,
+      "miamiBondedStock": 0
+    },
+    "MAGMT201W": {
+      "upc": "824142452707",
+      "partNumber": "MAGMT201W",
+      "name": "MAG MT201W",
+      "category": "ARM",
+      "miamiPrice": 49.0,
+      "miamiPriceRaw": 49.0,
+      "marketSharePrice": null,
+      "miamiStock": 83,
+      "miamiBondedStock": 0
+    },
+    "MAGMT201D": {
+      "upc": "824142361924",
+      "partNumber": "MAGMT201D",
+      "name": "MAG MT201D",
+      "category": "ARM",
+      "miamiPrice": 59.0,
+      "miamiPriceRaw": 59.0,
+      "marketSharePrice": null,
+      "miamiStock": 323,
+      "miamiBondedStock": 0
+    },
+    "MAGMT201": {
+      "upc": "824142361931",
+      "partNumber": "MAGMT201",
+      "name": "MAG MT201",
+      "category": "ARM",
+      "miamiPrice": 49.0,
+      "miamiPriceRaw": 49.0,
+      "marketSharePrice": null,
+      "miamiStock": 146,
+      "miamiBondedStock": 0
+    },
+    "MAGMT101DG": {
+      "upc": "824142452738",
+      "partNumber": "MAGMT101DG",
+      "name": "MAG MT101DG",
+      "category": "ARM",
+      "miamiPrice": 35.0,
+      "miamiPriceRaw": 35.0,
+      "marketSharePrice": null,
+      "miamiStock": 20,
+      "miamiBondedStock": 0
+    },
+    "MAGMT101G": {
+      "upc": "824142452721",
+      "partNumber": "MAGMT101G",
+      "name": "MAG MT101G",
+      "category": "ARM",
+      "miamiPrice": 22.0,
+      "miamiPriceRaw": 22.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "CUBI Z AI 8M-023B": {
+      "upc": "824142443903",
+      "partNumber": "CUBI Z AI 8M-023B",
+      "name": "Cubi Z AI 8M-023BUS",
+      "category": "MiniPC",
+      "miamiPrice": 545.0,
+      "miamiPriceRaw": 545.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 140
+    },
+    "CUBI Z AI 8M-024B": {
+      "upc": "824142443910",
+      "partNumber": "CUBI Z AI 8M-024B",
+      "name": "Cubi Z AI 8M-024BUS",
+      "category": "MiniPC",
+      "miamiPrice": 495.0,
+      "miamiPriceRaw": 495.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 110
+    },
+    "CUBINUC1M010B": {
+      "upc": "824142367513",
+      "partNumber": "CUBINUC1M010B",
+      "name": "Cubi NUC 1MG-010BUS",
+      "category": "MiniPC",
+      "miamiPrice": 445.0,
+      "miamiPriceRaw": 445.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "CUBINUC1M011B": {
+      "upc": "824142367520",
+      "partNumber": "CUBINUC1M011B",
+      "name": "Cubi NUC 1MG-011BUS",
+      "category": "MiniPC",
+      "miamiPrice": 337.0,
+      "miamiPriceRaw": 337.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "CUBI512M016B": {
+      "upc": "824142310328",
+      "partNumber": "CUBI512M016B",
+      "name": "Cubi 5 12M-016BUS",
+      "category": "MiniPC",
+      "miamiPrice": 450.0,
+      "miamiPriceRaw": 450.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "CUBI512M015B": {
+      "upc": "824142310168",
+      "partNumber": "CUBI512M015B",
+      "name": "Cubi 5 12M-015BUS",
+      "category": "MiniPC",
+      "miamiPrice": 350.0,
+      "miamiPriceRaw": 350.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 45
+    },
+    "CUBI512M086B": {
+      "upc": "824142335208",
+      "partNumber": "CUBI512M086B",
+      "name": "Cubi 5 12M-086BUS",
+      "category": "MiniPC",
+      "miamiPrice": 240.0,
+      "miamiPriceRaw": 240.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "CUBINADL020B": {
+      "upc": "824142320525",
+      "partNumber": "CUBINADL020B",
+      "name": "Cubi N ADL-020BUS",
+      "category": "MiniPC",
+      "miamiPrice": 140.0,
+      "miamiPriceRaw": 140.0,
+      "marketSharePrice": null,
+      "miamiStock": 0,
+      "miamiBondedStock": 0
+    },
+    "MAESTRO900R": {
+      "upc": "824142455319",
+      "partNumber": "MAESTRO900R",
+      "name": "MEG MAESTRO 900R",
+      "category": "Chassis",
+      "miamiPrice": 420.0,
+      "miamiPriceRaw": 420.0,
+      "marketSharePrice": null,
+      "miamiStock": 78,
+      "miamiBondedStock": null
+    },
+    "VIXTA300RPZ": {
+      "upc": "824142460214",
+      "partNumber": "VIXTA300RPZ",
+      "name": "MPG VIXTA 300R PZ",
+      "category": "Chassis",
+      "miamiPrice": 82.0,
+      "miamiPriceRaw": 82.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "VIXTA300RAIRPZ": {
+      "upc": "824142460252",
+      "partNumber": "VIXTA300RAIRPZ",
+      "name": "MPG VIXTA 300R AIRFLOW PZ",
+      "category": "Chassis",
+      "miamiPrice": 76.0,
+      "miamiPriceRaw": 76.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "PANO120RPZ": {
+      "upc": "824142381311",
+      "partNumber": "PANO120RPZ",
+      "name": "MAG PANO 120R PZ",
+      "category": "Chassis",
+      "miamiPrice": 130.0,
+      "miamiPriceRaw": 130.0,
+      "marketSharePrice": null,
+      "miamiStock": 5,
+      "miamiBondedStock": null
+    },
+    "PANO100RPZ": {
+      "upc": "824142371749",
+      "partNumber": "PANO100RPZ",
+      "name": "MAG PANO 100R PZ",
+      "category": "Chassis",
+      "miamiPrice": 70.0,
+      "miamiPriceRaw": 70.0,
+      "marketSharePrice": null,
+      "miamiStock": 118,
+      "miamiBondedStock": null
+    },
+    "PANOM100RPZWHT": {
+      "upc": "824142337714",
+      "partNumber": "PANOM100RPZWHT",
+      "name": "MAG PANO M100R PZ WHITE",
+      "category": "Chassis",
+      "miamiPrice": 55.0,
+      "miamiPriceRaw": 55.0,
+      "marketSharePrice": null,
+      "miamiStock": 79,
+      "miamiBondedStock": null
+    },
+    "PANOM100RPZ": {
+      "upc": "824142337707",
+      "partNumber": "PANOM100RPZ",
+      "name": "MAG PANO M100R PZ",
+      "category": "Chassis",
+      "miamiPrice": 55.0,
+      "miamiPriceRaw": 55.0,
+      "marketSharePrice": null,
+      "miamiStock": 12,
+      "miamiBondedStock": null
+    },
+    "PANO130RPZWHT": {
+      "upc": "824142437216",
+      "partNumber": "PANO130RPZWHT",
+      "name": "MAG PANO 130R PZ WHITE",
+      "category": "Chassis",
+      "miamiPrice": 65.0,
+      "miamiPriceRaw": 65.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 146
+    },
+    "PANO130RPZ": {
+      "upc": "824142433720",
+      "partNumber": "PANO130RPZ",
+      "name": "MAG PANO 130R PZ",
+      "category": "Chassis",
+      "miamiPrice": 60.0,
+      "miamiPriceRaw": 60.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 178
+    },
+    "PANO110RPZWHT": {
+      "upc": "824142396339",
+      "partNumber": "PANO110RPZWHT",
+      "name": "MAG PANO 110R PZ WHITE",
+      "category": "Chassis",
+      "miamiPrice": 65.0,
+      "miamiPriceRaw": 65.0,
+      "marketSharePrice": null,
+      "miamiStock": 24,
+      "miamiBondedStock": 406
+    },
+    "PANO110RPZ": {
+      "upc": "824142396322",
+      "partNumber": "PANO110RPZ",
+      "name": "MAG PANO 110R PZ",
+      "category": "Chassis",
+      "miamiPrice": 60.0,
+      "miamiPriceRaw": 60.0,
+      "marketSharePrice": null,
+      "miamiStock": 110,
+      "miamiBondedStock": null
+    },
+    "PANOM110R": {
+      "upc": "824142448281",
+      "partNumber": "PANOM110R",
+      "name": "MAG PANO M110R",
+      "category": "Chassis",
+      "miamiPrice": 48.0,
+      "miamiPriceRaw": 48.0,
+      "marketSharePrice": null,
+      "miamiStock": 144,
+      "miamiBondedStock": null
+    },
+    "FORGE120AAIR": {
+      "upc": "824142332313",
+      "partNumber": "FORGE120AAIR",
+      "name": "MAG FORGE 120A AIRFLOW",
+      "category": "Chassis",
+      "miamiPrice": 45.0,
+      "miamiPriceRaw": 45.0,
+      "marketSharePrice": null,
+      "miamiStock": 199,
+      "miamiBondedStock": null
+    },
+    "PAGPANOM110A": {
+      "upc": "824142409060",
+      "partNumber": "PAGPANOM110A",
+      "name": "PAG PANO M110A",
+      "category": "Chassis",
+      "miamiPrice": 30.0,
+      "miamiPriceRaw": 30.0,
+      "marketSharePrice": null,
+      "miamiStock": 262,
+      "miamiBondedStock": 44
+    },
+    "PROPANOM120LW": {
+      "upc": "824142451977",
+      "partNumber": "PROPANOM120LW",
+      "name": "PRO PANO M120L WHITE",
+      "category": "Chassis",
+      "miamiPrice": 32.0,
+      "miamiPriceRaw": 32.0,
+      "marketSharePrice": null,
+      "miamiStock": 156,
+      "miamiBondedStock": null
+    },
+    "PROFORGEM051A": {
+      "upc": "824142450727",
+      "partNumber": "PROFORGEM051A",
+      "name": "PRO FORGE M051A",
+      "category": "Chassis",
+      "miamiPrice": 26.0,
+      "miamiPriceRaw": 26.0,
+      "marketSharePrice": null,
+      "miamiStock": 295,
+      "miamiBondedStock": null
+    },
+    "PROFORGEM050A": {
+      "upc": "824142430279",
+      "partNumber": "PROFORGEM050A",
+      "name": "PRO FORGE M050A",
+      "category": "Chassis",
+      "miamiPrice": 26.0,
+      "miamiPriceRaw": 26.0,
+      "marketSharePrice": null,
+      "miamiStock": 320,
+      "miamiBondedStock": null
+    },
+    "PROSHIELDM100P": {
+      "upc": "824142417898",
+      "partNumber": "PROSHIELDM100P",
+      "name": "PRO SHIELD M100P",
+      "category": "Chassis",
+      "miamiPrice": 22.0,
+      "miamiPriceRaw": 22.0,
+      "marketSharePrice": null,
+      "miamiStock": 410,
+      "miamiBondedStock": 2762
+    },
+    "CLP13360W": {
+      "upc": "824142410837",
+      "partNumber": "CLP13360W",
+      "name": "MPG CORELIQUID P13 360 WHITE",
+      "category": "Cooling",
+      "miamiPrice": 124.0,
+      "miamiPriceRaw": 124.0,
+      "marketSharePrice": null,
+      "miamiStock": 118,
+      "miamiBondedStock": null
+    },
+    "CLP13360": {
+      "upc": "824142410813",
+      "partNumber": "CLP13360",
+      "name": "MPG CORELIQUID P13 360",
+      "category": "Cooling",
+      "miamiPrice": 120.0,
+      "miamiPriceRaw": 120.0,
+      "marketSharePrice": null,
+      "miamiStock": 83,
+      "miamiBondedStock": null
+    },
+    "CLI240WT": {
+      "upc": "824142372234",
+      "partNumber": "CLI240WT",
+      "name": "MAG CORELIQUID I240 WHITE",
+      "category": "Cooling",
+      "miamiPrice": 70.0,
+      "miamiPriceRaw": 70.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 248
+    },
+    "CLI240": {
+      "upc": "824142372227",
+      "partNumber": "CLI240",
+      "name": "MAG CORELIQUID I240",
+      "category": "Cooling",
+      "miamiPrice": 70.0,
+      "miamiPriceRaw": 70.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 148
+    },
+    "CLE360WT": {
+      "upc": "824142333068",
+      "partNumber": "CLE360WT",
+      "name": "MAG CORELIQUID E360 WHITE",
+      "category": "Cooling",
+      "miamiPrice": 87.0,
+      "miamiPriceRaw": 87.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 120
+    },
+    "CLE360": {
+      "upc": "824142330517",
+      "partNumber": "CLE360",
+      "name": "MAG CORELIQUID E360",
+      "category": "Cooling",
+      "miamiPrice": 85.0,
+      "miamiPriceRaw": 85.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 164
+    },
+    "CLE240WT": {
+      "upc": "824142333051",
+      "partNumber": "CLE240WT",
+      "name": "MAG CORELIQUID E240 WHITE",
+      "category": "Cooling",
+      "miamiPrice": 77.0,
+      "miamiPriceRaw": 77.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 172
+    },
+    "CLE240": {
+      "upc": "824142330500",
+      "partNumber": "CLE240",
+      "name": "MAG CORELIQUID E240",
+      "category": "Cooling",
+      "miamiPrice": 75.0,
+      "miamiPriceRaw": 75.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 276
+    },
+    "CLA15360": {
+      "upc": "824142381304",
+      "partNumber": "CLA15360",
+      "name": "MAG CORELIQUID A15 360",
+      "category": "Cooling",
+      "miamiPrice": 64.0,
+      "miamiPriceRaw": 64.0,
+      "marketSharePrice": null,
+      "miamiStock": 220,
+      "miamiBondedStock": null
+    },
+    "CLA15240": {
+      "upc": "824142381298",
+      "partNumber": "CLA15240",
+      "name": "MAG CORELIQUID A15 240",
+      "category": "Cooling",
+      "miamiPrice": 60.0,
+      "miamiPriceRaw": 60.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 768
+    },
+    "CLA13360WT": {
+      "upc": "824142388846",
+      "partNumber": "CLA13360WT",
+      "name": "MAG CORELIQUID A13 360 WHITE",
+      "category": "Cooling",
+      "miamiPrice": 56.0,
+      "miamiPriceRaw": 56.0,
+      "marketSharePrice": null,
+      "miamiStock": 166,
+      "miamiBondedStock": null
+    },
+    "CLA13360": {
+      "upc": "824142387771",
+      "partNumber": "CLA13360",
+      "name": "MAG CORELIQUID A13 360",
+      "category": "Cooling",
+      "miamiPrice": 53.0,
+      "miamiPriceRaw": 53.0,
+      "marketSharePrice": null,
+      "miamiStock": 707,
+      "miamiBondedStock": 1536
+    },
+    "CLA13240WT": {
+      "upc": "824142388839",
+      "partNumber": "CLA13240WT",
+      "name": "MAG CORELIQUID A13 240 WHITE",
+      "category": "Cooling",
+      "miamiPrice": 50.0,
+      "miamiPriceRaw": 50.0,
+      "marketSharePrice": null,
+      "miamiStock": 352,
+      "miamiBondedStock": 122
+    },
+    "CLA13240": {
+      "upc": "824142387764",
+      "partNumber": "CLA13240",
+      "name": "MAG CORELIQUID A13 240",
+      "category": "Cooling",
+      "miamiPrice": 47.0,
+      "miamiPriceRaw": 47.0,
+      "marketSharePrice": null,
+      "miamiStock": 516,
+      "miamiBondedStock": 180
+    },
+    "CLA12360": {
+      "upc": "824142394960",
+      "partNumber": "CLA12360",
+      "name": "MAG CORELIQUID A12 360",
+      "category": "Cooling",
+      "miamiPrice": 48.0,
+      "miamiPriceRaw": 48.0,
+      "marketSharePrice": null,
+      "miamiStock": 234,
+      "miamiBondedStock": 5726
+    },
+    "CLA12240": {
+      "upc": "824142394953",
+      "partNumber": "CLA12240",
+      "name": "MAG CORELIQUID A12 240",
+      "category": "Cooling",
+      "miamiPrice": 42.0,
+      "miamiPriceRaw": 42.0,
+      "marketSharePrice": null,
+      "miamiStock": 114,
+      "miamiBondedStock": 8466
+    },
+    "CFAA13": {
+      "upc": "824142424346",
+      "partNumber": "CFAA13",
+      "name": "MAG COREFROZR AA13",
+      "category": "Cooling",
+      "miamiPrice": 13.0,
+      "miamiPriceRaw": 13.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 14122
+    },
+    "CFAA13W": {
+      "upc": "824142424353",
+      "partNumber": "CFAA13W",
+      "name": "MAG COREFROZR AA13 WHITE",
+      "category": "Cooling",
+      "miamiPrice": 13.0,
+      "miamiPriceRaw": 13.0,
+      "marketSharePrice": null,
+      "miamiStock": 32,
+      "miamiBondedStock": 2808
+    },
+    "EZ120ARGB3W": {
+      "upc": "824142356432",
+      "partNumber": "EZ120ARGB3W",
+      "name": "MPG EZ120 ARGB WHITE-3W",
+      "category": "Cooling",
+      "miamiPrice": 50.0,
+      "miamiPriceRaw": 50.0,
+      "marketSharePrice": null,
+      "miamiStock": 108,
+      "miamiBondedStock": null
+    },
+    "MPG1600TS": {
+      "upc": "824142448519",
+      "partNumber": "MPG1600TS",
+      "name": "MPG Ai1600TS PCIE5",
+      "category": "PSU",
+      "miamiPrice": 310.0,
+      "miamiPriceRaw": 310.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 88
+    },
+    "MPG1300TS": {
+      "upc": "824142448533",
+      "partNumber": "MPG1300TS",
+      "name": "MPG Ai1300TS PCIE5",
+      "category": "PSU",
+      "miamiPrice": 290.0,
+      "miamiPriceRaw": 290.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 132
+    },
+    "MAG1200PLS": {
+      "upc": "824142446171",
+      "partNumber": "MAG1200PLS",
+      "name": "MAG A1200PLS PCIE5",
+      "category": "PSU",
+      "miamiPrice": 135.0,
+      "miamiPriceRaw": 135.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 1084
+    },
+    "MAG1000PLS": {
+      "upc": "824142446195",
+      "partNumber": "MAG1000PLS",
+      "name": "MAG A1000PLS PCIE5",
+      "category": "PSU",
+      "miamiPrice": 110.0,
+      "miamiPriceRaw": 110.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 1648
+    },
+    "PRO1000PL": {
+      "upc": "824142441398",
+      "partNumber": "PRO1000PL",
+      "name": "PRO A1000PL PCIE5",
+      "category": "PSU",
+      "miamiPrice": 95.0,
+      "miamiPriceRaw": 95.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 589
+    },
+    "PRO850PL": {
+      "upc": "824142441404",
+      "partNumber": "PRO850PL",
+      "name": "PRO A850PL PCIE5",
+      "category": "PSU",
+      "miamiPrice": 85.0,
+      "miamiPriceRaw": 85.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 1180
+    },
+    "MAGA100GLPCIE5W": {
+      "upc": "824142429327",
+      "partNumber": "MAGA100GLPCIE5W",
+      "name": "MAG A1000GL PCIE5 WHITE",
+      "category": "PSU",
+      "miamiPrice": 90.0,
+      "miamiPriceRaw": 90.0,
+      "marketSharePrice": null,
+      "miamiStock": 83,
+      "miamiBondedStock": null
+    },
+    "MAGA850GLSPCIE5": {
+      "upc": "824142398081",
+      "partNumber": "MAGA850GLSPCIE5",
+      "name": "MAG A850GLS PCIE5",
+      "category": "PSU",
+      "miamiPrice": 80.0,
+      "miamiPriceRaw": 80.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "MAGA850GLPCIE5WT": {
+      "upc": "824142330258",
+      "partNumber": "MAGA850GLPCIE5WT",
+      "name": "MAG A850GL PCIE5 WHITE",
+      "category": "PSU",
+      "miamiPrice": 75.0,
+      "miamiPriceRaw": 75.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 1076
+    },
+    "MAGA850GLPCIE5": {
+      "upc": "824142319222",
+      "partNumber": "MAGA850GLPCIE5",
+      "name": "MAG A850GL PCIE5",
+      "category": "PSU",
+      "miamiPrice": 70.0,
+      "miamiPriceRaw": 70.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 4692
+    },
+    "MAGA750GLSPCIE5": {
+      "upc": "824142395820",
+      "partNumber": "MAGA750GLSPCIE5",
+      "name": "MAG A750GLS PCIE5",
+      "category": "PSU",
+      "miamiPrice": 60.0,
+      "miamiPriceRaw": 60.0,
+      "marketSharePrice": null,
+      "miamiStock": 583,
+      "miamiBondedStock": null
+    },
+    "MAG850GN": {
+      "upc": "824142374795",
+      "partNumber": "MAG850GN",
+      "name": "MAG A850GN PCIE5",
+      "category": "PSU",
+      "miamiPrice": 64.0,
+      "miamiPriceRaw": 64.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "MAG750GN": {
+      "upc": "824142374801",
+      "partNumber": "MAG750GN",
+      "name": "MAG A750GN PCIE5",
+      "category": "PSU",
+      "miamiPrice": 56.0,
+      "miamiPriceRaw": 56.0,
+      "marketSharePrice": null,
+      "miamiStock": 8,
+      "miamiBondedStock": 2070
+    },
+    "MAG650GNII": {
+      "upc": "824142443118",
+      "partNumber": "MAG650GNII",
+      "name": "MAG A650GN II",
+      "category": "PSU",
+      "miamiPrice": 40.0,
+      "miamiPriceRaw": 40.0,
+      "marketSharePrice": null,
+      "miamiStock": 257,
+      "miamiBondedStock": 1788
+    },
+    "MAGA750BNPCIE5III": {
+      "upc": "824142433065",
+      "partNumber": "MAGA750BNPCIE5III",
+      "name": "MAG A750BN PCIE5 III",
+      "category": "PSU",
+      "miamiPrice": 50.0,
+      "miamiPriceRaw": 50.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 1686
+    },
+    "MAGA650BNPCIE5III": {
+      "upc": "824142433072",
+      "partNumber": "MAGA650BNPCIE5III",
+      "name": "MAG A650BN PCIE5 III",
+      "category": "PSU",
+      "miamiPrice": 45.0,
+      "miamiPriceRaw": 45.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 2274
+    },
+    "MAGA650BN": {
+      "upc": "824142258460",
+      "partNumber": "MAGA650BN",
+      "name": "MAG A650BN",
+      "category": "PSU",
+      "miamiPrice": 42.0,
+      "miamiPriceRaw": 42.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 5922
+    },
+    "MAGA550BN": {
+      "upc": "824142258392",
+      "partNumber": "MAGA550BN",
+      "name": "MAG A550BN",
+      "category": "PSU",
+      "miamiPrice": 34.0,
+      "miamiPriceRaw": 34.0,
+      "marketSharePrice": null,
+      "miamiStock": 587,
+      "miamiBondedStock": 234
+    },
+    "MAGA700DNII": {
+      "upc": "824142454893",
+      "partNumber": "MAGA700DNII",
+      "name": "MAG A700DN II",
+      "category": "PSU",
+      "miamiPrice": 30.0,
+      "miamiPriceRaw": 30.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "MAGA600DNII": {
+      "upc": "824142454909",
+      "partNumber": "MAGA600DNII",
+      "name": "MAG A600DN II",
+      "category": "PSU",
+      "miamiPrice": 27.0,
+      "miamiPriceRaw": 27.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "MAGA500DNII": {
+      "upc": "824142454916",
+      "partNumber": "MAGA500DNII",
+      "name": "MAG A500DN II",
+      "category": "PSU",
+      "miamiPrice": 25.0,
+      "miamiPriceRaw": 25.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": null
+    },
+    "MAGA600DN": {
+      "upc": "824142292273",
+      "partNumber": "MAGA600DN",
+      "name": "MAG A600DN",
+      "category": "PSU",
+      "miamiPrice": 30.0,
+      "miamiPriceRaw": 30.0,
+      "marketSharePrice": null,
+      "miamiStock": null,
+      "miamiBondedStock": 620
     }
-  },
-  "notifEmails": [
-    "rodrigomarquezmiranda@gmail.com"
-  ],
-  "lastCheck": "21/07/2026 13:33",
-  "changesFound": false
+  }
 }
