@@ -557,7 +557,9 @@
           <input type="text" id="clients-search" placeholder="Buscar por nombre o CUIT..." oninput="renderClientsTab()" style="padding:8px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px" />
           <select id="clients-sort" onchange="renderClientsTab()" style="padding:8px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px">
             <option value="amount_desc">Ordenar: Mayor monto</option>
+            <option value="amount_asc">Ordenar: Menor monto</option>
             <option value="qty_desc">Ordenar: Mayor cantidad</option>
+            <option value="qty_asc">Ordenar: Menor cantidad</option>
             <option value="name_asc">Ordenar: Nombre (A-Z)</option>
           </select>
         </div>
@@ -3552,6 +3554,8 @@ function renderClientsTab() {
     ranking = ranking.filter(c => c.name.toLowerCase().includes(q) || (qDigits.length >= 4 && c.cuit.includes(qDigits)));
   }
   if(sortKey === 'qty_desc') ranking.sort((a,b) => b.qty-a.qty);
+  else if(sortKey === 'qty_asc') ranking.sort((a,b) => a.qty-b.qty);
+  else if(sortKey === 'amount_asc') ranking.sort((a,b) => a.amount-b.amount);
   else if(sortKey === 'name_asc') ranking.sort((a,b) => a.name.localeCompare(b.name));
   else ranking.sort((a,b) => b.amount-a.amount);
 
@@ -3569,8 +3573,13 @@ function renderClientsTab() {
   }
   const hasAnyAmount = ranking.some(c=>c.amount>0);
   currentClientsRankingList = ranking;
+  const thSort = (label, asc, desc) => {
+    const arrow = sortKey===desc ? ' <i class="ti ti-arrow-down" style="font-size:10px"></i>' : sortKey===asc ? ' <i class="ti ti-arrow-up" style="font-size:10px"></i>' : ' <i class="ti ti-arrows-sort" style="font-size:10px;opacity:0.4"></i>';
+    const next = sortKey===desc ? asc : desc;
+    return `<th style="cursor:pointer;user-select:none" onclick="document.getElementById('clients-sort').value='${next}';renderClientsTab()">${label}${arrow}</th>`;
+  };
   wrap.innerHTML = `<div class="table-scroll"><table class="data-table">
-    <thead><tr><th>#</th><th>Cliente</th><th>CUIT</th><th>Unidades</th><th>Monto USD</th><th>Modelos distintos</th><th>Proveedores</th></tr></thead>
+    <thead><tr><th>#</th><th>Cliente</th><th>CUIT</th>${thSort('Unidades','qty_asc','qty_desc')}${thSort('Monto USD','amount_asc','amount_desc')}<th>Modelos distintos</th><th>Proveedores</th></tr></thead>
     <tbody>${ranking.map((c,i) => `<tr class="row-clickable${selectedClientKey===c.key?' row-new':''}" onclick="selectRankingClient('${c.key.replace(/'/g,"\\'")}')">
       <td>${i+1}</td>
       <td><span class="client-name-hover" onmouseenter="showClientCompositionTooltip(event,'${c.key.replace(/'/g,"\\'")}')" onmouseleave="hideClientCompositionTooltip()">${esc(c.name)}</span>${c.aliases.length>1?` <span style="color:var(--text3);font-size:10px" title="${esc(c.aliases.join(' / '))}">(${c.aliases.length} variantes de nombre)</span>`:''}</td>
@@ -4160,8 +4169,9 @@ function renderImportsTab() {
     <tbody>${ranking.map((r,i) => {
       const isMsi = normDesc(r.brand)==='MSI';
       const isSelected = normDesc(r.brand)===normDesc(importsSelectedBrand);
-      return `<tr style="cursor:pointer${isMsi?';background:var(--brand-bg)':''}${isSelected?';outline:2px solid var(--blue);outline-offset:-2px':''}" onclick="selectImportBrand('${r.brand.replace(/'/g,"\\'")}')" title="Ver importadores de ${esc(r.brand)}">
-        <td>${i+1}</td><td><b${isMsi?' style="color:var(--brand-text)"':''}>${esc(r.brand)}</b>${isSelected?' <i class="ti ti-chevron-down" style="font-size:10px;color:var(--blue)"></i>':''}</td><td>${r.units.toLocaleString('es-AR')}</td><td>${r.pct.toFixed(1)}%</td>
+      const baseBg = isMsi ? 'var(--brand-bg)' : '';
+      return `<tr style="cursor:pointer;background:${baseBg}${isSelected?';outline:2px solid var(--blue);outline-offset:-2px':''}" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='${baseBg}'" onclick="selectImportBrand('${r.brand.replace(/'/g,"\\'")}')" title="Ver importadores de ${esc(r.brand)}">
+        <td>${i+1}</td><td>${isMsi?`<span style="color:var(--brand-text)">${esc(r.brand)}</span>`:esc(r.brand)}${isSelected?' <i class="ti ti-chevron-down" style="font-size:10px;color:var(--blue)"></i>':''}</td><td>${r.units.toLocaleString('es-AR')}</td><td>${r.pct.toFixed(1)}%</td>
       </tr>`;
     }).join('')}</tbody>
   </table></div>`;
