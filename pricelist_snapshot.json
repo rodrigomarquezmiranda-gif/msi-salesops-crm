@@ -1,0 +1,536 @@
+{
+  "capturedAt": "2026-07-21T00:00:00Z",
+  "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw",
+  "products": {
+    "G507T-16FEC": {
+      "upc": "824142452837",
+      "partNumber": "G507T-16FEC",
+      "name": "GeForce RTX 5070 Ti 16G FRIEREN EDITION OC",
+      "miamiPrice": 1200.0,
+      "category": "VGA"
+    },
+    "GGB-FE": {
+      "upc": "824142462904",
+      "partNumber": "GGB-FE",
+      "name": "MSI GAMING GEAR BUNDLE FRIEREN EDITION",
+      "miamiPrice": 1200.0,
+      "category": "MB"
+    },
+    "G5090-32SLS": {
+      "upc": "824142397503",
+      "partNumber": "G5090-32SLS",
+      "name": "GeForce RTX 5090 32G SUPRIM LIQUID SOC",
+      "miamiPrice": 3900.0,
+      "category": "VGA"
+    },
+    "G5090-32SPS": {
+      "upc": "824142397510",
+      "partNumber": "G5090-32SPS",
+      "name": "GeForce RTX 5090 32G SUPRIM SOC",
+      "miamiPrice": 3800.0,
+      "category": "VGA"
+    },
+    "G5090-32GTC": {
+      "upc": "824142403266",
+      "partNumber": "G5090-32GTC",
+      "name": "GeForce RTX 5090 32G GAMING TRIO OC",
+      "miamiPrice": 3650.0,
+      "category": "VGA"
+    },
+    "G5090-32V3C": {
+      "upc": "824142402986",
+      "partNumber": "G5090-32V3C",
+      "name": "GeForce RTX 5090 32G VENTUS 3X OC",
+      "miamiPrice": 3500.0,
+      "category": "VGA"
+    },
+    "G5080-16GTCW": {
+      "upc": "824142395790",
+      "partNumber": "G5080-16GTCW",
+      "name": "GeForce RTX 5080 16G GAMING TRIO OC WHITE",
+      "miamiPrice": 1370.0,
+      "category": "VGA"
+    },
+    "G5080-16GTC": {
+      "upc": "824142395721",
+      "partNumber": "G5080-16GTC",
+      "name": "GeForce RTX 5080 16G GAMING TRIO OC",
+      "miamiPrice": 1370.0,
+      "category": "VGA"
+    },
+    "G5080-16I3CB": {
+      "upc": "824142455432",
+      "partNumber": "G5080-16I3CB",
+      "name": "GeForce RTX 5080 16G INSPIRE 3X OC BLACK",
+      "miamiPrice": 1350.0,
+      "category": "VGA"
+    },
+    "G5080-16V3CW": {
+      "upc": "824142395912",
+      "partNumber": "G5080-16V3CW",
+      "name": "GeForce RTX 5080 16G VENTUS 3X OC WHITE",
+      "miamiPrice": 1320.0,
+      "category": "VGA"
+    },
+    "G5080-16V3CP": {
+      "upc": "824142395851",
+      "partNumber": "G5080-16V3CP",
+      "name": "GeForce RTX 5080 16G VENTUS 3X OC PLUS",
+      "miamiPrice": 1300.0,
+      "category": "VGA"
+    },
+    "G5080-16V3C": {
+      "upc": "824142406380",
+      "partNumber": "G5080-16V3C",
+      "name": "GeForce RTX 5080 16G VENTUS 3X OC",
+      "miamiPrice": 1300.0,
+      "category": "VGA"
+    },
+    "G5080-16S3C": {
+      "upc": "824142395882",
+      "partNumber": "G5080-16S3C",
+      "name": "Geforce RTX 5080 16G SHADOW 3X OC",
+      "miamiPrice": 1280.0,
+      "category": "VGA"
+    },
+    "G507T-16MEC": {
+      "upc": "824142443507",
+      "partNumber": "G507T-16MEC",
+      "name": "GeForce RTX 5070 Ti 16G MLG EDITION OC",
+      "miamiPrice": 980.0,
+      "category": "VGA"
+    },
+    "G507T-16GTC": {
+      "upc": "824142412879",
+      "partNumber": "G507T-16GTC",
+      "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC",
+      "miamiPrice": 960.0,
+      "category": "VGA"
+    },
+    "G507T-16GTCW": {
+      "upc": "824142402856",
+      "partNumber": "G507T-16GTCW",
+      "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC WHITE",
+      "miamiPrice": 960.0,
+      "category": "VGA"
+    },
+    "G507T-16V3CB": {
+      "upc": "824142445006",
+      "partNumber": "G507T-16V3CB",
+      "name": "GeForce RTX 5070 Ti 16G VENTUS 3X OC BLACK",
+      "miamiPrice": 900.0,
+      "category": "VGA"
+    },
+    "G507T-16V3C": {
+      "upc": "824142402801",
+      "partNumber": "G507T-16V3C",
+      "name": "Geforce RTX 5070 TI 16G VENTUS 3X OC",
+      "miamiPrice": 900.0,
+      "category": "VGA"
+    },
+    "G507T-16S3C": {
+      "upc": "824142408483",
+      "partNumber": "G507T-16S3C",
+      "name": "Geforce RTX 5070 TI 16G SHADOW 3X OC",
+      "miamiPrice": 890.0,
+      "category": "VGA"
+    },
+    "G5070-12GTC": {
+      "upc": "824142404416",
+      "partNumber": "G5070-12GTC",
+      "name": "Geforce RTX 5070 12G GAMING TRIO OC",
+      "miamiPrice": 640.0,
+      "category": "VGA"
+    },
+    "G5070-12V3C": {
+      "upc": "824142405666",
+      "partNumber": "G5070-12V3C",
+      "name": "Geforce RTX 5070 12G VENTUS 3X OC",
+      "miamiPrice": 605.0,
+      "category": "VGA"
+    },
+    "G5070-12S3C": {
+      "upc": "824142405741",
+      "partNumber": "G5070-12S3C",
+      "name": "Geforce RTX 5070 12G SHADOW 3X OC",
+      "miamiPrice": 600.0,
+      "category": "VGA"
+    },
+    "G5070-12V2CB": {
+      "upc": "824142445020",
+      "partNumber": "G5070-12V2CB",
+      "name": "GeForce RTX 5070 12G VENTUS 2X OC BLACK",
+      "miamiPrice": 595.0,
+      "category": "VGA"
+    },
+    "G5070-12V2C": {
+      "upc": "824142405727",
+      "partNumber": "G5070-12V2C",
+      "name": "Geforce RTX 5070 12G VENTUS 2X OC",
+      "miamiPrice": 595.0,
+      "category": "VGA"
+    },
+    "G5070-12S2C": {
+      "upc": "824142405772",
+      "partNumber": "G5070-12S2C",
+      "name": "Geforce RTX 5070 12G SHADOW 2X OC",
+      "miamiPrice": 575.0,
+      "category": "VGA"
+    },
+    "G506T-16GTCW": {
+      "upc": "824142419373",
+      "partNumber": "G506T-16GTCW",
+      "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC WHITE",
+      "miamiPrice": 590.0,
+      "category": "VGA"
+    },
+    "G506T-16GTC": {
+      "upc": "824142419380",
+      "partNumber": "G506T-16GTC",
+      "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC",
+      "miamiPrice": 590.0,
+      "category": "VGA"
+    },
+    "G506T-16GC": {
+      "upc": "824142419397",
+      "partNumber": "G506T-16GC",
+      "name": "Geforce RTX 5060 Ti 16G GAMING OC",
+      "miamiPrice": 580.0,
+      "category": "VGA"
+    },
+    "G506T-16V3C": {
+      "upc": "824142421048",
+      "partNumber": "G506T-16V3C",
+      "name": "Geforce RTX 5060 Ti 16G VENTUS 3X OC",
+      "miamiPrice": 555.0,
+      "category": "VGA"
+    },
+    "G506T-16V2CBP": {
+      "upc": "824142445044",
+      "partNumber": "G506T-16V2CBP",
+      "name": "GeForce RTX 5060 Ti 16G VENTUS 2X OC BLACK PLUS",
+      "miamiPrice": 535.0,
+      "category": "VGA"
+    },
+    "G506T-16V2CP": {
+      "upc": "824142418567",
+      "partNumber": "G506T-16V2CP",
+      "name": "Geforce RTX 5060 Ti 16G VENTUS 2X OC PLUS",
+      "miamiPrice": 535.0,
+      "category": "VGA"
+    },
+    "G506T-16S2CP": {
+      "upc": "824142418598",
+      "partNumber": "G506T-16S2CP",
+      "name": "Geforce RTX 5060 Ti 16G SHADOW 2X OC PLUS",
+      "miamiPrice": 530.0,
+      "category": "VGA"
+    },
+    "G506T-8GTCW": {
+      "upc": "824142422120",
+      "partNumber": "G506T-8GTCW",
+      "name": "GeForce RTX 5060 Ti 8G GAMING TRIO OC WHITE",
+      "miamiPrice": 448.0,
+      "category": "VGA"
+    },
+    "G506T-8GTC": {
+      "upc": "824142422137",
+      "partNumber": "G506T-8GTC",
+      "name": "Geforce RTX 5060 Ti 8G GAMING TRIO OC",
+      "miamiPrice": 443.0,
+      "category": "VGA"
+    },
+    "G506T-8GC": {
+      "upc": "824142419434",
+      "partNumber": "G506T-8GC",
+      "name": "Geforce RTX 5060 Ti 8G GAMING OC",
+      "miamiPrice": 412.0,
+      "category": "VGA"
+    },
+    "G506T8V2CWP": {
+      "upc": "824142421307",
+      "partNumber": "G506T8V2CWP",
+      "name": "GeForce RTX 5060 Ti 8G VENTUS 2X OC WHITE PLUS",
+      "miamiPrice": 395.0,
+      "category": "VGA"
+    },
+    "G506T-8V2CP": {
+      "upc": "824142420997",
+      "partNumber": "G506T-8V2CP",
+      "name": "Geforce RTX 5060 Ti 8G VENTUS 2X OC PLUS",
+      "miamiPrice": 390.0,
+      "category": "VGA"
+    },
+    "G506T-8S2CP": {
+      "upc": "824142421321",
+      "partNumber": "G506T-8S2CP",
+      "name": "GeForce RTX 5060 Ti 8G SHADOW 2X OC PLUS",
+      "miamiPrice": 380.0,
+      "category": "VGA"
+    },
+    "G5060-8GC": {
+      "upc": "824142422823",
+      "partNumber": "G5060-8GC",
+      "name": "Geforce RTX 5060 8G GAMING OC",
+      "miamiPrice": 378.0,
+      "category": "VGA"
+    },
+    "G5060-8V3C": {
+      "upc": "824142423776",
+      "partNumber": "G5060-8V3C",
+      "name": "Geforce RTX 5060 8G VENTUS 3X OC",
+      "miamiPrice": 350.0,
+      "category": "VGA"
+    },
+    "G5060-8CC": {
+      "upc": "824142430309",
+      "partNumber": "G5060-8CC",
+      "name": "GeForce RTX 5060 8G CYCLONE OC",
+      "miamiPrice": 330.0,
+      "category": "VGA"
+    },
+    "G5060-8V2CW": {
+      "upc": "824142423806",
+      "partNumber": "G5060-8V2CW",
+      "name": "Geforce RTX 5060 8G VENTUS 2X OC WHITE",
+      "miamiPrice": 348.0,
+      "category": "VGA"
+    },
+    "G5060-8V2C": {
+      "upc": "824142423837",
+      "partNumber": "G5060-8V2C",
+      "name": "Geforce RTX 5060 8G VENTUS 2X OC",
+      "miamiPrice": 348.0,
+      "category": "VGA"
+    },
+    "G5060-8S2C": {
+      "upc": "824142423851",
+      "partNumber": "G5060-8S2C",
+      "name": "Geforce RTX 5060 8G SHADOW 2X OC",
+      "miamiPrice": 345.0,
+      "category": "VGA"
+    },
+    "G5050-8GC": {
+      "upc": "824142438343",
+      "partNumber": "G5050-8GC",
+      "name": "Geforce RTX 5050 8G GAMING OC",
+      "miamiPrice": 295.0,
+      "category": "VGA"
+    },
+    "G5050-8V2C": {
+      "upc": "824142438329",
+      "partNumber": "G5050-8V2C",
+      "name": "Geforce RTX 5050 8G VENTUS 2X OC",
+      "miamiPrice": 278.0,
+      "category": "VGA"
+    },
+    "G5050-8S2C": {
+      "upc": "824142438336",
+      "partNumber": "G5050-8S2C",
+      "name": "Geforce RTX 5050 8G SHADOW 2X OC",
+      "miamiPrice": 275.0,
+      "category": "VGA"
+    },
+    "G3060V2X12C1": {
+      "upc": "824142468463",
+      "partNumber": "G3060V2X12C1",
+      "name": "GeForce RTX 3060 VENTUS 2X 12G OC V1",
+      "miamiPrice": 300.0,
+      "category": "VGA"
+    },
+    "G3050V2X6C": {
+      "upc": "824142348710",
+      "partNumber": "G3050V2X6C",
+      "name": "GeForce RTX 3050 VENTUS 2X 6G OC",
+      "miamiPrice": 200.0,
+      "category": "VGA"
+    },
+    "G3050LP6C": {
+      "upc": "824142348697",
+      "partNumber": "G3050LP6C",
+      "name": "GeForce RTX 3050 LP 6G OC",
+      "miamiPrice": 200.0,
+      "category": "VGA"
+    },
+    "G103044PC": {
+      "upc": "824142327654",
+      "partNumber": "G103044PC",
+      "name": "GeForce GT 1030 4GD4 LP OC",
+      "miamiPrice": 95.0,
+      "category": "VGA"
+    },
+    "G7102D3P": {
+      "upc": "824142126905",
+      "partNumber": "G7102D3P",
+      "name": "GT 710 2GD3 LP",
+      "miamiPrice": 50.0,
+      "category": "VGA"
+    },
+    "G2101D3": {
+      "upc": "816909074901",
+      "partNumber": "G2101D3",
+      "name": "N210-MD1G/D3",
+      "miamiPrice": 30.0,
+      "category": "VGA"
+    },
+    "X870ETMAHAWKWIFPZ": {
+      "upc": "824142443835",
+      "partNumber": "X870ETMAHAWKWIFPZ",
+      "name": "MAG X870E TOMAHAWK MAX WIFI PZ",
+      "miamiPrice": 282.0,
+      "category": "MB"
+    },
+    "PROZ890SWIFIPZ": {
+      "upc": "824142394205",
+      "partNumber": "PROZ890SWIFIPZ",
+      "name": "PRO Z890-S WIFI PZ",
+      "miamiPrice": 227.0,
+      "category": "MB"
+    },
+    "B850GPWIFIPZ": {
+      "upc": "824142433553",
+      "partNumber": "B850GPWIFIPZ",
+      "name": "B850 GAMING PLUS WIFI PZ",
+      "miamiPrice": 195.0,
+      "category": "MB"
+    },
+    "Z890GODLIKE": {
+      "upc": "824142389973",
+      "partNumber": "Z890GODLIKE",
+      "name": "MEG Z890 GODLIKE",
+      "miamiPrice": 968.0,
+      "category": "MB"
+    },
+    "Z890ACE": {
+      "upc": "824142383780",
+      "partNumber": "Z890ACE",
+      "name": "MEG Z890 ACE",
+      "miamiPrice": 550.0,
+      "category": "MB"
+    },
+    "Z890CARBONWIFI": {
+      "upc": "824142384343",
+      "partNumber": "Z890CARBONWIFI",
+      "name": "MPG Z890 CARBON WIFI",
+      "miamiPrice": 360.0,
+      "category": "MB"
+    },
+    "Z890TOMAHAWKWIFIII": {
+      "upc": "824142456347",
+      "partNumber": "Z890TOMAHAWKWIFIII",
+      "name": "MAG Z890 TOMAHAWK WIFI II",
+      "miamiPrice": 244.0,
+      "category": "MB"
+    },
+    "Z890TOMAHAWKWIFI": {
+      "upc": "824142382226",
+      "partNumber": "Z890TOMAHAWKWIFI",
+      "name": "MAG Z890 TOMAHAWK WIFI",
+      "miamiPrice": 244.0,
+      "category": "MB"
+    },
+    "Z890GAMINGPLUSWIFI6E": {
+      "upc": "824142456538",
+      "partNumber": "Z890GAMINGPLUSWIFI6E",
+      "name": "Z890 GAMING PLUS WIFI6E",
+      "miamiPrice": 190.0,
+      "category": "MB"
+    },
+    "Z890GAMINGPWIFI": {
+      "upc": "824142381465",
+      "partNumber": "Z890GAMINGPWIFI",
+      "name": "Z890 GAMING PLUS WIFI",
+      "miamiPrice": 180.0,
+      "category": "MB"
+    },
+    "Z890PWIFI": {
+      "upc": "824142381458",
+      "partNumber": "Z890PWIFI",
+      "name": "PRO Z890-P WIFI",
+      "miamiPrice": 190.0,
+      "category": "MB"
+    },
+    "Z890SWIFI": {
+      "upc": "824142386569",
+      "partNumber": "Z890SWIFI",
+      "name": "PRO Z890-S WIFI",
+      "miamiPrice": 180.0,
+      "category": "MB"
+    },
+    "Z890SWHITEWIFI": {
+      "upc": "824142390306",
+      "partNumber": "Z890SWHITEWIFI",
+      "name": "PRO Z890-S WIFI WHITE",
+      "miamiPrice": 190.0,
+      "category": "MB"
+    },
+    "B860TOMAHAWKWIFI": {
+      "upc": "824142390177",
+      "partNumber": "B860TOMAHAWKWIFI",
+      "name": "MAG B860 TOMAHAWK WIFI",
+      "miamiPrice": 170.0,
+      "category": "MB"
+    },
+    "B860GPLUSWIFI": {
+      "upc": "824142394854",
+      "partNumber": "B860GPLUSWIFI",
+      "name": "B860 GAMING PLUS WIFI",
+      "miamiPrice": 155.0,
+      "category": "MB"
+    },
+    "B860MGPW": {
+      "upc": "824142392935",
+      "partNumber": "B860MGPW",
+      "name": "B860M GAMING PLUS WIFI",
+      "miamiPrice": 140.0,
+      "category": "MB"
+    },
+    "PROB860MB": {
+      "upc": "824142449356",
+      "partNumber": "PROB860MB",
+      "name": "PRO B860M-E",
+      "miamiPrice": 90.0,
+      "category": "MB"
+    },
+    "PROB860MS": {
+      "upc": "824142457573",
+      "partNumber": "PROB860MS",
+      "name": "PRO B860M-S",
+      "miamiPrice": 75.0,
+      "category": "MB"
+    },
+    "PROH810MB": {
+      "upc": "824142420362",
+      "partNumber": "PROH810MB",
+      "name": "PRO H810M-B",
+      "miamiPrice": 92.0,
+      "category": "MB"
+    },
+    "PROH810ME": {
+      "upc": "824142454008",
+      "partNumber": "PROH810ME",
+      "name": "PRO H810M-E",
+      "miamiPrice": 78.0,
+      "category": "MB"
+    },
+    "PROZ790GAMPLUSWIFI": {
+      "upc": "824142334898",
+      "partNumber": "PROZ790GAMPLUSWIFI",
+      "name": "Z790 GAMING PLUS WIFI",
+      "miamiPrice": 195.0,
+      "category": "MB"
+    },
+    "PROZ790PWIFI": {
+      "upc": "824142302125",
+      "partNumber": "PROZ790PWIFI",
+      "name": "PRO Z790-P WIFI",
+      "miamiPrice": 170.0,
+      "category": "MB"
+    }
+  },
+  "notifEmails": [
+    "rodrigomarquezmiranda@gmail.com"
+  ],
+  "lastCheck": null,
+  "changesFound": false
+}

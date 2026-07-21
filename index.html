@@ -316,6 +316,9 @@
       <button class="nav-item" id="nav-ia" onclick="gotoTab('ia')">
         <i class="ti ti-robot" style="color:#7CBAA0"></i> Analizar con IA
       </button>
+      <button class="nav-item" id="nav-notificaciones" onclick="gotoTab('notificaciones')">
+        <i class="ti ti-bell-ringing" style="color:#EBCB8B"></i> Notificaciones
+      </button>
     </nav>
     <div class="sidebar-footer">
       <div class="backup-area" style="margin-bottom:10px">
@@ -678,6 +681,30 @@
             </div>
             <div class="items-preview" id="ai-items-list"></div>
           </div>
+        </div>
+      </div>
+
+      <!-- NOTIFICACIONES -->
+      <div id="tab-notificaciones" class="tab-pane">
+        <div class="alert-section" style="max-width:600px">
+          <div class="section-header">
+            <div class="section-title"><i class="ti ti-bell-ringing" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Destinatarios de alertas de precios</div>
+          </div>
+          <p style="color:var(--text2);font-size:0.9rem;margin:0 0 1rem">
+            Cuando se detecten cambios en la lista de precios del Google Sheet, se enviará una notificación a estos correos.
+          </p>
+          <div style="display:flex;gap:8px;margin-bottom:1rem">
+            <input type="email" id="notif-email-input" placeholder="correo@ejemplo.com"
+              style="flex:1;padding:8px 12px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.9rem"
+              onkeydown="if(event.key==='Enter')addNotifEmail()" />
+            <button class="btn btn-primary" onclick="addNotifEmail()"><i class="ti ti-plus" style="font-size:13px"></i> Agregar</button>
+          </div>
+          <div id="notif-email-list" style="margin-bottom:1.5rem"></div>
+
+          <div class="section-header" style="margin-top:1.5rem">
+            <div class="section-title"><i class="ti ti-clock" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Estado de sincronización</div>
+          </div>
+          <div id="notif-sync-status" style="color:var(--text2);font-size:0.9rem;padding:12px 0"></div>
         </div>
       </div>
 
@@ -1144,8 +1171,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','catranking','imports','ia'];
-const TITLES = { dashboard:'Dashboard', pi:'PI — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','catranking','imports','ia','notificaciones'];
+const TITLES = { dashboard:'Dashboard', pi:'PI — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -1171,6 +1198,7 @@ function gotoTab(tab) {
   if(tab==='clients') updateClientsMonthOptions();
   if(tab==='catranking') { renderCatrankMonthChips(); renderCategoryRankingTab(); }
   if(tab==='imports') { renderImportsHistory(); renderImportsMonthChips(); renderImportsTab(); }
+  if(tab==='notificaciones') renderNotificacionesTab();
 }
 
 function openNewModal() {
@@ -4492,6 +4520,63 @@ document.title = `SalesOps CRM v${APP_VERSION}`;
 const appVersionLabel = document.getElementById('app-version-label');
 if(appVersionLabel) appVersionLabel.textContent = APP_VERSION;
 
+// ─── NOTIFICACIONES DE PRECIOS ───────────────────────────────────────────────
+let notifEmails = [];
+
+async function loadNotifEmails() {
+  try {
+    const data = await IDB.get('salesops_notif_emails');
+    notifEmails = data ? (Array.isArray(data) ? data : JSON.parse(data)) : [];
+  } catch(e) { notifEmails = []; }
+}
+
+async function saveNotifEmails() {
+  await IDB.set('salesops_notif_emails', notifEmails);
+  renderNotificacionesTab();
+}
+
+async function addNotifEmail() {
+  const input = document.getElementById('notif-email-input');
+  const email = (input?.value || '').trim().toLowerCase();
+  if (!email || !email.includes('@')) { alert('Ingresá un correo válido.'); return; }
+  if (notifEmails.includes(email)) { alert('Ese correo ya está en la lista.'); return; }
+  notifEmails.push(email);
+  await saveNotifEmails();
+  if(input) input.value = '';
+}
+
+async function removeNotifEmail(email) {
+  notifEmails = notifEmails.filter(e => e !== email);
+  await saveNotifEmails();
+}
+
+function renderNotificacionesTab() {
+  const list = document.getElementById('notif-email-list');
+  if (!list) return;
+  if (notifEmails.length === 0) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:0.9rem;padding:8px 0">No hay destinatarios aún. Agregá un correo arriba.</div>';
+  } else {
+    list.innerHTML = notifEmails.map(email => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-radius:var(--radius);margin-bottom:8px;border:0.5px solid var(--border2)">
+        <span style="font-size:0.9rem"><i class="ti ti-mail" style="color:var(--blue);margin-right:8px;font-size:13px"></i>${esc(email)}</span>
+        <button class="btn" style="font-size:11px;padding:4px 10px;color:var(--red)" onclick="removeNotifEmail('${email.replace(/'/g,"\\'")}')"><i class="ti ti-trash" style="font-size:12px"></i></button>
+      </div>`).join('');
+  }
+  // Sync status
+  const status = document.getElementById('notif-sync-status');
+  if (status) {
+    IDB.get('salesops_pricelist_snapshot_meta').then(meta => {
+      if (meta) {
+        status.innerHTML = `<i class="ti ti-circle-check" style="color:var(--green);margin-right:6px"></i>Última sincronización: <b>${esc(meta.lastCheck || '')}</b>${meta.changesFound ? ` · <span style="color:var(--amber)">Se detectaron cambios</span>` : ' · Sin cambios'}`;
+      } else {
+        status.innerHTML = `<span style="color:var(--text3)">Aún no se ha ejecutado ninguna sincronización automática.</span>`;
+      }
+    }).catch(() => {
+      status.innerHTML = `<span style="color:var(--text3)">Aún no se ha ejecutado ninguna sincronización automática.</span>`;
+    });
+  }
+}
+
 // ─── AUTENTICACIÓN ────────────────────────────────────────────────────────────
 const OWNER_UID = 'iaxXkJTFWCdUSVjlgNqmGklwroA3';
 const READONLY_UID = '4myTYcfAdheUsH74lQhIoQ2C0v12';
@@ -4521,6 +4606,7 @@ _fbAuth.onAuthStateChanged(async (user) => {
     loginScreen.style.display = 'none';
     appShell.style.display = '';
     await loadDB();
+    await loadNotifEmails();
     runOneTimeMigrations();
     loadDemo();
     document.getElementById('api-key-input').value = getApiKey();
