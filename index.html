@@ -963,7 +963,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.22.07.26.2';
+const APP_VERSION = '1.22.07.26.3';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -4751,9 +4751,14 @@ async function changeUserRole(key, role) {
   if (_allowedUsers[key]) _allowedUsers[key].role = role;
 }
 
-function renderUsersTab() {
+async function renderUsersTab() {
   const list = document.getElementById('allowed-users-list');
   if (!list) return;
+  // Si es admin, recargar la lista completa (puede haber sido cargada parcialmente)
+  try {
+    const snap = await firebase.database().ref('salesops_allowed_users').get();
+    _allowedUsers = snap.exists() ? (snap.val() || {}) : {};
+  } catch(e) { /* sin permisos, usar lo que ya hay en _allowedUsers */ }
   const entries = Object.entries(_allowedUsers);
   if (!entries.length) {
     list.innerHTML = '<div class="empty-state" style="padding:2rem 0"><i class="ti ti-user-off"></i><p>No hay usuarios configurados.</p></div>';
@@ -4813,8 +4818,24 @@ _fbAuth.onAuthStateChanged(async (user) => {
   const loginScreen = document.getElementById('login-screen');
   const appShell    = document.getElementById('app-shell');
   if (user) {
-    await loadAllowedUsers();
-    const role = await _getUserRole(user);
+    let role = null;
+    if (user.uid === OWNER_UID) {
+      role = 'admin';
+      // Owner carga toda la lista (tiene permisos totales de RTDB)
+      try {
+        const snap = await firebase.database().ref('salesops_allowed_users').get();
+        _allowedUsers = snap.exists() ? (snap.val() || {}) : {};
+      } catch(e) { _allowedUsers = {}; }
+    } else if (user.uid === READONLY_UID) {
+      role = 'readonly';
+    } else {
+      // Usuario no-owner: solo lee su propio nodo (menos permisos necesarios)
+      try {
+        const key = _eKey(user.email);
+        const snap = await firebase.database().ref(`salesops_allowed_users/${key}`).get();
+        if (snap.exists() && snap.val()) { role = snap.val().role; _allowedUsers[key] = snap.val(); }
+      } catch(e) { role = null; }
+    }
     if (role) {
       document.body.classList.toggle('readonly', role === 'readonly');
       document.body.classList.toggle('is-admin', role === 'admin');
