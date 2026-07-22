@@ -153,6 +153,9 @@
   body.readonly [onclick="importItems()"],
   body.readonly [onclick="document.getElementById('pf-file-input').click()"],
   body.readonly [onclick="document.getElementById('pf-signed-input').click()"] { display: none !important; }
+  /* Solo admins */
+  .admin-only { display: none !important; }
+  body.is-admin .admin-only { display: flex !important; }
   .upload-zone:hover, .upload-zone.dragover { border-color: var(--brand); background: var(--brand-bg); }
   .upload-zone i { font-size: 32px; color: var(--text3); margin-bottom: 10px; display: block; }
   .upload-zone p { font-size: 13px; color: var(--text2); }
@@ -318,6 +321,9 @@
       </button>
       <button class="nav-item" id="nav-notificaciones" onclick="gotoTab('notificaciones')">
         <i class="ti ti-bell-ringing" style="color:#EBCB8B"></i> Notificaciones
+      </button>
+      <button class="nav-item admin-only" id="nav-usuarios" onclick="gotoTab('usuarios')">
+        <i class="ti ti-user-cog" style="color:#7B7BC7"></i> Usuarios
       </button>
     </nav>
     <div class="sidebar-footer">
@@ -708,6 +714,37 @@
           <div style="margin-top:6px;padding:12px 14px;background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border2);font-size:0.83rem;color:var(--text2);line-height:1.5">
             <i class="ti ti-info-circle" style="color:var(--blue);margin-right:6px;font-size:13px"></i>
             Para ejecutar manualmente, usá el <b>artefacto "MSI Price Sync"</b> que aparece en el panel de Cowork — tiene un botón <b>⚡ Sincronizar Ahora</b> que dispara la tarea al instante.
+          </div>
+        </div>
+      </div>
+
+      <!-- USUARIOS -->
+      <div id="tab-usuarios" class="tab-pane">
+        <div style="max-width:580px">
+          <div class="alert-section" style="margin-bottom:1.5rem">
+            <div class="section-header">
+              <div class="section-title"><i class="ti ti-user-plus" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Agregar usuario</div>
+            </div>
+            <p style="color:var(--text2);font-size:0.875rem;margin:0 0 1rem;line-height:1.5">
+              Ingresá el email y el rol del nuevo usuario. La próxima vez que esa persona inicie sesión (con Google o email/contraseña) obtendrá acceso automáticamente.
+            </p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <input type="email" id="new-user-email" placeholder="correo@msi.com"
+                style="flex:1;min-width:200px;padding:8px 12px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem"
+                onkeydown="if(event.key==='Enter')addAllowedUser()" />
+              <select id="new-user-role"
+                style="padding:8px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem;cursor:pointer">
+                <option value="readonly">Solo lectura</option>
+                <option value="admin">Administrador</option>
+              </select>
+              <button class="btn btn-primary" onclick="addAllowedUser()"><i class="ti ti-plus" style="font-size:13px"></i> Agregar</button>
+            </div>
+          </div>
+          <div class="alert-section">
+            <div class="section-header">
+              <div class="section-title"><i class="ti ti-users" style="font-size:15px;vertical-align:-2px;margin-right:5px"></i>Usuarios con acceso</div>
+            </div>
+            <div id="allowed-users-list" style="margin-top:0.75rem"></div>
           </div>
         </div>
       </div>
@@ -1175,8 +1212,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','catranking','imports','ia','notificaciones'];
-const TITLES = { dashboard:'Dashboard', pi:'PI — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','catranking','imports','ia','notificaciones','usuarios'];
+const TITLES = { dashboard:'Dashboard', pi:'PI — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -1203,6 +1240,7 @@ function gotoTab(tab) {
   if(tab==='catranking') { renderCatrankMonthChips(); renderCategoryRankingTab(); }
   if(tab==='imports') { renderImportsHistory(); renderImportsMonthChips(); renderImportsTab(); }
   if(tab==='notificaciones') renderNotificacionesTab();
+  if(tab==='usuarios') renderUsersTab();
 }
 
 function openNewModal() {
@@ -4616,10 +4654,110 @@ function renderNotificacionesTab() {
   }
 }
 
-// ─── AUTENTICACIÓN ────────────────────────────────────────────────────────────
-const OWNER_UID = 'iaxXkJTFWCdUSVjlgNqmGklwroA3';
-const READONLY_UID = '4myTYcfAdheUsH74lQhIoQ2C0v12';
+// ─── USUARIOS AUTORIZADOS + AUTENTICACIÓN ─────────────────────────────────────
+const OWNER_UID    = 'iaxXkJTFWCdUSVjlgNqmGklwroA3'; // super-admin permanente
+const READONLY_UID = '4myTYcfAdheUsH74lQhIoQ2C0v12'; // legado — migrar a DB
 const _fbAuth = firebase.auth();
+let _allowedUsers = {}; // { emailKey: { email, role, uid, name, addedAt, lastLogin? } }
+
+function _eKey(email) { return (email || '').toLowerCase().replace(/\./g, ','); }
+
+async function loadAllowedUsers() {
+  const snap = await firebase.database().ref('salesops_allowed_users').get();
+  _allowedUsers = snap.exists() ? (snap.val() || {}) : {};
+}
+
+async function _getUserRole(user) {
+  if (user.uid === OWNER_UID) return 'admin';
+  if (user.uid === READONLY_UID) return 'readonly';
+  const entry = _allowedUsers[_eKey(user.email)];
+  return entry ? entry.role : null;
+}
+
+async function _recordLogin(user) {
+  const key = _eKey(user.email);
+  if (user.uid === OWNER_UID && !_allowedUsers[key]) {
+    // Primera vez del owner: registrar en DB automáticamente
+    const entry = { email: user.email, role: 'admin', uid: user.uid,
+      name: user.displayName || '', addedAt: new Date().toISOString(), lastLogin: new Date().toISOString() };
+    await firebase.database().ref(`salesops_allowed_users/${key}`).set(entry);
+    _allowedUsers[key] = entry;
+  } else if (_allowedUsers[key]) {
+    const upd = { uid: user.uid, lastLogin: new Date().toISOString() };
+    if (user.displayName && !_allowedUsers[key].name) upd.name = user.displayName;
+    await firebase.database().ref(`salesops_allowed_users/${key}`).update(upd);
+    _allowedUsers[key] = { ..._allowedUsers[key], ...upd };
+  }
+}
+
+async function addAllowedUser() {
+  const email = (document.getElementById('new-user-email').value || '').trim().toLowerCase();
+  const role  = document.getElementById('new-user-role').value;
+  if (!email || !email.includes('@')) return alert('Ingresá un email válido.');
+  const key = _eKey(email);
+  if (_allowedUsers[key]) return alert('Este usuario ya está en la lista.');
+  const entry = { email, role, uid: null, name: '', addedAt: new Date().toISOString() };
+  await firebase.database().ref(`salesops_allowed_users/${key}`).set(entry);
+  _allowedUsers[key] = entry;
+  document.getElementById('new-user-email').value = '';
+  renderUsersTab();
+}
+
+async function removeAllowedUser(key) {
+  const email = key.replace(/,/g, '.');
+  if (!confirm(`¿Eliminar el acceso de ${email}?`)) return;
+  await firebase.database().ref(`salesops_allowed_users/${key}`).remove();
+  delete _allowedUsers[key];
+  renderUsersTab();
+}
+
+async function changeUserRole(key, role) {
+  await firebase.database().ref(`salesops_allowed_users/${key}/role`).set(role);
+  if (_allowedUsers[key]) _allowedUsers[key].role = role;
+}
+
+function renderUsersTab() {
+  const list = document.getElementById('allowed-users-list');
+  if (!list) return;
+  const entries = Object.entries(_allowedUsers);
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty-state" style="padding:2rem 0"><i class="ti ti-user-off"></i><p>No hay usuarios configurados.</p></div>';
+    return;
+  }
+  // Ordenar: owner primero, luego admins, luego readonly
+  entries.sort(([,a],[,b]) => {
+    const rank = u => u.uid===OWNER_UID ? 0 : u.role==='admin' ? 1 : 2;
+    return rank(a) - rank(b);
+  });
+  list.innerHTML = entries.map(([key, u]) => {
+    const isOwner = u.uid === OWNER_UID;
+    const active  = !!u.uid;
+    const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
+      <div style="width:38px;height:38px;border-radius:50%;background:${isOwner?'var(--blue-bg)':'var(--bg2)'};display:flex;align-items:center;justify-content:center;font-size:16px;color:${isOwner?'var(--blue-text)':'var(--text3)'};flex-shrink:0">
+        <i class="ti ti-${isOwner?'shield-check':'user'}"></i>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}${u.name ? `<span style="font-weight:400;color:var(--text3);margin-left:8px;font-size:12px">${esc(u.name)}</span>` : ''}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">
+          ${active
+            ? `<span style="color:var(--green-text)"><i class="ti ti-circle-check-filled" style="font-size:10px"></i> Activo${lastLogin ? ` · último acceso ${lastLogin}` : ''}</span>`
+            : `<span style="color:var(--amber-text)"><i class="ti ti-clock" style="font-size:10px"></i> Pendiente — aún no ingresó</span>`}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        ${isOwner
+          ? `<span class="pill" style="background:var(--blue-bg);color:var(--blue-text)"><i class="ti ti-shield-check" style="font-size:10px"></i> Owner</span>`
+          : `<select onchange="changeUserRole('${key}',this.value)"
+               style="font-size:11px;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer">
+               <option value="readonly" ${u.role==='readonly'?'selected':''}>Solo lectura</option>
+               <option value="admin" ${u.role==='admin'?'selected':''}>Administrador</option>
+             </select>
+             <button onclick="removeAllowedUser('${key}')" class="btn btn-danger" style="padding:4px 8px;font-size:11px" title="Eliminar acceso"><i class="ti ti-trash" style="font-size:13px"></i></button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
 
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
@@ -4628,32 +4766,41 @@ function signInWithGoogle() {
 
 function signInWithEmail() {
   const email = document.getElementById('login-email').value;
-  const pass = document.getElementById('login-pass').value;
+  const pass  = document.getElementById('login-pass').value;
   _fbAuth.signInWithEmailAndPassword(email, pass).catch(e => alert('Error: ' + e.message));
 }
 
 function signOut() {
-  if(confirm('¿Cerrar sesión?')) _fbAuth.signOut();
+  if (confirm('¿Cerrar sesión?')) _fbAuth.signOut();
 }
 
 _fbAuth.onAuthStateChanged(async (user) => {
   const loginScreen = document.getElementById('login-screen');
-  const appShell = document.getElementById('app-shell');
-  if (user && (user.uid === OWNER_UID || user.uid === READONLY_UID)) {
-    if (user.uid === READONLY_UID) document.body.classList.add('readonly');
-    else document.body.classList.remove('readonly');
-    loginScreen.style.display = 'none';
-    appShell.style.display = '';
-    await loadDB();
-    await loadNotifEmails();
-    runOneTimeMigrations();
-    loadDemo();
-    document.getElementById('api-key-input').value = getApiKey();
-    applyBrandLogo();
-    renderAll();
-    gotoTab('dashboard');
+  const appShell    = document.getElementById('app-shell');
+  if (user) {
+    await loadAllowedUsers();
+    const role = await _getUserRole(user);
+    if (role) {
+      document.body.classList.toggle('readonly', role === 'readonly');
+      document.body.classList.toggle('is-admin', role === 'admin');
+      loginScreen.style.display = 'none';
+      appShell.style.display = '';
+      _recordLogin(user);
+      await loadDB();
+      await loadNotifEmails();
+      runOneTimeMigrations();
+      loadDemo();
+      document.getElementById('api-key-input').value = getApiKey();
+      applyBrandLogo();
+      renderAll();
+      gotoTab('dashboard');
+    } else {
+      _fbAuth.signOut(); // email no autorizado
+      alert('Tu cuenta no tiene acceso al CRM. Contactá al administrador.');
+      loginScreen.style.display = 'flex';
+      appShell.style.display = 'none';
+    }
   } else {
-    if (user) _fbAuth.signOut(); // UID no autorizado
     loginScreen.style.display = 'flex';
     appShell.style.display = 'none';
   }
