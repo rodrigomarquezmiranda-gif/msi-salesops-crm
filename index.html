@@ -728,10 +728,18 @@
             <p style="color:var(--text2);font-size:0.875rem;margin:0 0 1rem;line-height:1.5">
               Ingresá el email y el rol del nuevo usuario. La próxima vez que esa persona inicie sesión (con Google o email/contraseña) obtendrá acceso automáticamente.
             </p>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
               <input type="email" id="new-user-email" placeholder="correo@msi.com"
-                style="flex:1;min-width:200px;padding:8px 12px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem"
+                style="flex:2;min-width:180px;padding:8px 12px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem"
                 onkeydown="if(event.key==='Enter')addAllowedUser()" />
+              <div style="flex:1.5;min-width:150px;position:relative;display:flex;align-items:center">
+                <input type="password" id="new-user-pass" placeholder="Contraseña (opcional)"
+                  style="width:100%;padding:8px 36px 8px 12px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem" />
+                <button onclick="togglePassVis()" tabindex="-1"
+                  style="position:absolute;right:8px;background:none;border:none;cursor:pointer;color:var(--text3);padding:0;font-size:15px;line-height:1">
+                  <i id="pass-vis-icon" class="ti ti-eye"></i>
+                </button>
+              </div>
               <select id="new-user-role"
                 style="padding:8px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem;cursor:pointer">
                 <option value="readonly">Solo lectura</option>
@@ -739,6 +747,7 @@
               </select>
               <button class="btn btn-primary" onclick="addAllowedUser()"><i class="ti ti-plus" style="font-size:13px"></i> Agregar</button>
             </div>
+            <div style="font-size:11px;color:var(--text3)"><i class="ti ti-info-circle" style="font-size:12px;vertical-align:-1px"></i> Sin contraseña: el usuario debe tener cuenta de Google con ese email. Con contraseña: se crea la cuenta de Firebase automáticamente.</div>
           </div>
           <div class="alert-section">
             <div class="section-header">
@@ -954,7 +963,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.22.07.26.0';
+const APP_VERSION = '1.22.07.26.2';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -4690,17 +4699,43 @@ async function _recordLogin(user) {
   }
 }
 
+function togglePassVis() {
+  const inp  = document.getElementById('new-user-pass');
+  const icon = document.getElementById('pass-vis-icon');
+  if (inp.type === 'password') { inp.type = 'text'; icon.className = 'ti ti-eye-off'; }
+  else                         { inp.type = 'password'; icon.className = 'ti ti-eye'; }
+}
+
 async function addAllowedUser() {
-  const email = (document.getElementById('new-user-email').value || '').trim().toLowerCase();
-  const role  = document.getElementById('new-user-role').value;
+  const email    = (document.getElementById('new-user-email').value || '').trim().toLowerCase();
+  const password = (document.getElementById('new-user-pass').value || '').trim();
+  const role     = document.getElementById('new-user-role').value;
   if (!email || !email.includes('@')) return alert('Ingresá un email válido.');
   const key = _eKey(email);
   if (_allowedUsers[key]) return alert('Este usuario ya está en la lista.');
-  const entry = { email, role, uid: null, name: '', addedAt: new Date().toISOString() };
+
+  let uid = null;
+  if (password) {
+    if (password.length < 6) return alert('La contraseña debe tener al menos 6 caracteres.');
+    // Crear cuenta Firebase sin cerrar sesión del admin — secondary app trick
+    const secondaryApp = firebase.initializeApp(firebase.app().options, '_tmp_' + Date.now());
+    try {
+      const cred = await secondaryApp.auth().createUserWithEmailAndPassword(email, password);
+      uid = cred.user.uid;
+    } catch(e) {
+      await secondaryApp.delete().catch(() => {});
+      return alert('Error al crear cuenta: ' + e.message);
+    }
+    await secondaryApp.delete().catch(() => {});
+  }
+
+  const entry = { email, role, uid, name: '', addedAt: new Date().toISOString() };
   await firebase.database().ref(`salesops_allowed_users/${key}`).set(entry);
   _allowedUsers[key] = entry;
   document.getElementById('new-user-email').value = '';
+  document.getElementById('new-user-pass').value  = '';
   renderUsersTab();
+  if (uid) alert(`✓ Cuenta creada exitosamente.\n\nEmail: ${email}\nContraseña: ${password}\n\nCompartí estos datos con el usuario.`);
 }
 
 async function removeAllowedUser(key) {
