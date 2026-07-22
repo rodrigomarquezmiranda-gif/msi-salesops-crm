@@ -2028,34 +2028,45 @@ function applyPriceFilter(){
   const changedMap=new Map((diff?.changed||[]).map(c=>[c.code.toUpperCase(),c]));
   // Check if any product has stock fields (LATAM format)
   const hasStock=(priceList.products||[]).some(p=>p.miamiStock!=null||p.bondedStock!=null);
-  const stockHeaders=hasStock?'<th>Miami Dom.</th><th>ETA Dom.</th><th>Miami Bonded</th><th>ETA Bonded</th>':'';
+  const sw='style="width:58px;white-space:nowrap"';
+  const stockHeaders=hasStock?`<th ${sw}>Miami Dom.</th><th ${sw}>ETA Dom.</th><th ${sw}>Miami Bonded</th><th ${sw}>ETA Bonded</th>`:'';
   // Build sales history map keyed by marketingName → for Precio Histórico column
   _priceHistMap=new Map();
   getSalesPriceRows().forEach(r=>{const k=(r.marketingName||'').toUpperCase().trim();if(!k)return;if(!_priceHistMap.has(k))_priceHistMap.set(k,[]);_priceHistMap.get(k).push(r);});
   wrap.innerHTML=`<div class="table-scroll" style="max-height:520px;overflow-y:auto">
     <table class="data-table" id="price-table">
-      <thead><tr><th>Descripción</th>${stockHeaders}<th>Precio</th>${filter==='changed'?'<th>Precio ant.</th>':''}<th>Precio Histórico</th></tr></thead>
+      <thead><tr><th>Descripción</th>${stockHeaders}<th>Precio</th><th>Precio Actualizado</th><th>Precio Histórico</th></tr></thead>
       <tbody>
       ${products.map(p=>{
         const k=p.code.toUpperCase();
         const isNew=addedCodes.has(k);
         const ch=changedMap.get(k);
-        const prevPriceCell=filter==='changed'?`<td>${ch?'USD '+Number(ch.oldPrice).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td>`:'';
-        const stockCells=hasStock?`<td>${p.miamiStock!=null?p.miamiStock:'-'}</td><td style="font-size:11px;color:var(--text3)">${p.miamiEta||'-'}</td><td>${p.bondedStock!=null?p.bondedStock:'-'}</td><td style="font-size:11px;color:var(--text3)">${p.bondedEta||'-'}</td>`:'';
+        const fmt=v=>'USD '+Number(v).toLocaleString('es-AR',{minimumFractionDigits:2});
+        const stockCells=hasStock?`<td style="font-size:11px;text-align:center">${p.miamiStock!=null?p.miamiStock:'-'}</td><td style="font-size:11px;color:var(--text3);text-align:center">${p.miamiEta||'-'}</td><td style="font-size:11px;text-align:center">${p.bondedStock!=null?p.bondedStock:'-'}</td><td style="font-size:11px;color:var(--text3);text-align:center">${p.bondedEta||'-'}</td>`:'';
         const descKey=(p.desc||'').toUpperCase().trim();
         const hist=_priceHistMap.get(descKey)||[];
         const lastSale=hist[0];
-        const histCell=lastSale?`<td><span class="client-name-hover" data-histkey="${encodeURIComponent(descKey)}" onmouseenter="showPriceHistoryTooltip(event)" onmouseleave="hideClientCompositionTooltip()"><b>USD ${Number(lastSale.unitPrice).toLocaleString('es-AR',{minimumFractionDigits:2})}</b></span></td>`:'<td style="color:var(--text3)">—</td>';
+        const histCell=lastSale?`<td><span class="client-name-hover" data-histkey="${encodeURIComponent(descKey)}" onmouseenter="showPriceHistoryTooltip(event)" onmouseleave="hideClientCompositionTooltip()"><b>${fmt(lastSale.unitPrice)}</b></span></td>`:'<td style="color:var(--text3)">—</td>';
+        let priceCell, updatedCell;
+        if(ch&&p.price!=null){
+          const pct=ch.oldPrice?Math.abs(((p.price-ch.oldPrice)/ch.oldPrice)*100).toFixed(1):'';
+          const up=ch.dir==='up';
+          priceCell=`<td><s style="color:var(--text3);font-size:11px">${fmt(ch.oldPrice)}</s></td>`;
+          updatedCell=`<td><b>${fmt(p.price)}</b> <span style="font-size:10px;color:${up?'var(--red-text)':'var(--green-text)'}">${up?'▲':'▼'}${pct?` ${pct}%`:''}</span></td>`;
+        } else {
+          priceCell=`<td>${p.price!=null?fmt(p.price):'-'}</td>`;
+          updatedCell=`<td style="color:var(--text3)">—</td>`;
+        }
         return `<tr class="${isNew?'row-new':''}">
           <td>${esc(p.desc||'-')}</td>
           ${stockCells}
-          <td>${p.price!=null?'USD '+Number(p.price).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td>
-          ${prevPriceCell}
+          ${priceCell}
+          ${updatedCell}
           ${histCell}
         </tr>`;
       }).join('')}
       ${removedList.map(p=>`<tr style="opacity:0.55">
-        <td>${esc(p.desc||'-')}</td>${hasStock?'<td>-</td><td>-</td><td>-</td><td>-</td>':''}<td>${p.price!=null?'USD '+Number(p.price).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td><td style="color:var(--text3)">—</td>
+        <td>${esc(p.desc||'-')}</td>${hasStock?'<td style="font-size:11px;text-align:center">-</td><td style="font-size:11px;text-align:center">-</td><td style="font-size:11px;text-align:center">-</td><td style="font-size:11px;text-align:center">-</td>':''}<td>${p.price!=null?'USD '+Number(p.price).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td><td style="color:var(--text3)">—</td><td style="color:var(--text3)">—</td>
       </tr>`).join('')}
       ${products.length===0&&removedList.length===0?`<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:1.5rem">Sin productos para mostrar con este filtro.</td></tr>`:''}
       </tbody>
