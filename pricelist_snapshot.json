@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-07-21T00:00:00Z",
-  "lastCheck": null,
-  "changesFound": false,
+  "capturedAt": "2026-07-22T01:05:52Z",
+  "lastCheck": "21/07/2026 22:05",
+  "changesFound": true,
   "priceLogic": "min(colQ, colR) — uses lower of Miami Price and Market Share price",
   "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw | Tab: LATAM",
   "notifEmails": [
@@ -3494,6 +3494,17 @@
       "marketSharePrice": null,
       "miamiStock": null,
       "miamiBondedStock": 620
+    },
+    "GGB-FE": {
+      "upc": "824142462904",
+      "partNumber": "GGB-FE",
+      "name": "MSI GAMING GEAR BUNDLE FRIEREN EDITION",
+      "category": "Accessories",
+      "miamiPrice": 1200.0,
+      "miamiPriceRaw": 1200.0,
+      "marketSharePrice": null,
+      "miamiStock": 77,
+      "miamiBondedStock": 0
     }
   }
 }

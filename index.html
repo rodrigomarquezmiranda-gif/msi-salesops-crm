@@ -2029,9 +2029,13 @@ function applyPriceFilter(){
   // Check if any product has stock fields (LATAM format)
   const hasStock=(priceList.products||[]).some(p=>p.miamiStock!=null||p.bondedStock!=null);
   const stockHeaders=hasStock?'<th>Miami Dom.</th><th>ETA Dom.</th><th>Miami Bonded</th><th>ETA Bonded</th>':'';
+  // Build sales history map for Precio Histórico column
+  const _spRows=getSalesPriceRows();
+  const histMap=new Map();
+  _spRows.forEach(r=>{const k=(r.itemCode||'').toUpperCase().trim();if(!k)return;if(!histMap.has(k))histMap.set(k,[]);histMap.get(k).push(r);});
   wrap.innerHTML=`<div class="table-scroll" style="max-height:520px;overflow-y:auto">
     <table class="data-table" id="price-table">
-      <thead><tr><th>Código</th><th>Descripción</th>${stockHeaders}<th>Precio</th>${filter==='changed'?'<th>Precio ant.</th>':''}><th>Estado</th></tr></thead>
+      <thead><tr><th>Descripción</th>${stockHeaders}<th>Precio</th>${filter==='changed'?'<th>Precio ant.</th>':''}<th>Precio Histórico</th></tr></thead>
       <tbody>
       ${products.map(p=>{
         const k=p.code.toUpperCase();
@@ -2046,17 +2050,19 @@ function applyPriceFilter(){
         }
         const prevPriceCell=filter==='changed'?`<td>${ch?'USD '+Number(ch.oldPrice).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td>`:'';
         const stockCells=hasStock?`<td>${p.miamiStock!=null?p.miamiStock:'-'}</td><td style="font-size:11px;color:var(--text3)">${p.miamiEta||'-'}</td><td>${p.bondedStock!=null?p.bondedStock:'-'}</td><td style="font-size:11px;color:var(--text3)">${p.bondedEta||'-'}</td>`:'';
+        const hist=histMap.get(p.code.toUpperCase())||[];
+        const lastSale=hist[0];
+        const histCell=lastSale?`<td><span class="client-name-hover" onmouseenter="showPriceHistoryTooltip(event,'${p.code.toUpperCase().replace(/'/g,"\\'")}')" onmouseleave="hideClientCompositionTooltip()"><b>USD ${Number(lastSale.unitPrice).toLocaleString('es-AR',{minimumFractionDigits:2})}</b></span></td>`:'<td style="color:var(--text3)">—</td>';
         return `<tr class="${isNew?'row-new':''}">
-          <td>${esc(p.code)}</td>
           <td>${esc(p.desc||'-')}</td>
           ${stockCells}
           <td>${p.price!=null?'USD '+Number(p.price).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td>
           ${prevPriceCell}
-          <td>${tag}</td>
+          ${histCell}
         </tr>`;
       }).join('')}
       ${removedList.map(p=>`<tr style="opacity:0.55">
-        <td>${esc(p.code)}</td><td>${esc(p.desc||'-')}</td>${hasStock?'<td>-</td><td>-</td><td>-</td><td>-</td>':''}<td>${p.price!=null?'USD '+Number(p.price).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td><td><span class="pill pill-red">Eliminado</span></td>
+        <td>${esc(p.desc||'-')}</td>${hasStock?'<td>-</td><td>-</td><td>-</td><td>-</td>':''}<td>${p.price!=null?'USD '+Number(p.price).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td><td style="color:var(--text3)">—</td>
       </tr>`).join('')}
       ${products.length===0&&removedList.length===0?`<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:1.5rem">Sin productos para mostrar con este filtro.</td></tr>`:''}
       </tbody>
@@ -2198,6 +2204,24 @@ function renderSalesPriceHistory() {
     </tr>`).join('')}</tbody>
   </table></div>
   ${filtered.length===0 ? `<div class="empty-state"><i class="ti ti-search-off"></i><p>No encontré resultados para "${esc(q)}".</p></div>` : ''}`;
+}
+
+function showPriceHistoryTooltip(evt, code) {
+  clearTooltipHideTimer();
+  const rows = getSalesPriceRows().filter(r => (r.itemCode||'').toUpperCase().trim() === code).slice(0,5);
+  const tip = document.getElementById('client-composition-tooltip');
+  tip.innerHTML = `<div style="font-size:11.5px;color:var(--text2);margin-bottom:8px;font-weight:600">Últimas ventas · ${code}</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${rows.length===0?'<div style="color:var(--text3);font-size:11px">Sin historial de ventas</div>':rows.map(r=>`<div style="font-size:11px;border-bottom:0.5px solid var(--border2);padding-bottom:5px">
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <span style="color:var(--text);font-weight:600">USD ${Number(r.unitPrice).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+          <span style="color:var(--text3)">${r.date?r.date.split('-').reverse().join('/'):'-'}</span>
+        </div>
+        <div style="color:var(--text2);margin-top:2px">${esc(r.client)} · PI: ${esc(r.piName)}</div>
+      </div>`).join('')}
+    </div>`;
+  tip.style.display = 'block';
+  positionTooltipNearElement(evt.currentTarget);
 }
 
 function renderAll() {
@@ -3690,6 +3714,7 @@ function exportClientsPDF() {
 
 // ─── RANKING POR CATEGORÍA (quién compra más de cada rubro) ───
 let catrankSelectedMonths = new Set(); // vacío = todos los meses
+let catrankSortKey = 'qty_desc';
 function onCatRankDistributorChange() {
   catrankSelectedMonths.clear();
   renderCatrankMonthChips();
@@ -3736,7 +3761,10 @@ function renderCategoryRankingTab() {
     const qDigits = q.replace(/\D/g, '');
     ranking = ranking.filter(c => c.name.toLowerCase().includes(q) || (qDigits.length >= 4 && c.cuit.includes(qDigits)));
   }
-  ranking.sort((a,b) => b.qty-a.qty);
+  if(catrankSortKey==='qty_asc') ranking.sort((a,b)=>a.qty-b.qty);
+  else if(catrankSortKey==='amount_asc') ranking.sort((a,b)=>a.amount-b.amount);
+  else if(catrankSortKey==='amount_desc') ranking.sort((a,b)=>b.amount-a.amount);
+  else ranking.sort((a,b)=>b.qty-a.qty);
   currentCatRankingList = ranking;
 
   const summary = document.getElementById('catrank-summary');
@@ -3756,8 +3784,9 @@ function renderCategoryRankingTab() {
   const hasAnyAmount = ranking.some(c=>c.amount>0);
   const maxQty = Math.max(...ranking.map(c=>c.qty), 1);
   const showDistCol = dist === 'all';
+  const catrankThSort=(label,asc,desc)=>{const arrow=catrankSortKey===desc?' <i class="ti ti-arrow-down" style="font-size:10px"></i>':catrankSortKey===asc?' <i class="ti ti-arrow-up" style="font-size:10px"></i>':' <i class="ti ti-arrows-sort" style="font-size:10px;opacity:0.4"></i>';const next=catrankSortKey===desc?asc:desc;return `<th style="cursor:pointer;user-select:none" onclick="catrankSortKey='${next}';renderCategoryRankingTab()">${label}${arrow}</th>`;};
   wrap.innerHTML = `<div class="table-scroll"><table class="data-table">
-    <thead><tr><th>#</th><th>Cliente</th><th>CUIT</th><th>Unidades</th><th></th><th>Monto USD</th>${showDistCol?'<th>Proveedores</th>':''}</tr></thead>
+    <thead><tr><th>#</th><th>Cliente</th><th>CUIT</th>${catrankThSort('Unidades','qty_asc','qty_desc')}<th></th>${catrankThSort('Monto USD','amount_asc','amount_desc')}${showDistCol?'<th>Proveedores</th>':''}</tr></thead>
     <tbody>${ranking.map((c,i) => `<tr>
       <td>${i+1}</td>
       <td><span class="client-name-hover" onmouseenter="showCatClientProductsTooltip(event,'${c.key.replace(/'/g,"\\'")}')" onmouseleave="hideClientCompositionTooltip()">${esc(c.name)}</span></td>
