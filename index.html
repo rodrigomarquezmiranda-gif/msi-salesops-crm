@@ -2029,10 +2029,9 @@ function applyPriceFilter(){
   // Check if any product has stock fields (LATAM format)
   const hasStock=(priceList.products||[]).some(p=>p.miamiStock!=null||p.bondedStock!=null);
   const stockHeaders=hasStock?'<th>Miami Dom.</th><th>ETA Dom.</th><th>Miami Bonded</th><th>ETA Bonded</th>':'';
-  // Build sales history map for Precio Histórico column
-  const _spRows=getSalesPriceRows();
-  const histMap=new Map();
-  _spRows.forEach(r=>{const k=(r.itemCode||'').toUpperCase().trim();if(!k)return;if(!histMap.has(k))histMap.set(k,[]);histMap.get(k).push(r);});
+  // Build sales history map keyed by marketingName → for Precio Histórico column
+  _priceHistMap=new Map();
+  getSalesPriceRows().forEach(r=>{const k=(r.marketingName||'').toUpperCase().trim();if(!k)return;if(!_priceHistMap.has(k))_priceHistMap.set(k,[]);_priceHistMap.get(k).push(r);});
   wrap.innerHTML=`<div class="table-scroll" style="max-height:520px;overflow-y:auto">
     <table class="data-table" id="price-table">
       <thead><tr><th>Descripción</th>${stockHeaders}<th>Precio</th>${filter==='changed'?'<th>Precio ant.</th>':''}<th>Precio Histórico</th></tr></thead>
@@ -2040,19 +2039,13 @@ function applyPriceFilter(){
       ${products.map(p=>{
         const k=p.code.toUpperCase();
         const isNew=addedCodes.has(k);
-        const isChanged=changedCodes.has(k);
         const ch=changedMap.get(k);
-        let tag='';
-        if(isNew) tag='<span class="pill pill-green">Nuevo</span>';
-        else if(isChanged){
-          const arr=ch&&ch.dir==='up'?'<span style="color:var(--red-text)">▲</span>':'<span style="color:var(--green-text)">▼</span>';
-          tag=`<span class="pill pill-amber">Precio ${ch?.dir==='up'?'subió':'bajó'} ${arr}</span>`;
-        }
         const prevPriceCell=filter==='changed'?`<td>${ch?'USD '+Number(ch.oldPrice).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td>`:'';
         const stockCells=hasStock?`<td>${p.miamiStock!=null?p.miamiStock:'-'}</td><td style="font-size:11px;color:var(--text3)">${p.miamiEta||'-'}</td><td>${p.bondedStock!=null?p.bondedStock:'-'}</td><td style="font-size:11px;color:var(--text3)">${p.bondedEta||'-'}</td>`:'';
-        const hist=histMap.get(p.code.toUpperCase())||[];
+        const descKey=(p.desc||'').toUpperCase().trim();
+        const hist=_priceHistMap.get(descKey)||[];
         const lastSale=hist[0];
-        const histCell=lastSale?`<td><span class="client-name-hover" onmouseenter="showPriceHistoryTooltip(event,'${p.code.toUpperCase().replace(/'/g,"\\'")}')" onmouseleave="hideClientCompositionTooltip()"><b>USD ${Number(lastSale.unitPrice).toLocaleString('es-AR',{minimumFractionDigits:2})}</b></span></td>`:'<td style="color:var(--text3)">—</td>';
+        const histCell=lastSale?`<td><span class="client-name-hover" data-histkey="${encodeURIComponent(descKey)}" onmouseenter="showPriceHistoryTooltip(event)" onmouseleave="hideClientCompositionTooltip()"><b>USD ${Number(lastSale.unitPrice).toLocaleString('es-AR',{minimumFractionDigits:2})}</b></span></td>`:'<td style="color:var(--text3)">—</td>';
         return `<tr class="${isNew?'row-new':''}">
           <td>${esc(p.desc||'-')}</td>
           ${stockCells}
@@ -2206,11 +2199,13 @@ function renderSalesPriceHistory() {
   ${filtered.length===0 ? `<div class="empty-state"><i class="ti ti-search-off"></i><p>No encontré resultados para "${esc(q)}".</p></div>` : ''}`;
 }
 
-function showPriceHistoryTooltip(evt, code) {
+let _priceHistMap = new Map(); // descKey(uppercase) → salesRows[], rebuilt on each applyPriceFilter
+function showPriceHistoryTooltip(evt) {
   clearTooltipHideTimer();
-  const rows = getSalesPriceRows().filter(r => (r.itemCode||'').toUpperCase().trim() === code).slice(0,5);
+  const key = decodeURIComponent(evt.currentTarget.dataset.histkey||'');
+  const rows = (_priceHistMap.get(key)||[]).slice(0,5);
   const tip = document.getElementById('client-composition-tooltip');
-  tip.innerHTML = `<div style="font-size:11.5px;color:var(--text2);margin-bottom:8px;font-weight:600">Últimas ventas · ${code}</div>
+  tip.innerHTML = `<div style="font-size:11.5px;color:var(--text2);margin-bottom:8px;font-weight:600">Últimas ventas</div>
     <div style="display:flex;flex-direction:column;gap:6px">
       ${rows.length===0?'<div style="color:var(--text3);font-size:11px">Sin historial de ventas</div>':rows.map(r=>`<div style="font-size:11px;border-bottom:0.5px solid var(--border2);padding-bottom:5px">
         <div style="display:flex;justify-content:space-between;gap:8px">
