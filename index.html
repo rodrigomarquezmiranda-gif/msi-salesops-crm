@@ -963,7 +963,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.22.07.27.0';
+const APP_VERSION = '1.22.07.27.1';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -3566,11 +3566,11 @@ function getClientRanking(distKey, monthKey) {
       c.distributors.add(s.distributor);
       const category = classifyProductCategory(r.description);
       const pk = r.code.toUpperCase() + '|' + s.distributor;
-      if(!c.products.has(pk)) c.products.set(pk, { code:r.code, description:r.description, qty:0, amount:0, distributor:s.distributor, category, periods:new Set() });
+      if(!c.products.has(pk)) c.products.set(pk, { code:r.code, description:r.description, qty:0, amount:0, distributor:s.distributor, category, dates:new Set(), _periodEnd:s.periodEnd });
       const p = c.products.get(pk);
       p.qty += r.qty;
       p.amount += amt;
-      if(s.periodEnd) p.periods.add(s.periodEnd);
+      if(r.date) p.dates.add(r.date); else if(s.periodEnd) p.dates.add(s.periodEnd);
       if(!c.categories.has(category)) c.categories.set(category, { qty:0, amount:0 });
       const catAgg = c.categories.get(category);
       catAgg.qty += r.qty;
@@ -3582,7 +3582,7 @@ function getClientRanking(distKey, monthKey) {
     distributors: Array.from(c.distributors),
     categories: Array.from(c.categories.entries()).map(([catKey,v]) => ({ key:catKey, label:CATEGORY_LABELS[catKey]||catKey, qty:Math.round(v.qty*100)/100, amount:Math.round(v.amount) })).sort((a,b)=>b.qty-a.qty),
     products: Array.from(c.products.values()).map(p => {
-      const sorted = Array.from(p.periods).sort();
+      const sorted = Array.from(p.dates).sort();
       const dateLabel = sorted.length === 0 ? '-'
         : sorted.length === 1 ? fmtRotDate(sorted[0])
         : fmtRotDate(sorted[0]) + ' – ' + fmtRotDate(sorted[sorted.length-1]);
@@ -3747,7 +3747,7 @@ function renderClientDetail(distKey, monthKey, clientKey) {
     </div>
   </div>
   <div class="table-scroll"><table class="data-table">
-    <thead><tr><th>Código</th><th>Descripción</th><th>Categoría</th>${showDistCol?'<th>Proveedor</th>':''}<th>Período</th><th>Cantidad</th><th>Monto USD</th></tr></thead>
+    <thead><tr><th>Código</th><th>Descripción</th><th>Categoría</th>${showDistCol?'<th>Proveedor</th>':''}<th>Fecha</th><th>Cantidad</th><th>Monto USD</th></tr></thead>
     <tbody>${client.products.map(p => `<tr>
       <td>${esc(p.code)}</td><td>${esc(p.description)}</td><td><span style="color:${CATEGORY_COLOR[p.category]||CATEGORY_COLOR.other}">${esc(CATEGORY_LABELS[p.category]||p.category)}</span></td>${showDistCol?`<td><span class="pill pill-gray">${esc(DISTRIBUTORS[p.distributor])}</span></td>`:''}<td style="color:var(--text3);font-size:12px;white-space:nowrap">${esc(p.dateLabel||'-')}</td><td>${p.qty}</td><td>${p.amount ? 'USD '+p.amount.toLocaleString('es-AR') : '-'}</td>
     </tr>`).join('')}</tbody>
