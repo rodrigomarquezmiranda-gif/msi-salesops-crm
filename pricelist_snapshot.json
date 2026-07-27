@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-07-22T17:23:32Z",
-  "lastCheck": "22/07/2026 14:30",
-  "changesFound": false,
+  "capturedAt": "2026-07-27T12:56:51Z",
+  "lastCheck": "27/07/2026 09:56",
+  "changesFound": true,
   "priceLogic": "min(colQ, colR) — uses lower of Miami Price and Market Share price",
   "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw | Tab: LATAM",
   "notifEmails": [
@@ -1742,7 +1742,7 @@
       "partNumber": "MPG341CQPXQDOLED",
       "name": "MPG 341CQPX QD-OLED",
       "category": "Monitor",
-      "price": 704.0,
+      "price": 665.0,
       "miamiStock": 0,
       "miamiEta": "",
       "bondedStock": 28,
@@ -1752,7 +1752,7 @@
       "partNumber": "MPG321CURXQD-OLED",
       "name": "MPG 321CURX QD-OLED",
       "category": "Monitor",
-      "price": 880.0,
+      "price": 792.0,
       "miamiStock": 47,
       "miamiEta": "",
       "bondedStock": 41,
@@ -1772,7 +1772,7 @@
       "partNumber": "MPG321URXWQD-OLED",
       "name": "MPG 321URXW QD-OLED",
       "category": "Monitor",
-      "price": 880.0,
+      "price": 792.0,
       "miamiStock": 62,
       "miamiEta": "",
       "bondedStock": 0,
@@ -1793,7 +1793,7 @@
       "name": "MPG 272URX QD-OLED",
       "category": "Monitor",
       "price": 782.0,
-      "miamiStock": 0,
+      "miamiStock": 84,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1803,7 +1803,7 @@
       "name": "MAG 272UP QD-OLED X24",
       "category": "Monitor",
       "price": 665.0,
-      "miamiStock": 86,
+      "miamiStock": 54,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1814,7 +1814,7 @@
       "category": "Monitor",
       "price": 660.0,
       "miamiStock": 0,
-      "miamiEta": "",
+      "miamiEta": "Puedo pedir prestado",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -1834,7 +1834,7 @@
       "category": "Monitor",
       "price": 494.0,
       "miamiStock": 0,
-      "miamiEta": "",
+      "miamiEta": "Puedo pedir prestado",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -1853,7 +1853,7 @@
       "name": "MAG 272QP QD-OLED X24",
       "category": "Monitor",
       "price": 448.0,
-      "miamiStock": 91,
+      "miamiStock": 81,
       "miamiEta": "ETA 08/04 672pcs + ETA 08/26 672pcs",
       "bondedStock": 10,
       "bondedEta": ""
@@ -1863,7 +1863,7 @@
       "name": "MAG 274QP QD-OLED X24",
       "category": "Monitor",
       "price": 448.0,
-      "miamiStock": 5,
+      "miamiStock": 133,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1873,7 +1873,7 @@
       "name": "MPG 274URDFW E16M",
       "category": "Monitor",
       "price": 440.0,
-      "miamiStock": 5,
+      "miamiStock": 0,
       "miamiEta": "",
       "bondedStock": null,
       "bondedEta": ""
@@ -1893,7 +1893,7 @@
       "name": "MAG 346CQ",
       "category": "Monitor",
       "price": 220.0,
-      "miamiStock": 50,
+      "miamiStock": 4,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1903,7 +1903,7 @@
       "name": "MAG 321UPD E14",
       "category": "Monitor",
       "price": 293.0,
-      "miamiStock": 342,
+      "miamiStock": 328,
       "miamiEta": "ETA 08/23 320 pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1913,7 +1913,7 @@
       "name": "MAG 275UPD E14",
       "category": "Monitor",
       "price": 198.0,
-      "miamiStock": 2,
+      "miamiStock": 144,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1923,7 +1923,7 @@
       "name": "MAG 321CQF E18",
       "category": "Monitor",
       "price": 190.0,
-      "miamiStock": 141,
+      "miamiStock": 169,
       "miamiEta": "",
       "bondedStock": 155,
       "bondedEta": ""
@@ -1933,7 +1933,7 @@
       "name": "MAG 274CQPDF X32",
       "category": "Monitor",
       "price": 192.0,
-      "miamiStock": 116,
+      "miamiStock": 104,
       "miamiEta": "",
       "bondedStock": null,
       "bondedEta": ""
@@ -1943,7 +1943,7 @@
       "name": "MAG 274QPF X32",
       "category": "Monitor",
       "price": 192.0,
-      "miamiStock": 158,
+      "miamiStock": 124,
       "miamiEta": "ETA 08/09 798 pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1953,7 +1953,7 @@
       "name": "MAG 274QRFW X32",
       "category": "Monitor",
       "price": 192.0,
-      "miamiStock": 309,
+      "miamiStock": 304,
       "miamiEta": "ETA 09/02 798 pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1963,7 +1963,7 @@
       "name": "MAG 275CQDF X24",
       "category": "Monitor",
       "price": 148.0,
-      "miamiStock": 36,
+      "miamiStock": 191,
       "miamiEta": "ETA 08/23 966 pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1973,7 +1973,7 @@
       "name": "MAG 274QF X24",
       "category": "Monitor",
       "price": 145.0,
-      "miamiStock": 156,
+      "miamiStock": 116,
       "miamiEta": "ETA 08/09 1134pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2023,7 +2023,7 @@
       "name": "MAG 276CXF",
       "category": "Monitor",
       "price": 120.0,
-      "miamiStock": 913,
+      "miamiStock": 888,
       "miamiEta": "",
       "bondedStock": 116,
       "bondedEta": ""
@@ -2033,7 +2033,7 @@
       "name": "MAG 274CF X24",
       "category": "Monitor",
       "price": 115.0,
-      "miamiStock": 450,
+      "miamiStock": 420,
       "miamiEta": "ETA 08/13 966pcs",
       "bondedStock": 554,
       "bondedEta": ""
@@ -2043,7 +2043,7 @@
       "name": "MAG 272PF X24",
       "category": "Monitor",
       "price": 132.0,
-      "miamiStock": 748,
+      "miamiStock": 743,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2053,7 +2053,7 @@
       "name": "MAG 272F X24",
       "category": "Monitor",
       "price": 125.0,
-      "miamiStock": 415,
+      "miamiStock": 310,
       "miamiEta": "ETA 08/15 594pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2063,7 +2063,7 @@
       "name": "MAG 276CF E20",
       "category": "Monitor",
       "price": 112.0,
-      "miamiStock": 76,
+      "miamiStock": 66,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2113,7 +2113,7 @@
       "name": "MAG 245F X24",
       "category": "Monitor",
       "price": 102.0,
-      "miamiStock": 10,
+      "miamiStock": 40,
       "miamiEta": "ETA 08/11 800pcs + ETA 08/19 320pcs + ETA 08/23 80pcs + + ETA 09/06 80pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2143,7 +2143,7 @@
       "name": "MAG 245C X24",
       "category": "Monitor",
       "price": 102.0,
-      "miamiStock": 270,
+      "miamiStock": 220,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2265,7 +2265,7 @@
       "price": 98.0,
       "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 60,
+      "bondedStock": 50,
       "bondedEta": ""
     },
     "PROMP271E14A": {
@@ -2275,7 +2275,7 @@
       "price": 87.0,
       "miamiStock": 406,
       "miamiEta": "ETA 08/19 1134pcs + ETA 09/08 1134pcs",
-      "bondedStock": 1136,
+      "bondedStock": 611,
       "bondedEta": ""
     },
     "PROMP273WE14A": {
@@ -2293,7 +2293,7 @@
       "name": "PRO MP273L E14",
       "category": "Monitor",
       "price": 85.0,
-      "miamiStock": 164,
+      "miamiStock": 54,
       "miamiEta": "ETA 08/11 825pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2303,7 +2303,7 @@
       "name": "PRO MP251 E14L",
       "category": "Monitor",
       "price": 72.0,
-      "miamiStock": 1780,
+      "miamiStock": 780,
       "miamiEta": "ETA 08/19 1360pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2325,7 +2325,7 @@
       "price": 84.0,
       "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 186,
+      "bondedStock": 171,
       "bondedEta": ""
     },
     "PROMP242E14A": {
@@ -2333,7 +2333,7 @@
       "name": "PRO MP242 E14A",
       "category": "Monitor",
       "price": 74.0,
-      "miamiStock": 1660,
+      "miamiStock": 1650,
       "miamiEta": "",
       "bondedStock": 50,
       "bondedEta": ""
@@ -2353,7 +2353,7 @@
       "name": "PRO MP243L E14",
       "category": "Monitor",
       "price": 72.0,
-      "miamiStock": 112,
+      "miamiStock": 102,
       "miamiEta": "ETA 08/11 960pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2403,7 +2403,7 @@
       "name": "PRO MP165 E6",
       "category": "Monitor",
       "price": 84.0,
-      "miamiStock": 217,
+      "miamiStock": 202,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2413,7 +2413,7 @@
       "name": "MPG MT201DR V2",
       "category": "ARM",
       "price": 128.0,
-      "miamiStock": 77,
+      "miamiStock": 75,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2433,7 +2433,7 @@
       "name": "MPG MT161DR",
       "category": "ARM",
       "price": 95.0,
-      "miamiStock": 47,
+      "miamiStock": 45,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2453,7 +2453,7 @@
       "name": "MAG MT201DW",
       "category": "ARM",
       "price": 64.0,
-      "miamiStock": 33,
+      "miamiStock": 29,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2463,7 +2463,7 @@
       "name": "MAG MT201W",
       "category": "ARM",
       "price": 49.0,
-      "miamiStock": 83,
+      "miamiStock": 80,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2473,7 +2473,7 @@
       "name": "MAG MT201D",
       "category": "ARM",
       "price": 59.0,
-      "miamiStock": 323,
+      "miamiStock": 315,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2483,7 +2483,7 @@
       "name": "MAG MT201",
       "category": "ARM",
       "price": 49.0,
-      "miamiStock": 146,
+      "miamiStock": 140,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2493,7 +2493,7 @@
       "name": "MAG MT101DG",
       "category": "ARM",
       "price": 35.0,
-      "miamiStock": 20,
+      "miamiStock": 8,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2565,7 +2565,7 @@
       "price": 350.0,
       "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 45,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "CUBI512M086B": {
