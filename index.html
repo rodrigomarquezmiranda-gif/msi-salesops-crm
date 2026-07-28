@@ -965,7 +965,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.28.07.26.7';
+const APP_VERSION = '1.28.07.26.8';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -1047,7 +1047,33 @@ async function loadDB() {
     const old = localStorage.getItem(key);
     if (old) { try { await IDB.set(key, old); localStorage.removeItem(key); } catch(e) {} }
   }
-  try { const s = await IDB.get('salesops_db'); if(s) db = JSON.parse(s); } catch(e) {}
+  // ── Load db: try split storage first (new), fall back to monolith (legacy) ──
+  // Split storage: each pipeline in its own Firebase key to stay under 10MB limit.
+  try {
+    const piRaw = await IDB.get('salesops_pi').catch(()=>null);
+    if (piRaw !== null) {
+      // New split format — load all keys in parallel
+      const [berR,sorR,sirR,ppR,wkR,impR] = await Promise.all([
+        IDB.get('salesops_ber').catch(()=>null),
+        IDB.get('salesops_sor').catch(()=>null),
+        IDB.get('salesops_sir').catch(()=>null),
+        IDB.get('salesops_pp').catch(()=>null),
+        IDB.get('salesops_weekly').catch(()=>null),
+        IDB.get('salesops_imports').catch(()=>null),
+      ]);
+      db.pi            = piRaw  ? JSON.parse(piRaw)  : [];
+      db.ber           = berR   ? JSON.parse(berR)   : [];
+      db.sor           = sorR   ? JSON.parse(sorR)   : [];
+      db.sir           = sirR   ? JSON.parse(sirR)   : [];
+      db.pp            = ppR    ? JSON.parse(ppR)    : [];
+      db.weeklyReports = wkR    ? JSON.parse(wkR)    : [];
+      db.imports       = impR   ? JSON.parse(impR)   : [];
+    } else {
+      // Legacy monolith — load once, will auto-migrate on next save
+      const s = await IDB.get('salesops_db').catch(()=>null);
+      if (s) db = JSON.parse(s);
+    }
+  } catch(e) { console.error('Error cargando DB:', e); }
   if (!db.weeklyReports) db.weeklyReports = [];
   if (!db.imports) db.imports = [];
   try { const p = await IDB.get('salesops_pricelist'); if(p) priceList = JSON.parse(p); } catch(e) {}
@@ -1057,7 +1083,16 @@ async function loadDB() {
 function saveDB() {
   invalidateGroupsCache();
   _modelKeyCache.clear();
-  IDB.set('salesops_db', JSON.stringify(db)).catch(e => {
+  // Save each pipeline to its own Firebase node (avoids 10MB-per-node limit)
+  Promise.all([
+    IDB.set('salesops_pi',      JSON.stringify(db.pi           ||[])),
+    IDB.set('salesops_ber',     JSON.stringify(db.ber          ||[])),
+    IDB.set('salesops_sor',     JSON.stringify(db.sor          ||[])),
+    IDB.set('salesops_sir',     JSON.stringify(db.sir          ||[])),
+    IDB.set('salesops_pp',      JSON.stringify(db.pp           ||[])),
+    IDB.set('salesops_weekly',  JSON.stringify(db.weeklyReports||[])),
+    IDB.set('salesops_imports', JSON.stringify(db.imports      ||[])),
+  ]).catch(e => {
     console.error('Error guardando en Firebase:', e);
     const msg = e && e.code === 'PERMISSION_DENIED'
       ? 'Sin permisos para guardar en Firebase. Pedile al administrador que actualice las reglas de la base de datos.'
