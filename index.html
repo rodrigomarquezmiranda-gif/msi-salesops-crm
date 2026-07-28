@@ -965,7 +965,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.28.07.26.6'; // Fix version fmt + Links col + estado normalize + hyperlinks
+const APP_VERSION = '1.28.07.26.7';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -2000,10 +2000,10 @@ function normalizeEstado(e) {
   if(low.includes('shortage')) return 'Shortage';
   return e.trim();
 }
-function parseLatamStockRows(rows, fileName) {
+function parseLatamStockRows(rows, fileName, sheet) {
   const products=[], seen=new Set();
   let currentCat='', seenCat=false;
-  rows.forEach(row=>{
+  rows.forEach((row,rowIdx)=>{
     if(!row) return;
     const a=String(row[LATAM_COL.upc]||'').trim();
     const b=String(row[LATAM_COL.code]||'').trim();
@@ -2045,8 +2045,17 @@ function parseLatamStockRows(rows, fileName) {
     const desc=c;
     const detalle=String(row[LATAM_COL.detalle]||'').trim()||null;
     const estado=normalizeEstado(String(row[LATAM_COL.estado]||'').trim()||null);
-    const fichaRaw=row[LATAM_COL.ficha];
-    const ficha=fichaRaw?String(fichaRaw).trim()||null:null;
+    // Hyperlink in ficha col: check raw sheet cell for link target first
+    let ficha=null;
+    if(sheet){
+      const cellRef=XLSX.utils.encode_cell({r:rowIdx,c:LATAM_COL.ficha});
+      const rawCell=sheet[cellRef];
+      if(rawCell?.l?.Target) ficha=rawCell.l.Target;
+      else if(rawCell?.v) ficha=String(rawCell.v).trim()||null;
+    } else {
+      const fichaRaw=row[LATAM_COL.ficha];
+      if(fichaRaw) ficha=String(fichaRaw).trim()||null;
+    }
     const qtyCtn=parseStockNum(row[LATAM_COL.qtyCtn]);
     const qtyPlt=parseStockNum(row[LATAM_COL.qtyPlt]);
     const priceQ=parsePriceVal(row[LATAM_COL.price]);
@@ -2073,8 +2082,9 @@ async function parsePriceListFile(file) {
   }
   // Prefer LATAM sheet, then price/precio sheet, else first
   const sheetName=wb.SheetNames.find(n=>/latam/i.test(n))||wb.SheetNames.find(n=>/price|precio/i.test(n))||wb.SheetNames[0];
-  const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{header:1,raw:true,defval:null});
-  if(isLatamStockFormat(rows)) return parseLatamStockRows(rows,file.name);
+  const sheet=wb.Sheets[sheetName];
+  const rows=XLSX.utils.sheet_to_json(sheet,{header:1,raw:true,defval:null});
+  if(isLatamStockFormat(rows)) return parseLatamStockRows(rows,file.name,sheet);
   // Generic fallback
   const headerIdx=findHeaderRowIndex(rows);
   const headers=rows[headerIdx]||[];
@@ -2147,6 +2157,7 @@ async function exportPriceListExcel() {
   const NAVY='FF1F2A44', NAVY2='FF30456B', RED='FFC8102E', WHITE='FFFFFFFF';
   const SUBSEC='FFDCE6F1'; // sub-section banner (light blue, matching reference)
   const ALT1='FFFFFFFF', ALT2='FFF7F9FC';
+  const BORDER={top:{style:'thin',color:{argb:'FFCCCCCC'}},left:{style:'thin',color:{argb:'FFCCCCCC'}},bottom:{style:'thin',color:{argb:'FFCCCCCC'}},right:{style:'thin',color:{argb:'FFCCCCCC'}}};
 
   // 13 columns: UPC, N°Parte, Producto, Detalle, Estado, Links, Qty/Ctn, Qty/Plt,
   //             Miami Stock, Miami ETA, Miami Bonded, Miami Bonded ETA, Precio
@@ -2258,13 +2269,15 @@ async function exportPriceListExcel() {
 
     const setC=(col,val,fontOpts,numFmt,halign)=>{
       const c=ws.getCell(prn,col);
-      c.value=val; c.fill=sf(bg);
+      c.value=val; c.fill=sf(bg); c.border=BORDER;
       c.font=fontOpts||{size:10,name:'Calibri'};
       c.alignment={horizontal:halign||'left',vertical:'middle'};
       if(numFmt) c.numFmt=numFmt;
     };
 
-    setC(1, item.upc?String(item.upc):'', {size:10,name:'Calibri'}, '@', 'center');
+    // UPC: store as number to avoid "number stored as text" warning triangle
+    const upcNum=item.upc&&!isNaN(+item.upc)?+item.upc:'';
+    setC(1, upcNum, {size:10,name:'Calibri'}, typeof upcNum==='number'?'0':null, 'center');
     setC(2, item.code||'', null, null, 'center');
     setC(3, item.desc||'', {bold:true,size:10,name:'Calibri'}, null, 'left');
     setC(4, item.detalle||'', {italic:true,size:9,color:{argb:'FF666666'},name:'Calibri'}, null, 'left');
@@ -2280,6 +2293,7 @@ async function exportPriceListExcel() {
     ec.fill=eFill?sf(eFill):sf(bg);
     ec.font={size:9,bold:eBold,color:{argb:eText},name:'Calibri'};
     ec.alignment={horizontal:'center',vertical:'middle'};
+    ec.border=BORDER;
 
     // Links (col 6): hyperlink if URL, plain text otherwise
     {
@@ -2287,7 +2301,8 @@ async function exportPriceListExcel() {
       const fv=item.ficha||'';
       lc.fill=sf(bg);
       lc.alignment={horizontal:'center',vertical:'middle'};
-      if(fv && (fv.startsWith('http')||fv.startsWith('www'))) {
+      lc.border=BORDER;
+      if(fv && (fv.startsWith('http')||fv.startsWith('www')||fv.startsWith('ftp'))) {
         lc.value={text:'Links',hyperlink:fv};
         lc.font={size:9,color:{argb:'FF0563C1'},underline:true,name:'Calibri'};
       } else if(fv) {
@@ -2307,7 +2322,7 @@ async function exportPriceListExcel() {
     // Precio: $ format, no decimals, bold dark green
     setC(13, item.price!=null?item.price:'',
       {bold:true,size:10,name:'Calibri',color:{argb:'FF1A5C28'}},
-      item.price!=null?'$#,##0':null, 'right');
+      item.price!=null?'$#,##0':null, 'center');
   });
 
   const buf=await wb.xlsx.writeBuffer();
