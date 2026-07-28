@@ -965,7 +965,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.28.07.26.2';
+const APP_VERSION = '1.28.07.26.3';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -2069,126 +2069,130 @@ async function exportPriceListExcel() {
   const products = priceList.products || [];
   if(!products.length) { alert('No hay lista de precios cargada.'); return; }
   if(!window.ExcelJS) { alert('ExcelJS no cargó — revisá la conexión.'); return; }
+
+  // Infer category from code/desc when not stored (products loaded before parser update)
+  function inferCat(code, desc) {
+    const d=(desc||'').toLowerCase(), c=(code||'').toLowerCase();
+    if(d.includes('geforce')||d.includes('radeon')||/^g[45]\d{3}/.test(c)) return 'VGA';
+    if(d.includes(' ssd')||d.includes('nvme')||c.startsWith('spatm')) return 'SSD';
+    if(d.includes('cubi')||d.includes('mini pc')||d.includes('minipc')) return 'MiniPC';
+    if(/\barm\b/.test(d)&&(d.includes('soporte')||d.includes('stand')||d.includes('monitor arm'))) return 'ARM';
+    if((d.includes('liquid')&&d.includes('cool'))||d.includes(' aio ')||d.includes('frozr')) return 'Cooling';
+    if(/\bpsu\b/.test(d)||/\d{3,4}w\b/.test(d)||d.includes('power supply')||d.includes('fuente')) return 'PSU';
+    if(d.includes('gabinete')||/\bchassis\b/.test(d)||d.includes('chasis')||d.includes(' tower')) return 'Chassis';
+    if(d.includes('monitor')||/^m[fpd]\d/.test(c)||/mag \d{2,3}[quf]/.test(d)) return 'Monitor';
+    if(d.includes('gaming gear')||d.includes('mouse')||d.includes('keyboard')||d.includes('headset')) return 'Accessories';
+    if(d.includes('router')||(/wifi/.test(d)&&d.includes('adapt'))||d.includes('network card')) return 'Networking';
+    return 'MB';
+  }
+
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('Lista de Precios');
   const today = new Date();
   const dd=String(today.getDate()).padStart(2,'0'), mm=String(today.getMonth()+1).padStart(2,'0'), yy=today.getFullYear();
   const dateStr=`${dd}/${mm}/${yy}`;
-  const NC=8; // number of columns
-  const NAVY='FF1F2A44', NAVY2='FF30456B', RED='FFC8102E', WHITE='FFFFFFFF', LGRAY='FFF9F9F9';
+  const NC=8;
+  const NAVY='FF1F2A44', NAVY2='FF30456B', RED='FFC8102E', WHITE='FFFFFFFF';
+  const ALT1='FFFFFFFF', ALT2='FFF7F9FC'; // alternating fills matching reference
 
-  // Column widths
   ws.columns=[{width:16},{width:20},{width:42},{width:12},{width:20},{width:14},{width:22},{width:13}];
 
-  // Helper: style the master cell of a merged row
-  const masterCell=(rn)=>ws.getCell(rn,1);
-  const applyFill=(c,argb)=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb}}; };
-  const applyFont=(c,opts)=>{ c.font=opts; };
-  const mergeRow=(rn)=>ws.mergeCells(rn,1,rn,NC);
+  const sf=(argb)=>({type:'pattern',pattern:'solid',fgColor:{argb}});
 
-  // ── ROW 1: Title ─────────────────────────────────────────
-  ws.addRow(['MSI LATAM — Lista de Precios y Stock']); mergeRow(1);
-  const mc1=masterCell(1);
-  applyFill(mc1,NAVY); applyFont(mc1,{bold:true,size:18,color:{argb:WHITE},name:'Calibri'});
-  mc1.alignment={horizontal:'left',vertical:'middle'}; ws.getRow(1).height=31.5;
+  // Helper: add empty row, merge full width, set value + style on master cell
+  const addMR=(val,fillArgb,fontOpts,height)=>{
+    ws.addRow([]);
+    const rn=ws.lastRow.number;
+    ws.mergeCells(rn,1,rn,NC);
+    const mc=ws.getCell(`A${rn}`);
+    if(val) mc.value=val;
+    if(fillArgb) mc.fill=sf(fillArgb);
+    if(fontOpts) mc.font=fontOpts;
+    mc.alignment={horizontal:'left',vertical:'middle'};
+    if(height) ws.getRow(rn).height=height;
+    return mc;
+  };
 
-  // ── ROW 2: Date ───────────────────────────────────────────
-  ws.addRow([`Fecha de referencia: ${dateStr}`]); mergeRow(2);
-  const mc2=masterCell(2);
-  applyFill(mc2,NAVY2); applyFont(mc2,{size:11,color:{argb:WHITE},name:'Calibri'});
-  mc2.alignment={horizontal:'left',vertical:'middle'};
-
-  // ── ROWS 3-4: empty ───────────────────────────────────────
-  ws.addRow([]); mergeRow(3);
-  ws.addRow([]); mergeRow(4);
-
-  // ── ROW 5: Notas label ────────────────────────────────────
-  ws.addRow(['Notas']); mergeRow(5);
-  applyFont(masterCell(5),{bold:true,size:10,name:'Calibri'});
-
-  // ── ROWS 6-7: Notes ───────────────────────────────────────
+  // ── Rows 1-8: header section (matches reference structure) ──
+  addMR('MSI LATAM — Lista de Precios y Stock',NAVY,{bold:true,size:18,color:{argb:WHITE},name:'Calibri'},31.5);
+  addMR(`Fecha de referencia: ${dateStr}`,NAVY2,{size:11,color:{argb:WHITE},name:'Calibri'},15);
+  addMR(null,null,null,null); // row 3: empty
+  addMR('Notas',null,{bold:true,size:10,name:'Calibri'},15);
   const nf={size:9,color:{argb:'FF555555'},name:'Calibri'};
-  ws.addRow(['Miami Stock: físicamente en Miami.   Miami Bonded Stock: en Miami Bonded / FTZ.   ETA: llegada estimada.']); mergeRow(6); applyFont(masterCell(6),nf);
-  ws.addRow(['Precio: valor efectivo = mínimo entre Miami Price y Market Share Price cuando ambos tienen valor.']); mergeRow(7); applyFont(masterCell(7),nf);
+  addMR('Miami Stock: físicamente en Miami.   Miami Bonded Stock: en Miami Bonded / FTZ.   ETA: llegada estimada.',null,nf,15);
+  addMR('Precio (USD): valor efectivo = mínimo entre Miami Price y Market Share Price.',null,nf,15);
+  addMR(`Exportado desde SalesOps CRM · ${dateStr}`,null,nf,15);
+  addMR(null,null,null,null); // row 8: empty
 
-  // ── ROW 8: empty ──────────────────────────────────────────
-  ws.addRow([]); mergeRow(8);
-
-  // ── ROW 9: Column headers (FROZEN) ────────────────────────
-  const r9=ws.addRow(['UPC','N° de Parte','Producto','Miami Stock','Miami ETA','Miami Bonded Stock','Miami Bonded ETA','Precio (USD)']);
-  r9.eachCell((c,col)=>{
-    if(col>NC) return;
-    applyFill(c,NAVY); applyFont(c,{bold:true,size:10,color:{argb:WHITE},name:'Calibri'});
+  // ── Row 9: Column headers (FROZEN) ──────────────────────────
+  ws.addRow([]);
+  const hr=ws.lastRow.number; // should be 9
+  ['UPC','N° de Parte','Producto','Miami Stock','Miami ETA','Miami Bonded Stock','Miami Bonded ETA','Precio (USD)'].forEach((h,i)=>{
+    const c=ws.getCell(hr,i+1);
+    c.value=h; c.fill=sf(NAVY);
+    c.font={bold:true,size:10,color:{argb:WHITE},name:'Calibri'};
     c.alignment={horizontal:'center',vertical:'middle',wrapText:true};
   });
-  r9.height=30;
-
-  // Freeze row 9 (first unfrozen row = 10)
+  ws.getRow(hr).height=30;
   ws.views=[{state:'frozen',ySplit:9,xSplit:0,topLeftCell:'A10',activeCell:'A10'}];
 
-  // ── ROWS 10-13: empty buffer ───────────────────────────────
-  for(let r=10;r<=13;r++){ ws.addRow([]); mergeRow(r); }
-
-  // ── ROWS 14+: Products by category ────────────────────────
+  // ── Row 10+: Products by category (no buffer rows) ───────────
   const CAT_ORDER=['VGA','MB','SSD','Networking','Accessories','Monitor','ARM','MiniPC','Chassis','Cooling','PSU'];
   const CAT_LABELS={VGA:'VGA',MB:'MB',SSD:'SSD',Networking:'Networking',Accessories:'Accesorios',Monitor:'Monitores',ARM:'ARM — Soportes de Monitor',MiniPC:'Mini PC (CUBI)',Chassis:'Gabinetes',Cooling:'Cooling / Refrigeración',PSU:'PSU / Fuentes de Poder'};
-  const grouped={};
-  products.forEach(p=>{const c=p.category||'Otros';if(!grouped[c])grouped[c]=[];grouped[c].push(p);});
-  const cats=[...CAT_ORDER.filter(c=>grouped[c]),...Object.keys(grouped).filter(c=>!CAT_ORDER.includes(c)&&c!=='Bundle'&&grouped[c]?.length)];
 
-  let rowNum=14, odd=false;
+  const grouped={};
+  products.forEach(p=>{
+    const cat=p.category||inferCat(p.code,p.desc);
+    if(cat==='Bundle') return;
+    if(!grouped[cat]) grouped[cat]=[];
+    grouped[cat].push(p);
+  });
+  const cats=[...CAT_ORDER.filter(c=>grouped[c]),...Object.keys(grouped).filter(c=>!CAT_ORDER.includes(c)&&grouped[c]?.length)];
+
+  let odd=false;
   cats.forEach(cat=>{
     const prods=grouped[cat]; if(!prods?.length) return;
 
-    // Category header row (red, merged)
-    ws.addRow([CAT_LABELS[cat]||cat]); mergeRow(rowNum);
-    const catMc=ws.getCell(rowNum,1);
-    applyFill(catMc,RED); applyFont(catMc,{bold:true,size:11,color:{argb:WHITE},name:'Calibri'});
-    catMc.alignment={horizontal:'left',vertical:'middle'};
-    ws.getRow(rowNum).height=21.75;
-    rowNum++;
+    // Category header: add empty row → merge → set value + fill on master cell
+    ws.addRow([]);
+    const crn=ws.lastRow.number;
+    ws.mergeCells(crn,1,crn,NC);
+    const cmc=ws.getCell(`A${crn}`);
+    cmc.value=CAT_LABELS[cat]||cat;
+    cmc.fill=sf(RED);
+    cmc.font={bold:true,size:11,color:{argb:WHITE},name:'Calibri'};
+    cmc.alignment={horizontal:'left',vertical:'middle'};
+    ws.getRow(crn).height=21.75;
 
     // Product rows
     prods.forEach(p=>{
-      const bg=odd?LGRAY:'FFFFFFFF'; odd=!odd;
-      // UPC stored as text string to avoid green-triangle warning
-      const upcText=p.upc?String(p.upc):'';
-      const pRow=ws.addRow([upcText,p.code||'',p.desc||'',p.miamiStock??'',p.miamiEta||'',p.bondedStock??'',p.bondedEta||'',p.price!=null?p.price:'']);
-      pRow.height=16;
-      pRow.eachCell({includeEmpty:true},(cell,col)=>{
-        if(col>NC) return;
-        applyFill(cell,bg);
-        if(col===1){ // UPC: text format, centered
-          cell.numFmt='@'; // force text → no green triangle
-          applyFont(cell,{size:10,name:'Calibri'});
-          cell.alignment={horizontal:'center',vertical:'middle'};
-        } else if(col===2){ // N° de Parte: centered
-          applyFont(cell,{size:10,name:'Calibri'});
-          cell.alignment={horizontal:'center',vertical:'middle'};
-        } else if(col===3){ // Producto: bold, centered
-          applyFont(cell,{bold:true,size:10,name:'Calibri'});
-          cell.alignment={horizontal:'center',vertical:'middle',wrapText:false};
-        } else if(col===8){ // Precio: green bold, right-aligned
-          applyFont(cell,{bold:true,size:10,name:'Calibri',color:{argb:'FF1A5C28'}});
-          cell.alignment={horizontal:'right',vertical:'middle'};
-          if(p.price!=null) cell.numFmt='"USD "#,##0.00';
-        } else if(col===4||col===6){ // Stock numbers: centered
-          applyFont(cell,{size:10,name:'Calibri'});
-          cell.alignment={horizontal:'center',vertical:'middle'};
-        } else {
-          applyFont(cell,{size:10,name:'Calibri'});
-          cell.alignment={horizontal:'left',vertical:'middle'};
-        }
-      });
-      rowNum++;
+      const bg=odd?ALT2:ALT1; odd=!odd;
+      ws.addRow([]);
+      const prn=ws.lastRow.number;
+      ws.getRow(prn).height=16;
+      const setC=(col,val,fontOpts,numFmt,halign)=>{
+        const c=ws.getCell(prn,col);
+        c.value=val; c.fill=sf(bg);
+        c.font=fontOpts||{size:10,name:'Calibri'};
+        c.alignment={horizontal:halign||'left',vertical:'middle'};
+        if(numFmt) c.numFmt=numFmt;
+      };
+      setC(1,p.upc?String(p.upc):'',{size:10,name:'Calibri'},'@','center');
+      setC(2,p.code||'',null,null,'center');
+      setC(3,p.desc||'',{bold:true,size:10,name:'Calibri'},null,'center');
+      setC(4,p.miamiStock??'',null,null,'center');
+      setC(5,p.miamiEta||'');
+      setC(6,p.bondedStock??'',null,null,'center');
+      setC(7,p.bondedEta||'');
+      setC(8,p.price!=null?p.price:'',{bold:true,size:10,name:'Calibri',color:{argb:'FF1A5C28'}},p.price!=null?'"USD "#,##0.00':null,'right');
     });
   });
 
-  // Generate and download
   const buf=await wb.xlsx.writeBuffer();
   const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url; a.download=`MSI LATAM - Lista de Precios - ${dd}.${mm}.${yy}.xlsx`;
+  const a=document.createElement('a'); a.href=url;
+  a.download=`MSI LATAM - Lista de Precios - ${dd}.${mm}.${yy}.xlsx`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
