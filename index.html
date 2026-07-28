@@ -965,7 +965,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.28.07.26.3';
+const APP_VERSION = '1.28.07.26.4';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -1963,7 +1963,7 @@ function isLatamStockFormat(rows) {
   return rows.some(r => r && String(r[1]||'').trim().toLowerCase().includes('numero de parte'));
 }
 // LATAM columns (0-based): A=0 upc, B=1 code, C=2 desc, I=8 miamiStock, J=9 miamiEta, K=10 bondedStock, L=11 bondedEta, Q=16 price
-const LATAM_COL = { upc:0, code:1, desc:2, miamiStock:8, miamiEta:9, bondedStock:10, bondedEta:11, price:16 };
+const LATAM_COL = { upc:0, code:1, desc:2, detalle:3, estado:4, ficha:5, qtyCtn:6, qtyPlt:7, miamiStock:8, miamiEta:9, bondedStock:10, bondedEta:11, price:16, priceR:17 };
 const LATAM_SKIP_KEYWORDS = ['numero de parte','sku','upc','codigo','part number','miami stock','miami price'];
 const LATAM_CAT_MAP = {'bundle':'Bundle','vga':'VGA','mb':'MB','ssd':'SSD','networking':'Networking','gd':'Networking','accesorios':'Accessories','accessories':'Accessories','monitor':'Monitor','monitores':'Monitor','arm':'ARM','minipc':'MiniPC','cubi':'MiniPC','gabinete':'Chassis','gabinetes':'Chassis','chassis':'Chassis','cooling':'Cooling','psu':'PSU'};
 function parseLatamStockRows(rows, fileName) {
@@ -1978,18 +1978,31 @@ function parseLatamStockRows(rows, fileName) {
     if(!b) return;
     if(b.includes('---')||b.includes('===')||b.length>60) return;
     const bLow=b.toLowerCase();
-    if(LATAM_SKIP_KEYWORDS.some(k=>bLow.includes(k))) return;
+    if(LATAM_SKIP_KEYWORDS.some(k=>bLow.includes(k))) {
+      // Header row: ['UPC','Numero de Parte','VGA',...] — col C carries the category name
+      const c=String(row[LATAM_COL.desc]||'').trim();
+      const cat=LATAM_CAT_MAP[c.toLowerCase()];
+      if(cat) currentCat=cat;
+      return;
+    }
     if(seen.has(bLow)) return;
     seen.add(bLow);
     const upc=a;
     const desc=String(row[LATAM_COL.desc]||'').trim();
-    const price=parsePriceVal(row[LATAM_COL.price]);
+    const detalle=String(row[LATAM_COL.detalle]||'').trim()||null;
+    const estado=String(row[LATAM_COL.estado]||'').trim()||null;
+    const ficha=row[LATAM_COL.ficha]?'Ver ficha':null;
+    const qtyCtn=parseStockNum(row[LATAM_COL.qtyCtn]);
+    const qtyPlt=parseStockNum(row[LATAM_COL.qtyPlt]);
+    const priceQ=parsePriceVal(row[LATAM_COL.price]);
+    const priceR=parsePriceVal(row[LATAM_COL.priceR]);
+    const price=(priceQ!==null&&priceR!==null)?Math.min(priceQ,priceR):(priceQ??priceR);
     const miamiStock=parseStockNum(row[LATAM_COL.miamiStock]);
     const miamiEta=String(row[LATAM_COL.miamiEta]||'').trim()||null;
     const bondedStock=parseStockNum(row[LATAM_COL.bondedStock]);
     const bondedEta=String(row[LATAM_COL.bondedEta]||'').trim()||null;
     if(!desc&&price===null) return;
-    products.push({code:b,desc,price,miamiStock,miamiEta,bondedStock,bondedEta,upc,category:currentCat});
+    products.push({code:b,desc,detalle,estado,ficha,qtyCtn,qtyPlt,price,priceQ,miamiStock,miamiEta,bondedStock,bondedEta,upc,category:currentCat});
   });
   return {products,sourceFile:fileName,isLatamFormat:true};
 }
@@ -2091,15 +2104,20 @@ async function exportPriceListExcel() {
   const today = new Date();
   const dd=String(today.getDate()).padStart(2,'0'), mm=String(today.getMonth()+1).padStart(2,'0'), yy=today.getFullYear();
   const dateStr=`${dd}/${mm}/${yy}`;
-  const NC=8;
+  const NC=15; // 15 columns A:O matching reference exactly
   const NAVY='FF1F2A44', NAVY2='FF30456B', RED='FFC8102E', WHITE='FFFFFFFF';
   const ALT1='FFFFFFFF', ALT2='FFF7F9FC'; // alternating fills matching reference
 
-  ws.columns=[{width:16},{width:20},{width:42},{width:12},{width:20},{width:14},{width:22},{width:13}];
+  // 15 columns matching reference exactly: A-O
+  ws.columns=[
+    {width:16},{width:20},{width:40},{width:28},{width:12},{width:11},
+    {width:9},{width:13},{width:12},{width:20},{width:14},{width:22},
+    {width:13},{width:9},{width:13}
+  ];
 
   const sf=(argb)=>({type:'pattern',pattern:'solid',fgColor:{argb}});
 
-  // Helper: add empty row, merge full width, set value + style on master cell
+  // Helper: add empty row, merge full width (A:O), set value + style on master cell
   const addMR=(val,fillArgb,fontOpts,height)=>{
     ws.addRow([]);
     const rn=ws.lastRow.number;
@@ -2113,21 +2131,22 @@ async function exportPriceListExcel() {
     return mc;
   };
 
-  // ── Rows 1-8: header section (matches reference structure) ──
+  // ── Rows 1-8: header section (identical to reference) ──────
   addMR('MSI LATAM — Lista de Precios y Stock',NAVY,{bold:true,size:18,color:{argb:WHITE},name:'Calibri'},31.5);
   addMR(`Fecha de referencia: ${dateStr}`,NAVY2,{size:11,color:{argb:WHITE},name:'Calibri'},15);
   addMR(null,null,null,null); // row 3: empty
   addMR('Notas',null,{bold:true,size:10,name:'Calibri'},15);
   const nf={size:9,color:{argb:'FF555555'},name:'Calibri'};
-  addMR('Miami Stock: físicamente en Miami.   Miami Bonded Stock: en Miami Bonded / FTZ.   ETA: llegada estimada.',null,nf,15);
-  addMR('Precio (USD): valor efectivo = mínimo entre Miami Price y Market Share Price.',null,nf,15);
+  addMR('Miami Stock: físicamente en Miami.   Miami Bonded Stock: físicamente en Miami Bonded / FTZ.   ETA: llegada estimada.',null,nf,15);
+  addMR('Precio: se toma el valor de la columna Miami Price; si existe un precio de Market Share menor, se usa el más bajo de los dos.',null,nf,15);
   addMR(`Exportado desde SalesOps CRM · ${dateStr}`,null,nf,15);
   addMR(null,null,null,null); // row 8: empty
 
-  // ── Row 9: Column headers (FROZEN) ──────────────────────────
+  // ── Row 9: Column headers (FROZEN) ─────────────────────────
   ws.addRow([]);
-  const hr=ws.lastRow.number; // should be 9
-  ['UPC','N° de Parte','Producto','Miami Stock','Miami ETA','Miami Bonded Stock','Miami Bonded ETA','Precio (USD)'].forEach((h,i)=>{
+  const hr=ws.lastRow.number; // = 9
+  ['UPC','N° de Parte','Producto','Detalle','Estado','Ficha','Qty/Ctn','Qty/Plt',
+   'Miami Stock','Miami ETA','Miami Bonded Stock','Miami Bonded ETA','Precio (USD)','Q','R'].forEach((h,i)=>{
     const c=ws.getCell(hr,i+1);
     c.value=h; c.fill=sf(NAVY);
     c.font={bold:true,size:10,color:{argb:WHITE},name:'Calibri'};
@@ -2136,7 +2155,7 @@ async function exportPriceListExcel() {
   ws.getRow(hr).height=30;
   ws.views=[{state:'frozen',ySplit:9,xSplit:0,topLeftCell:'A10',activeCell:'A10'}];
 
-  // ── Row 10+: Products by category (no buffer rows) ───────────
+  // ── Row 10+: Products by category (no buffer rows) ──────────
   const CAT_ORDER=['VGA','MB','SSD','Networking','Accessories','Monitor','ARM','MiniPC','Chassis','Cooling','PSU'];
   const CAT_LABELS={VGA:'VGA',MB:'MB',SSD:'SSD',Networking:'Networking',Accessories:'Accesorios',Monitor:'Monitores',ARM:'ARM — Soportes de Monitor',MiniPC:'Mini PC (CUBI)',Chassis:'Gabinetes',Cooling:'Cooling / Refrigeración',PSU:'PSU / Fuentes de Poder'};
 
@@ -2149,11 +2168,10 @@ async function exportPriceListExcel() {
   });
   const cats=[...CAT_ORDER.filter(c=>grouped[c]),...Object.keys(grouped).filter(c=>!CAT_ORDER.includes(c)&&grouped[c]?.length)];
 
-  let odd=false;
   cats.forEach(cat=>{
     const prods=grouped[cat]; if(!prods?.length) return;
 
-    // Category header: add empty row → merge → set value + fill on master cell
+    // Category header: add empty row → merge A:O → set value + fill on master cell
     ws.addRow([]);
     const crn=ws.lastRow.number;
     ws.mergeCells(crn,1,crn,NC);
@@ -2164,12 +2182,12 @@ async function exportPriceListExcel() {
     cmc.alignment={horizontal:'left',vertical:'middle'};
     ws.getRow(crn).height=21.75;
 
-    // Product rows
-    prods.forEach(p=>{
-      const bg=odd?ALT2:ALT1; odd=!odd;
+    // Product rows — alternating fills reset per category (first row = white)
+    prods.forEach((p,idx)=>{
+      const bg=idx%2===0?ALT1:ALT2;
       ws.addRow([]);
       const prn=ws.lastRow.number;
-      ws.getRow(prn).height=16;
+      ws.getRow(prn).height=15;
       const setC=(col,val,fontOpts,numFmt,halign)=>{
         const c=ws.getCell(prn,col);
         c.value=val; c.fill=sf(bg);
@@ -2177,14 +2195,21 @@ async function exportPriceListExcel() {
         c.alignment={horizontal:halign||'left',vertical:'middle'};
         if(numFmt) c.numFmt=numFmt;
       };
-      setC(1,p.upc?String(p.upc):'',{size:10,name:'Calibri'},'@','center');
-      setC(2,p.code||'',null,null,'center');
-      setC(3,p.desc||'',{bold:true,size:10,name:'Calibri'},null,'center');
-      setC(4,p.miamiStock??'',null,null,'center');
-      setC(5,p.miamiEta||'');
-      setC(6,p.bondedStock??'',null,null,'center');
-      setC(7,p.bondedEta||'');
-      setC(8,p.price!=null?p.price:'',{bold:true,size:10,name:'Calibri',color:{argb:'FF1A5C28'}},p.price!=null?'"USD "#,##0.00':null,'right');
+      setC(1, p.upc?String(p.upc):'', {size:10,name:'Calibri'}, '@', 'center');
+      setC(2, p.code||'', null, null, 'center');
+      setC(3, p.desc||'', null, null, 'left');
+      setC(4, p.detalle||'', {size:9,name:'Calibri'}, null, 'left');
+      setC(5, p.estado||'', {size:9,name:'Calibri'}, null, 'center');
+      setC(6, p.ficha||'', {size:9,color:{argb:'FF1A5C28'},name:'Calibri'}, null, 'center');
+      setC(7, p.qtyCtn??'', null, null, 'center');
+      setC(8, p.qtyPlt??'', null, null, 'center');
+      setC(9, p.miamiStock??'', null, null, 'center');
+      setC(10, p.miamiEta||'', null, null, 'left');
+      setC(11, p.bondedStock??'', null, null, 'center');
+      setC(12, p.bondedEta||'', null, null, 'left');
+      setC(13, p.price!=null?p.price:'', {bold:true,size:10,name:'Calibri',color:{argb:'FF1A5C28'}}, p.price!=null?'"USD "#,##0.00':null, 'right');
+      setC(14, p.priceQ!=null?p.priceQ:'', null, p.priceQ!=null?'"USD "#,##0.00':null, 'right');
+      setC(15, '', null, null, 'right'); // R (Market Share) — not stored separately
     });
   });
 
