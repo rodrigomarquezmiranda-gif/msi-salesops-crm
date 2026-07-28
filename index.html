@@ -965,7 +965,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.28.07.28.1';
+const APP_VERSION = '1.28.07.26.6'; // Fix version fmt + Links col + estado normalize + hyperlinks
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -1988,6 +1988,18 @@ const LATAM_CAT_MAP = {
   'liquid cooling':'Liquid Cooling','cooling':'Liquid Cooling',
   'psu':'PSU'
 };
+function normalizeEstado(e) {
+  if(!e) return null;
+  const low=e.toLowerCase().trim();
+  if(low.includes('new')) return 'NEW!';
+  if(low.includes('focus')) return 'FOCUS!';
+  if(low.includes('wall plug')) return 'WALL PLUG!';
+  if(low.includes('last batch')||low.includes('eol soon')) return 'Last Batch / EOL Soon';
+  if(low.includes('eol')) return 'EOL';
+  if(low.includes('to clean')) return 'To Clean';
+  if(low.includes('shortage')) return 'Shortage';
+  return e.trim();
+}
 function parseLatamStockRows(rows, fileName) {
   const products=[], seen=new Set();
   let currentCat='', seenCat=false;
@@ -2032,8 +2044,9 @@ function parseLatamStockRows(rows, fileName) {
     const upc=a;
     const desc=c;
     const detalle=String(row[LATAM_COL.detalle]||'').trim()||null;
-    const estado=String(row[LATAM_COL.estado]||'').trim()||null;
-    const ficha=row[LATAM_COL.ficha]?'Ver ficha':null;
+    const estado=normalizeEstado(String(row[LATAM_COL.estado]||'').trim()||null);
+    const fichaRaw=row[LATAM_COL.ficha];
+    const ficha=fichaRaw?String(fichaRaw).trim()||null:null;
     const qtyCtn=parseStockNum(row[LATAM_COL.qtyCtn]);
     const qtyPlt=parseStockNum(row[LATAM_COL.qtyPlt]);
     const priceQ=parsePriceVal(row[LATAM_COL.price]);
@@ -2135,7 +2148,7 @@ async function exportPriceListExcel() {
   const SUBSEC='FFDCE6F1'; // sub-section banner (light blue, matching reference)
   const ALT1='FFFFFFFF', ALT2='FFF7F9FC';
 
-  // 13 columns: UPC, N°Parte, Producto, Detalle, Estado, Ficha, Qty/Ctn, Qty/Plt,
+  // 13 columns: UPC, N°Parte, Producto, Detalle, Estado, Links, Qty/Ctn, Qty/Plt,
   //             Miami Stock, Miami ETA, Miami Bonded, Miami Bonded ETA, Precio
   ws.columns=[
     {width:16},{width:20},{width:40},{width:28},{width:12},{width:11},
@@ -2171,7 +2184,7 @@ async function exportPriceListExcel() {
   // ── Row 9: Column headers (FROZEN) ─────────────────────────
   ws.addRow([]);
   const hr=ws.lastRow.number; // = 9
-  ['UPC','N° de Parte','Producto','Detalle','Estado','Ficha','Qty/Ctn','Qty/Plt',
+  ['UPC','N° de Parte','Producto','Detalle','Estado','Links','Qty/Ctn','Qty/Plt',
    'Miami Stock','Miami ETA','Miami Bonded Stock','Miami Bonded ETA','Precio'].forEach((h,i)=>{
     const c=ws.getCell(hr,i+1);
     c.value=h; c.fill=sf(NAVY);
@@ -2181,18 +2194,28 @@ async function exportPriceListExcel() {
   ws.getRow(hr).height=30;
   ws.views=[{state:'frozen',ySplit:9,xSplit:0,topLeftCell:'A10',activeCell:'A10'}];
 
-  // Estado → background color map
+  // Estado → background color map (keys must match normalizeEstado() output, lowercased)
   const estadoFill={
-    'new !':'FF92D050','nuevo':'FF92D050','new':'FF92D050','new!!!':'FF92D050',
-    'focus':'FF4472C4',
+    'new!':'FF92D050',
+    'focus!':'FF4472C4',
     'eol':'FFFF0000',
     'to clean':'FF808080',
-    'last batch':'FFFFC000','eol soon':'FFFFC000',
-    'shortage':'FFFF66CC'
+    'last batch / eol soon':'FFFFC000',
+    'shortage':'FFFF66CC',
+    'wall plug!':'FF808080'
   };
   const estadoTextColor={
-    'new !':WHITE,'nuevo':WHITE,'new':WHITE,'new!!!':WHITE,
-    'focus':WHITE,'eol':WHITE,'to clean':WHITE,'last batch':'FF000000','eol soon':'FF000000','shortage':WHITE
+    'new!':WHITE,
+    'focus!':WHITE,
+    'eol':WHITE,
+    'to clean':WHITE,
+    'last batch / eol soon':'FF000000',
+    'shortage':WHITE,
+    'wall plug!':'FF000000'
+  };
+  const estadoBold={
+    'new!':true,'focus!':true,'eol':true,'to clean':true,
+    'last batch / eol soon':true,'shortage':true,'wall plug!':true
   };
 
   // ── Row 10+: iterate in source order, emit category headers + sub-sections ─
@@ -2246,18 +2269,35 @@ async function exportPriceListExcel() {
     setC(3, item.desc||'', {bold:true,size:10,name:'Calibri'}, null, 'left');
     setC(4, item.detalle||'', {italic:true,size:9,color:{argb:'FF666666'},name:'Calibri'}, null, 'left');
 
-    // Estado: colored cell
+    // Estado: colored cell (normalizeEstado() already ran at parse time)
     const estadoVal=item.estado||'';
     const estadoKey=estadoVal.toLowerCase();
     const eFill=estadoFill[estadoKey];
     const eText=estadoTextColor[estadoKey]||'FF000000';
+    const eBold=estadoBold[estadoKey]||false;
     const ec=ws.getCell(prn,5);
     ec.value=estadoVal;
     ec.fill=eFill?sf(eFill):sf(bg);
-    ec.font={size:9,bold:!!eFill,color:{argb:eText},name:'Calibri'};
+    ec.font={size:9,bold:eBold,color:{argb:eText},name:'Calibri'};
     ec.alignment={horizontal:'center',vertical:'middle'};
 
-    setC(6, item.ficha||'', {size:9,color:{argb:'FF1A5C28'},name:'Calibri'}, null, 'center');
+    // Links (col 6): hyperlink if URL, plain text otherwise
+    {
+      const lc=ws.getCell(prn,6);
+      const fv=item.ficha||'';
+      lc.fill=sf(bg);
+      lc.alignment={horizontal:'center',vertical:'middle'};
+      if(fv && (fv.startsWith('http')||fv.startsWith('www'))) {
+        lc.value={text:'Links',hyperlink:fv};
+        lc.font={size:9,color:{argb:'FF0563C1'},underline:true,name:'Calibri'};
+      } else if(fv) {
+        lc.value=fv;
+        lc.font={size:9,color:{argb:'FF1A5C28'},name:'Calibri'};
+      } else {
+        lc.value='';
+        lc.font={size:9,name:'Calibri'};
+      }
+    }
     setC(7, item.qtyCtn??'', null, null, 'center');
     setC(8, item.qtyPlt??'', null, null, 'center');
     setC(9, item.miamiStock??'', null, null, 'center');
