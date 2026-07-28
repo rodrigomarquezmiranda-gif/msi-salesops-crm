@@ -965,7 +965,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.28.07.26.5';
+const APP_VERSION = '1.28.07.28.1';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -2083,8 +2083,8 @@ function buildProductsFromMapping(parsedList,mapping) {
   return products;
 }
 function diffPriceLists(oldProducts,newProducts) {
-  const oldMap=new Map(oldProducts.map(p=>[p.code.toUpperCase(),p]));
-  const newMap=new Map(newProducts.map(p=>[p.code.toUpperCase(),p]));
+  const oldMap=new Map(oldProducts.filter(p=>!p.isSubSection&&p.code).map(p=>[p.code.toUpperCase(),p]));
+  const newMap=new Map(newProducts.filter(p=>!p.isSubSection&&p.code).map(p=>[p.code.toUpperCase(),p]));
   const added=[],removed=[],changed=[];
   newMap.forEach((p,code)=>{if(!oldMap.has(code)) added.push(p);});
   oldMap.forEach((p,code)=>{if(!newMap.has(code)) removed.push(p);});
@@ -2113,7 +2113,7 @@ function renderPriceListView() {
   const diffBadge=hasChanges?` <span class="pill pill-amber" style="font-size:10px;vertical-align:middle">${diff.added.length} nuevos · ${diff.changed.length} cambios de precio</span>`:'';
   summary.innerHTML=`<div class="ai-box" style="margin-top:0">
     <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-tag" style="color:var(--brand-text)"></i> Lista vigente${diffBadge}</div>
-    <div style="font-size:13px;color:var(--text2)">${priceList.products.length} productos · Actualizada el ${priceList.updatedAt?new Date(priceList.updatedAt).toLocaleDateString('es-AR'):'-'} · Archivo: ${esc(priceList.sourceFile||'-')}</div>
+    <div style="font-size:13px;color:var(--text2)">${priceList.products.filter(p=>!p.isSubSection).length} productos · Actualizada el ${priceList.updatedAt?new Date(priceList.updatedAt).toLocaleDateString('es-AR'):'-'} · Archivo: ${esc(priceList.sourceFile||'-')}</div>
     ${priceList.prevSourceFile?`<div style="font-size:11px;color:var(--text3);margin-top:4px">Comparada contra: ${esc(priceList.prevSourceFile)}</div>`:''}
     <button class="btn btn-danger" style="margin-top:10px;font-size:11px;padding:4px 10px" onclick="resetPriceList()"><i class="ti ti-trash" style="font-size:12px"></i> Borrar lista</button>
   </div>`;
