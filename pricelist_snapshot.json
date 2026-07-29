@@ -1,6 +1,6 @@
 {
   "capturedAt": "2026-07-28T11:18:43Z",
-  "lastCheck": "29/07/2026 10:42",
+  "lastCheck": "29/07/2026 15:34",
   "changesFound": false,
   "priceLogic": "min(colQ, colR) — uses lower of Miami Price and Market Share price",
   "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw | Tab: LATAM",
@@ -3167,6 +3167,66 @@
       "miamiEta": "",
       "bondedStock": null,
       "bondedEta": "ETA 7/28 688pcs"
+    },
+    "NAME:Cubi NUC AI+ 3MG-006BUS": {
+      "partNumber": "",
+      "name": "Cubi NUC AI+ 3MG-006BUS",
+      "category": "MiniPC",
+      "price": 720.0,
+      "miamiStock": null,
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "UPC:824142458969.0": {
+      "partNumber": "",
+      "name": "Cubi NUC AI+ 3MG-007BUS",
+      "category": "MiniPC",
+      "price": 613.0,
+      "miamiStock": null,
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "UPC:824142458976.0": {
+      "partNumber": "",
+      "name": "Cubi NUC AI+ 3MG-008BUS",
+      "category": "MiniPC",
+      "price": 506.0,
+      "miamiStock": null,
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "NAME:Cubi 5 1MA-493BUS": {
+      "partNumber": "",
+      "name": "Cubi 5 1MA-493BUS",
+      "category": "MiniPC",
+      "price": 471.0,
+      "miamiStock": null,
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "NAME:Cubi 5 1MA-494BUS": {
+      "partNumber": "",
+      "name": "Cubi 5 1MA-494BUS",
+      "category": "MiniPC",
+      "price": 355.0,
+      "miamiStock": null,
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "NAME:Cubi 5 1MA-495BUS": {
+      "partNumber": "",
+      "name": "Cubi 5 1MA-495BUS",
+      "category": "MiniPC",
+      "price": 293.0,
+      "miamiStock": null,
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
     }
   }
 }
