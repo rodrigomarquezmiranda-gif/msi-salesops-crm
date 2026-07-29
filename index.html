@@ -965,7 +965,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.28.07.26.9';
+const APP_VERSION = '1.28.07.28.1';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -1071,6 +1071,22 @@ async function loadDB() {
       // Load migrations flag separately so runOneTimeMigrations() doesn't re-run destructive steps
       const metaR = await IDB.get('salesops_meta').catch(()=>null);
       if(metaR) { try { const m=JSON.parse(metaR); db._migrations=m._migrations||{}; } catch(e){} }
+      // ── Auto-recovery: if weeklyReports looks wiped, restore from legacy monolith backup ──
+      // salesops_db is never overwritten by the new split saveDB(), so it still has old data.
+      if(db.weeklyReports.length < 3) {
+        try {
+          const legacyRaw = await IDB.get('salesops_db').catch(()=>null);
+          if(legacyRaw) {
+            const legacyDb = JSON.parse(legacyRaw);
+            if(legacyDb.weeklyReports && legacyDb.weeklyReports.length > db.weeklyReports.length) {
+              db.weeklyReports = legacyDb.weeklyReports;
+              // Persist the recovered data immediately
+              IDB.set('salesops_weekly', JSON.stringify(db.weeklyReports)).catch(()=>{});
+              console.info(`[Recovery] Restaurados ${db.weeklyReports.length} reportes de inventario desde el backup.`);
+            }
+          }
+        } catch(e) { console.warn('[Recovery] No se pudo restaurar inventarios:', e); }
+      }
     } else {
       // Legacy monolith — load once, will auto-migrate on next save
       const s = await IDB.get('salesops_db').catch(()=>null);
