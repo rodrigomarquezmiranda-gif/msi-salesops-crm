@@ -1068,6 +1068,9 @@ async function loadDB() {
       db.pp            = ppR    ? JSON.parse(ppR)    : [];
       db.weeklyReports = wkR    ? JSON.parse(wkR)    : [];
       db.imports       = impR   ? JSON.parse(impR)   : [];
+      // Load migrations flag separately so runOneTimeMigrations() doesn't re-run destructive steps
+      const metaR = await IDB.get('salesops_meta').catch(()=>null);
+      if(metaR) { try { const m=JSON.parse(metaR); db._migrations=m._migrations||{}; } catch(e){} }
     } else {
       // Legacy monolith — load once, will auto-migrate on next save
       const s = await IDB.get('salesops_db').catch(()=>null);
@@ -1092,6 +1095,7 @@ function saveDB() {
     IDB.set('salesops_pp',      JSON.stringify(db.pp           ||[])),
     IDB.set('salesops_weekly',  JSON.stringify(db.weeklyReports||[])),
     IDB.set('salesops_imports', JSON.stringify(db.imports      ||[])),
+    IDB.set('salesops_meta',    JSON.stringify({_migrations: db._migrations||{}})),
   ]).catch(e => {
     console.error('Error guardando en Firebase:', e);
     const msg = e && e.code === 'PERMISSION_DENIED'
