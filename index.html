@@ -2080,19 +2080,25 @@ function parseLatamStockRows(rows, fileName, sheet) {
     if(!a && c) {
       const bIsSkip = !b || LATAM_SKIP_KEYWORDS.some(k=>b.toLowerCase().includes(k));
       if(bIsSkip) {
-        // Only treat as sub-section if no product-identifying data (estado, ficha, qty)
-        const hasProductData = !!(row[LATAM_COL.ficha] || row[LATAM_COL.estado] || row[LATAM_COL.qtyCtn]);
-        if(!hasProductData && !LATAM_CAT_MAP.hasOwnProperty(c.toLowerCase())) {
-          products.push({isSubSection:true, label:c, category:currentCat});
+        // Include price in product check — rows with B empty but price in Q are real products
+        const priceQCheck = parsePriceVal(row[LATAM_COL.price]);
+        const hasProductData = !!(row[LATAM_COL.ficha] || row[LATAM_COL.estado] || row[LATAM_COL.qtyCtn] || priceQCheck !== null);
+        if(!hasProductData) {
+          if(!LATAM_CAT_MAP.hasOwnProperty(c.toLowerCase())) {
+            products.push({isSubSection:true, label:c, category:currentCat});
+          }
+          return;
         }
-        return;
+        // Has price/product data but no Part# in B → fall through using C as code
       }
     }
 
     // ── Regular product row ───────────────────────────────────────
-    if(!b) return;
-    if(b.includes('---')||b.includes('===')||b.length>60) return;
-    const bLow=b.toLowerCase();
+    // Fallback: if B is empty, use C as the part code (e.g. CUBI models with no Part# in col B)
+    const effectiveCode = b || c;
+    if(!effectiveCode) return;
+    if(effectiveCode.includes('---')||effectiveCode.includes('===')||effectiveCode.length>60) return;
+    const bLow=effectiveCode.toLowerCase();
     if(LATAM_SKIP_KEYWORDS.some(k=>bLow.includes(k))) return;
     if(seen.has(bLow)) return;
     seen.add(bLow);
@@ -2120,8 +2126,8 @@ function parseLatamStockRows(rows, fileName, sheet) {
     const miamiEta=String(row[LATAM_COL.miamiEta]||'').trim()||null;
     const bondedStock=parseStockNum(row[LATAM_COL.bondedStock]);
     const bondedEta=String(row[LATAM_COL.bondedEta]||'').trim()||null;
-    if(!desc&&price===null) return;
-    products.push({code:b,desc,detalle,estado,ficha,qtyCtn,qtyPlt,price,priceQ,miamiStock,miamiEta,bondedStock,bondedEta,upc,category:currentCat});
+    if(!desc&&price===null&&!effectiveCode) return;
+    products.push({code:effectiveCode,desc,detalle,estado,ficha,qtyCtn,qtyPlt,price,priceQ,miamiStock,miamiEta,bondedStock,bondedEta,upc,category:currentCat});
   });
   return {products,sourceFile:fileName,isLatamFormat:true};
 }
