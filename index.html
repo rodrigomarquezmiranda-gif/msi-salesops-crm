@@ -974,7 +974,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.30.07.26.1';
+const APP_VERSION = '1.30.07.26.2';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -2608,30 +2608,106 @@ function getSalesPriceRows() {
   rows.sort((a,b) => (b.date||'').localeCompare(a.date||''));
   return rows;
 }
+// Grouped sales-price history tooltip
+function showSalesPriceTooltip(evt, key) {
+  clearTooltipHideTimer();
+  const rows = (_salesPriceGroupMap.get(decodeURIComponent(key)) || []).slice(0, 5);
+  const tip = document.getElementById('client-composition-tooltip');
+  const fmt = v => 'USD ' + Number(v).toLocaleString('es-AR', {minimumFractionDigits:2});
+  tip.innerHTML = `
+    <div style="font-size:11.5px;color:var(--text2);margin-bottom:8px;font-weight:600">Últimas 5 ventas</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${rows.length === 0
+        ? '<div style="color:var(--text3);font-size:11px">Sin registros</div>'
+        : rows.map(r => `
+          <div style="font-size:11px;border-bottom:0.5px solid var(--border2);padding-bottom:5px">
+            <div style="display:flex;justify-content:space-between;gap:8px">
+              <span style="color:var(--text);font-weight:600">${fmt(r.unitPrice)}</span>
+              <span style="color:var(--text3)">${r.date ? r.date.split('-').reverse().join('/') : '-'}</span>
+            </div>
+            <div style="color:var(--text2);margin-top:2px">
+              <span style="font-weight:500">${esc(r.piName)}</span> · ${esc(r.client)}
+              ${r.ordered != null ? `<span style="color:var(--text3)"> · ${r.ordered} u.</span>` : ''}
+            </div>
+          </div>`).join('')}
+    </div>`;
+  tip.style.display = 'block';
+  positionTooltipNearElement(evt.currentTarget);
+}
+
+let _salesPriceGroupMap = new Map(); // groupKey → rows[] sorted desc by date
+
 function renderSalesPriceHistory() {
-  const rows = getSalesPriceRows();
+  const rows = getSalesPriceRows(); // already sorted desc by date
   document.getElementById('nb-salesprices').textContent = rows.length;
   const wrap = document.getElementById('salesprice-table-wrap');
-  if(rows.length === 0) {
+  if (rows.length === 0) {
     wrap.innerHTML = `<div class="empty-state"><i class="ti ti-currency-dollar"></i><p>Todavía no hay precios registrados. Se completa solo cuando subís PIs con sus modelos.</p></div>`;
     return;
   }
+
   const q = (document.getElementById('salesprice-search')?.value || '').toLowerCase();
-  const filtered = q ? rows.filter(r => (r.itemCode+' '+r.marketingName+' '+r.client).toLowerCase().includes(q)) : rows;
-  wrap.innerHTML = `<div class="table-scroll"><table class="data-table">
-    <thead><tr><th>Fecha</th><th>Cliente</th><th>Código</th><th>Modelo</th><th>Cant.</th><th>Precio Unit.</th><th>PI</th><th>Estado</th></tr></thead>
-    <tbody>${filtered.map(r => `<tr>
-      <td>${r.date ? r.date.split('-').reverse().join('/') : '-'}</td>
-      <td>${esc(r.client)}</td>
-      <td>${esc(r.itemCode)}</td>
-      <td>${esc(r.marketingName)}</td>
-      <td>${r.ordered ?? '-'}</td>
-      <td><b>USD ${Number(r.unitPrice).toLocaleString('es-AR',{minimumFractionDigits:2})}</b></td>
-      <td>${esc(r.piName)}</td>
-      <td><span class="pill ${PILL_MAP[r.status]||'pill-gray'}">${esc(r.status)}</span></td>
-    </tr>`).join('')}</tbody>
-  </table></div>
-  ${filtered.length===0 ? `<div class="empty-state"><i class="ti ti-search-off"></i><p>No encontré resultados para "${esc(q)}".</p></div>` : ''}`;
+
+  // Build groups keyed by marketingName (fallback: itemCode)
+  _salesPriceGroupMap = new Map();
+  rows.forEach(r => {
+    const key = (r.marketingName || r.itemCode || '').trim();
+    if (!key) return;
+    if (!_salesPriceGroupMap.has(key)) _salesPriceGroupMap.set(key, []);
+    _salesPriceGroupMap.get(key).push(r);
+  });
+
+  // Filter groups by search
+  let groups = [..._salesPriceGroupMap.entries()]; // [key, rows[]]
+  if (q) {
+    groups = groups.filter(([key, grpRows]) =>
+      key.toLowerCase().includes(q) ||
+      grpRows.some(r => (r.itemCode||'').toLowerCase().includes(q) || (r.client||'').toLowerCase().includes(q))
+    );
+  }
+
+  // Sort groups by most recent sale date
+  groups.sort((a, b) => (b[1][0]?.date || '').localeCompare(a[1][0]?.date || ''));
+
+  const fmt = v => 'USD ' + Number(v).toLocaleString('es-AR', {minimumFractionDigits:2});
+
+  const tbody = groups.map(([key, grpRows]) => {
+    const lastRow   = grpRows[0]; // most recent (already sorted)
+    const prices    = grpRows.map(r => r.unitPrice).filter(v => v != null);
+    const minP      = prices.length ? Math.min(...prices) : null;
+    const maxP      = prices.length ? Math.max(...prices) : null;
+    const totalUnits = grpRows.reduce((s, r) => s + (r.ordered || 0), 0);
+    const piCount   = new Set(grpRows.map(r => r.piName)).size;
+    const priceCell = minP != null
+      ? (minP === maxP ? `<b>${fmt(minP)}</b>` : `<b>${fmt(maxP)}</b> <span style="color:var(--text3);font-size:11px">/ ${fmt(minP)}</span>`)
+      : '—';
+    const encodedKey = encodeURIComponent(key);
+
+    return `<tr style="cursor:default"
+        onmouseenter="showSalesPriceTooltip(event,'${encodedKey}')"
+        onmouseleave="hideClientCompositionTooltip()">
+      <td style="font-weight:600">${esc(key)}</td>
+      <td style="color:var(--text3);font-size:12px">${esc(lastRow.itemCode||'')}</td>
+      <td>${priceCell}</td>
+      <td style="text-align:center">${totalUnits > 0 ? totalUnits : '—'}</td>
+      <td style="text-align:center;color:var(--text3)">${piCount}</td>
+      <td style="color:var(--text3);font-size:12px">${lastRow.date ? lastRow.date.split('-').reverse().join('/') : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr>
+          <th>Modelo</th><th>Código</th><th>Último / Mín. precio</th>
+          <th style="text-align:center">Unidades</th>
+          <th style="text-align:center">PIs</th>
+          <th>Última venta</th>
+        </tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>
+    ${groups.length === 0 ? `<div class="empty-state"><i class="ti ti-search-off"></i><p>No encontré resultados para "${esc(q)}".</p></div>` : ''}`;
 }
 
 let _priceHistMap = new Map(); // descKey(uppercase) → salesRows[], rebuilt on each applyPriceFilter
