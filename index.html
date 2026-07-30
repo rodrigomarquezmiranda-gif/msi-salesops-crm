@@ -2681,7 +2681,7 @@ function renderSalesPriceHistory() {
     const totalUnits = grpRows.reduce((s, r) => s + (r.ordered || 0), 0);
     const piCount   = new Set(grpRows.map(r => r.piName)).size;
     const priceCell = minP != null
-      ? (minP === maxP ? `<b>${fmt(minP)}</b>` : `<b>${fmt(maxP)}</b> <span style="color:var(--text3);font-size:11px">/ ${fmt(minP)}</span>`)
+      ? (minP === maxP ? `<b>${fmt(minP)}</b>` : `<b>${fmt(maxP)}</b> <span style="color:var(--red-text);font-size:11px;font-weight:600"> · mín ${fmt(minP)}</span>`)
       : '—';
     const encodedKey = encodeURIComponent(key);
 
