@@ -982,7 +982,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.30.07.26.6';
+const APP_VERSION = '1.30.07.26.7';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -1121,17 +1121,20 @@ async function loadDB() {
 function saveDB() {
   invalidateGroupsCache();
   _modelKeyCache.clear();
-  // Save each pipeline to its own Firebase node (avoids 10MB-per-node limit)
-  Promise.all([
-    IDB.set('salesops_pi',      JSON.stringify(db.pi           ||[])),
-    IDB.set('salesops_ber',     JSON.stringify(db.ber          ||[])),
-    IDB.set('salesops_sor',     JSON.stringify(db.sor          ||[])),
-    IDB.set('salesops_sir',     JSON.stringify(db.sir          ||[])),
-    IDB.set('salesops_pp',      JSON.stringify(db.pp           ||[])),
-    IDB.set('salesops_weekly',  JSON.stringify(db.weeklyReports||[])),
-    IDB.set('salesops_imports', JSON.stringify(db.imports      ||[])),
-    IDB.set('salesops_meta',    JSON.stringify({_migrations: db._migrations||{}})),
-  ]).catch(e => {
+  // reader-pi: solo puede escribir salesops_pi (Firebase rules lo limitan)
+  const saves = _currentRole === 'reader-pi'
+    ? [ IDB.set('salesops_pi', JSON.stringify(db.pi||[])) ]
+    : [
+        IDB.set('salesops_pi',      JSON.stringify(db.pi           ||[])),
+        IDB.set('salesops_ber',     JSON.stringify(db.ber          ||[])),
+        IDB.set('salesops_sor',     JSON.stringify(db.sor          ||[])),
+        IDB.set('salesops_sir',     JSON.stringify(db.sir          ||[])),
+        IDB.set('salesops_pp',      JSON.stringify(db.pp           ||[])),
+        IDB.set('salesops_weekly',  JSON.stringify(db.weeklyReports||[])),
+        IDB.set('salesops_imports', JSON.stringify(db.imports      ||[])),
+        IDB.set('salesops_meta',    JSON.stringify({_migrations: db._migrations||{}})),
+      ];
+  Promise.all(saves).catch(e => {
     console.error('Error guardando en Firebase:', e);
     const msg = e && e.code === 'PERMISSION_DENIED'
       ? 'Sin permisos para guardar en Firebase. Pedile al administrador que actualice las reglas de la base de datos.'
@@ -5155,6 +5158,7 @@ const READONLY_UID = '4myTYcfAdheUsH74lQhIoQ2C0v12'; // legado — migrar a DB
 const _fbAuth = firebase.auth();
 let _allowedUsers = {}; // { emailKey: { email, role, uid, name, addedAt, lastLogin? } }
 let _currentUser = null; // Firebase user object del usuario logueado
+let _currentRole = null; // rol activo: 'admin' | 'readonly' | 'reader-pi'
 
 function _eKey(email) { return (email || '').toLowerCase().replace(/\./g, ','); }
 
@@ -5326,6 +5330,7 @@ _fbAuth.onAuthStateChanged(async (user) => {
     }
     if (role) {
       _currentUser = user;
+      _currentRole = role;
       document.body.classList.toggle('readonly', role === 'readonly');
       document.body.classList.toggle('is-admin', role === 'admin');
       document.body.classList.toggle('reader-pi', role === 'reader-pi');
