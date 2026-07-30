@@ -974,7 +974,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.30.07.26.2';
+const APP_VERSION = '1.30.07.26.3';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -2611,7 +2611,10 @@ function getSalesPriceRows() {
 // Grouped sales-price history tooltip
 function showSalesPriceTooltip(evt, key) {
   clearTooltipHideTimer();
-  const rows = (_salesPriceGroupMap.get(decodeURIComponent(key)) || []).slice(0, 5);
+  const allRows = _salesPriceGroupMap.get(decodeURIComponent(key)) || [];
+  const rows = allRows.slice(0, 5);
+  const allPrices = allRows.map(r => r.unitPrice).filter(v => v != null);
+  const globalMin = allPrices.length ? Math.min(...allPrices) : null;
   const tip = document.getElementById('client-composition-tooltip');
   const fmt = v => 'USD ' + Number(v).toLocaleString('es-AR', {minimumFractionDigits:2});
   const modelLabel = decodeURIComponent(key);
@@ -2621,17 +2624,20 @@ function showSalesPriceTooltip(evt, key) {
     <div style="display:flex;flex-direction:column;gap:6px">
       ${rows.length === 0
         ? '<div style="color:var(--text3);font-size:11px">Sin registros</div>'
-        : rows.map(r => `
+        : rows.map(r => {
+            const isMin = globalMin != null && r.unitPrice === globalMin;
+            return `
           <div style="font-size:11px;border-bottom:0.5px solid var(--border2);padding-bottom:5px">
             <div style="display:flex;justify-content:space-between;gap:8px">
-              <span style="color:var(--text);font-weight:600">${fmt(r.unitPrice)}</span>
+              <span style="color:${isMin ? 'var(--red-text)' : 'var(--text)'};font-weight:600">${fmt(r.unitPrice)}${isMin ? ' ↓ mín' : ''}</span>
               <span style="color:var(--text3)">${r.date ? r.date.split('-').reverse().join('/') : '-'}</span>
             </div>
             <div style="color:var(--text2);margin-top:2px">
               <span style="font-weight:500">${esc(r.piName)}</span> · ${esc(r.client)}
               ${r.ordered != null ? `<span style="color:var(--text3)"> · ${r.ordered} u.</span>` : ''}
             </div>
-          </div>`).join('')}
+          </div>`;
+          }).join('')}
     </div>`;
   tip.style.display = 'block';
   positionTooltipNearElement(evt.currentTarget);
