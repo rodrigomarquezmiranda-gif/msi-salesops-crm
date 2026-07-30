@@ -156,6 +156,11 @@
   /* Solo admins */
   .admin-only { display: none !important; }
   body.is-admin .admin-only { display: flex !important; }
+  /* Rol PI-only: solo ve la tab de PI */
+  body.pi-only .nav-item:not(#nav-pi) { display: none !important; }
+  body.pi-only #tab-pi .upload-zone { display: block !important; }
+  body.pi-only .export-row button[onclick*="exportCSV"],
+  body.pi-only .export-row button[onclick*="export"] { display: none !important; }
   .upload-zone:hover, .upload-zone.dragover { border-color: var(--brand); background: var(--brand-bg); }
   .upload-zone i { font-size: 32px; color: var(--text3); margin-bottom: 10px; display: block; }
   .upload-zone p { font-size: 13px; color: var(--text2); }
@@ -974,7 +979,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.30.07.26.3';
+const APP_VERSION = '1.30.07.26.4';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -5256,6 +5261,7 @@ async function renderUsersTab() {
           ? `<span class="pill" style="background:var(--blue-bg);color:var(--blue-text)"><i class="ti ti-shield-check" style="font-size:10px"></i> Owner</span>`
           : `<select onchange="changeUserRole('${key}',this.value)"
                style="font-size:11px;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer">
+               <option value="pi-only" ${u.role==='pi-only'?'selected':''}>Solo PI</option>
                <option value="readonly" ${u.role==='readonly'?'selected':''}>Solo lectura</option>
                <option value="admin" ${u.role==='admin'?'selected':''}>Administrador</option>
              </select>
@@ -5305,6 +5311,7 @@ _fbAuth.onAuthStateChanged(async (user) => {
     if (role) {
       document.body.classList.toggle('readonly', role === 'readonly');
       document.body.classList.toggle('is-admin', role === 'admin');
+      document.body.classList.toggle('pi-only', role === 'pi-only');
       loginScreen.style.display = 'none';
       appShell.style.display = '';
       _recordLogin(user);
@@ -5315,7 +5322,7 @@ _fbAuth.onAuthStateChanged(async (user) => {
       document.getElementById('api-key-input').value = getApiKey();
       applyBrandLogo();
       renderAll();
-      gotoTab('dashboard');
+      gotoTab(role === 'pi-only' ? 'pi' : 'dashboard');
     } else {
       _fbAuth.signOut(); // email no autorizado
       alert('Tu cuenta no tiene acceso al CRM. Contactá al administrador.');
