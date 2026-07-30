@@ -156,11 +156,11 @@
   /* Solo admins */
   .admin-only { display: none !important; }
   body.is-admin .admin-only { display: flex !important; }
-  /* Rol PI-only: solo ve la tab de PI */
-  body.pi-only .nav-item:not(#nav-pi) { display: none !important; }
-  body.pi-only #tab-pi .upload-zone { display: block !important; }
-  body.pi-only .export-row button[onclick*="exportCSV"],
-  body.pi-only .export-row button[onclick*="export"] { display: none !important; }
+  /* Lectura + PI: ve todo en modo lectura y además puede cargar PIs */
+  body.reader-pi .upload-zone:not(#drop-zone-pi),
+  body.reader-pi .backup-area,
+  body.reader-pi .api-key-area,
+  body.reader-pi [onclick="importItems()"] { display: none !important; }
   .upload-zone:hover, .upload-zone.dragover { border-color: var(--brand); background: var(--brand-bg); }
   .upload-zone i { font-size: 32px; color: var(--text3); margin-bottom: 10px; display: block; }
   .upload-zone p { font-size: 13px; color: var(--text2); }
@@ -850,6 +850,9 @@
         <table class="data-table" id="pf-items-table" style="font-size:11px"></table>
       </div>
     </div>
+    <div id="pf-createdby-block" class="admin-only" style="display:none;font-size:11px;color:var(--text3);margin-bottom:10px;padding:6px 10px;background:var(--bg2);border-radius:6px">
+      <i class="ti ti-user" style="font-size:11px"></i> Cargado por: <span id="pf-createdby-label" style="color:var(--text2);font-weight:500"></span>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-danger" id="pf-btn-delete" onclick="deletePIItem()" style="display:none">Eliminar</button>
       <button class="btn" onclick="closeOverlay('modal-pi')">Cancelar</button>
@@ -979,7 +982,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.30.07.26.4';
+const APP_VERSION = '1.30.07.26.6';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -1379,6 +1382,7 @@ function renderPipeline(pipe) {
           ${item.priority === 'urgente' ? `<span class="pill pill-red" style="font-size:9px">URGENTE</span>` : item.priority === 'alta' ? `<span class="pill pill-amber" style="font-size:9px">ALTA</span>` : ''}
         </div>
         ${item.amount ? `<div class="card-amount">USD ${Number(item.amount).toLocaleString('es-AR')}</div>` : ''}
+        ${item.createdBy ? `<div class="admin-only" style="font-size:10px;color:var(--text3);margin-top:4px;display:none"><i class="ti ti-user" style="font-size:10px"></i> ${esc(item.createdBy.split('@')[0])}</div>` : ''}
       </div>`;
     }).join('') : '';
     return `<div class="pipe-col">
@@ -1452,6 +1456,7 @@ function openPINew(statusHint, prefill) {
   _pendingPILineItems = prefill?.lineItems || [];
   document.getElementById('modal-pi-title').textContent = 'Nueva PI';
   document.getElementById('pf-btn-delete').style.display = 'none';
+  const _cb = document.getElementById('pf-createdby-block'); if(_cb) _cb.style.display = 'none';
   document.getElementById('pf-name').value = prefill?.piNumber || '';
   document.getElementById('pf-client').value = prefill?.client || '';
   document.getElementById('pf-amount').value = prefill?.amount ?? '';
@@ -1483,6 +1488,15 @@ function openPIEdit(id) {
   updatePIStatusOptions(item.status);
   refreshPIFileUI();
   renderPIItemsTable();
+  // Mostrar "Cargado por" solo para admins
+  const cbBlock = document.getElementById('pf-createdby-block');
+  const cbLabel = document.getElementById('pf-createdby-label');
+  if(item.createdBy && cbBlock && cbLabel) {
+    cbLabel.textContent = item.createdBy;
+    cbBlock.style.display = 'block';
+  } else if(cbBlock) {
+    cbBlock.style.display = 'none';
+  }
   openOverlay('modal-pi');
 }
 async function attachPIFile(input, kind) {
@@ -1522,6 +1536,7 @@ function savePIItem() {
     signedFile: _pendingPISignedFile || existing?.signedFile || null,
     lineItems: (_pendingPILineItems && _pendingPILineItems.length) ? _pendingPILineItems : (existing?.lineItems || []),
     createdAt: existing?.createdAt || new Date().toISOString(),
+    createdBy: existing?.createdBy || _currentUser?.email || null,
     updatedAt: new Date().toISOString()
   };
   if(editingPIId) db.pi = db.pi.filter(x => x.id !== editingPIId);
@@ -5139,6 +5154,7 @@ const OWNER_UID    = 'iaxXkJTFWCdUSVjlgNqmGklwroA3'; // super-admin permanente
 const READONLY_UID = '4myTYcfAdheUsH74lQhIoQ2C0v12'; // legado — migrar a DB
 const _fbAuth = firebase.auth();
 let _allowedUsers = {}; // { emailKey: { email, role, uid, name, addedAt, lastLogin? } }
+let _currentUser = null; // Firebase user object del usuario logueado
 
 function _eKey(email) { return (email || '').toLowerCase().replace(/\./g, ','); }
 
@@ -5261,8 +5277,8 @@ async function renderUsersTab() {
           ? `<span class="pill" style="background:var(--blue-bg);color:var(--blue-text)"><i class="ti ti-shield-check" style="font-size:10px"></i> Owner</span>`
           : `<select onchange="changeUserRole('${key}',this.value)"
                style="font-size:11px;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer">
-               <option value="pi-only" ${u.role==='pi-only'?'selected':''}>Solo PI</option>
                <option value="readonly" ${u.role==='readonly'?'selected':''}>Solo lectura</option>
+               <option value="reader-pi" ${u.role==='reader-pi'?'selected':''}>Lectura + PI</option>
                <option value="admin" ${u.role==='admin'?'selected':''}>Administrador</option>
              </select>
              <button onclick="removeAllowedUser('${key}')" class="btn btn-danger" style="padding:4px 8px;font-size:11px" title="Eliminar acceso"><i class="ti ti-trash" style="font-size:13px"></i></button>`}
@@ -5309,9 +5325,10 @@ _fbAuth.onAuthStateChanged(async (user) => {
       } catch(e) { role = null; }
     }
     if (role) {
+      _currentUser = user;
       document.body.classList.toggle('readonly', role === 'readonly');
       document.body.classList.toggle('is-admin', role === 'admin');
-      document.body.classList.toggle('pi-only', role === 'pi-only');
+      document.body.classList.toggle('reader-pi', role === 'reader-pi');
       loginScreen.style.display = 'none';
       appShell.style.display = '';
       _recordLogin(user);
@@ -5322,7 +5339,7 @@ _fbAuth.onAuthStateChanged(async (user) => {
       document.getElementById('api-key-input').value = getApiKey();
       applyBrandLogo();
       renderAll();
-      gotoTab(role === 'pi-only' ? 'pi' : 'dashboard');
+      gotoTab('dashboard');
     } else {
       _fbAuth.signOut(); // email no autorizado
       alert('Tu cuenta no tiene acceso al CRM. Contactá al administrador.');
