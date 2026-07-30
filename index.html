@@ -379,6 +379,15 @@
           <button class="filter-pill" onclick="filterPipe('pi','Enviado al cliente',this)">Enviado al cliente</button>
           <button class="filter-pill" onclick="filterPipe('pi','Firmado',this)">Firmado</button>
         </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+          <div style="position:relative;flex:1;max-width:340px">
+            <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none"></i>
+            <input id="pi-search-input" type="text" placeholder="Buscar PI por nombre, cliente o monto…"
+              style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"
+              oninput="_piSearch=this.value.toLowerCase().trim();_piShowAll=!!_piSearch;renderPipeline('pi')" />
+          </div>
+          <span id="pi-search-notice" style="font-size:12px;color:var(--text3);white-space:nowrap"></span>
+        </div>
         <div class="upload-zone" id="drop-zone-pi" onclick="document.getElementById('file-input-pi').click()" style="margin-bottom:1.25rem">
           <i class="ti ti-cloud-upload"></i>
           <p><b>Hacé click o arrastrá la PI en PDF</b></p>
@@ -965,11 +974,13 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.29.07.26.1';
+const APP_VERSION = '1.29.07.26.2';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
 let currentFilter = { pi:'all' };
+let _piSearch = '';
+let _piShowAll = false;
 let currentRebateFilter = 'all';
 let pendingItems = [];
 let _pendingPriceParsed = null;
@@ -1299,6 +1310,7 @@ function gotoTab(tab) {
   });
   document.getElementById('page-title').textContent = TITLES[tab] || tab;
   if(tab==='dashboard') renderDashboard();
+  if(tab==='pi') { _piSearch=''; _piShowAll=false; const inp=document.getElementById('pi-search-input'); if(inp) inp.value=''; }
   if(tab==='rebates') renderRebatesTable();
   if(tab==='pricelist') renderPriceListView();
   if(tab==='salesprices') renderSalesPriceHistory();
@@ -1322,8 +1334,33 @@ function renderPipeline(pipe) {
   const cfg = PIPES[pipe];
   const board = document.getElementById('board-'+pipe);
   const filter = currentFilter[pipe] || 'all';
+
+  // ── PI: search + "last 5" limit ──────────────────────
+  let piActiveSet = null; // null = use full db[pipe]
+  if(pipe === 'pi') {
+    const total = db.pi.length;
+    if(_piSearch) {
+      piActiveSet = new Set(db.pi.filter(x =>
+        (x.name||'').toLowerCase().includes(_piSearch) ||
+        (x.client||'').toLowerCase().includes(_piSearch) ||
+        String(x.amount||'').includes(_piSearch)
+      ).map(x => x.id));
+      const count = piActiveSet.size;
+      document.getElementById('pi-search-notice').innerHTML =
+        count ? `<span>${count} resultado${count===1?'':'s'}</span>` : `<span style="color:var(--red-text)">Sin resultados</span>`;
+    } else if(!_piShowAll && total > 5) {
+      const recent = [...db.pi].sort((a,b)=>b.id-a.id).slice(0,5);
+      piActiveSet = new Set(recent.map(x => x.id));
+      document.getElementById('pi-search-notice').innerHTML =
+        `<span>Últimas 5 de ${total} · <a href="#" onclick="event.preventDefault();_piShowAll=true;renderPipeline('pi')" style="color:var(--brand-text);text-decoration:none">Ver todas</a></span>`;
+    } else {
+      document.getElementById('pi-search-notice').innerHTML =
+        total > 5 ? `<span>${total} PIs · <a href="#" onclick="event.preventDefault();_piShowAll=false;renderPipeline('pi')" style="color:var(--brand-text);text-decoration:none">Ver últimas 5</a></span>` : '';
+    }
+  }
+
   board.innerHTML = cfg.cols.map(col => {
-    let items = db[pipe].filter(x => x.status === col);
+    let items = db[pipe].filter(x => x.status === col && (!piActiveSet || piActiveSet.has(x.id)));
     if(filter !== 'all' && filter !== col) items = [];
     const cards = items.length ? items.map(item => {
       const d = daysUntil(item.dueDate);
