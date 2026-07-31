@@ -1134,7 +1134,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.31.07.26.3';
+const APP_VERSION = '1.31.07.26.4';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -4305,17 +4305,17 @@ function hideClientCompositionTooltip() {
 const RESELLER_T1_DEFAULTS = ['GAMING CITY','FULLHARD','NOXIESTORE','MAXIMUS','DIAMOND SYSTEM','VENEX','COMPUFAN','JAR COMPUTACION'];
 
 const RESELLER_LINES = [
-  { key:'mb',      label:'MB',            catKey:'motherboard', kwRequire:null, kwExclude:null },
-  { key:'vga',     label:'VGA',           catKey:'vga',         kwRequire:null, kwExclude:null },
-  { key:'ggd',     label:'GGD',           catKey:null,          kwRequire:null, kwExclude:null },
-  { key:'ssd',     label:'SSD',           catKey:'ssd',         kwRequire:null, kwExclude:null },
-  { key:'psu',     label:'PSU',           catKey:'psu',         kwRequire:null, kwExclude:null },
-  { key:'chassis', label:'Chassis',       catKey:'gabinete',    kwRequire:null, kwExclude:null },
-  { key:'lc',      label:'LC',            catKey:'cooling',     kwRequire:null, kwExclude:null },
-  { key:'monitor', label:'Monitor',       catKey:'monitor',     kwRequire:null, kwExclude:['PRO'] },
-  { key:'pro_mon', label:'Pro Monitor',   catKey:'monitor',     kwRequire:['PRO'], kwExclude:['PRO DT','PRODT','CUBI'] },
-  { key:'arms',    label:'Arms',          catKey:'accesorios',  kwRequire:['ARM'], kwExclude:null },
-  { key:'prodt',   label:'PRO DT (Cubi)', catKey:'minipc',      kwRequire:null, kwExclude:null },
+  { key:'mb',      label:'MB',            catKey:'motherboard', kwStartsWith:null,  kwRequire:null,    kwExclude:null },
+  { key:'vga',     label:'VGA',           catKey:'vga',         kwStartsWith:null,  kwRequire:null,    kwExclude:null },
+  { key:'ssd',     label:'SSD',           catKey:'ssd',         kwStartsWith:null,  kwRequire:null,    kwExclude:null },
+  { key:'psu',     label:'PSU',           catKey:'psu',         kwStartsWith:null,  kwRequire:null,    kwExclude:null },
+  { key:'chassis', label:'Chassis',       catKey:'gabinete',    kwStartsWith:null,  kwRequire:null,    kwExclude:null },
+  { key:'lc',      label:'LC',            catKey:'cooling',     kwStartsWith:null,  kwRequire:null,    kwExclude:null },
+  { key:'pro_mon', label:'Pro Monitor',   catKey:'monitor',     kwStartsWith:'PRO', kwRequire:null,    kwExclude:['PRO DT','CUBI'] },
+  { key:'monitor', label:'Monitor',       catKey:'monitor',     kwStartsWith:null,  kwRequire:null,    kwExclude:null },
+  { key:'arms',    label:'Arms',          catKey:'accesorios',  kwStartsWith:null,  kwRequire:['ARM'], kwExclude:null },
+  { key:'ggd',     label:'GGD',           catKey:'accesorios',  kwStartsWith:null,  kwRequire:null,    kwExclude:null },
+  { key:'prodt',   label:'PRO DT (Cubi)', catKey:'minipc',      kwStartsWith:null,  kwRequire:null,    kwExclude:null },
 ];
 
 const RESELLER_LINE_KEYS = RESELLER_LINES.map(l=>l.key);
@@ -4324,12 +4324,17 @@ const MONTHS_ES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','
 function normResellerName(s) {
   return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]/g,' ').replace(/\s+/g,' ').trim();
 }
+function getResellerCuits(reseller) {
+  // Support both old single .cuit (string) and new .cuits (array)
+  if(Array.isArray(reseller.cuits) && reseller.cuits.length > 0) return reseller.cuits;
+  if(reseller.cuit) return [reseller.cuit];
+  return [];
+}
 function matchesReseller(clientName, clientCuit, reseller) {
-  // 1. CUIT match (most reliable)
-  if(reseller.cuit && clientCuit) {
+  // 1. CUIT match — any of the reseller's CUITs
+  if(clientCuit) {
     const nc = normCuit(clientCuit);
-    const nr = normCuit(reseller.cuit);
-    if(nc && nr && nc === nr) return true;
+    if(nc && getResellerCuits(reseller).some(c => normCuit(c) === nc)) return true;
   }
   // 2. Name / alias match
   const nc = normResellerName(clientName);
@@ -4345,11 +4350,11 @@ function classifyResellerLine(description) {
   const norm = normCategoryText(description);
   for(const line of RESELLER_LINES) {
     if(line.catKey !== cat) continue;
+    if(line.kwStartsWith && !norm.startsWith(normCategoryText(line.kwStartsWith))) continue;
     if(line.kwRequire && !line.kwRequire.some(kw => norm.includes(normCategoryText(kw)))) continue;
     if(line.kwExclude && line.kwExclude.some(kw => norm.includes(normCategoryText(kw)))) continue;
     return line.key;
   }
-  // fallback: if cat matched but no line (e.g. accesorios without ARM), skip
   return null;
 }
 
@@ -4550,7 +4555,7 @@ function buildResellerBlock(reseller, tier, data, year, months, quarters, active
   return `<div class="reseller-block">
     <div class="reseller-block-header">
       <span style="font-weight:700;font-size:14px;color:var(--text)">${esc(reseller.name)}</span>
-      ${reseller.cuit ? `<span style="font-size:11px;color:var(--text3)">CUIT ${esc(reseller.cuit)}</span>` : ''}
+      ${getResellerCuits(reseller).length > 0 ? `<span style="font-size:11px;color:var(--text3)">CUIT ${getResellerCuits(reseller).map(esc).join(' · ')}</span>` : ''}
       ${matchInfo ? `<span style="font-size:11px;color:var(--text3)">→ ${esc(matchInfo)}</span>` : '<span style="font-size:11px;color:var(--red-text)"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Sin coincidencias en reportes — configurar CUIT</span>'}
       <button class="btn" style="margin-left:auto;font-size:11px;padding:3px 8px" onclick="editResellerConfig('${reseller.id}','${tier}')"><i class="ti ti-settings" style="font-size:12px"></i> Configurar</button>
       <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red-text)" onclick="removeReseller('${reseller.id}','${tier}')"><i class="ti ti-trash" style="font-size:12px"></i></button>
@@ -4627,7 +4632,7 @@ function buildAddResellerModal(tier) {
     <div style="background:var(--bg);border-radius:12px;padding:24px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
       <div style="font-size:16px;font-weight:700;margin-bottom:16px">Agregar Reseller a ${tier.toUpperCase()}</div>
       <div class="field"><label>Nombre comercial (nombre fantasía)</label><input id="new-reseller-name-${tier}" type="text" placeholder="Ej: GAMING CITY" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
-      <div class="field"><label>CUIT <span style="color:var(--text3);font-weight:400">(recomendado — para coincidir exacto con los reportes)</span></label><input id="new-reseller-cuit-${tier}" type="text" placeholder="Ej: 30-71797078-7" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
+      <div class="field"><label>CUIT(s) <span style="color:var(--text3);font-weight:400">(uno por línea — pueden ser varios)</span></label><textarea id="new-reseller-cuit-${tier}" rows="3" placeholder="30-71797078-7&#10;20-21140851-1" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical;font-family:monospace"></textarea></div>
       <div class="field"><label>Alias adicionales <span style="color:var(--text3);font-weight:400">(uno por línea)</span></label><textarea id="new-reseller-aliases-${tier}" rows="2" placeholder="Nombre legal, razón social, u otras variantes que aparezcan en los reportes" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical"></textarea></div>
       <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
         <button class="btn" onclick="document.getElementById('add-reseller-modal-${tier}').style.display='none'">Cancelar</button>
@@ -4641,6 +4646,7 @@ function openAddResellerModal(tier) {
   const modal = document.getElementById('add-reseller-modal-' + tier);
   if(!modal) { renderResellerTab(tier); setTimeout(()=>openAddResellerModal(tier),100); return; }
   document.getElementById('new-reseller-name-' + tier).value = '';
+  document.getElementById('new-reseller-cuit-' + tier).value = '';
   document.getElementById('new-reseller-aliases-' + tier).value = '';
   modal.style.display = 'flex';
 }
@@ -4651,11 +4657,11 @@ function saveNewReseller(tier) {
   const aliasEl = document.getElementById('new-reseller-aliases-' + tier);
   const name = (nameEl?.value||'').trim().toUpperCase();
   if(!name) { alert('Ingresá un nombre para el reseller.'); return; }
-  const cuit = (cuitEl?.value||'').trim();
+  const cuits = (cuitEl?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
   const aliases = (aliasEl?.value||'').split('\n').map(s=>s.trim().toUpperCase()).filter(Boolean);
   const id = name.toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + Date.now();
   if(!db.resellers[tier]) db.resellers[tier] = [];
-  db.resellers[tier].push({ id, name, cuit, aliases });
+  db.resellers[tier].push({ id, name, cuits, aliases });
   saveDB();
   document.getElementById('add-reseller-modal-' + tier).style.display = 'none';
   renderResellerTab(tier);
@@ -4685,7 +4691,7 @@ function editResellerConfig(resellerId, tier) {
   div.innerHTML = `<div style="background:var(--bg);border-radius:12px;padding:24px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
     <div style="font-size:16px;font-weight:700;margin-bottom:16px">Configurar Reseller</div>
     <div class="field"><label>Nombre comercial</label><input id="er-name-${resellerId}" type="text" value="${esc(reseller.name)}" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
-    <div class="field"><label>CUIT <span style="color:var(--text3);font-weight:400">(clave para coincidir con los reportes)</span></label><input id="er-cuit-${resellerId}" type="text" value="${esc(reseller.cuit||'')}" placeholder="Ej: 30-71797078-7" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
+    <div class="field"><label>CUIT(s) <span style="color:var(--text3);font-weight:400">(uno por línea — pueden ser varios)</span></label><textarea id="er-cuit-${resellerId}" rows="3" placeholder="30-71797078-7&#10;20-21140851-1" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical;font-family:monospace">${esc(getResellerCuits(reseller).join('\n'))}</textarea></div>
     <div class="field"><label>Alias adicionales <span style="color:var(--text3);font-weight:400">(uno por línea)</span></label><textarea id="er-aliases-${resellerId}" rows="3" placeholder="Nombre legal, razón social u otras variantes" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical">${esc((reseller.aliases||[]).join('\n'))}</textarea></div>
     <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
       <button class="btn" onclick="document.getElementById('${modalId}').remove()">Cancelar</button>
@@ -4703,7 +4709,8 @@ function saveResellerConfig(resellerId, tier, modalId) {
   const newName = (nameEl?.value||'').trim().toUpperCase();
   if(!newName) { alert('El nombre no puede estar vacío.'); return; }
   reseller.name = newName;
-  reseller.cuit = (cuitEl?.value||'').trim();
+  reseller.cuits = (cuitEl?.value||'').split('\n').map(s=>s.trim()).filter(Boolean);
+  delete reseller.cuit; // migrate old single-cuit field
   reseller.aliases = (aliasEl?.value||'').split('\n').map(s=>s.trim().toUpperCase()).filter(Boolean);
   document.getElementById(modalId)?.remove();
   saveDB();
