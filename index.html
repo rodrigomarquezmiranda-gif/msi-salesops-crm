@@ -1023,7 +1023,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.31.07.26.1';
+const APP_VERSION = '1.31.07.26.2';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -4213,7 +4213,14 @@ const MONTHS_ES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','
 function normResellerName(s) {
   return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]/g,' ').replace(/\s+/g,' ').trim();
 }
-function matchesReseller(clientName, reseller) {
+function matchesReseller(clientName, clientCuit, reseller) {
+  // 1. CUIT match (most reliable)
+  if(reseller.cuit && clientCuit) {
+    const nc = normCuit(clientCuit);
+    const nr = normCuit(reseller.cuit);
+    if(nc && nr && nc === nr) return true;
+  }
+  // 2. Name / alias match
   const nc = normResellerName(clientName);
   if(!nc) return false;
   if(nc === normResellerName(reseller.name)) return true;
@@ -4247,7 +4254,7 @@ function getResellerMonthlyData(reseller, yearFilter) {
     const monthKey = (snap.periodEnd||'').slice(0,7); // 'YYYY-MM'
     if(!monthKey || monthKey.length < 7) return;
     snap.rows.forEach(r => {
-      if(!matchesReseller(r.client||'', reseller)) return;
+      if(!matchesReseller(r.client||'', r.cuit||'', reseller)) return;
       const lineKey = classifyResellerLine(r.description||'');
       if(!lineKey) return;
       data[lineKey][monthKey] = (data[lineKey][monthKey]||0) + (r.qty||0);
@@ -4432,7 +4439,8 @@ function buildResellerBlock(reseller, tier, data, year, months, quarters, active
   return `<div class="reseller-block">
     <div class="reseller-block-header">
       <span style="font-weight:700;font-size:14px;color:var(--text)">${esc(reseller.name)}</span>
-      ${matchInfo ? `<span style="font-size:11px;color:var(--text3)">→ ${esc(matchInfo)}</span>` : '<span style="font-size:11px;color:var(--red-text)">Sin coincidencias en reportes</span>'}
+      ${reseller.cuit ? `<span style="font-size:11px;color:var(--text3)">CUIT ${esc(reseller.cuit)}</span>` : ''}
+      ${matchInfo ? `<span style="font-size:11px;color:var(--text3)">→ ${esc(matchInfo)}</span>` : '<span style="font-size:11px;color:var(--red-text)"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Sin coincidencias en reportes — configurar CUIT</span>'}
       <button class="btn" style="margin-left:auto;font-size:11px;padding:3px 8px" onclick="editResellerConfig('${reseller.id}','${tier}')"><i class="ti ti-settings" style="font-size:12px"></i> Configurar</button>
       <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red-text)" onclick="removeReseller('${reseller.id}','${tier}')"><i class="ti ti-trash" style="font-size:12px"></i></button>
     </div>
@@ -4449,7 +4457,7 @@ function _getResellerMatchInfo(reseller) {
   const names = new Set();
   db.weeklyReports.filter(s=>s.reportType==='sales').forEach(s => {
     s.rows.forEach(r => {
-      if(matchesReseller(r.client||'', reseller)) names.add((r.client||'').trim().toUpperCase());
+      if(matchesReseller(r.client||'', r.cuit||'', reseller)) names.add((r.client||'').trim().toUpperCase());
     });
   });
   return names.size > 0 ? Array.from(names).slice(0,3).join(' / ') : null;
@@ -4487,9 +4495,10 @@ function saveResellerTarget(resellerId, lineKey, period, tier, rawVal) {
 
 function editResellerManual(resellerId, lineKey, monthKey, tier) {
   // Only allow manual edit if no auto data exists for this cell
+  const resellerObj = (db.resellers[tier]||[]).find(x=>x.id===resellerId)||{id:resellerId,name:resellerId,aliases:[],cuit:''};
   const autoSnap = db.weeklyReports.filter(s=>s.reportType==='sales').some(s => {
     if((s.periodEnd||'').slice(0,7) !== monthKey) return false;
-    return s.rows.some(r => matchesReseller(r.client||'', (db.resellers[tier]||[]).find(x=>x.id===resellerId)||{id:resellerId,name:resellerId,aliases:[]}) && classifyResellerLine(r.description||'')===lineKey);
+    return s.rows.some(r => matchesReseller(r.client||'', r.cuit||'', resellerObj) && classifyResellerLine(r.description||'')===lineKey);
   });
   const mkey = resellerId + ':' + lineKey + ':' + monthKey;
   const curVal = db.resellerManual[mkey] ?? '';
@@ -4504,10 +4513,11 @@ function editResellerManual(resellerId, lineKey, monthKey, tier) {
 
 function buildAddResellerModal(tier) {
   return `<div id="add-reseller-modal-${tier}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center">
-    <div style="background:var(--bg);border-radius:12px;padding:24px;width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+    <div style="background:var(--bg);border-radius:12px;padding:24px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
       <div style="font-size:16px;font-weight:700;margin-bottom:16px">Agregar Reseller a ${tier.toUpperCase()}</div>
-      <div class="field"><label>Nombre del Reseller</label><input id="new-reseller-name-${tier}" type="text" placeholder="Ej: GAMING CITY" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
-      <div class="field"><label>Alias (opcional, uno por línea)</label><textarea id="new-reseller-aliases-${tier}" rows="3" placeholder="Alias adicionales para hacer coincidir con los reportes" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical"></textarea></div>
+      <div class="field"><label>Nombre comercial (nombre fantasía)</label><input id="new-reseller-name-${tier}" type="text" placeholder="Ej: GAMING CITY" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
+      <div class="field"><label>CUIT <span style="color:var(--text3);font-weight:400">(recomendado — para coincidir exacto con los reportes)</span></label><input id="new-reseller-cuit-${tier}" type="text" placeholder="Ej: 30-71797078-7" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
+      <div class="field"><label>Alias adicionales <span style="color:var(--text3);font-weight:400">(uno por línea)</span></label><textarea id="new-reseller-aliases-${tier}" rows="2" placeholder="Nombre legal, razón social, u otras variantes que aparezcan en los reportes" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical"></textarea></div>
       <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
         <button class="btn" onclick="document.getElementById('add-reseller-modal-${tier}').style.display='none'">Cancelar</button>
         <button class="btn btn-primary" onclick="saveNewReseller('${tier}')">Agregar</button>
@@ -4526,13 +4536,15 @@ function openAddResellerModal(tier) {
 
 function saveNewReseller(tier) {
   const nameEl = document.getElementById('new-reseller-name-' + tier);
+  const cuitEl = document.getElementById('new-reseller-cuit-' + tier);
   const aliasEl = document.getElementById('new-reseller-aliases-' + tier);
   const name = (nameEl?.value||'').trim().toUpperCase();
   if(!name) { alert('Ingresá un nombre para el reseller.'); return; }
+  const cuit = (cuitEl?.value||'').trim();
   const aliases = (aliasEl?.value||'').split('\n').map(s=>s.trim().toUpperCase()).filter(Boolean);
   const id = name.toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + Date.now();
   if(!db.resellers[tier]) db.resellers[tier] = [];
-  db.resellers[tier].push({ id, name, aliases });
+  db.resellers[tier].push({ id, name, cuit, aliases });
   saveDB();
   document.getElementById('add-reseller-modal-' + tier).style.display = 'none';
   renderResellerTab(tier);
@@ -4552,11 +4564,37 @@ function removeReseller(resellerId, tier) {
 function editResellerConfig(resellerId, tier) {
   const reseller = (db.resellers[tier]||[]).find(r=>r.id===resellerId);
   if(!reseller) return;
-  const newName = prompt('Nombre del reseller:', reseller.name);
-  if(!newName) return;
-  const newAliases = prompt('Alias adicionales (separados por coma):', (reseller.aliases||[]).join(', '));
-  reseller.name = newName.trim().toUpperCase();
-  reseller.aliases = newAliases ? newAliases.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean) : [];
+  // Build inline edit modal
+  const wrap = document.getElementById('resellers-' + tier + '-content');
+  const modalId = 'edit-reseller-modal-' + resellerId;
+  if(document.getElementById(modalId)) { document.getElementById(modalId).remove(); }
+  const div = document.createElement('div');
+  div.id = modalId;
+  div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center';
+  div.innerHTML = `<div style="background:var(--bg);border-radius:12px;padding:24px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px">Configurar Reseller</div>
+    <div class="field"><label>Nombre comercial</label><input id="er-name-${resellerId}" type="text" value="${esc(reseller.name)}" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
+    <div class="field"><label>CUIT <span style="color:var(--text3);font-weight:400">(clave para coincidir con los reportes)</span></label><input id="er-cuit-${resellerId}" type="text" value="${esc(reseller.cuit||'')}" placeholder="Ej: 30-71797078-7" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
+    <div class="field"><label>Alias adicionales <span style="color:var(--text3);font-weight:400">(uno por línea)</span></label><textarea id="er-aliases-${resellerId}" rows="3" placeholder="Nombre legal, razón social u otras variantes" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical">${esc((reseller.aliases||[]).join('\n'))}</textarea></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn" onclick="document.getElementById('${modalId}').remove()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveResellerConfig('${resellerId}','${tier}','${modalId}')">Guardar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(div);
+}
+function saveResellerConfig(resellerId, tier, modalId) {
+  const reseller = (db.resellers[tier]||[]).find(r=>r.id===resellerId);
+  if(!reseller) return;
+  const nameEl = document.getElementById('er-name-' + resellerId);
+  const cuitEl = document.getElementById('er-cuit-' + resellerId);
+  const aliasEl = document.getElementById('er-aliases-' + resellerId);
+  const newName = (nameEl?.value||'').trim().toUpperCase();
+  if(!newName) { alert('El nombre no puede estar vacío.'); return; }
+  reseller.name = newName;
+  reseller.cuit = (cuitEl?.value||'').trim();
+  reseller.aliases = (aliasEl?.value||'').split('\n').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  document.getElementById(modalId)?.remove();
   saveDB();
   renderResellerTab(tier);
 }
