@@ -2,10 +2,18 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>SalesOps CRM</title>
-<link rel="icon" type="image/png" href="favicon.png" />
-<link rel="apple-touch-icon" href="favicon.png" />
+<!-- PWA -->
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" type="image/png" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-apple.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="SalesOps" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#CC2222" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#CC2222" media="(prefers-color-scheme: dark)" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -256,6 +264,106 @@
   .attach-row .attach-name { flex: 1; font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .attach-row button { flex-shrink: 0; padding: 5px 9px; }
   .card-clip { font-size: 11px; color: var(--text3); }
+
+  /* ══════════════════════════════════════════════════════
+     RESPONSIVE — Tablet (768-1199px)
+  ══════════════════════════════════════════════════════ */
+  @media (max-width: 1199px) {
+    .sidebar { width: 220px; }
+    .main { margin-left: 220px; }
+    .nav-item { font-size: 12px; padding: 7px 8px; gap: 7px; }
+  }
+
+  /* ══════════════════════════════════════════════════════
+     RESPONSIVE — Mobile (≤ 767px)
+  ══════════════════════════════════════════════════════ */
+  @media (max-width: 767px) {
+    /* Layout */
+    .sidebar {
+      position: fixed; top: 0; left: 0; height: 100dvh;
+      transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+      z-index: 300; width: 280px; box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+    }
+    .sidebar.sidebar-open { transform: translateX(0); }
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 299; backdrop-filter: blur(2px);
+    }
+    .sidebar-overlay.active { display: block; }
+    .main { margin-left: 0; }
+
+    /* Topbar */
+    .topbar { padding: 0 14px; height: 54px; gap: 8px; }
+    .topbar-actions { gap: 6px; }
+    .topbar-actions .btn:not(.btn-primary):not(#btn-hamburger) { display: none; }
+    #btn-hamburger { display: flex !important; }
+    .page-title { font-size: 15px; font-weight: 600; flex: 1; text-align: center; }
+
+    /* Content */
+    .content { padding: 14px 12px; padding-bottom: 80px; }
+
+    /* Cards */
+    .card { padding: 14px; }
+    .metrics { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .metric-card { padding: 14px 12px; }
+    .metric-value { font-size: 22px; }
+
+    /* Kanban → vertical stack */
+    .board { flex-direction: column; gap: 14px; overflow-x: visible; }
+    .column { min-width: unset; width: 100%; }
+    .column-header { position: sticky; top: 54px; z-index: 10; border-radius: var(--radius) var(--radius) 0 0; }
+
+    /* Field rows → stack */
+    .field-row { grid-template-columns: 1fr !important; gap: 10px; }
+
+    /* Tables — horizontal scroll (already .table-scroll, but reinforce) */
+    .table-scroll { -webkit-overflow-scrolling: touch; }
+    .data-table td, .data-table th { font-size: 12px; padding: 7px 8px; }
+
+    /* Modal → full bottom sheet on mobile */
+    .modal-box { width: 100% !important; max-width: 100% !important; max-height: 92dvh;
+      border-radius: 20px 20px 0 0; position: fixed; bottom: 0; left: 0; top: auto;
+      transform: none !important; overflow-y: auto; }
+    .modal-backdrop { align-items: flex-end; }
+
+    /* AI box */
+    .ai-box { padding: 14px; }
+
+    /* Bottom nav bar */
+    .mobile-bottom-nav {
+      display: flex; position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--bg); border-top: 0.5px solid var(--border2);
+      z-index: 200; height: 60px; padding-bottom: env(safe-area-inset-bottom);
+    }
+    .mobile-bottom-nav button {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; border: none; background: none; color: var(--text3);
+      font-size: 10px; cursor: pointer; padding: 4px 2px; transition: color 0.15s;
+    }
+    .mobile-bottom-nav button i { font-size: 20px; }
+    .mobile-bottom-nav button.active { color: var(--brand-text); }
+
+    /* Section headers */
+    .section-header { flex-wrap: wrap; gap: 8px; }
+    .section-title { font-size: 14px; }
+
+    /* Export rows → hide on mobile or scroll */
+    .export-row { display: none; }
+
+    /* Reseller table — always scroll */
+    .reseller-table { font-size: 11px; }
+    .reseller-table th, .reseller-table td { padding: 4px 6px; }
+
+    /* PI search */
+    #pi-search-input { font-size: 14px; }
+
+    /* Safe area padding for notch iPhones */
+    .topbar { padding-top: env(safe-area-inset-top); }
+    .sidebar { padding-top: env(safe-area-inset-top); }
+  }
+
+  /* Hamburger button — hidden on desktop */
+  #btn-hamburger { display: none; }
 </style>
 </head>
 <body>
@@ -376,7 +484,10 @@
 
   <!-- MAIN -->
   <div class="main">
+    <!-- Mobile sidebar overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
     <header class="topbar">
+      <button id="btn-hamburger" class="btn" onclick="toggleMobileSidebar()" style="padding:6px 8px;min-width:unset"><i class="ti ti-menu-2" style="font-size:20px"></i></button>
       <div class="page-title" id="page-title">Dashboard</div>
       <div class="topbar-actions">
         <button class="btn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</button>
@@ -1023,7 +1134,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.31.07.26.2';
+const APP_VERSION = '1.31.07.26.3';
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -5841,6 +5952,57 @@ _fbAuth.onAuthStateChanged(async (user) => {
     appShell.style.display = 'none';
   }
 });
+</script>
+
+<!-- PWA: Mobile bottom nav + sidebar logic -->
+<nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+  <button onclick="gotoTab('dashboard')" id="mbn-dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
+  <button onclick="gotoTab('pi')" id="mbn-pi"><i class="ti ti-file-invoice"></i>PI</button>
+  <button onclick="gotoTab('salesprices')" id="mbn-salesprices"><i class="ti ti-currency-dollar"></i>Precios</button>
+  <button onclick="gotoTab('clients')" id="mbn-clients"><i class="ti ti-users"></i>Clientes</button>
+  <button onclick="toggleMobileSidebar()" id="mbn-more"><i class="ti ti-dots"></i>Más</button>
+</nav>
+
+<script>
+// ─── PWA ─────────────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
+  });
+}
+
+function toggleMobileSidebar() {
+  const sb = document.querySelector('.sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  sb.classList.toggle('sidebar-open');
+  ov.classList.toggle('active');
+}
+function closeMobileSidebar() {
+  document.querySelector('.sidebar')?.classList.remove('sidebar-open');
+  document.getElementById('sidebar-overlay')?.classList.remove('active');
+}
+
+// Close sidebar on tab change (mobile)
+const _origGotoTab = gotoTab;
+window.gotoTab = function(tab) {
+  _origGotoTab(tab);
+  closeMobileSidebar();
+  // Sync bottom nav active state
+  ['dashboard','pi','salesprices','clients'].forEach(t => {
+    const btn = document.getElementById('mbn-' + t);
+    if(btn) btn.classList.toggle('active', t === tab);
+  });
+  const moreBtn = document.getElementById('mbn-more');
+  if(moreBtn) moreBtn.classList.toggle('active', !['dashboard','pi','salesprices','clients'].includes(tab));
+};
+
+// Show/hide bottom nav only on mobile
+function updateBottomNav() {
+  const nav = document.getElementById('mobile-bottom-nav');
+  if(nav) nav.style.display = window.innerWidth <= 767 ? 'flex' : 'none';
+}
+window.addEventListener('resize', updateBottomNav);
+updateBottomNav();
 </script>
 </body>
 </html>
