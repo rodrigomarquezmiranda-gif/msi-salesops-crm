@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-07-30T18:20:36Z",
-  "lastCheck": "30/07/2026 18:20",
-  "changesFound": false,
+  "capturedAt": "2026-07-31T14:09:42Z",
+  "lastCheck": "31/07/2026 14:09",
+  "changesFound": true,
   "priceLogic": "min(colQ, colR) — uses lower of Miami Price and Market Share price",
   "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw | Tab: LATAM",
   "notifEmails": [
@@ -1844,7 +1844,7 @@
       "category": "Monitor",
       "price": 448.0,
       "miamiStock": 81,
-      "miamiEta": "ETA 08/04 672pcs + ETA 08/26 672pcs",
+      "miamiEta": "ETA 08/05 672pcs + ETA 08/23 672pcs",
       "bondedStock": 10,
       "bondedEta": ""
     },
@@ -1853,7 +1853,7 @@
       "name": "MAG 274QP QD-OLED X24",
       "category": "Monitor",
       "price": 448.0,
-      "miamiStock": 133,
+      "miamiStock": 105,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1873,9 +1873,9 @@
       "name": "MAG 346CQDF E20",
       "category": "Monitor",
       "price": 220.0,
-      "miamiStock": null,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": null,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "MAG346CQ": {
@@ -1894,7 +1894,7 @@
       "category": "Monitor",
       "price": 293.0,
       "miamiStock": 328,
-      "miamiEta": "ETA 08/23 320 pcs",
+      "miamiEta": "ETA 08/23 320 pcs + ETA 09/17 320 pcs",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -1924,8 +1924,8 @@
       "category": "Monitor",
       "price": 192.0,
       "miamiStock": 104,
-      "miamiEta": "",
-      "bondedStock": null,
+      "miamiEta": "ETA 09/17 456 pcs",
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "MAG274QPFX32": {
@@ -1933,7 +1933,7 @@
       "name": "MAG 274QPF X32",
       "category": "Monitor",
       "price": 192.0,
-      "miamiStock": 124,
+      "miamiStock": 0,
       "miamiEta": "ETA 08/09 798 pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -1944,7 +1944,7 @@
       "category": "Monitor",
       "price": 192.0,
       "miamiStock": 304,
-      "miamiEta": "ETA 09/02 798 pcs",
+      "miamiEta": "ETA 09/03 798 pcs",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -2013,7 +2013,7 @@
       "name": "MAG 276CXF",
       "category": "Monitor",
       "price": 120.0,
-      "miamiStock": 888,
+      "miamiStock": 716,
       "miamiEta": "",
       "bondedStock": 116,
       "bondedEta": ""
@@ -2093,7 +2093,7 @@
       "name": "MAG 245PF X24",
       "category": "Monitor",
       "price": 108.0,
-      "miamiStock": 0,
+      "miamiStock": 224,
       "miamiEta": "ETA 08/23 560pcs + ETA 09/06 560pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2104,7 +2104,7 @@
       "category": "Monitor",
       "price": 102.0,
       "miamiStock": 40,
-      "miamiEta": "ETA 08/11 800pcs + ETA 08/19 320pcs + ETA 08/23 80pcs + + ETA 09/06 80pcs",
+      "miamiEta": "ETA 08/11 800pcs + ETA 08/19 320pcs + ETA 08/23 80pcs + ETA 09/06 80pcs + 09/17 480pcs",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -2114,7 +2114,7 @@
       "category": "Monitor",
       "price": 95.0,
       "miamiStock": 0,
-      "miamiEta": "",
+      "miamiEta": "ETA 09/17 350pcs",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -2153,8 +2153,8 @@
       "name": "G242L E14",
       "category": "Monitor",
       "price": 70.0,
-      "miamiStock": 80,
-      "miamiEta": "",
+      "miamiStock": 480,
+      "miamiEta": "ETA 09/17 640pcs",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -2274,7 +2274,7 @@
       "category": "Monitor",
       "price": 85.0,
       "miamiStock": 507,
-      "miamiEta": "",
+      "miamiEta": "ETA 09/19 1134pcs",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -2283,7 +2283,7 @@
       "name": "PRO MP273L E14",
       "category": "Monitor",
       "price": 85.0,
-      "miamiStock": 54,
+      "miamiStock": 0,
       "miamiEta": "ETA 08/11 825pcs",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2304,7 +2304,7 @@
       "category": "Monitor",
       "price": 69.0,
       "miamiStock": 155,
-      "miamiEta": "ETA 08/19 1680pcs",
+      "miamiEta": "ETA 08/11 1680pcs",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -2353,8 +2353,8 @@
       "name": "PRO MP225 E12VL",
       "category": "Monitor",
       "price": 55.0,
-      "miamiStock": 145,
-      "miamiEta": "ETA 08/05 1890pcs + ETA 08/05 1890pcs +  ETA 09/04 1890pcs",
+      "miamiStock": 305,
+      "miamiEta": "ETA 08/07 3780pcs +  ETA 09/05 1890pcs",
       "bondedStock": 0,
       "bondedEta": ""
     },
@@ -2393,7 +2393,7 @@
       "name": "PRO MP165 E6",
       "category": "Monitor",
       "price": 84.0,
-      "miamiStock": 202,
+      "miamiStock": 197,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
@@ -2498,6 +2498,66 @@
       "bondedStock": 0,
       "bondedEta": ""
     },
+    "UPC:824142458952.0": {
+      "partNumber": "",
+      "name": "Cubi NUC AI+ 3MG-006BUS",
+      "category": "MiniPC",
+      "price": 720.0,
+      "miamiStock": "ETD TBC",
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "UPC:824142458969.0": {
+      "partNumber": "",
+      "name": "Cubi NUC AI+ 3MG-007BUS",
+      "category": "MiniPC",
+      "price": 613.0,
+      "miamiStock": "Pedir para Transferir a Miami",
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "UPC:824142458976.0": {
+      "partNumber": "",
+      "name": "Cubi NUC AI+ 3MG-008BUS",
+      "category": "MiniPC",
+      "price": 506.0,
+      "miamiStock": "Pedir para Transferir a Miami",
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "NAME:Cubi 5 1MA-493BUS": {
+      "partNumber": "",
+      "name": "Cubi 5 1MA-493BUS",
+      "category": "MiniPC",
+      "price": 471.0,
+      "miamiStock": "ETD TBC",
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "UPC:824142466728.0": {
+      "partNumber": "",
+      "name": "Cubi 5 1MA-494BUS",
+      "category": "MiniPC",
+      "price": 355.0,
+      "miamiStock": "ETD TBC",
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
+    "UPC:824142466735.0": {
+      "partNumber": "",
+      "name": "Cubi 5 1MA-495BUS",
+      "category": "MiniPC",
+      "price": 293.0,
+      "miamiStock": "ETD TBC",
+      "miamiEta": "",
+      "bondedStock": null,
+      "bondedEta": ""
+    },
     "CUBI Z AI 8M-023B": {
       "partNumber": "CUBI Z AI 8M-023B",
       "name": "Cubi Z AI 8M-023BUS",
@@ -2583,7 +2643,7 @@
       "name": "MEG MAESTRO 900R",
       "category": "Chassis",
       "price": 420.0,
-      "miamiStock": 77.0,
+      "miamiStock": 31.0,
       "miamiEta": "",
       "bondedStock": null,
       "bondedEta": ""
@@ -2665,7 +2725,7 @@
       "price": 65.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 146.0,
+      "bondedStock": 122.0,
       "bondedEta": ""
     },
     "PANO130RPZ": {
@@ -2733,7 +2793,7 @@
       "name": "PRO PANO M120L WHITE",
       "category": "Chassis",
       "price": 32.0,
-      "miamiStock": 130.0,
+      "miamiStock": 106.0,
       "miamiEta": "",
       "bondedStock": null,
       "bondedEta": ""
@@ -2743,7 +2803,7 @@
       "name": "PRO FORGE M051A",
       "category": "Chassis",
       "price": 26.0,
-      "miamiStock": 255.0,
+      "miamiStock": 195.0,
       "miamiEta": "",
       "bondedStock": null,
       "bondedEta": ""
@@ -2753,7 +2813,7 @@
       "name": "PRO FORGE M050A",
       "category": "Chassis",
       "price": 26.0,
-      "miamiStock": 320.0,
+      "miamiStock": 300.0,
       "miamiEta": "",
       "bondedStock": null,
       "bondedEta": ""
@@ -2761,7 +2821,7 @@
     "PROSHIELDM100P": {
       "partNumber": "PROSHIELDM100P",
       "name": "PRO SHIELD M100P",
-      "category": "Chassis",
+      "category": "Cooling",
       "price": 22.0,
       "miamiStock": 410.0,
       "miamiEta": "",
@@ -2885,8 +2945,8 @@
       "price": 53.0,
       "miamiStock": 703.0,
       "miamiEta": "",
-      "bondedStock": 1536.0,
-      "bondedEta": "ETA 7/26 1152pcs"
+      "bondedStock": 2688.0,
+      "bondedEta": ""
     },
     "CLA13240WT": {
       "partNumber": "CLA13240WT",
@@ -2913,7 +2973,7 @@
       "name": "MAG CORELIQUID A12 360",
       "category": "Cooling",
       "price": 48.0,
-      "miamiStock": 234.0,
+      "miamiStock": 59.0,
       "miamiEta": "",
       "bondedStock": 5726.0,
       "bondedEta": ""
@@ -2923,7 +2983,7 @@
       "name": "MAG CORELIQUID A12 240",
       "category": "Cooling",
       "price": 42.0,
-      "miamiStock": 114.0,
+      "miamiStock": 84.0,
       "miamiEta": "",
       "bondedStock": 8466.0,
       "bondedEta": ""
@@ -2935,7 +2995,7 @@
       "price": 13.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 14122.0,
+      "bondedStock": 14026.0,
       "bondedEta": ""
     },
     "CFAA13W": {
@@ -2943,15 +3003,15 @@
       "name": "MAG COREFROZR AA13 WHITE",
       "category": "Cooling",
       "price": 13.0,
-      "miamiStock": 32.0,
+      "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 2808.0,
+      "bondedStock": 2840.0,
       "bondedEta": ""
     },
     "EZ120ARGB3W": {
       "partNumber": "EZ120ARGB3W",
       "name": "MPG EZ120 ARGB WHITE-3W",
-      "category": "Cooling",
+      "category": "PSU",
       "price": 50.0,
       "miamiStock": 108.0,
       "miamiEta": "",
@@ -2995,7 +3055,7 @@
       "price": 110.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 1648.0,
+      "bondedStock": 1640.0,
       "bondedEta": ""
     },
     "PRO1000PL": {
@@ -3005,7 +3065,7 @@
       "price": 95.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 589.0,
+      "bondedStock": 489.0,
       "bondedEta": ""
     },
     "PRO850PL": {
@@ -3015,7 +3075,7 @@
       "price": 85.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 1170.0,
+      "bondedStock": 1060.0,
       "bondedEta": ""
     },
     "MAGA100GLPCIE5W": {
@@ -3023,7 +3083,7 @@
       "name": "MAG A1000GL PCIE5 WHITE",
       "category": "PSU",
       "price": 90.0,
-      "miamiStock": 73.0,
+      "miamiStock": 61.0,
       "miamiEta": "",
       "bondedStock": null,
       "bondedEta": ""
@@ -3045,8 +3105,8 @@
       "price": 75.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 1064.0,
-      "bondedEta": "ETA 7/28 1080pcs"
+      "bondedStock": 2144.0,
+      "bondedEta": ""
     },
     "MAGA850GLPCIE5": {
       "partNumber": "MAGA850GLPCIE5",
@@ -3055,15 +3115,15 @@
       "price": 70.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 3540.0,
-      "bondedEta": "ETA 7/26 1296pcs"
+      "bondedStock": 4836.0,
+      "bondedEta": ""
     },
     "MAGA750GLSPCIE5": {
       "partNumber": "MAGA750GLSPCIE5",
       "name": "MAG A750GLS PCIE5",
       "category": "PSU",
       "price": 60.0,
-      "miamiStock": 348.0,
+      "miamiStock": 337.0,
       "miamiEta": "",
       "bondedStock": null,
       "bondedEta": ""
@@ -3085,7 +3145,7 @@
       "price": 56.0,
       "miamiStock": 8.0,
       "miamiEta": "",
-      "bondedStock": 2158.0,
+      "bondedStock": 1906.0,
       "bondedEta": ""
     },
     "MAG650GNII": {
@@ -3095,8 +3155,8 @@
       "price": 40.0,
       "miamiStock": 249.0,
       "miamiEta": "",
-      "bondedStock": 1788.0,
-      "bondedEta": "ETA 7/26 32pcs"
+      "bondedStock": 1372.0,
+      "bondedEta": ""
     },
     "MAGA750BNPCIE5III": {
       "partNumber": "MAGA750BNPCIE5III",
@@ -3105,7 +3165,7 @@
       "price": 50.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 1110.0,
+      "bondedStock": 1068.0,
       "bondedEta": ""
     },
     "MAGA650BNPCIE5III": {
@@ -3125,8 +3185,8 @@
       "price": 42.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 5922.0,
-      "bondedEta": "ETA 7/28 4536pcs + ETA 7/26 192pcs"
+      "bondedStock": 10398.0,
+      "bondedEta": ""
     },
     "MAGA550BN": {
       "partNumber": "MAGA550BN",
@@ -3135,8 +3195,8 @@
       "price": 34.0,
       "miamiStock": 587.0,
       "miamiEta": "",
-      "bondedStock": 234.0,
-      "bondedEta": "ETA 7/28 1238pcs"
+      "bondedStock": 1472.0,
+      "bondedEta": "ETA 9/24 2289pcs"
     },
     "MAGA700DNII": {
       "partNumber": "MAGA700DNII",
@@ -3145,7 +3205,7 @@
       "price": 30.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": 1516.0,
+      "bondedStock": 1260.0,
       "bondedEta": ""
     },
     "MAGA600DNII": {
@@ -3155,8 +3215,8 @@
       "price": 27.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": null,
-      "bondedEta": "ETA 7/28 1280pcs"
+      "bondedStock": 1080.0,
+      "bondedEta": ""
     },
     "MAGA500DNII": {
       "partNumber": "MAGA500DNII",
@@ -3165,67 +3225,7 @@
       "price": 25.0,
       "miamiStock": null,
       "miamiEta": "",
-      "bondedStock": null,
-      "bondedEta": "ETA 7/28 688pcs"
-    },
-    "NAME:Cubi NUC AI+ 3MG-006BUS": {
-      "partNumber": "",
-      "name": "Cubi NUC AI+ 3MG-006BUS",
-      "category": "MiniPC",
-      "price": 720.0,
-      "miamiStock": null,
-      "miamiEta": "",
-      "bondedStock": null,
-      "bondedEta": ""
-    },
-    "UPC:824142458969.0": {
-      "partNumber": "",
-      "name": "Cubi NUC AI+ 3MG-007BUS",
-      "category": "MiniPC",
-      "price": 613.0,
-      "miamiStock": null,
-      "miamiEta": "",
-      "bondedStock": null,
-      "bondedEta": ""
-    },
-    "UPC:824142458976.0": {
-      "partNumber": "",
-      "name": "Cubi NUC AI+ 3MG-008BUS",
-      "category": "MiniPC",
-      "price": 506.0,
-      "miamiStock": null,
-      "miamiEta": "",
-      "bondedStock": null,
-      "bondedEta": ""
-    },
-    "NAME:Cubi 5 1MA-493BUS": {
-      "partNumber": "",
-      "name": "Cubi 5 1MA-493BUS",
-      "category": "MiniPC",
-      "price": 471.0,
-      "miamiStock": null,
-      "miamiEta": "",
-      "bondedStock": null,
-      "bondedEta": ""
-    },
-    "NAME:Cubi 5 1MA-494BUS": {
-      "partNumber": "",
-      "name": "Cubi 5 1MA-494BUS",
-      "category": "MiniPC",
-      "price": 355.0,
-      "miamiStock": null,
-      "miamiEta": "",
-      "bondedStock": null,
-      "bondedEta": ""
-    },
-    "NAME:Cubi 5 1MA-495BUS": {
-      "partNumber": "",
-      "name": "Cubi 5 1MA-495BUS",
-      "category": "MiniPC",
-      "price": 293.0,
-      "miamiStock": null,
-      "miamiEta": "",
-      "bondedStock": null,
+      "bondedStock": 668.0,
       "bondedEta": ""
     }
   }
