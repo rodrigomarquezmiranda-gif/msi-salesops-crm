@@ -55,6 +55,25 @@
   .nav-item { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 13px; transition: all 0.12s; border: none; background: none; width: 100%; text-align: left; }
   .nav-item:hover { background: var(--bg2); color: var(--text); }
   .nav-item.active { background: var(--brand-bg); color: var(--brand-text); font-weight: 500; }
+  .nav-sub-item { padding-left: 26px !important; font-size: 12px !important; }
+  /* Reseller Tracking */
+  .reseller-block { margin-bottom: 28px; }
+  .reseller-block-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:10px 14px; background:var(--bg2); border-radius:var(--radius); border:0.5px solid var(--border2); }
+  .reseller-table-wrap { overflow-x:auto; border-radius:var(--radius); border:0.5px solid var(--border2); }
+  .reseller-table { border-collapse:collapse; font-size:12px; min-width:700px; width:100%; }
+  .reseller-table th { padding:6px 10px; background:var(--bg2); font-weight:600; color:var(--text2); text-align:center; border:0.5px solid var(--border2); white-space:nowrap; font-size:11px; }
+  .reseller-table td { padding:5px 10px; border:0.5px solid var(--border2); white-space:nowrap; text-align:right; color:var(--text); font-size:12px; }
+  .reseller-table td.line-label { text-align:left; font-weight:500; color:var(--text); min-width:110px; }
+  .reseller-table tr.ttl-row td { font-weight:700; background:var(--bg2); color:var(--text); }
+  .reseller-table td.q-col { background:rgba(100,120,160,0.06); font-weight:600; }
+  .reseller-table td.target-col { background:rgba(235,203,139,0.1); }
+  .reseller-table td.manual-val { color:var(--text3); font-style:italic; }
+  .reseller-table td.zero-val { color:var(--text3); }
+  .edit-pencil { cursor:pointer; opacity:0.5; font-size:10px; margin-left:4px; vertical-align:middle; transition:opacity 0.1s; }
+  .edit-pencil:hover { opacity:1; color:var(--brand-text); }
+  .reseller-inline-input { width:60px; padding:1px 4px; font-size:12px; background:var(--bg2); border:1px solid var(--brand-text); border-radius:3px; color:var(--text); text-align:right; }
+  .th-q { background:rgba(100,120,160,0.12) !important; }
+  .th-target { background:rgba(235,203,139,0.18) !important; }
   .nav-item i { font-size: 16px; flex-shrink: 0; }
   .nav-badge { margin-left: auto; font-size: 10px; background: var(--red-bg); color: var(--red-text); padding: 1px 6px; border-radius: 10px; font-weight: 600; }
   .nav-count { margin-left: auto; font-size: 11px; color: var(--text3); }
@@ -310,6 +329,15 @@
       </button>
       <button class="nav-item" id="nav-clients" onclick="gotoTab('clients')">
         <i class="ti ti-users" style="color:#4B8ABF"></i> Ranking de Clientes
+      </button>
+      <button class="nav-item nav-sub-item" id="nav-resellers-t1" onclick="gotoTab('resellers-t1')">
+        <i class="ti ti-crown" style="color:#F0C040;font-size:13px"></i> Resellers T1
+      </button>
+      <button class="nav-item nav-sub-item" id="nav-resellers-t2" onclick="gotoTab('resellers-t2')">
+        <i class="ti ti-crown" style="color:#9DB8C8;font-size:13px"></i> Resellers T2
+      </button>
+      <button class="nav-item nav-sub-item" id="nav-resellers-t3" onclick="gotoTab('resellers-t3')">
+        <i class="ti ti-crown" style="color:#B08060;font-size:13px"></i> Resellers T3
       </button>
       <button class="nav-item" id="nav-catranking" onclick="gotoTab('catranking')">
         <i class="ti ti-category" style="color:#4EAACC"></i> Ranking por Categoría
@@ -590,6 +618,19 @@
         <div class="export-row"><button class="btn" onclick="exportClientsExcel()"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</button> <button class="btn" onclick="exportClientsPDF()"><i class="ti ti-file-type-pdf" style="font-size:14px"></i> PDF</button></div>
         <div id="clients-ranking-wrap"></div>
         <div id="clients-detail-wrap" style="margin-top:1.5rem"></div>
+      </div>
+
+      <!-- RESELLERS T1 -->
+      <div id="tab-resellers-t1" class="tab-pane">
+        <div id="resellers-t1-content"></div>
+      </div>
+      <!-- RESELLERS T2 -->
+      <div id="tab-resellers-t2" class="tab-pane">
+        <div id="resellers-t2-content"></div>
+      </div>
+      <!-- RESELLERS T3 -->
+      <div id="tab-resellers-t3" class="tab-pane">
+        <div id="resellers-t3-content"></div>
       </div>
 
       <!-- RANKING POR CATEGORÍA -->
@@ -982,8 +1023,8 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.31.07.26.0';
-let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[] };
+const APP_VERSION = '1.31.07.26.1';
+let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
 let currentFilter = { pi:'all' };
@@ -1114,6 +1155,23 @@ async function loadDB() {
   } catch(e) { console.error('Error cargando DB:', e); }
   if (!db.weeklyReports) db.weeklyReports = [];
   if (!db.imports) db.imports = [];
+  // Load resellers config
+  try {
+    const resRaw = await IDB.get('salesops_resellers').catch(()=>null);
+    if(resRaw) {
+      const resData = JSON.parse(resRaw);
+      db.resellers = resData.resellers || { t1:[], t2:[], t3:[] };
+      db.resellerTargets = resData.resellerTargets || {};
+      db.resellerManual = resData.resellerManual || {};
+    } else {
+      // Pre-populate T1 with defaults on first load
+      if(!db.resellers || !db.resellers.t1 || db.resellers.t1.length === 0) {
+        db.resellers = { t1: RESELLER_T1_DEFAULTS.map(n => ({ id: n.toLowerCase().replace(/[^a-z0-9]/g,'_'), name: n, aliases:[] })), t2:[], t3:[] };
+        db.resellerTargets = {};
+        db.resellerManual = {};
+      }
+    }
+  } catch(e) { console.warn('Error cargando resellers:', e); }
   try { const p = await IDB.get('salesops_pricelist'); if(p) priceList = JSON.parse(p); } catch(e) {}
   if (!priceList.lastDiff) priceList.lastDiff = null;
   if (!priceList.prevSourceFile) priceList.prevSourceFile = null;
@@ -1133,6 +1191,7 @@ function saveDB() {
         IDB.set('salesops_weekly',  JSON.stringify(db.weeklyReports||[])),
         IDB.set('salesops_imports', JSON.stringify(db.imports      ||[])),
         IDB.set('salesops_meta',    JSON.stringify({_migrations: db._migrations||{}})),
+        IDB.set('salesops_resellers', JSON.stringify({ resellers: db.resellers||{t1:[],t2:[],t3:[]}, resellerTargets: db.resellerTargets||{}, resellerManual: db.resellerManual||{} })),
       ];
   Promise.all(saves).catch(e => {
     console.error('Error guardando en Firebase:', e);
@@ -1303,8 +1362,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','catranking','imports','ia','notificaciones','usuarios'];
-const TITLES = { dashboard:'Dashboard', pi:'PI — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios'];
+const TITLES = { dashboard:'Dashboard', pi:'PI — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -1329,6 +1388,9 @@ function gotoTab(tab) {
   if(tab==='trend') updateTrendProductOptions();
   if(tab==='rotcompare') { renderRotcomparePeriodPills(); updateRotCompareProductOptions(); }
   if(tab==='clients') updateClientsMonthOptions();
+  if(tab==='resellers-t1') renderResellerTab('t1');
+  if(tab==='resellers-t2') renderResellerTab('t2');
+  if(tab==='resellers-t3') renderResellerTab('t3');
   if(tab==='catranking') { renderCatrankMonthChips(); renderCategoryRankingTab(); }
   if(tab==='imports') { renderImportsHistory(); renderImportsMonthChips(); renderImportsTab(); }
   if(tab==='notificaciones') renderNotificacionesTab();
@@ -4128,6 +4190,378 @@ function hideClientCompositionTooltip() {
   tip.addEventListener('mouseenter', clearTooltipHideTimer);
   tip.addEventListener('mouseleave', scheduleTooltipHide);
 })();
+// ─── RESELLER TRACKING ───────────────────────────────────────────────────────
+const RESELLER_T1_DEFAULTS = ['GAMING CITY','FULLHARD','NOXIESTORE','MAXIMUS','DIAMOND SYSTEM','VENEX','COMPUFAN','JAR COMPUTACION'];
+
+const RESELLER_LINES = [
+  { key:'mb',      label:'MB',            catKey:'motherboard', kwRequire:null, kwExclude:null },
+  { key:'vga',     label:'VGA',           catKey:'vga',         kwRequire:null, kwExclude:null },
+  { key:'ggd',     label:'GGD',           catKey:null,          kwRequire:null, kwExclude:null },
+  { key:'ssd',     label:'SSD',           catKey:'ssd',         kwRequire:null, kwExclude:null },
+  { key:'psu',     label:'PSU',           catKey:'psu',         kwRequire:null, kwExclude:null },
+  { key:'chassis', label:'Chassis',       catKey:'gabinete',    kwRequire:null, kwExclude:null },
+  { key:'lc',      label:'LC',            catKey:'cooling',     kwRequire:null, kwExclude:null },
+  { key:'monitor', label:'Monitor',       catKey:'monitor',     kwRequire:null, kwExclude:['PRO'] },
+  { key:'pro_mon', label:'Pro Monitor',   catKey:'monitor',     kwRequire:['PRO'], kwExclude:['PRO DT','PRODT','CUBI'] },
+  { key:'arms',    label:'Arms',          catKey:'accesorios',  kwRequire:['ARM'], kwExclude:null },
+  { key:'prodt',   label:'PRO DT (Cubi)', catKey:'minipc',      kwRequire:null, kwExclude:null },
+];
+
+const RESELLER_LINE_KEYS = RESELLER_LINES.map(l=>l.key);
+const MONTHS_ES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function normResellerName(s) {
+  return String(s||'').toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Z0-9]/g,' ').replace(/\s+/g,' ').trim();
+}
+function matchesReseller(clientName, reseller) {
+  const nc = normResellerName(clientName);
+  if(!nc) return false;
+  if(nc === normResellerName(reseller.name)) return true;
+  for(const alias of (reseller.aliases||[])) {
+    if(nc === normResellerName(alias)) return true;
+  }
+  return false;
+}
+function classifyResellerLine(description) {
+  const cat = classifyProductCategory(description);
+  const norm = normCategoryText(description);
+  for(const line of RESELLER_LINES) {
+    if(line.catKey !== cat) continue;
+    if(line.kwRequire && !line.kwRequire.some(kw => norm.includes(normCategoryText(kw)))) continue;
+    if(line.kwExclude && line.kwExclude.some(kw => norm.includes(normCategoryText(kw)))) continue;
+    return line.key;
+  }
+  // fallback: if cat matched but no line (e.g. accesorios without ARM), skip
+  return null;
+}
+
+function getResellerMonthlyData(reseller, yearFilter) {
+  // Returns { lineKey: { 'YYYY-MM': qty } }
+  const data = {};
+  RESELLER_LINE_KEYS.forEach(k => data[k] = {});
+
+  const allSales = db.weeklyReports.filter(s => s.reportType==='sales');
+  allSales.forEach(snap => {
+    const snapYear = (snap.periodEnd||'').slice(0,4);
+    if(yearFilter && snapYear !== String(yearFilter)) return;
+    const monthKey = (snap.periodEnd||'').slice(0,7); // 'YYYY-MM'
+    if(!monthKey || monthKey.length < 7) return;
+    snap.rows.forEach(r => {
+      if(!matchesReseller(r.client||'', reseller)) return;
+      const lineKey = classifyResellerLine(r.description||'');
+      if(!lineKey) return;
+      data[lineKey][monthKey] = (data[lineKey][monthKey]||0) + (r.qty||0);
+    });
+  });
+
+  // Merge manual data
+  const prefix = reseller.id + ':';
+  Object.entries(db.resellerManual||{}).forEach(([k,v]) => {
+    if(!k.startsWith(prefix)) return;
+    const parts = k.split(':'); // resellerId:lineKey:monthKey
+    if(parts.length < 3) return;
+    const lineKey = parts[1];
+    const period = parts.slice(2).join(':');
+    if(data[lineKey]) {
+      data[lineKey][period] = (data[lineKey][period]||0) + (v||0);
+    }
+  });
+  return data;
+}
+
+function getResellerYears() {
+  const years = new Set();
+  db.weeklyReports.filter(s=>s.reportType==='sales').forEach(s => {
+    const y = (s.periodEnd||'').slice(0,4);
+    if(y && y.length===4) years.add(y);
+  });
+  Object.keys(db.resellerManual||{}).forEach(k => {
+    const parts = k.split(':');
+    if(parts.length >= 3) {
+      const period = parts[2];
+      if(/^\d{4}-\d{2}$/.test(period)) years.add(period.slice(0,4));
+      if(/^\d{4}$/.test(period)) years.add(period);
+    }
+  });
+  const now = new Date().getFullYear();
+  years.add(String(now));
+  return Array.from(years).sort().reverse();
+}
+
+let _resellerYear = {};
+
+function renderResellerTab(tier) {
+  const wrap = document.getElementById('resellers-' + tier + '-content');
+  if(!wrap) return;
+
+  if(!db.resellers) db.resellers = { t1:[], t2:[], t3:[] };
+  if(!db.resellerTargets) db.resellerTargets = {};
+  if(!db.resellerManual) db.resellerManual = {};
+
+  const resellers = db.resellers[tier] || [];
+  const currentYear = _resellerYear[tier] || String(new Date().getFullYear());
+  const years = getResellerYears();
+
+  // Compute all months for this year that have any data
+  const allMonths = new Set();
+  resellers.forEach(r => {
+    const data = getResellerMonthlyData(r, currentYear);
+    Object.values(data).forEach(byMonth => Object.keys(byMonth).forEach(m => {
+      if(m.slice(0,4) === currentYear && /^\d{4}-\d{2}$/.test(m)) allMonths.add(m);
+    }));
+  });
+  // Also include manual data months
+  Object.keys(db.resellerManual||{}).forEach(k => {
+    const parts = k.split(':');
+    if(parts.length >= 3) {
+      const period = parts[2];
+      if(/^\d{4}-\d{2}$/.test(period) && period.slice(0,4) === currentYear) allMonths.add(period);
+    }
+  });
+  // Always show all 12 months of current year (up to today)
+  const nowMonth = new Date().toISOString().slice(0,7);
+  for(let m=1; m<=12; m++) {
+    const mk = currentYear + '-' + String(m).padStart(2,'0');
+    if(mk <= nowMonth) allMonths.add(mk);
+  }
+  const months = Array.from(allMonths).sort();
+
+  // Group months by quarter
+  const quarters = { Q1:[], Q2:[], Q3:[], Q4:[] };
+  months.forEach(m => {
+    const mo = parseInt(m.slice(5));
+    if(mo<=3) quarters.Q1.push(m);
+    else if(mo<=6) quarters.Q2.push(m);
+    else if(mo<=9) quarters.Q3.push(m);
+    else quarters.Q4.push(m);
+  });
+  const activeQuarters = ['Q1','Q2','Q3','Q4'].filter(q => quarters[q].length > 0);
+
+  const tierLabel = { t1:'T1', t2:'T2', t3:'T3' }[tier];
+  const tierColor = { t1:'#F0C040', t2:'#9DB8C8', t3:'#B08060' }[tier];
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <i class="ti ti-crown" style="color:${tierColor};font-size:20px"></i>
+        <span style="font-size:18px;font-weight:700;color:var(--text)">Resellers ${tierLabel}</span>
+        <span style="color:var(--text3);font-size:13px">${resellers.length} resellers</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px" onchange="_resellerYear['${tier}']=this.value;renderResellerTab('${tier}')">
+          ${years.map(y => `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`).join('')}
+        </select>
+        <button class="btn btn-primary" onclick="openAddResellerModal('${tier}')"><i class="ti ti-plus" style="font-size:13px"></i> Agregar reseller</button>
+      </div>
+    </div>`;
+
+  if(resellers.length === 0) {
+    html += `<div class="empty-state"><i class="ti ti-users-group"></i><p>No hay resellers configurados para ${tierLabel}.<br>Hacé clic en "Agregar reseller" para empezar.</p></div>`;
+  } else {
+    resellers.forEach(reseller => {
+      const data = getResellerMonthlyData(reseller, currentYear);
+      html += buildResellerBlock(reseller, tier, data, currentYear, months, quarters, activeQuarters);
+    });
+  }
+  html += buildAddResellerModal(tier);
+  wrap.innerHTML = html;
+}
+
+function buildResellerBlock(reseller, tier, data, year, months, quarters, activeQuarters) {
+  // Build header row: line label | months per Q | Q total | target | ...
+  let thMonths = '';
+  let totalByLine = {};
+  RESELLER_LINE_KEYS.forEach(k => totalByLine[k] = 0);
+
+  activeQuarters.forEach(q => {
+    quarters[q].forEach(m => {
+      const mo = parseInt(m.slice(5)) - 1;
+      thMonths += `<th>${MONTHS_ES_SHORT[mo]}</th>`;
+    });
+    thMonths += `<th class="th-q">${q}</th><th class="th-target">Target ${q} <i class="ti ti-pencil" style="font-size:9px;opacity:0.6"></i></th>`;
+  });
+
+  let bodyRows = '';
+  RESELLER_LINES.forEach(line => {
+    const ldata = data[line.key] || {};
+
+    let rowCells = '';
+    let qTotals = {};
+    activeQuarters.forEach(q => { qTotals[q] = 0; });
+
+    activeQuarters.forEach(q => {
+      quarters[q].forEach(m => {
+        const val = ldata[m] || 0;
+        const isManual = !!(db.resellerManual && db.resellerManual[reseller.id+':'+line.key+':'+m]);
+        qTotals[q] += val;
+        totalByLine[line.key] = (totalByLine[line.key]||0) + val;
+        const cls = val === 0 ? 'zero-val' : (isManual ? 'manual-val' : '');
+        const displayVal = val === 0 ? '—' : val;
+        rowCells += `<td class="${cls}" title="${isManual?'Dato manual':'Dato de reportes'}" onclick="editResellerManual('${reseller.id}','${line.key}','${m}','${tier}')" style="cursor:pointer">${displayVal}</td>`;
+      });
+      const qtot = qTotals[q];
+      const targetKey = reseller.id + ':' + line.key + ':' + year + q;
+      const target = db.resellerTargets[targetKey] ?? '';
+      rowCells += `<td class="q-col">${qtot || '—'}</td>`;
+      rowCells += `<td class="target-col"><span id="rtgt_${reseller.id}_${line.key}_${year}${q}">${target !== '' ? target : '<span style="color:var(--text3)">—</span>'}</span><i class="ti ti-pencil edit-pencil" onclick="editResellerTarget('${reseller.id}','${line.key}','${year}${q}','${tier}')"></i></td>`;
+    });
+
+    bodyRows += `<tr><td class="line-label">${esc(line.label)}</td>${rowCells}</tr>`;
+  });
+
+  // TTL row
+  let ttlCells = '';
+  activeQuarters.forEach(q => {
+    let qSum = 0;
+    quarters[q].forEach(m => {
+      let mSum = 0;
+      RESELLER_LINE_KEYS.forEach(k => mSum += (data[k][m]||0));
+      const isManual = RESELLER_LINE_KEYS.some(k => !!(db.resellerManual && db.resellerManual[reseller.id+':'+k+':'+m]));
+      const cls = mSum === 0 ? 'zero-val' : (isManual ? 'manual-val' : '');
+      ttlCells += `<td class="${cls}">${mSum || '—'}</td>`;
+      qSum += mSum;
+    });
+    const targetKey = reseller.id + ':ttl:' + year + q;
+    const target = db.resellerTargets[targetKey] ?? '';
+    ttlCells += `<td class="q-col">${qSum || '—'}</td>`;
+    ttlCells += `<td class="target-col"><span id="rtgt_${reseller.id}_ttl_${year}${q}">${target !== '' ? target : '<span style="color:var(--text3)">—</span>'}</span><i class="ti ti-pencil edit-pencil" onclick="editResellerTarget('${reseller.id}','ttl','${year}${q}','${tier}')"></i></td>`;
+  });
+
+  const matchInfo = _getResellerMatchInfo(reseller);
+
+  return `<div class="reseller-block">
+    <div class="reseller-block-header">
+      <span style="font-weight:700;font-size:14px;color:var(--text)">${esc(reseller.name)}</span>
+      ${matchInfo ? `<span style="font-size:11px;color:var(--text3)">→ ${esc(matchInfo)}</span>` : '<span style="font-size:11px;color:var(--red-text)">Sin coincidencias en reportes</span>'}
+      <button class="btn" style="margin-left:auto;font-size:11px;padding:3px 8px" onclick="editResellerConfig('${reseller.id}','${tier}')"><i class="ti ti-settings" style="font-size:12px"></i> Configurar</button>
+      <button class="btn" style="font-size:11px;padding:3px 8px;color:var(--red-text)" onclick="removeReseller('${reseller.id}','${tier}')"><i class="ti ti-trash" style="font-size:12px"></i></button>
+    </div>
+    <div class="reseller-table-wrap">
+      <table class="reseller-table">
+        <thead><tr><th style="text-align:left">Línea</th>${thMonths}</tr></thead>
+        <tbody>${bodyRows}<tr class="ttl-row"><td class="line-label">TTL</td>${ttlCells}</tr></tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function _getResellerMatchInfo(reseller) {
+  const names = new Set();
+  db.weeklyReports.filter(s=>s.reportType==='sales').forEach(s => {
+    s.rows.forEach(r => {
+      if(matchesReseller(r.client||'', reseller)) names.add((r.client||'').trim().toUpperCase());
+    });
+  });
+  return names.size > 0 ? Array.from(names).slice(0,3).join(' / ') : null;
+}
+
+function editResellerTarget(resellerId, lineKey, period, tier) {
+  const spanId = `rtgt_${resellerId}_${lineKey}_${period}`;
+  const span = document.getElementById(spanId);
+  if(!span) return;
+  const tkey = resellerId + ':' + lineKey + ':' + period;
+  const curVal = db.resellerTargets[tkey] ?? '';
+  const inp = document.createElement('input');
+  inp.type = 'number'; inp.min = '0'; inp.className = 'reseller-inline-input';
+  inp.value = curVal;
+  inp.onkeydown = e => {
+    if(e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); saveResellerTarget(resellerId, lineKey, period, tier, inp.value); }
+    if(e.key === 'Escape') renderResellerTab(tier);
+  };
+  inp.onblur = () => saveResellerTarget(resellerId, lineKey, period, tier, inp.value);
+  span.parentNode.replaceChild(inp, span);
+  inp.focus(); inp.select();
+  // Hide pencil
+  const pencil = inp.nextSibling;
+  if(pencil) pencil.style.display='none';
+}
+
+function saveResellerTarget(resellerId, lineKey, period, tier, rawVal) {
+  const tkey = resellerId + ':' + lineKey + ':' + period;
+  const num = parseInt(rawVal);
+  if(!isNaN(num) && num >= 0) db.resellerTargets[tkey] = num;
+  else delete db.resellerTargets[tkey];
+  saveDB();
+  renderResellerTab(tier);
+}
+
+function editResellerManual(resellerId, lineKey, monthKey, tier) {
+  // Only allow manual edit if no auto data exists for this cell
+  const autoSnap = db.weeklyReports.filter(s=>s.reportType==='sales').some(s => {
+    if((s.periodEnd||'').slice(0,7) !== monthKey) return false;
+    return s.rows.some(r => matchesReseller(r.client||'', (db.resellers[tier]||[]).find(x=>x.id===resellerId)||{id:resellerId,name:resellerId,aliases:[]}) && classifyResellerLine(r.description||'')===lineKey);
+  });
+  const mkey = resellerId + ':' + lineKey + ':' + monthKey;
+  const curVal = db.resellerManual[mkey] ?? '';
+  const val = prompt(`${autoSnap?'⚠️ Ya hay datos automáticos para este mes/línea.\n':''}Valor manual para ${lineKey} — ${monthKey}:\n(Dejá vacío para borrar, se suma a los datos automáticos)`, curVal);
+  if(val === null) return;
+  const num = parseInt(val);
+  if(!isNaN(num) && num > 0) db.resellerManual[mkey] = num;
+  else delete db.resellerManual[mkey];
+  saveDB();
+  renderResellerTab(tier);
+}
+
+function buildAddResellerModal(tier) {
+  return `<div id="add-reseller-modal-${tier}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center">
+    <div style="background:var(--bg);border-radius:12px;padding:24px;width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+      <div style="font-size:16px;font-weight:700;margin-bottom:16px">Agregar Reseller a ${tier.toUpperCase()}</div>
+      <div class="field"><label>Nombre del Reseller</label><input id="new-reseller-name-${tier}" type="text" placeholder="Ej: GAMING CITY" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
+      <div class="field"><label>Alias (opcional, uno por línea)</label><textarea id="new-reseller-aliases-${tier}" rows="3" placeholder="Alias adicionales para hacer coincidir con los reportes" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical"></textarea></div>
+      <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+        <button class="btn" onclick="document.getElementById('add-reseller-modal-${tier}').style.display='none'">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveNewReseller('${tier}')">Agregar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openAddResellerModal(tier) {
+  const modal = document.getElementById('add-reseller-modal-' + tier);
+  if(!modal) { renderResellerTab(tier); setTimeout(()=>openAddResellerModal(tier),100); return; }
+  document.getElementById('new-reseller-name-' + tier).value = '';
+  document.getElementById('new-reseller-aliases-' + tier).value = '';
+  modal.style.display = 'flex';
+}
+
+function saveNewReseller(tier) {
+  const nameEl = document.getElementById('new-reseller-name-' + tier);
+  const aliasEl = document.getElementById('new-reseller-aliases-' + tier);
+  const name = (nameEl?.value||'').trim().toUpperCase();
+  if(!name) { alert('Ingresá un nombre para el reseller.'); return; }
+  const aliases = (aliasEl?.value||'').split('\n').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const id = name.toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + Date.now();
+  if(!db.resellers[tier]) db.resellers[tier] = [];
+  db.resellers[tier].push({ id, name, aliases });
+  saveDB();
+  document.getElementById('add-reseller-modal-' + tier).style.display = 'none';
+  renderResellerTab(tier);
+}
+
+function removeReseller(resellerId, tier) {
+  if(!confirm('¿Eliminar este reseller del tier? Se pierden los targets y datos manuales asociados.')) return;
+  db.resellers[tier] = (db.resellers[tier]||[]).filter(r => r.id !== resellerId);
+  // Clean orphan targets/manual
+  [db.resellerTargets, db.resellerManual].forEach(obj => {
+    Object.keys(obj).forEach(k => { if(k.startsWith(resellerId+':')) delete obj[k]; });
+  });
+  saveDB();
+  renderResellerTab(tier);
+}
+
+function editResellerConfig(resellerId, tier) {
+  const reseller = (db.resellers[tier]||[]).find(r=>r.id===resellerId);
+  if(!reseller) return;
+  const newName = prompt('Nombre del reseller:', reseller.name);
+  if(!newName) return;
+  const newAliases = prompt('Alias adicionales (separados por coma):', (reseller.aliases||[]).join(', '));
+  reseller.name = newName.trim().toUpperCase();
+  reseller.aliases = newAliases ? newAliases.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean) : [];
+  saveDB();
+  renderResellerTab(tier);
+}
+
+// ─── END RESELLER TRACKING ────────────────────────────────────────────────────
 function renderClientsTab(resetPaging) {
   if(resetPaging) _clientsShowAll = false;
   const dist = document.getElementById('clients-distributor').value;
