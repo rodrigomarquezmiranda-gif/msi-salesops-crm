@@ -1131,7 +1131,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.03.08.26.2';
+const APP_VERSION = '1.03.08.26.3';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5794,6 +5794,19 @@ async function _recordLogin(user) {
     await firebase.database().ref(`salesops_allowed_users/${key}`).update(upd);
     _allowedUsers[key] = { ..._allowedUsers[key], ...upd };
   }
+  // Mantener índice de UIDs para reglas de seguridad Firebase
+  // El owner también sincroniza todos los UIDs existentes (migración automática)
+  if (user.uid === OWNER_UID) {
+    const uidsToSync = {};
+    Object.values(_allowedUsers).forEach(u => {
+      if (u.uid) uidsToSync[u.uid] = true;
+    });
+    uidsToSync[OWNER_UID] = true;
+    await firebase.database().ref('salesops_allowed_uids').update(uidsToSync).catch(() => {});
+  } else if (user.uid) {
+    // Cada usuario registra su propio UID al iniciar sesión
+    await firebase.database().ref(`salesops_allowed_uids/${user.uid}`).set(true).catch(() => {});
+  }
 }
 
 function togglePassVis() {
@@ -5829,6 +5842,8 @@ async function addAllowedUser() {
   const entry = { email, role, uid, name: '', addedAt: new Date().toISOString() };
   await firebase.database().ref(`salesops_allowed_users/${key}`).set(entry);
   _allowedUsers[key] = entry;
+  // Agregar al índice de UIDs para reglas de seguridad
+  if (uid) await firebase.database().ref(`salesops_allowed_uids/${uid}`).set(true).catch(() => {});
   document.getElementById('new-user-email').value = '';
   document.getElementById('new-user-pass').value  = '';
   renderUsersTab();
@@ -5838,8 +5853,11 @@ async function addAllowedUser() {
 async function removeAllowedUser(key) {
   const email = key.replace(/,/g, '.');
   if (!confirm(`¿Eliminar el acceso de ${email}?`)) return;
+  const removedUid = _allowedUsers[key]?.uid;
   await firebase.database().ref(`salesops_allowed_users/${key}`).remove();
   delete _allowedUsers[key];
+  // Remover del índice de UIDs
+  if (removedUid) await firebase.database().ref(`salesops_allowed_uids/${removedUid}`).remove().catch(() => {});
   renderUsersTab();
 }
 
