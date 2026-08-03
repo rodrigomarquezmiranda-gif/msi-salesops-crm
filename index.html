@@ -166,7 +166,6 @@
   .move-btn { padding: 5px 11px; border: 0.5px solid var(--border2); background: none; border-radius: var(--radius); font-size: 12px; cursor: pointer; color: var(--text2); transition: all 0.12s; }
   .move-btn:hover, .move-btn.current { background: var(--blue-bg); color: var(--blue-text); border-color: transparent; font-weight: 500; }
   .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-  .detail-field { }
   .detail-field .lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
   .detail-field .val { font-size: 13px; font-weight: 500; color: var(--text); }
   .notes-box { background: var(--bg2); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; color: var(--text2); line-height: 1.6; border: 0.5px solid var(--border); }
@@ -269,8 +268,6 @@
      RESPONSIVE — Tablet (768-1199px)
   ══════════════════════════════════════════════════════ */
   @media (max-width: 1199px) {
-    .sidebar { width: 220px; }
-    .main { margin-left: 220px; }
     .nav-item { font-size: 12px; padding: 7px 8px; gap: 7px; }
   }
 
@@ -1134,7 +1131,14 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.32.08.01.1';
+const APP_VERSION = '1.03.08.26.1';
+
+// ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
+const DAY_MS = 86400000; // milisegundos en un día
+// Formateadores de precio — usar en lugar de .toLocaleString inline
+const fmtUSD = v => 'USD ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+const fmtAmt = v => 'USD ' + Number(v).toLocaleString('es-AR', { maximumFractionDigits: 2 });
+
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
@@ -1441,7 +1445,7 @@ function exportTableToPDF(filename, title, subtitle, headers, rows) {
 // ─── DATES ────────────────────────────────────────────
 function daysUntil(d) {
   if(!d) return null;
-  return Math.ceil((new Date(d) - new Date()) / 86400000);
+  return Math.ceil((new Date(d) - new Date()) / DAY_MS);
 }
 function daysChip(d) {
   if(d === null) return '';
@@ -2661,20 +2665,19 @@ function applyPriceFilter(){
         const k=p.code.toUpperCase();
         const isNew=addedCodes.has(k);
         const ch=changedMap.get(k);
-        const fmt=v=>'USD '+Number(v).toLocaleString('es-AR',{minimumFractionDigits:2});
         const stockCells=hasStock?`<td style="font-size:11px;text-align:center">${p.miamiStock!=null?p.miamiStock:'-'}</td><td style="font-size:11px;color:var(--text3);text-align:center">${p.miamiEta||'-'}</td><td style="font-size:11px;text-align:center">${p.bondedStock!=null?p.bondedStock:'-'}</td><td style="font-size:11px;color:var(--text3);text-align:center">${p.bondedEta||'-'}</td>`:'';
         const descKey=(p.desc||'').toUpperCase().trim();
         const hist=_priceHistMap.get(descKey)||[];
         const lastSale=hist[0];
-        const histCell=lastSale?`<td><span class="client-name-hover" data-histkey="${encodeURIComponent(descKey)}" onmouseenter="showPriceHistoryTooltip(event)" onmouseleave="hideClientCompositionTooltip()"><b>${fmt(lastSale.unitPrice)}</b></span></td>`:'<td style="color:var(--text3)">—</td>';
+        const histCell=lastSale?`<td><span class="client-name-hover" data-histkey="${encodeURIComponent(descKey)}" onmouseenter="showPriceHistoryTooltip(event)" onmouseleave="hideClientCompositionTooltip()"><b>${fmtUSD(lastSale.unitPrice)}</b></span></td>`:'<td style="color:var(--text3)">—</td>';
         let priceCell, updatedCell;
         if(ch&&p.price!=null){
           const pct=ch.oldPrice?Math.abs(((p.price-ch.oldPrice)/ch.oldPrice)*100).toFixed(1):'';
           const up=ch.dir==='up';
-          priceCell=`<td><s style="color:var(--text3);font-size:11px">${fmt(ch.oldPrice)}</s></td>`;
-          updatedCell=`<td><b>${fmt(p.price)}</b> <span style="font-size:10px;color:${up?'var(--red-text)':'var(--green-text)'}">${up?'▲':'▼'}${pct?` ${pct}%`:''}</span></td>`;
+          priceCell=`<td><s style="color:var(--text3);font-size:11px">${fmtUSD(ch.oldPrice)}</s></td>`;
+          updatedCell=`<td><b>${fmtUSD(p.price)}</b> <span style="font-size:10px;color:${up?'var(--red-text)':'var(--green-text)'}">${up?'▲':'▼'}${pct?` ${pct}%`:''}</span></td>`;
         } else {
-          priceCell=`<td>${p.price!=null?fmt(p.price):'-'}</td>`;
+          priceCell=`<td>${p.price!=null?fmtUSD(p.price):'-'}</td>`;
           updatedCell=`<td style="color:var(--text3)">—</td>`;
         }
         return `<tr class="${isNew?'row-new':''}">
@@ -2812,7 +2815,6 @@ function showSalesPriceTooltip(evt, key) {
   const allPrices = allRows.map(r => r.unitPrice).filter(v => v != null);
   const globalMin = allPrices.length ? Math.min(...allPrices) : null;
   const tip = document.getElementById('client-composition-tooltip');
-  const fmt = v => 'USD ' + Number(v).toLocaleString('es-AR', {minimumFractionDigits:2});
   const modelLabel = decodeURIComponent(key);
   tip.innerHTML = `
     <div style="font-size:12.5px;color:var(--text);margin-bottom:4px;font-weight:700;text-decoration:underline">${esc(modelLabel)}</div>
@@ -2825,7 +2827,7 @@ function showSalesPriceTooltip(evt, key) {
             return `
           <div style="font-size:11px;border-bottom:0.5px solid var(--border2);padding-bottom:5px">
             <div style="display:flex;justify-content:space-between;gap:8px">
-              <span style="color:${isMin ? 'var(--red-text)' : 'var(--text)'};font-weight:600">${fmt(r.unitPrice)}${isMin ? ' ↓ mín' : ''}</span>
+              <span style="color:${isMin ? 'var(--red-text)' : 'var(--text)'};font-weight:600">${fmtUSD(r.unitPrice)}${isMin ? ' ↓ mín' : ''}</span>
               <span style="color:var(--text3)">${r.date ? r.date.split('-').reverse().join('/') : '-'}</span>
             </div>
             <div style="color:var(--text2);margin-top:2px">
@@ -2873,8 +2875,6 @@ function renderSalesPriceHistory() {
   // Sort groups by most recent sale date
   groups.sort((a, b) => (b[1][0]?.date || '').localeCompare(a[1][0]?.date || ''));
 
-  const fmt = v => 'USD ' + Number(v).toLocaleString('es-AR', {minimumFractionDigits:2});
-
   const tbody = groups.map(([key, grpRows]) => {
     const lastRow   = grpRows[0]; // most recent (already sorted)
     const prices    = grpRows.map(r => r.unitPrice).filter(v => v != null);
@@ -2883,7 +2883,7 @@ function renderSalesPriceHistory() {
     const totalUnits = grpRows.reduce((s, r) => s + (r.ordered || 0), 0);
     const piCount   = new Set(grpRows.map(r => r.piName)).size;
     const priceCell = minP != null
-      ? (minP === maxP ? `<b>${fmt(minP)}</b>` : `<b>${fmt(maxP)}</b> <span style="color:var(--red-text);font-size:11px;font-weight:600"> · mín ${fmt(minP)}</span>`)
+      ? (minP === maxP ? `<b>${fmtUSD(minP)}</b>` : `<b>${fmtUSD(maxP)}</b> <span style="color:var(--red-text);font-size:11px;font-weight:600"> · mín ${fmtUSD(minP)}</span>`)
       : '—';
     const encodedKey = encodeURIComponent(key);
 
@@ -3407,7 +3407,7 @@ function getRotationAlertCount() {
         .sort((a,b) => (b.periodEnd||'').localeCompare(a.periodEnd||'') || (b.uploadedAt||'').localeCompare(a.uploadedAt||''));
       const latest = snaps[0];
       if(!latest) { count++; return; }
-      const daysSince = Math.floor((todayMs - new Date(latest.periodEnd).getTime()) / 86400000);
+      const daysSince = Math.floor((todayMs - new Date(latest.periodEnd).getTime()) / DAY_MS);
       if(!latest.periodGuessed && daysSince > 14) count++;
     });
   });
@@ -3483,7 +3483,7 @@ function renderRotationStatusBoard() {
       let daysSince = null, status, cls;
       if(!latest) { status = 'Sin ninguna carga'; cls = 'pill-red'; }
       else {
-        daysSince = Math.floor((todayMs - new Date(latest.periodEnd).getTime()) / 86400000);
+        daysSince = Math.floor((todayMs - new Date(latest.periodEnd).getTime()) / DAY_MS);
         if(latest.periodGuessed) { status = 'Fecha sin detectar'; cls = 'pill-amber'; }
         else if(daysSince <= 8) { status = 'Al día'; cls = 'pill-green'; }
         else if(daysSince <= 14) { status = `Atrasado (${daysSince}d)`; cls = 'pill-amber'; }
@@ -5745,14 +5745,15 @@ function renderNotificacionesTab() {
   // Sync status
   const status = document.getElementById('notif-sync-status');
   if (status) {
+    const noSyncMsg = `<span style="color:var(--text3)">Aún no se ha ejecutado ninguna sincronización automática.</span>`;
     IDB.get('salesops_pricelist_snapshot_meta').then(meta => {
       if (meta) {
         status.innerHTML = `<i class="ti ti-circle-check" style="color:var(--green);margin-right:6px"></i>Última sincronización: <b>${esc(meta.lastCheck || '')}</b>${meta.changesFound ? ` · <span style="color:var(--amber)">Se detectaron cambios</span>` : ' · Sin cambios'}`;
       } else {
-        status.innerHTML = `<span style="color:var(--text3)">Aún no se ha ejecutado ninguna sincronización automática.</span>`;
+        status.innerHTML = noSyncMsg;
       }
     }).catch(() => {
-      status.innerHTML = `<span style="color:var(--text3)">Aún no se ha ejecutado ninguna sincronización automática.</span>`;
+      status.innerHTML = noSyncMsg;
     });
   }
 }
