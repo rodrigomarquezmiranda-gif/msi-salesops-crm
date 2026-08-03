@@ -1,6 +1,6 @@
 {
-  "capturedAt": "2026-07-31T14:09:42Z",
-  "lastCheck": "01/08/2026 01:25",
+  "capturedAt": "2026-08-03T13:15:09Z",
+  "lastCheck": "03/08/2026 13:15",
   "changesFound": false,
   "priceLogic": "min(colQ, colR) — uses lower of Miami Price and Market Share price",
   "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw | Tab: LATAM",
