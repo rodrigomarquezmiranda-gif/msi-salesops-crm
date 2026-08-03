@@ -2440,6 +2440,7 @@ function renderPriceListView() {
   </div>`;
   document.getElementById('pricelist-filter-bar').style.display='flex';
   applyPriceFilter();
+  renderLastDiffReadOnly();
 }
 async function exportPriceListExcel() {
   const allItems = priceList.products || [];
@@ -2775,9 +2776,27 @@ function commitPriceUpload(){
   const prevSourceFile=priceList.sourceFile;
   priceList={updatedAt:new Date().toISOString(),sourceFile:c.sourceFile,products:c.products,lastDiff:c.diff,prevSourceFile};
   savePriceList();
-  document.getElementById('pricelist-diff').innerHTML='';
-  renderPriceListView();
   _pendingPriceCommit=null;
+  renderPriceListView();
+}
+function renderLastDiffReadOnly(){
+  const wrap=document.getElementById('pricelist-diff');
+  if(!wrap) return;
+  const diff=priceList.lastDiff;
+  if(!diff||(diff.added.length===0&&diff.removed.length===0&&diff.changed.length===0)){wrap.innerHTML='';return;}
+  const updatedAt=priceList.updatedAt?new Date(priceList.updatedAt).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'-';
+  wrap.innerHTML=`
+    <div class="ai-box" style="border-color:var(--border2);margin-top:12px">
+      <div class="ai-box-header" style="color:var(--text2)"><i class="ti ti-history"></i> Últimos cambios detectados — guardados el ${updatedAt}</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+        <div class="metric" style="flex:1;min-width:120px;padding:10px 14px"><div class="metric-value" style="color:var(--green-text)">${diff.added.length}</div><div class="metric-label">Productos nuevos</div></div>
+        <div class="metric" style="flex:1;min-width:120px;padding:10px 14px"><div class="metric-value" style="color:var(--amber-text)">${diff.changed.length}</div><div class="metric-label">Cambios de precio</div></div>
+        <div class="metric" style="flex:1;min-width:120px;padding:10px 14px"><div class="metric-value" style="color:var(--red-text)">${diff.removed.length}</div><div class="metric-label">Ya no aparecen</div></div>
+      </div>
+      ${diff.added.length?`<div style="font-size:12px;font-weight:600;color:var(--green-text);margin-bottom:6px">NUEVOS</div><div class="table-scroll" style="max-height:180px;overflow-y:auto;margin-bottom:12px"><table class="data-table" style="font-size:12px"><thead><tr><th>Código</th><th>Descripción</th><th>Miami Dom.</th><th>Bonded</th><th>Precio</th></tr></thead><tbody>${diff.added.map(p=>`<tr class="row-new"><td>${esc(p.code)}</td><td>${esc(p.desc||'-')}</td><td>${p.miamiStock??'-'}</td><td>${p.bondedStock??'-'}</td><td>${p.price!=null?'USD '+Number(p.price).toLocaleString('es-AR',{minimumFractionDigits:2}):'-'}</td></tr>`).join('')}</tbody></table></div>`:''}
+      ${diff.changed.length?`<div style="font-size:12px;font-weight:600;color:var(--amber-text);margin-bottom:6px">CAMBIOS DE PRECIO</div><div class="table-scroll" style="max-height:180px;overflow-y:auto;margin-bottom:12px"><table class="data-table" style="font-size:12px"><thead><tr><th>Código</th><th>Descripción</th><th>Precio ant.</th><th>Precio nuevo</th><th></th></tr></thead><tbody>${diff.changed.map(c=>`<tr><td>${esc(c.code)}</td><td>${esc(c.desc||'-')}</td><td style="color:var(--red-text)">USD ${Number(c.oldPrice).toLocaleString('es-AR',{minimumFractionDigits:2})}</td><td style="color:var(--green-text)">USD ${Number(c.newPrice).toLocaleString('es-AR',{minimumFractionDigits:2})}</td><td>${c.dir==='up'?'<span class="pill pill-red">▲ Subió</span>':'<span class="pill pill-green">▼ Bajó</span>'}</td></tr>`).join('')}</tbody></table></div>`:''}
+      ${diff.removed.length?`<div style="font-size:12px;font-weight:600;color:var(--red-text);margin-bottom:6px">YA NO APARECEN (${diff.removed.length})</div><div style="font-size:12px;color:var(--text3);margin-bottom:8px">${diff.removed.map(p=>esc(p.code)).join(', ')}</div>`:''}
+    </div>`;
 }
 const fileInputPrice = document.getElementById('file-input-price');
 const dropZonePrice = document.getElementById('drop-zone-price');
