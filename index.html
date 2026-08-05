@@ -1787,7 +1787,25 @@ function extractMSIModelKey(desc) {
   s = s.replace(/([A-Z])-([A-Z])/g, '$1$2');
   s = s.replace(/-/g, ' ');
   const isVGA   = /\b(?:RTX|GTX|RADEON|GEFORCE)\b/.test(s);
-  const isMinPC = /\bCUBI\b/.test(s);
+  // Detect Mini PC by CUBI keyword OR by "MINI PC" + processor tier (covers descriptions without CUBI)
+  const isMinPC = /\bCUBI\b/.test(s) || (/\bMINI\s*PC\b/.test(s) && /\bI[357]\b/.test(s));
+
+  // Mini PC (CUBI): normalize to CPU tier (I3/I5/I7) so all naming variants of the same model
+  // converge to one key, regardless of series suffix (12M), gen marker or BUS part-number code.
+  // Mapping: 015BUS = i5 · 086BUS = i3 · 016BUS = i7
+  if (isMinPC) {
+    let cpuTier = (s.match(/\bI([357])\b/) || [])[1];
+    if (!cpuTier) {
+      if      (/\b015BUS\b/.test(s)) cpuTier = '5';
+      else if (/\b086BUS\b/.test(s)) cpuTier = '3';
+      else if (/\b016BUS\b/.test(s)) cpuTier = '7';
+    }
+    if (cpuTier) {
+      const k = `CUBI I${cpuTier}`;
+      return isBulk ? k + ' BULK' : k;
+    }
+  }
+
   const tokens = s.split(/[\s\/_,;\.]+/)
     .map(t => t.trim())
     .filter(t => {
@@ -1801,8 +1819,7 @@ function extractMSIModelKey(desc) {
   modelTokens.sort();
   capTokens.sort();
   // VGA: VRAM inconsistently reported → skip cap
-  // Mini PC (CUBI): RAM/storage config is not the product → skip cap
-  let key = (isVGA || isMinPC) ? modelTokens.join(' ') : [...modelTokens, ...capTokens].join(' ');
+  let key = isVGA ? modelTokens.join(' ') : [...modelTokens, ...capTokens].join(' ');
   if(isBulk) key += ' BULK';
   return key.trim();
 }
