@@ -455,7 +455,7 @@
     </nav>
     <nav class="nav-section">
       <div class="nav-label">Herramientas</div>
-      <button class="nav-item" onclick="exportSemaforo()" style="color:#D08770">
+      <button class="nav-item" id="nav-semaforo" onclick="gotoTab('semaforo')" style="color:#D08770">
         <i class="ti ti-traffic-lights" style="color:#D08770;font-size:16px"></i> Semáforo
       </button>
       <button class="nav-item" id="nav-ia" onclick="gotoTab('ia')">
@@ -493,7 +493,7 @@
       <div class="topbar-actions">
         <button class="btn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</button>
         <button class="btn" onclick="exportPDF()"><i class="ti ti-file-type-pdf" style="font-size:14px"></i> PDF</button>
-        <button class="btn" id="btn-semaforo" onclick="exportSemaforo()" style="color:#D08770;border-color:rgba(208,135,112,0.4)"><i class="ti ti-traffic-lights" style="font-size:14px"></i> Semáforo</button>
+        <button class="btn" id="btn-semaforo" onclick="gotoTab('semaforo')" style="color:#D08770;border-color:rgba(208,135,112,0.4)"><i class="ti ti-traffic-lights" style="font-size:14px"></i> Semáforo</button>
         <button class="btn btn-primary" onclick="openNewModal()"><i class="ti ti-plus" style="font-size:14px"></i> Nuevo ítem</button>
       </div>
     </header>
@@ -928,6 +928,11 @@
         </div>
       </div>
 
+      <!-- SEMÁFORO DE STOCK -->
+      <div id="tab-semaforo" class="tab-pane">
+        <div id="semaforo-content"></div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -1137,7 +1142,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.05.08.26.0';
+const APP_VERSION = '1.06.08.26.0';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1483,8 +1488,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios'];
-const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios','semaforo'];
+const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -1516,6 +1521,7 @@ function gotoTab(tab) {
   if(tab==='imports') { renderImportsHistory(); renderImportsMonthChips(); renderImportsTab(); }
   if(tab==='notificaciones') renderNotificacionesTab();
   if(tab==='usuarios') renderUsersTab();
+  if(tab==='semaforo') renderSemaforoTab();
 }
 
 function openNewModal() {
@@ -1746,23 +1752,49 @@ function arrayBufferToBase64(buf) {
 }
 // ─── PRODUCT NAME NORMALIZATION (for Semáforo dedup) ───────────────────────
 const _SEMAFORO_NOISE = new Set([
-  'MSI','VGA','MB','MOT','MOTHER','MOTHERBOARD','GEFORCE','NVIDIA','AMD','INTEL',
-  'DDR4','DDR5','AM4','AM5','BOX','M-ATX','MATX','ATX','ITX','BTX',
-  'ALL','SERIES','PC','MONITOR','TARJETA','VIDEO','PLACA','PROCESADOR','CPU',
-  'UNIDAD','ESTADO','SOLIDO','DISCO','DURO','FUENTE','ALIMENTACION',
+  'MSI',
+  'VGA','MB','MOT','MOTHER','MOTHERBOARD','PLACA','VIDEO','TARJETA','GRAFICA','GEFORCE','NVIDIA',
+  'FUENTE','ALIMENTACION','PSU',
+  'SSD','HDD','NVME',
+  'DISCO','DURO','ESTADO','SOLIDO','UNIDAD','ALMACENAMIENTO',
+  'MINI','PC',
+  'MONITOR','PANTALLA',
+  'PROCESADOR','CPU','INTEL','AMD',
+  'AM4','AM5','LGA1700','LGA1200','LGA1151',
+  'ATX','MATX','MITX','ITX','BTX',
+  'DDR4','DDR5','DDR3',
+  'COOLER','WATERCOOLER','WATERCOOLING','WATER','AIR',
+  'BOX','ALL','SERIES','SERIE',
+  'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
 ]);
 function extractMSIModelKey(desc) {
   let s = String(desc || '').trim().toUpperCase();
-  s = s.replace(/\s*\(\d{4,}\)\s*/g, ' ');           // remove trailing SKU like (9927)
-  s = s.replace(/\s*\([^)]*SERIES[^)]*\)\s*/ig, ' '); // remove (Series 3000/4000/5000)
+  s = s.replace(/\s*\(\d{3,}\)\s*/g, ' ');
+  s = s.replace(/\s*\([^)]*(?:SERIES|SERIE)[^)]*\)\s*/ig, ' ');
   const isBulk = /\bBULK\b/.test(s);
-  s = s.replace(/\b(\d+)\s*GB\b/g, '$1G');            // 8GB → 8G, 16 GB → 16G
-  const tokens = s.split(/[\s\/\-_,;]+/)
-    .map(t => t.replace(/[^A-Z0-9\.]/g, '').trim())
-    .filter(t => t.length > 0 && !_SEMAFORO_NOISE.has(t))
-    .filter(t => !/^(LGA\d+|AM[45]|DDR[45]\d*)$/i.test(t));
-  tokens.sort();
-  let key = tokens.join(' ');
+  s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
+  s = s.replace(/\b(\d+)\s*GB\b/g, '$1G');
+  s = s.replace(/\b(\d+)\s*TB\b/g, '$1T');
+  s = s.replace(/\b\d{3,4}\s*W(?:ATT)?S?\b\s*/g, '');
+  s = s.replace(/\b\d+\+?\s*(?:PLUS\s+)?(?:BRONZE|GOLD|PLATINUM|TITANIUM|SILVER|BRONCE|ORO|PLATA)\b/ig, '');
+  s = s.replace(/\bPCIE\s*[45](?:\.\d)?\b/ig, '');
+  s = s.replace(/\bGEN(?:ERATION)?\s*[2-6]\b/ig, '');
+  s = s.replace(/\b(?:II|III)\b/g, '');
+  s = s.replace(/-/g, '');  // A520M-A → A520MA, X870E-P → X870EP
+  const isVGA = /\b(?:RTX|GTX|RADEON|GEFORCE)\b/.test(s);
+  const tokens = s.split(/[\s\/_,;\.]+/)
+    .map(t => t.trim())
+    .filter(t => {
+      if(t.length < 2) return false;
+      if(_SEMAFORO_NOISE.has(t)) return false;
+      if(/^\d{1,2}$/.test(t)) return false;  // strip 1-2 digit bare numbers
+      return true;
+    });
+  const capTokens = tokens.filter(t => /^\d+[GT]$/.test(t));
+  const modelTokens = tokens.filter(t => !/^\d+[GT]$/.test(t));
+  modelTokens.sort();
+  capTokens.sort();
+  let key = isVGA ? modelTokens.join(' ') : [...modelTokens, ...capTokens].join(' ');
   if(isBulk) key += ' BULK';
   return key.trim();
 }
@@ -3134,29 +3166,35 @@ function exportPDF() {
 }
 
 // ─── SEMÁFORO DE STOCK ────────────────────────────────
-async function exportSemaforo() {
-  if(!window.ExcelJS) { alert('ExcelJS no cargó — revisá la conexión.'); return; }
-
-  const DIST_KEYS = ['air','invid','solutionbox','ashir','elit'];
-  const DIST_LABELS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
-
-  // Latest stock snapshot per distributor
+// ─── SEMÁFORO DE STOCK ────────────────────────────────────────────────────
+const SF_DIST_KEYS   = ['air','invid','solutionbox','ashir','elit'];
+const SF_DIST_LABELS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
+const SF_CAT_ORDER   = ['motherboard','vga','ssd','psu','cooling','gabinete','monitor','minipc','accesorios','notebook'];
+const SF_CAT_LABELS  = {
+  motherboard:'MOTHERS', vga:'VGA / PLACAS DE VIDEO', ssd:'SSD',
+  psu:'FUENTES', cooling:'COOLING', gabinete:'GABINETES',
+  monitor:'MONITORES', minipc:'MINI PC / PRO DT', accesorios:'ACCESORIOS', notebook:'NOTEBOOKS'
+};
+function _sfMatchDist(clientStr) {
+  const nc = String(clientStr||'').toUpperCase().replace(/\s+/g,' ').trim();
+  if(nc.includes('AIR')) return 'air';
+  if(nc.includes('INVID')) return 'invid';
+  if(nc.includes('SOLUTION')) return 'solutionbox';
+  if(nc.includes('ASHIR')) return 'ashir';
+  if(nc.includes('ELIT')) return 'elit';
+  return null;
+}
+function buildSemaforoData() {
   const latestSnap = {};
-  DIST_KEYS.forEach(dk => {
-    const snaps = db.weeklyReports
+  SF_DIST_KEYS.forEach(dk => {
+    const snaps = (db.weeklyReports || [])
       .filter(s => s.distributor === dk && s.reportType === 'stock')
       .sort((a,b) => (b.periodEnd||'').localeCompare(a.periodEnd||'') || (b.uploadedAt||'').localeCompare(a.uploadedAt||''));
     if(snaps[0]) latestSnap[dk] = snaps[0];
   });
 
-  if(!Object.keys(latestSnap).length) {
-    alert('No hay reportes de stock cargados. Primero cargá los reportes de Inventario/Ventas para cada proveedor.');
-    return;
-  }
-
-  // Build model → { distKey → qty } map, deduplicating via extractMSIModelKey
-  const productMap = new Map(); // key → { description, distQty, distDesc }
-  DIST_KEYS.forEach(dk => {
+  const productMap = new Map();
+  SF_DIST_KEYS.forEach(dk => {
     const snap = latestSnap[dk];
     if(!snap) return;
     (snap.rows || []).forEach(r => {
@@ -3165,40 +3203,28 @@ async function exportSemaforo() {
       if(qty <= 0) return;
       const key = extractMSIModelKey(r.description);
       if(!key) return;
-      if(!productMap.has(key)) productMap.set(key, { description: r.description, distQty: {}, distDesc: {} });
+      if(!productMap.has(key)) productMap.set(key, { description: r.description, distQty: {} });
       const e = productMap.get(key);
       e.distQty[dk] = (e.distQty[dk] || 0) + qty;
-      if(!e.distDesc[dk]) e.distDesc[dk] = r.description;
-      // Use shortest non-empty description as canonical name
       if(!e.description || r.description.length < e.description.length) e.description = r.description;
     });
   });
 
-  // Keep only products with at least 1 unit somewhere
   const products = [];
   productMap.forEach((entry, key) => {
-    const total = DIST_KEYS.reduce((s,dk) => s + (entry.distQty[dk]||0), 0);
-    if(total > 0) products.push({ model: entry.description, normModel: key, category: classifyProductCategory(key), distQty: entry.distQty });
+    const total = SF_DIST_KEYS.reduce((s,dk) => s + (entry.distQty[dk]||0), 0);
+    if(total > 0) {
+      const cat = classifyProductCategory(entry.description);
+      if(cat === 'other') return; // skip unclassified items
+      products.push({ model: entry.description, normModel: key, category: cat, distQty: entry.distQty });
+    }
   });
 
-  if(!products.length) { alert('Todos los stocks están en 0 o no hay datos disponibles.'); return; }
-
-  // Transit: Ordenes (PI) in "Entregado" status → merchandise in transit to distributor
-  function matchPIDist(clientStr) {
-    const nc = String(clientStr||'').toUpperCase().replace(/\s+/g,' ').trim();
-    if(nc.includes('AIR')) return 'air';
-    if(nc.includes('INVID')) return 'invid';
-    if(nc.includes('SOLUTION')) return 'solutionbox';
-    if(nc.includes('ASHIR')) return 'ashir';
-    if(nc.includes('ELIT')) return 'elit';
-    return null;
-  }
   const transitData = {};
-  DIST_KEYS.forEach(dk => transitData[dk] = { keys: new Set(), hasGeneral: false });
-  db.pi.filter(pi => pi.status === 'Entregado').forEach(pi => {
-    const dk = matchPIDist(pi.client);
+  SF_DIST_KEYS.forEach(dk => transitData[dk] = { keys: new Set(), hasGeneral: false });
+  (db.pi || []).filter(pi => pi.status === 'Entregado').forEach(pi => {
+    const dk = _sfMatchDist(pi.client);
     if(!dk) return;
-    // Prefer invoiceItems (from uploaded Invoice PDF) over lineItems
     const srcItems = (pi.invoiceItems && pi.invoiceItems.length > 0)
       ? pi.invoiceItems
       : (pi.lineItems && pi.lineItems.length > 0 ? pi.lineItems : null);
@@ -3212,169 +3238,173 @@ async function exportSemaforo() {
     }
   });
 
-  // Sort by category, then model name
-  const CAT_ORDER = ['motherboard','vga','ssd','psu','gabinete','cooling','monitor','accesorios','minipc','other'];
-  const CAT_LABELS = {
-    motherboard:'MOTHERS', vga:'VGA', ssd:'SSD', psu:'FUENTES',
-    gabinete:'GABINETES', cooling:'LIQUID COOLING', monitor:'MONITORES',
-    accesorios:'ACCESORIOS', minipc:'MINI PC / PRO DT', other:'OTROS'
-  };
   products.sort((a,b) => {
-    const ai = CAT_ORDER.indexOf(a.category), bi = CAT_ORDER.indexOf(b.category);
+    const ai = SF_CAT_ORDER.indexOf(a.category), bi = SF_CAT_ORDER.indexOf(b.category);
     const ao = ai === -1 ? 99 : ai, bo = bi === -1 ? 99 : bi;
     if(ao !== bo) return ao - bo;
     return a.model.localeCompare(b.model);
   });
 
-  // ── Build Excel ──────────────────────────────────────
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'MSI SalesOps CRM';
-  const ws = wb.addWorksheet('Semáforo Stock');
-  const NC = 2 + DIST_KEYS.length * 2; // 12 total columns
+  return { products, transitData, latestSnap };
+}
 
-  const sf = argb => ({ type:'pattern', pattern:'solid', fgColor:{ argb } });
-  const BORDER = { top:{style:'thin',color:{argb:'FFCCCCCC'}}, left:{style:'thin',color:{argb:'FFCCCCCC'}}, bottom:{style:'thin',color:{argb:'FFCCCCCC'}}, right:{style:'thin',color:{argb:'FFCCCCCC'}} };
-  const BORDER_MED = { top:{style:'medium',color:{argb:'FF888888'}}, left:{style:'medium',color:{argb:'FF888888'}}, bottom:{style:'medium',color:{argb:'FF888888'}}, right:{style:'medium',color:{argb:'FF888888'}} };
-  const WHITE = 'FFFFFFFF';
+function renderSemaforoTab() {
+  const wrap = document.getElementById('semaforo-content');
+  if(!wrap) return;
 
-  ws.columns = [
-    {width:22}, {width:40},
-    {width:10},{width:13}, {width:10},{width:13},
-    {width:10},{width:13}, {width:10},{width:13},
-    {width:10},{width:13}
-  ];
-
+  const { products, transitData, latestSnap } = buildSemaforoData();
   const today = new Date();
-  const ddS = String(today.getDate()).padStart(2,'0'), mmS = String(today.getMonth()+1).padStart(2,'0'), yyS = today.getFullYear();
-  const dateStr = `${ddS}/${mmS}/${yyS}`;
+  const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+  const snapDates = SF_DIST_KEYS.map(dk => latestSnap[dk] ? (latestSnap[dk].periodEnd || latestSnap[dk].uploadedAt || '').slice(0,10) : null);
 
-  // Row 1: Title
-  ws.addRow([]);
-  const r1 = ws.lastRow.number;
-  ws.mergeCells(r1,1,r1,NC);
-  const c1 = ws.getCell(r1,1);
-  c1.value = 'GUÍA DE STOCK Y MERCADERÍA EN TRÁNSITO'; c1.fill = sf('FFE2231A');
-  c1.font = {bold:true,size:16,color:{argb:WHITE},name:'Calibri'};
-  c1.alignment = {horizontal:'center',vertical:'middle'};
-  ws.getRow(r1).height = 32;
-
-  // Row 2: Subtitle
-  ws.addRow([]);
-  const r2 = ws.lastRow.number;
-  ws.mergeCells(r2,1,r2,NC);
-  const c2 = ws.getCell(r2,1);
-  c2.value = `Generado: ${dateStr}  ·  Stock basado en los últimos reportes cargados por distribuidor`;
-  c2.fill = sf('FF1F2A44');
-  c2.font = {size:10,color:{argb:'FFAAAAAA'},italic:true,name:'Calibri'};
-  c2.alignment = {horizontal:'center',vertical:'middle'};
-  ws.getRow(r2).height = 16;
-
-  // Row 3: Empty
-  ws.addRow([]); ws.getRow(ws.lastRow.number).height = 6;
-
-  // Row 4: Distributor headers (each merged over 2 cols)
-  ws.addRow([]);
-  const r4 = ws.lastRow.number;
-  ws.getCell(r4,1).fill = sf('FF3B4252');
-  ws.getCell(r4,2).fill = sf('FF3B4252');
-  DIST_KEYS.forEach((dk,i) => {
-    const col = 3 + i*2;
-    ws.mergeCells(r4,col,r4,col+1);
-    const c = ws.getCell(r4,col);
-    c.value = DIST_LABELS[dk]; c.fill = sf('FF2E3440');
-    c.font = {bold:true,size:11,color:{argb:WHITE},name:'Calibri'};
-    c.alignment = {horizontal:'center',vertical:'middle'};
-    c.border = BORDER_MED;
-  });
-  ws.getRow(r4).height = 24;
-
-  // Row 5: Column labels
-  ws.addRow([]);
-  const r5 = ws.lastRow.number;
-  ['LÍNEA DE PRODUCTOS','MODELO'].concat(DIST_KEYS.flatMap(()=>['STOCK','TRÁNSITO'])).forEach((lbl,i) => {
-    const c = ws.getCell(r5,i+1);
-    c.value = lbl; c.fill = sf('FF4C566A');
-    c.font = {bold:true,size:10,color:{argb:WHITE},name:'Calibri'};
-    c.alignment = {horizontal:'center',vertical:'middle'};
-    c.border = BORDER;
-  });
-  ws.getRow(r5).height = 18;
-
-  ws.views = [{state:'frozen',ySplit:5,xSplit:2,topLeftCell:'C6',activeCell:'C6'}];
-
-  function stockStyle(qty) {
-    if(!qty || qty <= 0) return null;
-    if(qty < 10) return {label:'Bajo', fill:'FFBF616A'};    // red
-    if(qty < 20) return {label:'Medio', fill:'FFD08770'};   // amber/orange
-    return {label:'Alto', fill:'FFA3BE8C'};                 // green
+  if(!products.length) {
+    wrap.innerHTML = `<div class="empty-state"><i class="ti ti-traffic-lights"></i><p>No hay datos de stock disponibles.<br>Cargá los reportes de inventario de cada distribuidor primero.</p></div>`;
+    return;
   }
 
-  // Data rows
+  const stockClass = qty => {
+    if(!qty || qty <= 0) return '';
+    if(qty < 10) return 'sf-bajo';
+    if(qty < 20) return 'sf-medio';
+    return 'sf-alto';
+  };
+  const stockLabel = qty => {
+    if(!qty || qty <= 0) return '';
+    if(qty < 10) return 'Bajo';
+    if(qty < 20) return 'Medio';
+    return 'Alto';
+  };
+
+  let html = `
+<style>
+.sf-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.sf-table { border-collapse:collapse; width:100%; min-width:680px; font-size:12px; }
+.sf-table th { background:var(--bg3,#2E3440); color:#fff; font-weight:700; padding:6px 10px; text-align:center; white-space:nowrap; border:1px solid rgba(255,255,255,0.1); }
+.sf-table th.sf-th-model { text-align:left; min-width:220px; max-width:320px; }
+.sf-table td { padding:5px 8px; border:1px solid var(--border2); vertical-align:middle; }
+.sf-table td.sf-td-model { font-size:11px; color:var(--text2); max-width:320px; white-space:normal; word-break:break-word; }
+.sf-table td.sf-td-center { text-align:center; white-space:nowrap; }
+.sf-cat-row td { background:#5E81AC; color:#fff; font-weight:700; font-size:11px; letter-spacing:0.05em; padding:5px 10px; }
+.sf-alto  { background:#A3BE8C; color:#fff; font-weight:700; }
+.sf-medio { background:#D08770; color:#fff; font-weight:700; }
+.sf-bajo  { background:#BF616A; color:#fff; font-weight:700; }
+.sf-transit { color:#8a5c00; font-size:16px; line-height:1; }
+.sf-dist-head { text-align:center; font-size:11px; padding:4px; }
+.sf-alt { background:var(--bg2); }
+</style>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+  <div>
+    <span style="font-size:13px;color:var(--text3)">Generado: ${dateStr} · Stock basado en últimos reportes por distribuidor</span>
+  </div>
+  <button class="btn" onclick="exportSemaforoPDF()" style="color:#D08770;border-color:rgba(208,135,112,0.4)">
+    <i class="ti ti-file-type-pdf" style="font-size:14px"></i> Exportar PDF
+  </button>
+</div>
+<div class="sf-wrap">
+<table class="sf-table">
+<thead>
+  <tr>
+    <th class="sf-th-model" rowspan="2">MODELO</th>
+    ${SF_DIST_KEYS.map(dk => `<th colspan="2">${SF_DIST_LABELS[dk]}</th>`).join('')}
+  </tr>
+  <tr>
+    ${SF_DIST_KEYS.map(() => '<th>STOCK</th><th>TRÁNSITO</th>').join('')}
+  </tr>
+</thead>
+<tbody>`;
+
   let currentCat = null, altRow = false;
   products.forEach(p => {
-    // Category separator
     if(p.category !== currentCat) {
       currentCat = p.category;
-      ws.addRow([]);
-      const cr = ws.lastRow.number;
-      ws.mergeCells(cr,1,cr,NC);
-      const cc = ws.getCell(cr,1);
-      cc.value = CAT_LABELS[p.category] || p.category.toUpperCase();
-      cc.fill = sf('FF5E81AC');
-      cc.font = {bold:true,size:11,color:{argb:WHITE},name:'Calibri'};
-      cc.alignment = {horizontal:'left',vertical:'middle',indent:1};
-      ws.getRow(cr).height = 20;
+      const ncols = 1 + SF_DIST_KEYS.length * 2;
+      html += `<tr class="sf-cat-row"><td colspan="${ncols}">${SF_CAT_LABELS[p.category] || p.category.toUpperCase()}</td></tr>`;
       altRow = false;
     }
-
-    ws.addRow([]);
-    const pr = ws.lastRow.number;
-    const rowFill = altRow ? 'FFF0F4F8' : 'FFFFFFFF';
-    altRow = !altRow;
-
-    // Col A: blank (category shown in separator)
-    ws.getCell(pr,1).fill = sf(rowFill);
-    ws.getCell(pr,1).border = BORDER;
-
-    // Col B: model name
-    const mc = ws.getCell(pr,2);
-    mc.value = p.model; mc.fill = sf(rowFill);
-    mc.font = {size:10,name:'Calibri'};
-    mc.alignment = {vertical:'middle'};
-    mc.border = BORDER;
-
-    DIST_KEYS.forEach((dk,i) => {
-      const sCol = 3+i*2, tCol = 4+i*2;
+    const rowCls = altRow ? ' class="sf-alt"' : '';
+    html += `<tr${rowCls}>`;
+    html += `<td class="sf-td-model">${esc(p.model)}</td>`;
+    SF_DIST_KEYS.forEach(dk => {
       const qty = p.distQty[dk] || 0;
-      const ss = stockStyle(qty);
-      const sc = ws.getCell(pr,sCol);
-      if(ss) {
-        sc.value = ss.label; sc.fill = sf(ss.fill);
-        sc.font = {bold:true,size:10,color:{argb:WHITE},name:'Calibri'};
-      } else {
-        sc.fill = sf(rowFill); sc.value = '';
-      }
-      sc.alignment = {horizontal:'center',vertical:'middle'}; sc.border = BORDER;
-
+      const sc = stockClass(qty);
+      const sl = stockLabel(qty);
+      html += sc
+        ? `<td class="sf-td-center ${sc}">${sl}</td>`
+        : `<td class="sf-td-center"></td>`;
       const hasTransit = transitData[dk].keys.has(p.normModel) || transitData[dk].hasGeneral;
-      const tc = ws.getCell(pr,tCol);
-      if(hasTransit) {
-        tc.value = '●'; tc.fill = sf('FFEBCB8B');
-        tc.font = {bold:true,size:13,color:{argb:'FF1F2A44'},name:'Calibri'};
-      } else {
-        tc.fill = sf(rowFill); tc.value = '';
-      }
-      tc.alignment = {horizontal:'center',vertical:'middle'}; tc.border = BORDER;
+      html += hasTransit
+        ? `<td class="sf-td-center" style="background:#FFF3CD"><span class="sf-transit">●</span></td>`
+        : `<td class="sf-td-center"></td>`;
     });
-    ws.getRow(pr).height = 15;
+    html += `</tr>`;
+    altRow = !altRow;
   });
 
-  const buf = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `semaforo-stock-${today.toISOString().slice(0,10)}.xlsx`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  html += `</tbody></table></div>`;
+  wrap.innerHTML = html;
+}
+
+async function exportSemaforoPDF() {
+  if(!window.jspdf) { alert('La librería de PDF no cargó — revisá la conexión.'); return; }
+  const { jsPDF } = window.jspdf;
+
+  const { products, transitData } = buildSemaforoData();
+  if(!products.length) { alert('No hay datos disponibles.'); return; }
+
+  const today = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
+
+  const doc = new jsPDF({ orientation:'landscape', unit:'pt', format:'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+
+  doc.setFillColor(226,35,26);
+  doc.rect(0, 0, pageW, 32, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(14); doc.setFont(undefined,'bold');
+  doc.text('GUÍA DE STOCK Y MERCADERÍA EN TRÁNSITO', pageW/2, 21, {align:'center'});
+  doc.setFontSize(8); doc.setFont(undefined,'normal');
+  doc.setFillColor(31,42,68);
+  doc.rect(0,32,pageW,16,'F');
+  doc.setTextColor(180,180,180);
+  doc.text(`Generado: ${dateStr}  ·  Stock basado en los últimos reportes cargados por distribuidor`, pageW/2, 43, {align:'center'});
+
+  const stockLabel = qty => { if(!qty||qty<=0) return ''; if(qty<10) return 'Bajo'; if(qty<20) return 'Medio'; return 'Alto'; };
+  const stockColor = qty => { if(!qty||qty<=0) return null; if(qty<10) return [191,97,106]; if(qty<20) return [208,135,112]; return [163,190,140]; };
+
+  const head = [['MODELO', ...SF_DIST_KEYS.flatMap(dk => [SF_DIST_LABELS[dk]+'\nSTOCK', SF_DIST_LABELS[dk]+'\nTRÁNSITO'])]];
+  const body = [];
+  let lastCat = null;
+
+  products.forEach(p => {
+    if(p.category !== lastCat) {
+      lastCat = p.category;
+      body.push([{ content: SF_CAT_LABELS[p.category] || p.category.toUpperCase(), colSpan: 1 + SF_DIST_KEYS.length*2, styles:{fillColor:[94,129,172],textColor:[255,255,255],fontStyle:'bold',fontSize:9} }]);
+    }
+    const row = [p.model];
+    SF_DIST_KEYS.forEach(dk => {
+      const qty = p.distQty[dk] || 0;
+      const lbl = stockLabel(qty);
+      const col = stockColor(qty);
+      row.push({ content: lbl, styles: col ? {fillColor:col, textColor:[255,255,255], fontStyle:'bold'} : {} });
+      const hasT = transitData[dk].keys.has(p.normModel) || transitData[dk].hasGeneral;
+      row.push({ content: hasT ? '●' : '', styles: hasT ? {fillColor:[235,203,139], textColor:[31,42,68], fontSize:12} : {} });
+    });
+    body.push(row);
+  });
+
+  doc.autoTable({
+    startY: 54,
+    head,
+    body,
+    theme: 'grid',
+    styles: { fontSize:7, cellPadding:3, overflow:'linebreak' },
+    headStyles: { fillColor:[46,52,64], textColor:[255,255,255], fontStyle:'bold', halign:'center', fontSize:7 },
+    columnStyles: { 0: { cellWidth:120, halign:'left' } },
+    alternateRowStyles: { fillColor:[240,244,248] },
+    margin: { top:54, left:16, right:16 },
+  });
+
+  doc.save(`semaforo-stock-${today.toISOString().slice(0,10)}.pdf`);
 }
 
 function getSalesPriceExportData() {
@@ -3403,12 +3433,12 @@ const CATEGORY_KEYWORDS = [
   { key:'motherboard', label:'Motherboards',       keywords:['MOTHERBOARDS','MOTHERBOARD','MOTHER BOARD','PLACA MADRE','MB','MOTHER','MOT'] },
   { key:'notebook',    label:'Notebooks',           keywords:['NOTEBOOK','NB'] },
   { key:'monitor',     label:'Monitores',           keywords:['MONITORES','MONITOR','MON'] },
-  { key:'vga',         label:'Placas de Video',      keywords:['PLACA DE VIDEO','TARJETA GRAFICA','PLACA MSI','GEFORCE','GEFORC','VGA','VIDEO'] },
+  { key:'vga',         label:'Placas de Video',      keywords:['PLACA DE VIDEO','TARJETA GRAFICA','PLACA MSI','GEFORCE','GEFORC','VGA','VIDEO','RTX','GTX','RADEON'] },
   { key:'gabinete',    label:'Gabinetes',            keywords:['GABINETES','GABINETE','CHASSIS','GAB'] },
   { key:'psu',         label:'Fuentes',              keywords:['FUENTE DE ALIMENTACION','FUENTE','PSU'] },
   { key:'minipc',      label:'Mini PC',              keywords:['MINIPC','MINI PC','CUBI'] },
   { key:'ssd',         label:'Almacenamiento (SSD)', keywords:['DISCO DE ESTADO SOLIDO','SSD','DISCO SOLIDO','DISCO','SOLIDO'] },
-  { key:'cooling',     label:'Cooling',              keywords:['WATERCOOLING','WATERCOOLER','WATER COOLING','CORELIQUID','CPU COOLER','AIR COOLER','COOLER','WATER'] },
+  { key:'cooling',     label:'Cooling',              keywords:['WATERCOOLING','WATERCOOLER','WATER COOLING','CORELIQUID','CORE LIQUID','CPU COOLER','AIR COOLER','COOLER','WATER'] },
   { key:'accesorios',  label:'Accesorios',           keywords:['TECLADOS','TECLADO','TEC','MOUSE','MOU','AURICULARES','AURICULAR','AURIS','FORGE GK100 COMBO','FORGE GK 100 COMBO','FORGE GK100LS','FORGE GK100 LS','FORGE GK100','FORGE GK 100LS','FORGE GK 100 LS','FORGE GK 100','GAMEPAD','GAME PAD','JOYSTICK','MODULO TPM','TPM','ACC'] },
 ];
 const CATEGORY_LABELS = Object.fromEntries(CATEGORY_KEYWORDS.map(c => [c.key, c.label]));

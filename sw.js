@@ -1,5 +1,6 @@
 // MSI SalesOps CRM — Service Worker
-const CACHE = 'salesops-v1';
+// Cache name includes version — changing it forces old cache eviction on next activate.
+const CACHE = 'salesops-v1.06.08.26';
 const SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-apple.png'];
 
 self.addEventListener('install', e => {
@@ -7,26 +8,45 @@ self.addEventListener('install', e => {
 });
 
 self.addEventListener('activate', e => {
+  // Delete every cache that doesn't match the current version
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // Firebase / external API calls → always network
+
+  // External / dynamic APIs → always network, never cache
   if (url.hostname.includes('firebase') || url.hostname.includes('googleapis') ||
       url.hostname.includes('cloudflare') || url.hostname.includes('unpkg') ||
       url.hostname.includes('jsdelivr') || url.hostname.includes('fonts')) {
     return;
   }
-  // Shell files → cache first, fallback network
+
+  // index.html → NETWORK FIRST so the latest version loads when online.
+  // Falls back to cache only when offline.
+  if (url.pathname.endsWith('index.html') || url.pathname === '/' || url.pathname.endsWith('/')) {
+    e.respondWith(
+      fetch(e.request)
+        .then(res => {
+          if (res && res.status === 200) {
+            caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+          }
+          return res;
+        })
+        .catch(() => caches.match(e.request))
+    );
+    return;
+  }
+
+  // Other shell assets (icons, manifest) → cache first, fallback network
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
       if (res && res.status === 200 && e.request.method === 'GET') {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
+        caches.open(CACHE).then(c => c.put(e.request, res.clone()));
       }
       return res;
     }))
