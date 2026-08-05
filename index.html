@@ -524,6 +524,7 @@
           <button class="filter-pill" onclick="filterPipe('pi','Creado',this)">Creado</button>
           <button class="filter-pill" onclick="filterPipe('pi','Enviado al cliente',this)">Enviado al cliente</button>
           <button class="filter-pill" onclick="filterPipe('pi','Firmado',this)">Firmado</button>
+          <button class="filter-pill" onclick="filterPipe('pi','Entregado',this)">Entregado</button>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
           <div style="position:relative;flex:1;max-width:340px">
@@ -536,8 +537,8 @@
         </div>
         <div class="upload-zone" id="drop-zone-pi" onclick="document.getElementById('file-input-pi').click()" style="margin-bottom:1.25rem">
           <i class="ti ti-cloud-upload"></i>
-          <p><b>Hacé click o arrastrá la PI en PDF</b></p>
-          <div class="hint">Si el N° de PI ya existe en el sistema, el PDF se adjunta como versión firmada. Si es nueva, se crea automáticamente.</div>
+          <p><b>Hacé click o arrastrá la PI o Invoice en PDF</b></p>
+          <div class="hint">PI: si el N° ya existe se adjunta como firmada; si no, se crea automáticamente. Invoice: se detecta el N° de PI, se marca como Entregado y sus líneas alimentan el Semáforo.</div>
         </div>
         <input type="file" id="file-input-pi" accept=".pdf" style="display:none" />
         <div class="pipeline-board" id="board-pi"></div>
@@ -1136,7 +1137,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.04.08.26.0';
+const APP_VERSION = '1.05.08.26.0';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1743,6 +1744,29 @@ function arrayBufferToBase64(buf) {
   for(let i=0; i<bytes.length; i+=chunk) binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunk));
   return btoa(binary);
 }
+// ─── PRODUCT NAME NORMALIZATION (for Semáforo dedup) ───────────────────────
+const _SEMAFORO_NOISE = new Set([
+  'MSI','VGA','MB','MOT','MOTHER','MOTHERBOARD','GEFORCE','NVIDIA','AMD','INTEL',
+  'DDR4','DDR5','AM4','AM5','BOX','M-ATX','MATX','ATX','ITX','BTX',
+  'ALL','SERIES','PC','MONITOR','TARJETA','VIDEO','PLACA','PROCESADOR','CPU',
+  'UNIDAD','ESTADO','SOLIDO','DISCO','DURO','FUENTE','ALIMENTACION',
+]);
+function extractMSIModelKey(desc) {
+  let s = String(desc || '').trim().toUpperCase();
+  s = s.replace(/\s*\(\d{4,}\)\s*/g, ' ');           // remove trailing SKU like (9927)
+  s = s.replace(/\s*\([^)]*SERIES[^)]*\)\s*/ig, ' '); // remove (Series 3000/4000/5000)
+  const isBulk = /\bBULK\b/.test(s);
+  s = s.replace(/\b(\d+)\s*GB\b/g, '$1G');            // 8GB → 8G, 16 GB → 16G
+  const tokens = s.split(/[\s\/\-_,;]+/)
+    .map(t => t.replace(/[^A-Z0-9\.]/g, '').trim())
+    .filter(t => t.length > 0 && !_SEMAFORO_NOISE.has(t))
+    .filter(t => !/^(LGA\d+|AM[45]|DDR[45]\d*)$/i.test(t));
+  tokens.sort();
+  let key = tokens.join(' ');
+  if(isBulk) key += ' BULK';
+  return key.trim();
+}
+
 function buildLinesFromPdfItems(items) {
   const groups = [];
   const TOL = 4.0;
@@ -1821,6 +1845,78 @@ function parsePIPdfLines(lines) {
   const lineItems = parsePILineItems(lines);
   return { piNumber, client, customerPO, salesOrderDate, dispatchDate: pdfDateToISO(dispatchDateRaw), amount: totalRaw ? parseFloat(totalRaw.replace(/,/g,'')) : null, netDays, dueDate, lineItems };
 }
+// ─── INVOICE PDF PARSER ─────────────────────────────────────────────────────
+// Invoice format: "Invoice NNNNN" header, "PI No. : NNNNN", table with
+// Category | Item Code | Marketing Name | Description | COO | Qty Shipped | Tax | Unit Price | Amount
+const INVOICE_ITEM_CODE_RE = /^[A-Z0-9]{2,4}-[A-Z0-9]{4,9}-[A-Z0-9]{2,5}$/;
+function parseInvoiceLineItems(lines) {
+  const headerIdx = lines.findIndex(l => /Item\s+Code/i.test(l) && /Marketing\s+Name/i.test(l));
+  if(headerIdx === -1) return [];
+  const footerIdx = lines.findIndex((l,i) => i > headerIdx && /Total\s+Gross\s+Weight|^Remark:|^Bank\s+Inform/i.test(l));
+  const end = footerIdx > headerIdx ? footerIdx : lines.length;
+  const items = [];
+  let pending = null;
+  const COO_RE = new RegExp('(?:' + COO_LIST.join('|') + ')', 'i');
+  for(let i = headerIdx+1; i < end; i++) {
+    const l = lines[i].trim();
+    if(!l) continue;
+    const firstToken = l.split(/\s+/)[0];
+    if(INVOICE_ITEM_CODE_RE.test(firstToken)) {
+      if(pending) items.push(pending);
+      // Try to parse full row on one line:
+      // ItemCode  MarketingName  [Description]  COO  QtyShipped  Tax%  UnitPrice  Amount  [LineNo]
+      const cooMatch = l.match(new RegExp('\\b(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
+      let marketingName = '', qtyShipped = 0, category = '';
+      if(cooMatch) {
+        const before = l.slice(firstToken.length, cooMatch.index).trim();
+        const after = cooMatch[2].trim();
+        // before = "MarketingName  [Description]"
+        // Split before on 2+ spaces to try to separate marketing name from internal description
+        const parts = before.split(/\s{2,}/);
+        marketingName = parts[0] || before;
+        const nums = after.match(/([\d,]+)\s+\d+\s+Tax\s+\d+%\s+([\d,]+\.\d{2})/i);
+        if(nums) qtyShipped = parseInt(nums[1].replace(/,/g,''));
+      } else {
+        // COO not on same line, extract what we can
+        marketingName = l.slice(firstToken.length).trim().split(/\s{2,}/)[0];
+      }
+      pending = { itemCode: firstToken, marketingName: marketingName.trim(), qtyShipped, category };
+    } else if(pending) {
+      // continuation / COO line
+      const cooMatch = l.match(new RegExp('^(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
+      if(cooMatch) {
+        const after = cooMatch[2].trim();
+        const nums = after.match(/([\d,]+)\s+\d+\s+Tax\s+\d+%\s+([\d,]+\.\d{2})/i);
+        if(nums && !pending.qtyShipped) pending.qtyShipped = parseInt(nums[1].replace(/,/g,''));
+        items.push(pending); pending = null;
+      } else if(!pending.qtyShipped) {
+        // might be a qty-only continuation
+        const qm = l.match(/^([\d,]+)\s+\d+\s+Tax/i);
+        if(qm) { pending.qtyShipped = parseInt(qm[1].replace(/,/g,'')); items.push(pending); pending=null; }
+      }
+    }
+  }
+  if(pending) items.push(pending);
+  return items;
+}
+function parseInvoicePdfLines(lines) {
+  const text = lines.join('\n');
+  // Check if it's an invoice: look for "Invoice NNNN" and "PI No."
+  const invoiceNoMatch = text.match(/Invoice\s+(\d{5,})/i);
+  const piNoMatch = text.match(/PI\s+No\.\s*:?\s*(\d{5,})/i);
+  if(!invoiceNoMatch) return null; // not an invoice
+  const invoiceNo = invoiceNoMatch[1];
+  const piNo = piNoMatch ? piNoMatch[1] : null;
+  const invoiceDateRaw = findPdfField(text, 'Invoice\\s+Date', '\\S+');
+  const billIdx = lines.findIndex(l => /Bill\s+To\s*:/i.test(l));
+  let client = null;
+  if(billIdx > -1) {
+    for(let i=billIdx+1; i<lines.length; i++) { if(lines[i].trim()) { client = dedupeRepeatedLine(lines[i]); break; } }
+  }
+  const lineItems = parseInvoiceLineItems(lines);
+  return { isInvoice: true, invoiceNo, piNo, invoiceDate: pdfDateToISO(invoiceDateRaw), client, lineItems };
+}
+
 async function parsePIPdfFromBuffer(buf) {
   if(!window.pdfjsLib) throw new Error('La librería de lectura de PDF no cargó (revisá la conexión a internet).');
   await ensurePdfWorkerReady();
@@ -1832,6 +1928,9 @@ async function parsePIPdfFromBuffer(buf) {
     const items = content.items.map(it => ({ str: it.str, x: it.transform[4], y: it.transform[5] })).filter(it => it.str.trim() !== '');
     lines = lines.concat(buildLinesFromPdfItems(items));
   }
+  // Detect invoice before trying PI parse
+  const invoiceParsed = parseInvoicePdfLines(lines);
+  if(invoiceParsed) return invoiceParsed;
   return parsePIPdfLines(lines);
 }
 let _pdfWorkerReadyPromise = null;
@@ -1855,6 +1954,35 @@ function ensurePdfWorkerReady() {
   })();
   return _pdfWorkerReadyPromise;
 }
+async function handleInvoicePDF(parsed, file) {
+  const piNo = parsed.piNo;
+  const existing = piNo ? db.pi.find(x => x.name === piNo) : null;
+  if(!existing) {
+    alert(`Invoice detectado (N° ${parsed.invoiceNo})` + (piNo ? `, PI No. ${piNo}` : '') + '.\nNo encontré una Orden con ese número. Verificá que la Orden exista en el sistema antes de subir el Invoice.');
+    return;
+  }
+  // Build invoice line items for transit tracking
+  const invoiceItems = (parsed.lineItems || []).map(li => ({
+    itemCode: li.itemCode,
+    marketingName: li.marketingName,
+    qtyShipped: li.qtyShipped || 0
+  }));
+  const dataUrl = file ? ('data:application/pdf;base64,' + arrayBufferToBase64(await file.arrayBuffer())) : null;
+  const updated = {
+    ...existing,
+    status: 'Entregado',
+    invoiceNo: parsed.invoiceNo,
+    invoiceDate: parsed.invoiceDate || existing.invoiceDate || null,
+    invoiceItems: invoiceItems.length ? invoiceItems : existing.invoiceItems || [],
+    updatedAt: new Date().toISOString()
+  };
+  if(dataUrl) updated.invoiceFile = { name: file.name, dataUrl };
+  const idx = db.pi.findIndex(x => x.id === existing.id);
+  if(idx > -1) { db.pi[idx] = updated; await saveDB(); renderPipeline('pi'); }
+  const msg = `✓ Orden "${existing.name}" actualizada a Entregado.\nInvoice N° ${parsed.invoiceNo}` +
+    (invoiceItems.length ? ` · ${invoiceItems.length} líneas de producto registradas.` : '.');
+  alert(msg);
+}
 async function handlePIFile(file) {
   try {
     const buf = await file.arrayBuffer();
@@ -1862,6 +1990,10 @@ async function handlePIFile(file) {
     let parsed = {};
     let parseError = null;
     try { parsed = await parsePIPdfFromBuffer(buf.slice(0)); } catch(e) { parseError = e; console.warn('No se pudo leer el contenido del PDF:', e); }
+    if(parsed.isInvoice) {
+      await handleInvoicePDF(parsed, file);
+      return;
+    }
     const existing = parsed.piNumber ? db.pi.find(x => x.name === parsed.piNumber) : null;
     if(existing) {
       openPIEdit(existing.id);
@@ -3022,27 +3154,31 @@ async function exportSemaforo() {
     return;
   }
 
-  // Build model → { distKey → qty } map
-  const productMap = new Map();
+  // Build model → { distKey → qty } map, deduplicating via extractMSIModelKey
+  const productMap = new Map(); // key → { description, distQty, distDesc }
   DIST_KEYS.forEach(dk => {
     const snap = latestSnap[dk];
     if(!snap) return;
     (snap.rows || []).forEach(r => {
       if(!r.description) return;
       const qty = r.qty || 0;
-      const nm = normDesc(r.description);
-      if(!nm) return;
-      if(!productMap.has(nm)) productMap.set(nm, { description: r.description, distQty: {} });
-      const e = productMap.get(nm);
+      if(qty <= 0) return;
+      const key = extractMSIModelKey(r.description);
+      if(!key) return;
+      if(!productMap.has(key)) productMap.set(key, { description: r.description, distQty: {}, distDesc: {} });
+      const e = productMap.get(key);
       e.distQty[dk] = (e.distQty[dk] || 0) + qty;
+      if(!e.distDesc[dk]) e.distDesc[dk] = r.description;
+      // Use shortest non-empty description as canonical name
+      if(!e.description || r.description.length < e.description.length) e.description = r.description;
     });
   });
 
   // Keep only products with at least 1 unit somewhere
   const products = [];
-  productMap.forEach((entry, nm) => {
+  productMap.forEach((entry, key) => {
     const total = DIST_KEYS.reduce((s,dk) => s + (entry.distQty[dk]||0), 0);
-    if(total > 0) products.push({ model: entry.description, normModel: nm, category: classifyProductCategory(nm), distQty: entry.distQty });
+    if(total > 0) products.push({ model: entry.description, normModel: key, category: classifyProductCategory(key), distQty: entry.distQty });
   });
 
   if(!products.length) { alert('Todos los stocks están en 0 o no hay datos disponibles.'); return; }
@@ -3058,14 +3194,18 @@ async function exportSemaforo() {
     return null;
   }
   const transitData = {};
-  DIST_KEYS.forEach(dk => transitData[dk] = { models: new Set(), hasGeneral: false });
+  DIST_KEYS.forEach(dk => transitData[dk] = { keys: new Set(), hasGeneral: false });
   db.pi.filter(pi => pi.status === 'Entregado').forEach(pi => {
     const dk = matchPIDist(pi.client);
     if(!dk) return;
-    if(pi.lineItems && pi.lineItems.length > 0) {
-      pi.lineItems.forEach(li => {
-        const nm = normDesc(li.marketingName || li.model || li.itemCode || '');
-        if(nm) transitData[dk].models.add(nm);
+    // Prefer invoiceItems (from uploaded Invoice PDF) over lineItems
+    const srcItems = (pi.invoiceItems && pi.invoiceItems.length > 0)
+      ? pi.invoiceItems
+      : (pi.lineItems && pi.lineItems.length > 0 ? pi.lineItems : null);
+    if(srcItems) {
+      srcItems.forEach(li => {
+        const k = extractMSIModelKey(li.marketingName || li.model || li.itemCode || '');
+        if(k) transitData[dk].keys.add(k);
       });
     } else {
       transitData[dk].hasGeneral = true;
@@ -3216,7 +3356,7 @@ async function exportSemaforo() {
       }
       sc.alignment = {horizontal:'center',vertical:'middle'}; sc.border = BORDER;
 
-      const hasTransit = transitData[dk].models.has(p.normModel) || transitData[dk].hasGeneral;
+      const hasTransit = transitData[dk].keys.has(p.normModel) || transitData[dk].hasGeneral;
       const tc = ws.getCell(pr,tCol);
       if(hasTransit) {
         tc.value = '●'; tc.fill = sf('FFEBCB8B');
@@ -3228,16 +3368,6 @@ async function exportSemaforo() {
     });
     ws.getRow(pr).height = 15;
   });
-
-  // Legend
-  ws.addRow([]); ws.addRow([]);
-  const rleg = ws.lastRow.number;
-  ws.mergeCells(rleg,1,rleg,NC);
-  const legc = ws.getCell(rleg,1);
-  legc.value = 'LEYENDA:   Bajo (rojo) = 1–9 u.   ·   Medio (naranja) = 10–19 u.   ·   Alto (verde) = 20+ u.   ·   ● (amarillo) = Mercadería en tránsito (Ordenes en estado "Entregado")';
-  legc.font = {size:9,italic:true,color:{argb:'FF555555'},name:'Calibri'};
-  legc.alignment = {horizontal:'left',vertical:'middle'};
-  ws.getRow(rleg).height = 14;
 
   const buf = await wb.xlsx.writeBuffer();
   const blob = new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
