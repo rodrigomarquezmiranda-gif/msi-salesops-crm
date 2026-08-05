@@ -280,6 +280,7 @@
       position: fixed; top: 0; left: 0; height: 100dvh;
       transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.4,0,.2,1);
       z-index: 300; width: 280px; box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+      overflow-y: auto;
     }
     .sidebar.sidebar-open { transform: translateX(0); }
     .sidebar-overlay {
@@ -396,7 +397,7 @@
         <input type="file" id="brand-logo-input" accept="image/*" style="display:none" onchange="handleBrandLogoUpload(this)" />
         <div>
           <div class="name">Sales<span>Ops</span> CRM</div>
-          <div class="sub">PI · BER · SOR · SIR · PP</div>
+          <div class="sub">Ordenes · BER · SOR · SIR · PP</div>
         </div>
       </div>
     </div>
@@ -407,7 +408,7 @@
         <span class="nav-badge" id="nb-alerts" style="display:none">0</span>
       </button>
       <button class="nav-item" id="nav-pi" onclick="gotoTab('pi')">
-        <i class="ti ti-file-invoice" style="color:#7B7BC7"></i> PI
+        <i class="ti ti-file-invoice" style="color:#7B7BC7"></i> Ordenes
         <span class="nav-count" id="nb-pi">0</span>
       </button>
       <button class="nav-item" id="nav-rebates" onclick="gotoTab('rebates')">
@@ -454,6 +455,9 @@
     </nav>
     <nav class="nav-section">
       <div class="nav-label">Herramientas</div>
+      <button class="nav-item" onclick="exportSemaforo()" style="color:#D08770">
+        <i class="ti ti-traffic-lights" style="color:#D08770;font-size:16px"></i> Semáforo
+      </button>
       <button class="nav-item" id="nav-ia" onclick="gotoTab('ia')">
         <i class="ti ti-robot" style="color:#7CBAA0"></i> Analizar con IA
       </button>
@@ -489,6 +493,7 @@
       <div class="topbar-actions">
         <button class="btn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</button>
         <button class="btn" onclick="exportPDF()"><i class="ti ti-file-type-pdf" style="font-size:14px"></i> PDF</button>
+        <button class="btn" id="btn-semaforo" onclick="exportSemaforo()" style="color:#D08770;border-color:rgba(208,135,112,0.4)"><i class="ti ti-traffic-lights" style="font-size:14px"></i> Semáforo</button>
         <button class="btn btn-primary" onclick="openNewModal()"><i class="ti ti-plus" style="font-size:14px"></i> Nuevo ítem</button>
       </div>
     </header>
@@ -523,7 +528,7 @@
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
           <div style="position:relative;flex:1;max-width:340px">
             <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none"></i>
-            <input id="pi-search-input" type="text" placeholder="Buscar PI por nombre, cliente o monto…"
+            <input id="pi-search-input" type="text" placeholder="Buscar Orden por nombre, cliente o monto…"
               style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"
               oninput="_piSearch=this.value.toLowerCase().trim();_piShowAll=!!_piSearch;renderPipeline('pi')" />
           </div>
@@ -930,7 +935,7 @@
 <div class="overlay" id="modal-pi">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="modal-pi-title">Nueva PI</span>
+      <span class="modal-title" id="modal-pi-title">Nueva Orden</span>
       <button class="modal-close" onclick="closeOverlay('modal-pi')"><i class="ti ti-x"></i></button>
     </div>
     <div class="field">
@@ -1101,7 +1106,7 @@
 <script>
 // ─── CONFIG ───────────────────────────────────────────
 const PIPES = {
-  pi:  { label: 'PI / Proforma Invoice', icon: 'ti-file-invoice',    cols: ['Creado','Enviado al cliente','Firmado'] },
+  pi:  { label: 'Ordenes / Proforma Invoice', icon: 'ti-file-invoice',    cols: ['Creado','Enviado al cliente','Firmado','Entregado'] },
   ber: { label: 'BER',                   icon: 'ti-building-store',  cols: ['Solicitado','En aprobación','Aprobado','Reclamado a cliente','Cerrado'] },
   sor: { label: 'SOR',                   icon: 'ti-percentage',      cols: ['Activo','Por vencer','Vencido - Reclamar','Reclamado','Cobrado'] },
   sir: { label: 'SIR',                   icon: 'ti-truck-delivery',  cols: ['Solicitado','En aprobación','Aprobado','Cerrado'] },
@@ -1131,7 +1136,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.03.08.26.3';
+const APP_VERSION = '1.04.08.26.0';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1478,7 +1483,7 @@ function parseDurationString(str) {
 
 // ─── TAB NAV ──────────────────────────────────────────
 const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios'];
-const TITLES = { dashboard:'Dashboard', pi:'PI — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios' };
+const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -1634,7 +1639,7 @@ function openPINew(statusHint, prefill) {
   _existingPIFile = null; _existingPISignedFile = null;
   _pendingPIExtra = { customerPO: prefill?.customerPO, salesOrderDate: prefill?.salesOrderDate, dispatchDate: prefill?.dispatchDate };
   _pendingPILineItems = prefill?.lineItems || [];
-  document.getElementById('modal-pi-title').textContent = 'Nueva PI';
+  document.getElementById('modal-pi-title').textContent = 'Nueva Orden';
   document.getElementById('pf-btn-delete').style.display = 'none';
   const _cb = document.getElementById('pf-createdby-block'); if(_cb) _cb.style.display = 'none';
   document.getElementById('pf-name').value = prefill?.piNumber || '';
@@ -1656,7 +1661,7 @@ function openPIEdit(id) {
   _existingPIFile = item.file || null; _existingPISignedFile = item.signedFile || null;
   _pendingPIExtra = { customerPO: item.customerPO, salesOrderDate: item.salesOrderDate, dispatchDate: item.dispatchDate };
   _pendingPILineItems = item.lineItems || [];
-  document.getElementById('modal-pi-title').textContent = 'Editar PI';
+  document.getElementById('modal-pi-title').textContent = 'Editar Orden';
   document.getElementById('pf-btn-delete').style.display = 'inline-flex';
   document.getElementById('pf-name').value = item.name || '';
   document.getElementById('pf-client').value = item.client || '';
@@ -2993,7 +2998,253 @@ function exportExcel() {
 }
 function exportPDF() {
   const { headers, rows } = getPIRebatesExportData();
-  exportTableToPDF('salesops-crm.pdf', 'SalesOps CRM — PI y Rebates', `Exportado el ${new Date().toLocaleDateString('es-AR')}`, headers, rows);
+  exportTableToPDF('salesops-crm.pdf', 'SalesOps CRM — Ordenes y Rebates', `Exportado el ${new Date().toLocaleDateString('es-AR')}`, headers, rows);
+}
+
+// ─── SEMÁFORO DE STOCK ────────────────────────────────
+async function exportSemaforo() {
+  if(!window.ExcelJS) { alert('ExcelJS no cargó — revisá la conexión.'); return; }
+
+  const DIST_KEYS = ['air','invid','solutionbox','ashir','elit'];
+  const DIST_LABELS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
+
+  // Latest stock snapshot per distributor
+  const latestSnap = {};
+  DIST_KEYS.forEach(dk => {
+    const snaps = db.weeklyReports
+      .filter(s => s.distributor === dk && s.reportType === 'stock')
+      .sort((a,b) => (b.periodEnd||'').localeCompare(a.periodEnd||'') || (b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+    if(snaps[0]) latestSnap[dk] = snaps[0];
+  });
+
+  if(!Object.keys(latestSnap).length) {
+    alert('No hay reportes de stock cargados. Primero cargá los reportes de Inventario/Ventas para cada proveedor.');
+    return;
+  }
+
+  // Build model → { distKey → qty } map
+  const productMap = new Map();
+  DIST_KEYS.forEach(dk => {
+    const snap = latestSnap[dk];
+    if(!snap) return;
+    (snap.rows || []).forEach(r => {
+      if(!r.description) return;
+      const qty = r.qty || 0;
+      const nm = normDesc(r.description);
+      if(!nm) return;
+      if(!productMap.has(nm)) productMap.set(nm, { description: r.description, distQty: {} });
+      const e = productMap.get(nm);
+      e.distQty[dk] = (e.distQty[dk] || 0) + qty;
+    });
+  });
+
+  // Keep only products with at least 1 unit somewhere
+  const products = [];
+  productMap.forEach((entry, nm) => {
+    const total = DIST_KEYS.reduce((s,dk) => s + (entry.distQty[dk]||0), 0);
+    if(total > 0) products.push({ model: entry.description, normModel: nm, category: classifyProductCategory(nm), distQty: entry.distQty });
+  });
+
+  if(!products.length) { alert('Todos los stocks están en 0 o no hay datos disponibles.'); return; }
+
+  // Transit: Ordenes (PI) in "Entregado" status → merchandise in transit to distributor
+  function matchPIDist(clientStr) {
+    const nc = String(clientStr||'').toUpperCase().replace(/\s+/g,' ').trim();
+    if(nc.includes('AIR')) return 'air';
+    if(nc.includes('INVID')) return 'invid';
+    if(nc.includes('SOLUTION')) return 'solutionbox';
+    if(nc.includes('ASHIR')) return 'ashir';
+    if(nc.includes('ELIT')) return 'elit';
+    return null;
+  }
+  const transitData = {};
+  DIST_KEYS.forEach(dk => transitData[dk] = { models: new Set(), hasGeneral: false });
+  db.pi.filter(pi => pi.status === 'Entregado').forEach(pi => {
+    const dk = matchPIDist(pi.client);
+    if(!dk) return;
+    if(pi.lineItems && pi.lineItems.length > 0) {
+      pi.lineItems.forEach(li => {
+        const nm = normDesc(li.marketingName || li.model || li.itemCode || '');
+        if(nm) transitData[dk].models.add(nm);
+      });
+    } else {
+      transitData[dk].hasGeneral = true;
+    }
+  });
+
+  // Sort by category, then model name
+  const CAT_ORDER = ['motherboard','vga','ssd','psu','gabinete','cooling','monitor','accesorios','minipc','other'];
+  const CAT_LABELS = {
+    motherboard:'MOTHERS', vga:'VGA', ssd:'SSD', psu:'FUENTES',
+    gabinete:'GABINETES', cooling:'LIQUID COOLING', monitor:'MONITORES',
+    accesorios:'ACCESORIOS', minipc:'MINI PC / PRO DT', other:'OTROS'
+  };
+  products.sort((a,b) => {
+    const ai = CAT_ORDER.indexOf(a.category), bi = CAT_ORDER.indexOf(b.category);
+    const ao = ai === -1 ? 99 : ai, bo = bi === -1 ? 99 : bi;
+    if(ao !== bo) return ao - bo;
+    return a.model.localeCompare(b.model);
+  });
+
+  // ── Build Excel ──────────────────────────────────────
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'MSI SalesOps CRM';
+  const ws = wb.addWorksheet('Semáforo Stock');
+  const NC = 2 + DIST_KEYS.length * 2; // 12 total columns
+
+  const sf = argb => ({ type:'pattern', pattern:'solid', fgColor:{ argb } });
+  const BORDER = { top:{style:'thin',color:{argb:'FFCCCCCC'}}, left:{style:'thin',color:{argb:'FFCCCCCC'}}, bottom:{style:'thin',color:{argb:'FFCCCCCC'}}, right:{style:'thin',color:{argb:'FFCCCCCC'}} };
+  const BORDER_MED = { top:{style:'medium',color:{argb:'FF888888'}}, left:{style:'medium',color:{argb:'FF888888'}}, bottom:{style:'medium',color:{argb:'FF888888'}}, right:{style:'medium',color:{argb:'FF888888'}} };
+  const WHITE = 'FFFFFFFF';
+
+  ws.columns = [
+    {width:22}, {width:40},
+    {width:10},{width:13}, {width:10},{width:13},
+    {width:10},{width:13}, {width:10},{width:13},
+    {width:10},{width:13}
+  ];
+
+  const today = new Date();
+  const ddS = String(today.getDate()).padStart(2,'0'), mmS = String(today.getMonth()+1).padStart(2,'0'), yyS = today.getFullYear();
+  const dateStr = `${ddS}/${mmS}/${yyS}`;
+
+  // Row 1: Title
+  ws.addRow([]);
+  const r1 = ws.lastRow.number;
+  ws.mergeCells(r1,1,r1,NC);
+  const c1 = ws.getCell(r1,1);
+  c1.value = 'GUÍA DE STOCK Y MERCADERÍA EN TRÁNSITO'; c1.fill = sf('FFE2231A');
+  c1.font = {bold:true,size:16,color:{argb:WHITE},name:'Calibri'};
+  c1.alignment = {horizontal:'center',vertical:'middle'};
+  ws.getRow(r1).height = 32;
+
+  // Row 2: Subtitle
+  ws.addRow([]);
+  const r2 = ws.lastRow.number;
+  ws.mergeCells(r2,1,r2,NC);
+  const c2 = ws.getCell(r2,1);
+  c2.value = `Generado: ${dateStr}  ·  Stock basado en los últimos reportes cargados por distribuidor`;
+  c2.fill = sf('FF1F2A44');
+  c2.font = {size:10,color:{argb:'FFAAAAAA'},italic:true,name:'Calibri'};
+  c2.alignment = {horizontal:'center',vertical:'middle'};
+  ws.getRow(r2).height = 16;
+
+  // Row 3: Empty
+  ws.addRow([]); ws.getRow(ws.lastRow.number).height = 6;
+
+  // Row 4: Distributor headers (each merged over 2 cols)
+  ws.addRow([]);
+  const r4 = ws.lastRow.number;
+  ws.getCell(r4,1).fill = sf('FF3B4252');
+  ws.getCell(r4,2).fill = sf('FF3B4252');
+  DIST_KEYS.forEach((dk,i) => {
+    const col = 3 + i*2;
+    ws.mergeCells(r4,col,r4,col+1);
+    const c = ws.getCell(r4,col);
+    c.value = DIST_LABELS[dk]; c.fill = sf('FF2E3440');
+    c.font = {bold:true,size:11,color:{argb:WHITE},name:'Calibri'};
+    c.alignment = {horizontal:'center',vertical:'middle'};
+    c.border = BORDER_MED;
+  });
+  ws.getRow(r4).height = 24;
+
+  // Row 5: Column labels
+  ws.addRow([]);
+  const r5 = ws.lastRow.number;
+  ['LÍNEA DE PRODUCTOS','MODELO'].concat(DIST_KEYS.flatMap(()=>['STOCK','TRÁNSITO'])).forEach((lbl,i) => {
+    const c = ws.getCell(r5,i+1);
+    c.value = lbl; c.fill = sf('FF4C566A');
+    c.font = {bold:true,size:10,color:{argb:WHITE},name:'Calibri'};
+    c.alignment = {horizontal:'center',vertical:'middle'};
+    c.border = BORDER;
+  });
+  ws.getRow(r5).height = 18;
+
+  ws.views = [{state:'frozen',ySplit:5,xSplit:2,topLeftCell:'C6',activeCell:'C6'}];
+
+  function stockStyle(qty) {
+    if(!qty || qty <= 0) return null;
+    if(qty < 10) return {label:'Bajo', fill:'FFBF616A'};    // red
+    if(qty < 20) return {label:'Medio', fill:'FFD08770'};   // amber/orange
+    return {label:'Alto', fill:'FFA3BE8C'};                 // green
+  }
+
+  // Data rows
+  let currentCat = null, altRow = false;
+  products.forEach(p => {
+    // Category separator
+    if(p.category !== currentCat) {
+      currentCat = p.category;
+      ws.addRow([]);
+      const cr = ws.lastRow.number;
+      ws.mergeCells(cr,1,cr,NC);
+      const cc = ws.getCell(cr,1);
+      cc.value = CAT_LABELS[p.category] || p.category.toUpperCase();
+      cc.fill = sf('FF5E81AC');
+      cc.font = {bold:true,size:11,color:{argb:WHITE},name:'Calibri'};
+      cc.alignment = {horizontal:'left',vertical:'middle',indent:1};
+      ws.getRow(cr).height = 20;
+      altRow = false;
+    }
+
+    ws.addRow([]);
+    const pr = ws.lastRow.number;
+    const rowFill = altRow ? 'FFF0F4F8' : 'FFFFFFFF';
+    altRow = !altRow;
+
+    // Col A: blank (category shown in separator)
+    ws.getCell(pr,1).fill = sf(rowFill);
+    ws.getCell(pr,1).border = BORDER;
+
+    // Col B: model name
+    const mc = ws.getCell(pr,2);
+    mc.value = p.model; mc.fill = sf(rowFill);
+    mc.font = {size:10,name:'Calibri'};
+    mc.alignment = {vertical:'middle'};
+    mc.border = BORDER;
+
+    DIST_KEYS.forEach((dk,i) => {
+      const sCol = 3+i*2, tCol = 4+i*2;
+      const qty = p.distQty[dk] || 0;
+      const ss = stockStyle(qty);
+      const sc = ws.getCell(pr,sCol);
+      if(ss) {
+        sc.value = ss.label; sc.fill = sf(ss.fill);
+        sc.font = {bold:true,size:10,color:{argb:WHITE},name:'Calibri'};
+      } else {
+        sc.fill = sf(rowFill); sc.value = '';
+      }
+      sc.alignment = {horizontal:'center',vertical:'middle'}; sc.border = BORDER;
+
+      const hasTransit = transitData[dk].models.has(p.normModel) || transitData[dk].hasGeneral;
+      const tc = ws.getCell(pr,tCol);
+      if(hasTransit) {
+        tc.value = '●'; tc.fill = sf('FFEBCB8B');
+        tc.font = {bold:true,size:13,color:{argb:'FF1F2A44'},name:'Calibri'};
+      } else {
+        tc.fill = sf(rowFill); tc.value = '';
+      }
+      tc.alignment = {horizontal:'center',vertical:'middle'}; tc.border = BORDER;
+    });
+    ws.getRow(pr).height = 15;
+  });
+
+  // Legend
+  ws.addRow([]); ws.addRow([]);
+  const rleg = ws.lastRow.number;
+  ws.mergeCells(rleg,1,rleg,NC);
+  const legc = ws.getCell(rleg,1);
+  legc.value = 'LEYENDA:   Bajo (rojo) = 1–9 u.   ·   Medio (naranja) = 10–19 u.   ·   Alto (verde) = 20+ u.   ·   ● (amarillo) = Mercadería en tránsito (Ordenes en estado "Entregado")';
+  legc.font = {size:9,italic:true,color:{argb:'FF555555'},name:'Calibri'};
+  legc.alignment = {horizontal:'left',vertical:'middle'};
+  ws.getRow(rleg).height = 14;
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `semaforo-stock-${today.toISOString().slice(0,10)}.xlsx`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 function getSalesPriceExportData() {
@@ -6004,7 +6255,7 @@ _fbAuth.onAuthStateChanged(async (user) => {
 <!-- PWA: Mobile bottom nav + sidebar logic -->
 <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
   <button onclick="gotoTab('dashboard')" id="mbn-dashboard"><i class="ti ti-layout-dashboard"></i>Dashboard</button>
-  <button onclick="gotoTab('pi')" id="mbn-pi"><i class="ti ti-file-invoice"></i>PI</button>
+  <button onclick="gotoTab('pi')" id="mbn-pi"><i class="ti ti-file-invoice"></i>Ordenes</button>
   <button onclick="gotoTab('salesprices')" id="mbn-salesprices"><i class="ti ti-currency-dollar"></i>Precios</button>
   <button onclick="gotoTab('clients')" id="mbn-clients"><i class="ti ti-users"></i>Clientes</button>
   <button onclick="toggleMobileSidebar()" id="mbn-more"><i class="ti ti-dots"></i>Más</button>
