@@ -1142,7 +1142,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.06.08.26.0';
+const APP_VERSION = '1.06.08.26.1';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -3169,11 +3169,12 @@ function exportPDF() {
 // ─── SEMÁFORO DE STOCK ────────────────────────────────────────────────────
 const SF_DIST_KEYS   = ['air','invid','solutionbox','ashir','elit'];
 const SF_DIST_LABELS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
-const SF_CAT_ORDER   = ['motherboard','vga','ssd','psu','cooling','gabinete','monitor','minipc','accesorios','notebook'];
+const SF_DIST_SHORT  = { air:'AIR', invid:'INVID', solutionbox:'SOLUTION', ashir:'ASHIR', elit:'ELIT' };
+const SF_CAT_ORDER   = ['motherboard','vga','ssd','psu','cooling','gabinete','monitor','minipc','accesorios'];
 const SF_CAT_LABELS  = {
   motherboard:'MOTHERS', vga:'VGA / PLACAS DE VIDEO', ssd:'SSD',
   psu:'FUENTES', cooling:'COOLING', gabinete:'GABINETES',
-  monitor:'MONITORES', minipc:'MINI PC / PRO DT', accesorios:'ACCESORIOS', notebook:'NOTEBOOKS'
+  monitor:'MONITORES', minipc:'MINI PC / PRO DT', accesorios:'ACCESORIOS'
 };
 function _sfMatchDist(clientStr) {
   const nc = String(clientStr||'').toUpperCase().replace(/\s+/g,' ').trim();
@@ -3279,8 +3280,8 @@ function renderSemaforoTab() {
 <style>
 .sf-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .sf-table { border-collapse:collapse; width:100%; min-width:680px; font-size:12px; }
-.sf-table th { background:var(--bg3,#2E3440); color:#fff; font-weight:700; padding:6px 10px; text-align:center; white-space:nowrap; border:1px solid rgba(255,255,255,0.1); }
-.sf-table th.sf-th-model { text-align:left; min-width:220px; max-width:320px; }
+.sf-table th { background:#2E3440 !important; color:#ECEFF4 !important; font-weight:700; padding:6px 10px; text-align:center; white-space:nowrap; border:1px solid #222; }
+.sf-table th.sf-th-model { text-align:left; min-width:220px; max-width:340px; }
 .sf-table td { padding:5px 8px; border:1px solid var(--border2); vertical-align:middle; }
 .sf-table td.sf-td-model { font-size:11px; color:var(--text2); max-width:320px; white-space:normal; word-break:break-word; }
 .sf-table td.sf-td-center { text-align:center; white-space:nowrap; }
@@ -3371,25 +3372,51 @@ async function exportSemaforoPDF() {
   const stockLabel = qty => { if(!qty||qty<=0) return ''; if(qty<10) return 'Bajo'; if(qty<20) return 'Medio'; return 'Alto'; };
   const stockColor = qty => { if(!qty||qty<=0) return null; if(qty<10) return [191,97,106]; if(qty<20) return [208,135,112]; return [163,190,140]; };
 
-  const head = [['MODELO', ...SF_DIST_KEYS.flatMap(dk => [SF_DIST_LABELS[dk]+'\nSTOCK', SF_DIST_LABELS[dk]+'\nTRÁNSITO'])]];
+  // A4 landscape usable width ≈ 810pt (841.89 - 32 margins)
+  // Model col 190pt + 10 data cols × 62pt = 810pt
+  const MODEL_W = 190, DATA_W = 62;
+
+  // 2-row header: row1 = dist names spanning 2 cols; row2 = STK / TRÁ sub-labels
+  const head = [
+    [
+      { content: 'MODELO', rowSpan: 2, styles: { halign:'left', valign:'middle', fontStyle:'bold' } },
+      ...SF_DIST_KEYS.flatMap(dk => [
+        { content: SF_DIST_SHORT[dk], colSpan: 2, styles: { halign:'center', fontStyle:'bold' } }
+      ])
+    ],
+    [
+      ...SF_DIST_KEYS.flatMap(() => [
+        { content: 'STK', styles: { halign:'center', fontStyle:'bold' } },
+        { content: 'TRÁ', styles: { halign:'center', fontStyle:'bold' } }
+      ])
+    ]
+  ];
   const body = [];
   let lastCat = null;
 
   products.forEach(p => {
     if(p.category !== lastCat) {
       lastCat = p.category;
-      body.push([{ content: SF_CAT_LABELS[p.category] || p.category.toUpperCase(), colSpan: 1 + SF_DIST_KEYS.length*2, styles:{fillColor:[94,129,172],textColor:[255,255,255],fontStyle:'bold',fontSize:9} }]);
+      body.push([{ content: SF_CAT_LABELS[p.category] || p.category.toUpperCase(), colSpan: 1 + SF_DIST_KEYS.length*2, styles:{fillColor:[94,129,172],textColor:[255,255,255],fontStyle:'bold',fontSize:8,cellPadding:4} }]);
     }
-    const row = [p.model];
+    // Truncate long names to keep on one line
+    const modelName = p.model.length > 55 ? p.model.slice(0, 52) + '…' : p.model;
+    const row = [{ content: modelName, styles: { halign:'left', overflow:'ellipsize' } }];
     SF_DIST_KEYS.forEach(dk => {
       const qty = p.distQty[dk] || 0;
       const lbl = stockLabel(qty);
       const col = stockColor(qty);
-      row.push({ content: lbl, styles: col ? {fillColor:col, textColor:[255,255,255], fontStyle:'bold'} : {} });
+      row.push({ content: lbl, styles: col ? {fillColor:col, textColor:[255,255,255], fontStyle:'bold', halign:'center'} : {halign:'center'} });
       const hasT = transitData[dk].keys.has(p.normModel) || transitData[dk].hasGeneral;
-      row.push({ content: hasT ? '●' : '', styles: hasT ? {fillColor:[235,203,139], textColor:[31,42,68], fontSize:12} : {} });
+      row.push({ content: hasT ? '●' : '', styles: hasT ? {fillColor:[235,203,139], textColor:[31,42,68], halign:'center', fontSize:10} : {halign:'center'} });
     });
     body.push(row);
+  });
+
+  const colStyles = { 0: { cellWidth: MODEL_W, halign:'left' } };
+  SF_DIST_KEYS.forEach((_,i) => {
+    colStyles[1 + i*2]   = { cellWidth: DATA_W, halign:'center' };
+    colStyles[2 + i*2]   = { cellWidth: DATA_W, halign:'center' };
   });
 
   doc.autoTable({
@@ -3397,11 +3424,12 @@ async function exportSemaforoPDF() {
     head,
     body,
     theme: 'grid',
-    styles: { fontSize:7, cellPadding:3, overflow:'linebreak' },
-    headStyles: { fillColor:[46,52,64], textColor:[255,255,255], fontStyle:'bold', halign:'center', fontSize:7 },
-    columnStyles: { 0: { cellWidth:120, halign:'left' } },
+    styles: { fontSize: 6.5, cellPadding: 3, overflow: 'ellipsize', minCellHeight: 14 },
+    headStyles: { fillColor:[46,52,64], textColor:[255,255,255], fontStyle:'bold', halign:'center', fontSize: 7, minCellHeight: 12 },
+    columnStyles: colStyles,
     alternateRowStyles: { fillColor:[240,244,248] },
     margin: { top:54, left:16, right:16 },
+    rowPageBreak: 'avoid',
   });
 
   doc.save(`semaforo-stock-${today.toISOString().slice(0,10)}.pdf`);
