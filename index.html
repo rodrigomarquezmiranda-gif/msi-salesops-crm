@@ -671,7 +671,6 @@
             <select id="rotcompare-category" onchange="onRotcompareCategoryChange()">
               <option value="all">Todas las categorías</option>
               <option value="motherboard">Motherboards</option>
-              <option value="notebook">Notebooks</option>
               <option value="monitor">Monitores</option>
               <option value="vga">Placas de Video</option>
               <option value="gabinete">Gabinetes</option>
@@ -762,7 +761,6 @@
               <option value="ssd">Almacenamiento (SSD)</option>
               <option value="cooling">Cooling</option>
               <option value="accesorios">Accesorios</option>
-              <option value="notebook">Notebooks</option>
               <option value="other">Otros / sin categorizar</option>
             </select>
           </div>
@@ -1142,7 +1140,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.06.08.26.1';
+const APP_VERSION = '1.07.08.26.1';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1760,17 +1758,18 @@ const _SEMAFORO_NOISE = new Set([
   'MINI','PC',
   'MONITOR','PANTALLA',
   'PROCESADOR','CPU','INTEL','AMD',
+  'CORE','CELERON','ADL',                        // Intel brand/platform words
   'AM4','AM5','LGA1700','LGA1200','LGA1151',
   'ATX','MATX','MITX','ITX','BTX',
   'DDR4','DDR5','DDR3',
   'COOLER','WATERCOOLER','WATERCOOLING','WATER','AIR',
   'BOX','ALL','SERIES','SERIE',
+  'BAREBONE','FICHA','USA','RAM','SATA',  // config/spec noise
   'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
 ]);
 function extractMSIModelKey(desc) {
   let s = String(desc || '').trim().toUpperCase();
-  s = s.replace(/\s*\(\d{3,}\)\s*/g, ' ');
-  s = s.replace(/\s*\([^)]*(?:SERIES|SERIE)[^)]*\)\s*/ig, ' ');
+  s = s.replace(/\([^)]*\)/g, ' ');   // strip ALL parenthetical content (configs, specs, etc.)
   const isBulk = /\bBULK\b/.test(s);
   s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
   s = s.replace(/\b(\d+)\s*GB\b/g, '$1G');
@@ -1780,21 +1779,30 @@ function extractMSIModelKey(desc) {
   s = s.replace(/\bPCIE\s*[45](?:\.\d)?\b/ig, '');
   s = s.replace(/\bGEN(?:ERATION)?\s*[2-6]\b/ig, '');
   s = s.replace(/\b(?:II|III)\b/g, '');
-  s = s.replace(/-/g, '');  // A520M-A → A520MA, X870E-P → X870EP
-  const isVGA = /\b(?:RTX|GTX|RADEON|GEFORCE)\b/.test(s);
+  // Strip Intel Core processor model suffixes (1235U, 1215U, 1255U, etc.)
+  // These are redundant when i3/i5/i7 is already present
+  s = s.replace(/\b\d{4}[UHP]\b/g, '');
+  // Fix hyphens: collapse letter↔letter (A520M-A→A520MA, X870E-P→X870EP),
+  // replace digit↔digit or digit↔letter-only with space (S270-240→S270 240, I5-1235U→I5 1235U)
+  s = s.replace(/([A-Z])-([A-Z])/g, '$1$2');
+  s = s.replace(/-/g, ' ');
+  const isVGA   = /\b(?:RTX|GTX|RADEON|GEFORCE)\b/.test(s);
+  const isMinPC = /\bCUBI\b/.test(s);
   const tokens = s.split(/[\s\/_,;\.]+/)
     .map(t => t.trim())
     .filter(t => {
       if(t.length < 2) return false;
       if(_SEMAFORO_NOISE.has(t)) return false;
-      if(/^\d{1,2}$/.test(t)) return false;  // strip 1-2 digit bare numbers
+      if(/^\d{1,2}$/.test(t)) return false;
       return true;
     });
   const capTokens = tokens.filter(t => /^\d+[GT]$/.test(t));
   const modelTokens = tokens.filter(t => !/^\d+[GT]$/.test(t));
   modelTokens.sort();
   capTokens.sort();
-  let key = isVGA ? modelTokens.join(' ') : [...modelTokens, ...capTokens].join(' ');
+  // VGA: VRAM inconsistently reported → skip cap
+  // Mini PC (CUBI): RAM/storage config is not the product → skip cap
+  let key = (isVGA || isMinPC) ? modelTokens.join(' ') : [...modelTokens, ...capTokens].join(' ');
   if(isBulk) key += ' BULK';
   return key.trim();
 }
@@ -3280,10 +3288,10 @@ function renderSemaforoTab() {
 <style>
 .sf-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 .sf-table { border-collapse:collapse; width:100%; min-width:680px; font-size:12px; }
-.sf-table th { background:#2E3440 !important; color:#ECEFF4 !important; font-weight:700; padding:6px 10px; text-align:center; white-space:nowrap; border:1px solid #222; }
+.sf-table th { background:#2E3440 !important; color:#ECEFF4 !important; font-family:'Calibri','Segoe UI',Arial,sans-serif; font-weight:700; padding:6px 10px; text-align:center; white-space:nowrap; border:1px solid #222; text-transform:uppercase; letter-spacing:0.03em; }
 .sf-table th.sf-th-model { text-align:left; min-width:220px; max-width:340px; }
 .sf-table td { padding:5px 8px; border:1px solid var(--border2); vertical-align:middle; }
-.sf-table td.sf-td-model { font-size:11px; color:var(--text2); max-width:320px; white-space:normal; word-break:break-word; }
+.sf-table td.sf-td-model { font-family:'Calibri','Segoe UI',Arial,sans-serif; font-size:11px; color:var(--text); max-width:320px; white-space:normal; word-break:break-word; text-transform:uppercase; font-weight:500; }
 .sf-table td.sf-td-center { text-align:center; white-space:nowrap; }
 .sf-cat-row td { background:#5E81AC; color:#fff; font-weight:700; font-size:11px; letter-spacing:0.05em; padding:5px 10px; }
 .sf-alto  { background:#A3BE8C; color:#fff; font-weight:700; }
@@ -3399,8 +3407,8 @@ async function exportSemaforoPDF() {
       lastCat = p.category;
       body.push([{ content: SF_CAT_LABELS[p.category] || p.category.toUpperCase(), colSpan: 1 + SF_DIST_KEYS.length*2, styles:{fillColor:[94,129,172],textColor:[255,255,255],fontStyle:'bold',fontSize:8,cellPadding:4} }]);
     }
-    // Truncate long names to keep on one line
-    const modelName = p.model.length > 55 ? p.model.slice(0, 52) + '…' : p.model;
+    // Uppercase + truncate to keep on one line
+    const modelName = p.model.toUpperCase().slice(0, 55);
     const row = [{ content: modelName, styles: { halign:'left', overflow:'ellipsize' } }];
     SF_DIST_KEYS.forEach(dk => {
       const qty = p.distQty[dk] || 0;
@@ -3459,7 +3467,6 @@ function normClientKey(name) { return String(name||'').toUpperCase().replace(/[.
 // tape un match más corto y genérico (ej: "fuente de alimentacion" antes que "fuente").
 const CATEGORY_KEYWORDS = [
   { key:'motherboard', label:'Motherboards',       keywords:['MOTHERBOARDS','MOTHERBOARD','MOTHER BOARD','PLACA MADRE','MB','MOTHER','MOT'] },
-  { key:'notebook',    label:'Notebooks',           keywords:['NOTEBOOK','NB'] },
   { key:'monitor',     label:'Monitores',           keywords:['MONITORES','MONITOR','MON'] },
   { key:'vga',         label:'Placas de Video',      keywords:['PLACA DE VIDEO','TARJETA GRAFICA','PLACA MSI','GEFORCE','GEFORC','VGA','VIDEO','RTX','GTX','RADEON'] },
   { key:'gabinete',    label:'Gabinetes',            keywords:['GABINETES','GABINETE','CHASSIS','GAB'] },
@@ -3475,7 +3482,7 @@ const CATEGORY_COLOR = {
   motherboard: '#88C0D0', monitor: '#81A1C1', vga: '#A3BE8C',
   gabinete: '#9DA7B9',    psu: '#EBCB8B',     minipc: '#B48EAD',
   ssd: '#8FBCBB',         cooling: '#BF616A',  accesorios: '#D08770',
-  notebook: '#5E81AC',    other: '#6B7A96'
+  other: '#6B7A96'
 };
 function normCategoryText(s) {
   return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
