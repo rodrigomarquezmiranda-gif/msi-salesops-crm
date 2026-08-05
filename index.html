@@ -1772,6 +1772,11 @@ function extractMSIModelKey(desc) {
   s = s.replace(/\([^)]*\)/g, ' ');   // strip ALL parenthetical content (configs, specs, etc.)
   const isBulk = /\bBULK\b/.test(s);
   s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
+  // Strip storage interface/form-factor noise BEFORE GB→G conversion to avoid spurious cap tokens
+  s = s.replace(/\b\d+(?:\.\d+)?\s*GB\/S\b/ig, '');    // speed: 6.0GB/S, 6GB/S
+  s = s.replace(/\b\d+(?:\.\d+)?\s*GBPS\b/ig, '');      // speed: 6GBPS
+  s = s.replace(/\b[23]\.5[""”″]?/g, '');     // form factor: 2.5" / 3.5" (SATA/HDD)
+  s = s.replace(/\bSATA[\d.]+\b/ig, 'SATA');             // SATA2.5 / SATA3 → SATA (already noise)
   s = s.replace(/\b(\d+)\s*GB\b/g, '$1G');
   s = s.replace(/\b(\d+)\s*TB\b/g, '$1T');
   s = s.replace(/\b\d{3,4}\s*W(?:ATT)?S?\b\s*/g, '');
