@@ -1140,7 +1140,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.05.08.2026.3';
+const APP_VERSION = '1.05.08.2026.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1762,9 +1762,12 @@ const _SEMAFORO_NOISE = new Set([
   'AM4','AM5','LGA1700','LGA1200','LGA1151',
   'ATX','MATX','MITX','ITX','BTX',
   'DDR4','DDR5','DDR3',
-  'COOLER','WATERCOOLER','WATERCOOLING','WATER','AIR',
+  'COOLER','WATERCOOLER','WATERCOOLING','WATER','COOLING','AIO','WC','AIR',
   'BOX','ALL','SERIES','SERIE',
   'BAREBONE','FICHA','USA','RAM','SATA',  // config/spec noise
+  'MODULAR',                              // PSU descriptor
+  'MAG',                                 // MSI tier prefix (omitted by some distributors)
+  'BLACK',                               // default color (inconsistently included)
   'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
 ]);
 function extractMSIModelKey(desc) {
@@ -1772,6 +1775,9 @@ function extractMSIModelKey(desc) {
   s = s.replace(/\([^)]*\)/g, ' ');   // strip ALL parenthetical content (configs, specs, etc.)
   const isBulk = /\bBULK\b/.test(s);
   s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
+  // Normalize standalone W → WHITE early (cooling color abbreviation used by some distributors).
+  // Must run BEFORE the wattage strip so "240 W" → "240 WHITE" and isn't consumed as "240W".
+  s = s.replace(/\bW\b/g, 'WHITE');
   // Strip storage interface/form-factor noise BEFORE GB→G conversion to avoid spurious cap tokens
   s = s.replace(/\b\d+(?:\.\d+)?\s*GB\/S\b/ig, '');    // speed: 6.0GB/S, 6GB/S
   s = s.replace(/\b\d+(?:\.\d+)?\s*GBPS\b/ig, '');      // speed: 6GBPS
@@ -1795,6 +1801,11 @@ function extractMSIModelKey(desc) {
   // Strip Intel Core processor model suffixes (1235U, 1215U, 1255U, etc.)
   // These are redundant when i3/i5/i7 is already present
   s = s.replace(/\b\d{4}[UHP]\b/g, '');
+  // Strip PSU efficiency shorthand (80PSGOLD, 80PSPLATINUM, etc.)
+  s = s.replace(/\b80PS\w+\b/ig, '');
+  // Strip cooling fan size in mm (360MM, 240MM, 120MM) and fan-count multiples (3X, 2X)
+  s = s.replace(/\b\d+\s*MM\b/ig, '');
+  s = s.replace(/\b\d+\s*[Xx]\b/g, '');
   // Fix hyphens: collapse letter↔letter (A520M-A→A520MA, X870E-P→X870EP),
   // replace digit↔digit or digit↔letter-only with space (S270-240→S270 240, I5-1235U→I5 1235U)
   s = s.replace(/([A-Z])-([A-Z])/g, '$1$2');
@@ -1835,6 +1846,58 @@ function extractMSIModelKey(desc) {
   let key = isVGA ? modelTokens.join(' ') : [...modelTokens, ...capTokens].join(' ');
   if(isBulk) key += ' BULK';
   return key.trim();
+}
+
+// ─── SEMÁFORO: CLEAN DISPLAY NAME (preserves natural order, strips category noise) ─────
+function semaforoDisplayName(rawDesc, category) {
+  let s = String(rawDesc || '').trim().toUpperCase();
+  // Same pre-processing as extractMSIModelKey (socket, speeds, etc.) but NO token sort
+  s = s.replace(/\([^)]*\)/g, ' ');
+  s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
+  s = s.replace(/\b\d+(?:\.\d+)?\s*GB\/S\b/ig, '');
+  s = s.replace(/\b\d+(?:\.\d+)?\s*GBPS\b/ig, '');
+  s = s.replace(/\b[23]\.5["""″]?/g, '');
+  s = s.replace(/\bSATA[\d.]+\b/ig, 'SATA');
+  s = s.replace(/\b(\d+)\s*GB\b/g, '$1G');
+  s = s.replace(/\b(\d+)\s*TB\b/g, '$1T');
+  s = s.replace(/\bPCIE\s*[45](?:\.\d)?\b/ig, '');
+  s = s.replace(/\bGEN(?:ERATION)?\s*[2-6]\b/ig, '');
+  s = s.replace(/\b(?:II|III)\b/g, '');
+  s = s.replace(/\bLGA\s*\d{4}\b/ig, '');
+  s = s.replace(/\bS\d{4}\b/g, '');
+  s = s.replace(/\b(?:1151|1200|1700|1851)\b/g, '');
+  s = s.replace(/\b\d{4}[UHP]\b/g, '');
+  s = s.replace(/\b\d+\+?\s*(?:PLUS\s+)?(?:BRONZE|GOLD|PLATINUM|TITANIUM|SILVER|BRONCE|ORO|PLATA)\b/ig, '');
+  s = s.replace(/\b80PS\w+\b/ig, '');
+  s = s.replace(/\b\d+\s*MM\b/ig, '');
+  s = s.replace(/\b\d+\s*[Xx]\b/g, '');
+  s = s.replace(/\bW\b/g, 'WHITE');
+  // Universal noise tokens to strip from display name
+  const DISP_NOISE = [
+    'MSI','VGA','MB','MOT','MOTHER','MOTHERBOARD','PLACA','TARJETA','GRAFICA','GEFORCE','NVIDIA',
+    'FUENTE','ALIMENTACION','PSU',
+    'DISCO','DURO','ESTADO','SOLIDO','UNIDAD','ALMACENAMIENTO','HDD','NVME',
+    'WATERCOOLER','WATERCOOLING','WATER','COOLING','AIO','WC',
+    'MINI','MONITOR','PANTALLA',
+    'PROCESADOR','INTEL','AMD','CORE','CELERON','ADL',
+    'AM4','AM5',
+    'BOX','SERIE','SERIES','ALL',
+    'BAREBONE','FICHA','USA','RAM',
+    'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
+    'MODULAR',
+  ];
+  // Category-specific: for cooling strip MAG (inconsistently included) and BLACK (default color)
+  if (category === 'cooling') { DISP_NOISE.push('COOLER','AIR','CPU','MAG','BLACK'); }
+  // For PSU display keep wattage (already NOT stripped above since we skip the wattage regex here)
+  // For MB display keep DDR4/DDR5 (removed from DISP_NOISE intentionally)
+  // For VGA keep VRAM size (cap tokens not sorted here)
+
+  DISP_NOISE.forEach(w => {
+    s = s.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
+  });
+  // Collapse repeated spaces, clean up leading/trailing noise
+  s = s.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
+  return s;
 }
 
 function buildLinesFromPdfItems(items) {
@@ -3362,7 +3425,7 @@ function renderSemaforoTab() {
     }
     const rowCls = altRow ? ' class="sf-alt"' : '';
     html += `<tr${rowCls}>`;
-    html += `<td class="sf-td-model">${esc(p.model)}</td>`;
+    html += `<td class="sf-td-model">${esc(semaforoDisplayName(p.model, p.category))}</td>`;
     SF_DIST_KEYS.forEach(dk => {
       const qty = p.distQty[dk] || 0;
       const sc = stockClass(qty);
@@ -3437,8 +3500,8 @@ async function exportSemaforoPDF() {
       lastCat = p.category;
       body.push([{ content: SF_CAT_LABELS[p.category] || p.category.toUpperCase(), colSpan: 1 + SF_DIST_KEYS.length*2, styles:{fillColor:[94,129,172],textColor:[255,255,255],fontStyle:'bold',fontSize:8,cellPadding:4} }]);
     }
-    // Uppercase + truncate to keep on one line
-    const modelName = p.model.toUpperCase().slice(0, 55);
+    // Clean display name + truncate to keep on one line
+    const modelName = semaforoDisplayName(p.model, p.category).slice(0, 55);
     const row = [{ content: modelName, styles: { halign:'left', overflow:'ellipsize' } }];
     SF_DIST_KEYS.forEach(dk => {
       const qty = p.distQty[dk] || 0;
