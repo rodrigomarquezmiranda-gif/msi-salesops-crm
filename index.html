@@ -458,6 +458,9 @@
       <button class="nav-item" id="nav-semaforo" onclick="gotoTab('semaforo')" style="color:#D08770">
         <i class="ti ti-traffic-lights" style="color:#D08770;font-size:16px"></i> Semáforo
       </button>
+      <button class="nav-item" id="nav-sugeridos" onclick="gotoTab('sugeridos')" style="color:#A3BE8C">
+        <i class="ti ti-shopping-cart" style="color:#A3BE8C;font-size:16px"></i> Sugeridos
+      </button>
       <button class="nav-item" id="nav-ia" onclick="gotoTab('ia')">
         <i class="ti ti-robot" style="color:#7CBAA0"></i> Analizar con IA
       </button>
@@ -494,6 +497,7 @@
         <button class="btn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</button>
         <button class="btn" onclick="exportPDF()"><i class="ti ti-file-type-pdf" style="font-size:14px"></i> PDF</button>
         <button class="btn" id="btn-semaforo" onclick="gotoTab('semaforo')" style="color:#D08770;border-color:rgba(208,135,112,0.4)"><i class="ti ti-traffic-lights" style="font-size:14px"></i> Semáforo</button>
+        <button class="btn" id="btn-sugeridos" onclick="gotoTab('sugeridos')" style="color:#A3BE8C;border-color:rgba(163,190,140,0.4)"><i class="ti ti-shopping-cart" style="font-size:14px"></i> Sugeridos</button>
         <button class="btn btn-primary" onclick="openNewModal()"><i class="ti ti-plus" style="font-size:14px"></i> Nuevo ítem</button>
       </div>
     </header>
@@ -931,6 +935,11 @@
         <div id="semaforo-content"></div>
       </div>
 
+      <!-- SUGERIDOS DE COMPRA -->
+      <div id="tab-sugeridos" class="tab-pane">
+        <div id="sugeridos-content"></div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -1142,7 +1151,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.06.08.2026.4';
+const APP_VERSION = '1.06.08.2026.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1488,8 +1497,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios','semaforo'];
-const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios','semaforo','sugeridos'];
+const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -1522,6 +1531,7 @@ function gotoTab(tab) {
   if(tab==='notificaciones') renderNotificacionesTab();
   if(tab==='usuarios') renderUsersTab();
   if(tab==='semaforo') renderSemaforoTab();
+  if(tab==='sugeridos') renderSugeridosTab();
 }
 
 function openNewModal() {
@@ -3608,6 +3618,220 @@ async function exportSemaforoPDF() {
   });
 
   doc.save(`semaforo-stock-${today.toISOString().slice(0,10)}.pdf`);
+}
+
+// ─── SUGERIDOS DE COMPRA ───────────────────────────────────────────────────
+let _sugeridosMode = 'all'; // 'all' | 'air' | 'invid' | 'solutionbox' | 'ashir' | 'elit'
+const SG_COVERAGE_DAYS = 30;
+
+function buildSugeridosData() {
+  // ── Stock: latest snapshot per distributor ──
+  const latestSnap = {};
+  SF_DIST_KEYS.forEach(dk => {
+    const snaps = (db.weeklyReports || [])
+      .filter(s => s.distributor === dk && s.reportType === 'stock')
+      .sort((a,b) => (b.periodEnd||'').localeCompare(a.periodEnd||'') || (b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+    if(snaps.length) latestSnap[dk] = snaps[0];
+  });
+
+  // ── Sales: aggregate ALL reports → weekly rate per (disti, modelKey) ──
+  // salesMap[dk][key] = { totalQty, totalWeeks, description, category }
+  const salesMap = {};
+  SF_DIST_KEYS.forEach(dk => {
+    salesMap[dk] = {};
+    const reports = (db.weeklyReports || []).filter(s => s.distributor === dk && s.reportType === 'sales');
+    reports.forEach(rep => {
+      const weeks = (rep.periodStart && rep.periodEnd)
+        ? Math.max(1, (new Date(rep.periodEnd) - new Date(rep.periodStart)) / 604800000)
+        : 1;
+      (rep.rows || []).forEach(r => {
+        if((r.qty || 0) <= 0) return;
+        const key = extractMSIModelKey(r.description);
+        if(!key) return;
+        const cat = classifyProductCategory(r.description);
+        if(cat === 'other') return;
+        if(!salesMap[dk][key]) salesMap[dk][key] = { totalQty:0, totalWeeks:0, description:r.description, category:cat };
+        salesMap[dk][key].totalQty  += r.qty;
+        salesMap[dk][key].totalWeeks += weeks;
+      });
+    });
+    Object.values(salesMap[dk]).forEach(e => { e.weeklyRate = e.totalWeeks > 0 ? e.totalQty / e.totalWeeks : 0; });
+  });
+
+  // ── Collect all known model keys (from stock + sales) ──
+  const allKeys = new Set();
+  SF_DIST_KEYS.forEach(dk => {
+    if(latestSnap[dk]) {
+      (latestSnap[dk].rows || []).forEach(r => {
+        const key = extractMSIModelKey(r.description);
+        const cat = classifyProductCategory(r.description);
+        if(key && cat !== 'other') allKeys.add(key);
+      });
+    }
+    Object.keys(salesMap[dk]).forEach(k => allKeys.add(k));
+  });
+
+  // ── Build product entries ──
+  const products = [];
+  allKeys.forEach(key => {
+    // Best description & category
+    let description = '', category = 'other';
+    SF_DIST_KEYS.forEach(dk => {
+      if(!description && latestSnap[dk]) {
+        const row = (latestSnap[dk].rows || []).find(r => extractMSIModelKey(r.description) === key);
+        if(row) { description = row.description; category = classifyProductCategory(row.description); }
+      }
+      if(!description && salesMap[dk][key]) { description = salesMap[dk][key].description; category = salesMap[dk][key].category; }
+    });
+    if(category === 'other') return;
+
+    // Per-distributor stock & rate
+    const distStock = {}, distWeekly = {};
+    SF_DIST_KEYS.forEach(dk => {
+      distStock[dk] = 0;
+      if(latestSnap[dk]) {
+        (latestSnap[dk].rows || [])
+          .filter(r => extractMSIModelKey(r.description) === key)
+          .forEach(r => { distStock[dk] += Math.max(0, r.qty || 0); });
+      }
+      distWeekly[dk] = salesMap[dk][key]?.weeklyRate || 0;
+    });
+
+    const totalStock  = SF_DIST_KEYS.reduce((s,dk) => s + distStock[dk], 0);
+    const totalWeekly = SF_DIST_KEYS.reduce((s,dk) => s + distWeekly[dk], 0);
+    const daysCoverage = totalWeekly > 0 ? (totalStock / totalWeekly * 7) : null;
+    const suggested   = totalWeekly > 0 ? Math.max(0, Math.ceil(totalWeekly * SG_COVERAGE_DAYS / 7) - totalStock) : 0;
+
+    products.push({ key, model: key, description, category, distStock, distWeekly, totalStock, totalWeekly, daysCoverage, suggested });
+  });
+
+  // Sort: by category order, then urgency (shortest coverage first), then name
+  products.sort((a, b) => {
+    const ai = SF_CAT_ORDER.indexOf(a.category), bi = SF_CAT_ORDER.indexOf(b.category);
+    if(ai !== bi) return ai - bi;
+    const aDays = a.daysCoverage ?? Infinity, bDays = b.daysCoverage ?? Infinity;
+    if(aDays !== bDays) return aDays - bDays;
+    return a.model.localeCompare(b.model);
+  });
+
+  return { products, latestSnap };
+}
+
+function _sgUrgency(days) {
+  if(days === null) return 'gris';
+  if(days < 7)  return 'rojo';
+  if(days < 14) return 'amarillo';
+  return 'verde';
+}
+function _sgUrgencyStyle(days) {
+  const u = _sgUrgency(days);
+  if(u === 'rojo')     return 'background:#BF616A;color:#fff;font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap';
+  if(u === 'amarillo') return 'background:#D08770;color:#fff;font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap';
+  if(u === 'verde')    return 'background:#A3BE8C;color:#fff;font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap';
+  return 'background:var(--bg3);color:var(--text-muted);border-radius:4px;padding:2px 7px;white-space:nowrap';
+}
+
+function renderSugeridosTab() {
+  const el = document.getElementById('sugeridos-content');
+  if(!el) return;
+  const { products, latestSnap } = buildSugeridosData();
+  const mode = _sugeridosMode;
+  const isAll = mode === 'all';
+
+  // Mode selector pills
+  const modeOptions = [
+    { key:'all', label:'CONSOLIDADO' },
+    ...SF_DIST_KEYS.map(dk => ({ key:dk, label:SF_DIST_SHORT[dk] }))
+  ];
+
+  const snapDate = isAll
+    ? SF_DIST_KEYS.map(dk => latestSnap[dk]?.periodEnd?.slice(0,10)).filter(Boolean).sort().slice(-1)[0] || '—'
+    : latestSnap[mode]?.periodEnd?.slice(0,10) || '—';
+
+  // Stats
+  const visProducts = products.filter(p => {
+    if(isAll) return true;
+    return (p.distStock[mode] > 0) || (p.distWeekly[mode] > 0);
+  });
+  const rojos    = visProducts.filter(p => _sgUrgency(isAll ? p.daysCoverage : (p.distWeekly[mode]>0?(p.distStock[mode]/p.distWeekly[mode]*7):null)) === 'rojo').length;
+  const amarillos = visProducts.filter(p => _sgUrgency(isAll ? p.daysCoverage : (p.distWeekly[mode]>0?(p.distStock[mode]/p.distWeekly[mode]*7):null)) === 'amarillo').length;
+
+  let html = `
+  <style>
+    .sg-pill-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:18px; }
+    .sg-pill { padding:5px 14px; border-radius:20px; border:1.5px solid var(--border); background:var(--bg2); color:var(--text-muted); font-size:12px; font-weight:600; cursor:pointer; letter-spacing:0.04em; transition:all .15s; }
+    .sg-pill.active { background:#A3BE8C; border-color:#A3BE8C; color:#fff; }
+    .sg-table { width:100%; border-collapse:collapse; font-size:12px; }
+    .sg-table th { background:#2E3440 !important; color:#ECEFF4 !important; font-family:'Calibri','Segoe UI',Arial,sans-serif; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; padding:8px 10px; text-align:center; border:1px solid #3B4252; }
+    .sg-table th.sg-th-model { text-align:left; }
+    .sg-table td { padding:6px 10px; border:1px solid var(--border); vertical-align:middle; font-family:'Calibri','Segoe UI',Arial,sans-serif; font-size:11px; color:var(--text); text-transform:uppercase; }
+    .sg-table td.sg-td-model { max-width:300px; white-space:normal; word-break:break-word; font-weight:500; text-align:left; }
+    .sg-table td.sg-td-num { text-align:center; font-weight:600; }
+    .sg-table td.sg-td-days { text-align:center; }
+    .sg-table tr:hover td { background:var(--hover); }
+    .sg-cat-row td { background:#5E81AC !important; color:#fff !important; font-weight:700 !important; font-size:11px !important; letter-spacing:0.05em; text-transform:uppercase !important; }
+    .sg-no-data { text-align:center; padding:48px; color:var(--text-muted); font-size:14px; }
+    .sg-stats { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+    .sg-stat { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:10px 16px; font-size:12px; }
+    .sg-stat b { display:block; font-size:20px; font-weight:700; }
+  </style>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <div>
+      <h2 style="margin:0;font-size:18px;font-weight:700">Sugeridos de Compra</h2>
+      <span style="font-size:12px;color:var(--text-muted)">Cobertura objetivo: ${SG_COVERAGE_DAYS} días · Stock al ${snapDate}</span>
+    </div>
+  </div>
+  <div class="sg-pill-bar">
+    ${modeOptions.map(o => `<button class="sg-pill${mode===o.key?' active':''}" onclick="_sugeridosMode='${o.key}';renderSugeridosTab()">${o.label}</button>`).join('')}
+  </div>
+  <div class="sg-stats">
+    <div class="sg-stat"><b style="color:#BF616A">${rojos}</b>CRÍTICOS &lt;7d</div>
+    <div class="sg-stat"><b style="color:#D08770">${amarillos}</b>ATENCION 7–14d</div>
+    <div class="sg-stat"><b>${visProducts.length}</b>PRODUCTOS</div>
+  </div>
+  <div class="table-scroll">
+  <table class="sg-table">
+    <thead><tr>
+      <th class="sg-th-model">MODELO</th>
+      <th>STOCK</th>
+      <th>VTA/SEM</th>
+      <th>DÍAS COB.</th>
+      <th>SUGERIDO ${SG_COVERAGE_DAYS}D</th>
+    </tr></thead>
+    <tbody>`;
+
+  let lastCat = null;
+  if(visProducts.length === 0) {
+    html += `<tr><td colspan="5" class="sg-no-data">Sin datos de stock o ventas cargados.</td></tr>`;
+  } else {
+    visProducts.forEach(p => {
+      // Per-mode values
+      const stock   = isAll ? p.totalStock  : p.distStock[mode];
+      const weekly  = isAll ? p.totalWeekly : p.distWeekly[mode];
+      const days    = weekly > 0 ? (stock / weekly * 7) : null;
+      const sug     = weekly > 0 ? Math.max(0, Math.ceil(weekly * SG_COVERAGE_DAYS / 7) - stock) : 0;
+
+      if(p.category !== lastCat) {
+        lastCat = p.category;
+        html += `<tr class="sg-cat-row"><td colspan="5">${SF_CAT_LABELS[p.category] || p.category.toUpperCase()}</td></tr>`;
+      }
+
+      const daysLabel = days !== null ? Math.round(days) + 'd' : 'S/D';
+      const sugLabel  = weekly > 0 ? (sug > 0 ? sug.toString() : '—') : 'S/V';
+      const sugStyle  = sug > 0 ? 'color:#BF616A;font-weight:700' : '';
+
+      html += `<tr>
+        <td class="sg-td-model">${esc(p.model)}</td>
+        <td class="sg-td-num">${stock > 0 ? stock : (stock === 0 ? '0' : '—')}</td>
+        <td class="sg-td-num">${weekly > 0 ? weekly.toFixed(1) : '—'}</td>
+        <td class="sg-td-days"><span style="${_sgUrgencyStyle(days)}">${daysLabel}</span></td>
+        <td class="sg-td-num" style="${sugStyle}">${sugLabel}</td>
+      </tr>`;
+    });
+  }
+
+  html += `</tbody></table></div>`;
+  el.innerHTML = html;
 }
 
 function getSalesPriceExportData() {
