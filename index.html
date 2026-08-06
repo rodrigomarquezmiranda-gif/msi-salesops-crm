@@ -1784,6 +1784,14 @@ function extractMSIModelKey(desc) {
   s = s.replace(/\bPCIE\s*[45](?:\.\d)?\b/ig, '');
   s = s.replace(/\bGEN(?:ERATION)?\s*[2-6]\b/ig, '');
   s = s.replace(/\b(?:II|III)\b/g, '');
+  // Strip Intel socket/platform designators in all distributor naming variants.
+  // 3 passes cover every form seen in practice:
+  //   1) LGA-prefix with optional space: "LGA1700", "LGA 1851", "LGA1200" → general regex, future-proof
+  //   2) S-prefix: "S1700", "S1851" — distributors often prefix the socket number with S
+  //   3) Bare socket number: "1700", "1851" — appears standalone or after parens are stripped
+  s = s.replace(/\bLGA\s*\d{4}\b/ig, '');             // LGA1700, LGA 1851, LGA1200, etc.
+  s = s.replace(/\bS\d{4}\b/g, '');                    // S1700, S1851, S1200, S1151
+  s = s.replace(/\b(?:1151|1200|1700|1851)\b/g, '');  // bare socket numbers (explicit list)
   // Strip Intel Core processor model suffixes (1235U, 1215U, 1255U, etc.)
   // These are redundant when i3/i5/i7 is already present
   s = s.replace(/\b\d{4}[UHP]\b/g, '');
