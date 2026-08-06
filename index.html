@@ -1140,7 +1140,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.05.08.2026.4';
+const APP_VERSION = '1.05.08.2026.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1848,18 +1848,21 @@ function extractMSIModelKey(desc) {
   return key.trim();
 }
 
-// ─── SEMÁFORO: CLEAN DISPLAY NAME (preserves natural order, strips category noise) ─────
+// ─── SEMÁFORO: CLEAN DISPLAY NAME (structured format per category) ────────────
 function semaforoDisplayName(rawDesc, category) {
   let s = String(rawDesc || '').trim().toUpperCase();
-  // Same pre-processing as extractMSIModelKey (socket, speeds, etc.) but NO token sort
+  // ── Common pre-processing (same transforms as extractMSIModelKey, no sort) ──
   s = s.replace(/\([^)]*\)/g, ' ');
   s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
+  s = s.replace(/\bW\b/g, 'WHITE');                           // early: before any strip consumes "240 W"
   s = s.replace(/\b\d+(?:\.\d+)?\s*GB\/S\b/ig, '');
   s = s.replace(/\b\d+(?:\.\d+)?\s*GBPS\b/ig, '');
   s = s.replace(/\b[23]\.5["""″]?/g, '');
   s = s.replace(/\bSATA[\d.]+\b/ig, 'SATA');
   s = s.replace(/\b(\d+)\s*GB\b/g, '$1G');
   s = s.replace(/\b(\d+)\s*TB\b/g, '$1T');
+  // NOTE: wattage strip intentionally omitted here so PSU wattage survives for display
+  s = s.replace(/\b\d+\+?\s*(?:PLUS\s+)?(?:BRONZE|GOLD|PLATINUM|TITANIUM|SILVER|BRONCE|ORO|PLATA)\b/ig, '');
   s = s.replace(/\bPCIE\s*[45](?:\.\d)?\b/ig, '');
   s = s.replace(/\bGEN(?:ERATION)?\s*[2-6]\b/ig, '');
   s = s.replace(/\b(?:II|III)\b/g, '');
@@ -1867,12 +1870,57 @@ function semaforoDisplayName(rawDesc, category) {
   s = s.replace(/\bS\d{4}\b/g, '');
   s = s.replace(/\b(?:1151|1200|1700|1851)\b/g, '');
   s = s.replace(/\b\d{4}[UHP]\b/g, '');
-  s = s.replace(/\b\d+\+?\s*(?:PLUS\s+)?(?:BRONZE|GOLD|PLATINUM|TITANIUM|SILVER|BRONCE|ORO|PLATA)\b/ig, '');
   s = s.replace(/\b80PS\w+\b/ig, '');
   s = s.replace(/\b\d+\s*MM\b/ig, '');
-  s = s.replace(/\b\d+\s*[Xx]\b/g, '');
-  s = s.replace(/\bW\b/g, 'WHITE');
-  // Universal noise tokens to strip from display name
+  // Fan-count multiples (3X, 2X) stripped for non-VGA; VGA keeps them (e.g. VENTUS 3X)
+  if (category !== 'vga') s = s.replace(/\b\d+\s*[Xx]\b/g, '');
+  // Strip motherboard form factor variants with hyphens (M-ATX, M-ITX, M-BTX)
+  s = s.replace(/\bM-(?:ATX|ITX|BTX)\b/ig, '');
+  s = s.replace(/\s{2,}/g, ' ').trim();
+
+  // ── VGA: {GPU CHIPSET} {VARIANT + VRAM} ─────────────────────────────────────
+  // Format: RTX 5070 TI VENTUS 3X OC 12G
+  if (category === 'vga') {
+    let clean = s;
+    ['GEFORCE','NVIDIA','MSI','VGA','VIDEO','TARJETA','GRAFICA','PLACA',
+     'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL'].forEach(w => {
+      clean = clean.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
+    });
+    clean = clean.replace(/\s{2,}/g, ' ').trim();
+    // Extract GPU chipset (RTX/GTX XXXX optionally followed by TI, SUPER, XT)
+    const chip = clean.match(/\b(RTX|GTX|RADEON)\s+\d{4}\s*(?:TI|SUPER|XT)?\b/i);
+    if (chip) {
+      const chipStr = chip[0].replace(/\s+/g, ' ').trim();
+      const rest = (clean.slice(0, chip.index) + ' ' + clean.slice(chip.index + chip[0].length))
+        .replace(/\s{2,}/g, ' ').trim();
+      return (chipStr + (rest ? ' ' + rest : '')).trim();
+    }
+    return clean;
+  }
+
+  // ── PSU: MAG {MODEL} {WATTAGE}W ─────────────────────────────────────────────
+  // Format: MAG A850GL 850W
+  if (category === 'psu') {
+    const wattMatch = s.match(/\b(\d{3,4})W\b/i);
+    const modelMatch = s.match(/\b([A-Z]\d{3,4}[A-Z]{1,3})\b/);
+    const watt  = wattMatch  ? wattMatch[1]  : '';
+    const model = modelMatch ? modelMatch[1] : '';
+    if (model) return ('MAG ' + model + (watt ? ' ' + watt + 'W' : '')).trim();
+  }
+
+  // ── MONITOR: {SIZE}" {MAG MODEL} {HZ}HZ ─────────────────────────────────────
+  // Format: 24" MAG 242C 180HZ
+  if (category === 'monitor') {
+    const sizeMatch = s.match(/\b(\d{2}(?:\.\d)?)\s*["""″]/);
+    const hzMatch   = s.match(/\b(\d{2,4})\s*HZ\b/i);
+    const magMatch  = s.match(/\bMAG\s+(\d{3}[A-Z]{0,2})\b/i);
+    const size  = sizeMatch ? sizeMatch[1] + '"'               : '';
+    const model = magMatch  ? 'MAG ' + magMatch[1].toUpperCase() : '';
+    const hz    = hzMatch   ? hzMatch[1] + 'HZ'               : '';
+    if (size || model) return [size, model, hz].filter(Boolean).join(' ');
+  }
+
+  // ── General strip (MB, SSD, Cooling, MiniPC, Gabinete, Accesorios) ──────────
   const DISP_NOISE = [
     'MSI','VGA','MB','MOT','MOTHER','MOTHERBOARD','PLACA','TARJETA','GRAFICA','GEFORCE','NVIDIA',
     'FUENTE','ALIMENTACION','PSU',
@@ -1886,18 +1934,12 @@ function semaforoDisplayName(rawDesc, category) {
     'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
     'MODULAR',
   ];
-  // Category-specific: for cooling strip MAG (inconsistently included) and BLACK (default color)
-  if (category === 'cooling') { DISP_NOISE.push('COOLER','AIR','CPU','MAG','BLACK'); }
-  // For PSU display keep wattage (already NOT stripped above since we skip the wattage regex here)
-  // For MB display keep DDR4/DDR5 (removed from DISP_NOISE intentionally)
-  // For VGA keep VRAM size (cap tokens not sorted here)
-
+  // Cooling: also strip MAG (inconsistently included) and BLACK (default color)
+  if (category === 'cooling') DISP_NOISE.push('COOLER','AIR','CPU','MAG','BLACK');
   DISP_NOISE.forEach(w => {
     s = s.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
   });
-  // Collapse repeated spaces, clean up leading/trailing noise
-  s = s.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
-  return s;
+  return s.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
 }
 
 function buildLinesFromPdfItems(items) {
@@ -3584,6 +3626,8 @@ const _categoryRegexCache = new Map();
 function classifyProductCategory(description) {
   let norm = normCategoryText(description);
   if(!norm) return 'other';
+  // Notebooks match RTX/VGA keywords but are a different product — always exclude from Semáforo
+  if(/\bNOTEBOOK\b/.test(norm)) return 'other';
   for(const cat of CATEGORY_KEYWORDS) {
     for(const kw of cat.keywords) {
       let re = _categoryRegexCache.get(kw);
