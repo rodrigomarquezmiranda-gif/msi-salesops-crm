@@ -1140,7 +1140,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.05.08.2026.5';
+const APP_VERSION = '1.05.08.2026.6';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1899,25 +1899,31 @@ function semaforoDisplayName(rawDesc, category) {
   }
 
   // ── PSU: MAG {MODEL} {WATTAGE}W ─────────────────────────────────────────────
-  // Format: MAG A850GL 850W
+  // Format: MAG A850GL 850W  — wattage fallback for descriptions that omit it
+  const PSU_WATTAGE = {
+    'A550BN':'550','A650BN':'650','A750BN':'750','A850BN':'850',
+    'A650GL':'650','A750GL':'750','A850GL':'850','A1000GL':'1000',
+    'B550A':'550','B650A':'650','B750A':'750','B850A':'850','B1000A':'1000',
+  };
   if (category === 'psu') {
-    const wattMatch = s.match(/\b(\d{3,4})W\b/i);
+    const wattMatch  = s.match(/\b(\d{3,4})W\b/i);
     const modelMatch = s.match(/\b([A-Z]\d{3,4}[A-Z]{1,3})\b/);
-    const watt  = wattMatch  ? wattMatch[1]  : '';
     const model = modelMatch ? modelMatch[1] : '';
+    const watt  = wattMatch  ? wattMatch[1]  : (PSU_WATTAGE[model] || '');
     if (model) return ('MAG ' + model + (watt ? ' ' + watt + 'W' : '')).trim();
   }
 
-  // ── MONITOR: {SIZE}" {MAG MODEL} {HZ}HZ ─────────────────────────────────────
-  // Format: 24" MAG 242C 180HZ
+  // ── MONITOR: strip noise + standalone sizes, preserve natural order ──────────
+  // Removes GAMING/MSI prefix and standalone inch sizes (24", 27")
+  // keeps model name, resolution, Hz, connectivity info intact
   if (category === 'monitor') {
-    const sizeMatch = s.match(/\b(\d{2}(?:\.\d)?)\s*["""″]/);
-    const hzMatch   = s.match(/\b(\d{2,4})\s*HZ\b/i);
-    const magMatch  = s.match(/\bMAG\s+(\d{3}[A-Z]{0,2})\b/i);
-    const size  = sizeMatch ? sizeMatch[1] + '"'               : '';
-    const model = magMatch  ? 'MAG ' + magMatch[1].toUpperCase() : '';
-    const hz    = hzMatch   ? hzMatch[1] + 'HZ'               : '';
-    if (size || model) return [size, model, hz].filter(Boolean).join(' ');
+    let m = s;
+    ['GAMING','MSI','MONITOR','MONITORES','PANTALLA'].forEach(w => {
+      m = m.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
+    });
+    m = m.replace(/\b\d{2}(?:\.\d)?\s*["""″]\s*/g, ' ');  // strip standalone 24", 27"
+    m = m.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
+    return m || s;
   }
 
   // ── General strip (MB, SSD, Cooling, MiniPC, Gabinete, Accesorios) ──────────
@@ -3308,8 +3314,18 @@ function exportPDF() {
   exportTableToPDF('salesops-crm.pdf', 'SalesOps CRM — Ordenes y Rebates', `Exportado el ${new Date().toLocaleDateString('es-AR')}`, headers, rows);
 }
 
-// ─── SEMÁFORO DE STOCK ────────────────────────────────
 // ─── SEMÁFORO DE STOCK ────────────────────────────────────────────────────
+// Sort key for VGA: GT → GTX → RTX → RADEON, then by GPU number, then variant
+function _vgaSortKey(disp) {
+  const SERIES = { GT:1, GTX:2, RTX:3, RADEON:4 };
+  const m = disp.match(/\b(RTX|GTX|GT|RADEON)\s+(\d{3,4})\b/i);
+  if(!m) return '9-99999-' + disp;
+  const s = SERIES[(m[1]||'').toUpperCase()] || 9;
+  const n = parseInt(m[2]) || 0;
+  const rest = disp.slice(m.index + m[0].length).trim();
+  return s + '-' + n.toString().padStart(5,'0') + '-' + rest;
+}
+
 const SF_DIST_KEYS   = ['air','invid','solutionbox','ashir','elit'];
 const SF_DIST_LABELS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
 const SF_DIST_SHORT  = { air:'AIR', invid:'INVID', solutionbox:'SOLUTION', ashir:'ASHIR', elit:'ELIT' };
@@ -3360,7 +3376,8 @@ function buildSemaforoData() {
     if(total > 0) {
       const cat = classifyProductCategory(entry.description);
       if(cat === 'other') return; // skip unclassified items
-      products.push({ model: entry.description, normModel: key, category: cat, distQty: entry.distQty });
+      const displayName = semaforoDisplayName(entry.description, cat);
+      products.push({ model: entry.description, normModel: key, category: cat, distQty: entry.distQty, displayName });
     }
   });
 
@@ -3386,7 +3403,9 @@ function buildSemaforoData() {
     const ai = SF_CAT_ORDER.indexOf(a.category), bi = SF_CAT_ORDER.indexOf(b.category);
     const ao = ai === -1 ? 99 : ai, bo = bi === -1 ? 99 : bi;
     if(ao !== bo) return ao - bo;
-    return a.model.localeCompare(b.model);
+    // VGA: sort by GPU series (GT→GTX→RTX) then GPU number then variant
+    if(a.category === 'vga') return _vgaSortKey(a.displayName).localeCompare(_vgaSortKey(b.displayName));
+    return a.displayName.localeCompare(b.displayName);
   });
 
   return { products, transitData, latestSnap };
@@ -3421,9 +3440,9 @@ function renderSemaforoTab() {
 
   let html = `
 <style>
-.sf-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.sf-wrap { overflow:auto; -webkit-overflow-scrolling:touch; max-height:calc(100vh - 240px); }
 .sf-table { border-collapse:collapse; width:100%; min-width:680px; font-size:12px; }
-.sf-table th { background:#2E3440 !important; color:#ECEFF4 !important; font-family:'Calibri','Segoe UI',Arial,sans-serif; font-weight:700; padding:6px 10px; text-align:center; white-space:nowrap; border:1px solid #222; text-transform:uppercase; letter-spacing:0.03em; }
+.sf-table th { background:#2E3440 !important; color:#ECEFF4 !important; font-family:'Calibri','Segoe UI',Arial,sans-serif; font-weight:700; padding:6px 10px; text-align:center; white-space:nowrap; border:1px solid #222; text-transform:uppercase; letter-spacing:0.03em; position:sticky; top:0; z-index:5; }
 .sf-table th.sf-th-model { text-align:left; min-width:220px; max-width:340px; }
 .sf-table td { padding:5px 8px; border:1px solid var(--border2); vertical-align:middle; }
 .sf-table td.sf-td-model { font-family:'Calibri','Segoe UI',Arial,sans-serif; font-size:11px; color:var(--text); max-width:320px; white-space:normal; word-break:break-word; text-transform:uppercase; font-weight:500; }
@@ -3467,7 +3486,7 @@ function renderSemaforoTab() {
     }
     const rowCls = altRow ? ' class="sf-alt"' : '';
     html += `<tr${rowCls}>`;
-    html += `<td class="sf-td-model">${esc(semaforoDisplayName(p.model, p.category))}</td>`;
+    html += `<td class="sf-td-model">${esc(p.displayName)}</td>`;
     SF_DIST_KEYS.forEach(dk => {
       const qty = p.distQty[dk] || 0;
       const sc = stockClass(qty);
@@ -3543,7 +3562,7 @@ async function exportSemaforoPDF() {
       body.push([{ content: SF_CAT_LABELS[p.category] || p.category.toUpperCase(), colSpan: 1 + SF_DIST_KEYS.length*2, styles:{fillColor:[94,129,172],textColor:[255,255,255],fontStyle:'bold',fontSize:8,cellPadding:4} }]);
     }
     // Clean display name + truncate to keep on one line
-    const modelName = semaforoDisplayName(p.model, p.category).slice(0, 55);
+    const modelName = p.displayName.slice(0, 55);
     const row = [{ content: modelName, styles: { halign:'left', overflow:'ellipsize' } }];
     SF_DIST_KEYS.forEach(dk => {
       const qty = p.distQty[dk] || 0;
