@@ -1140,7 +1140,7 @@ const BADGE_MAP = {
 };
 
 // ─── STATE ────────────────────────────────────────────
-const APP_VERSION = '1.05.08.2026.6';
+const APP_VERSION = '1.05.08.2026.8';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1768,6 +1768,12 @@ const _SEMAFORO_NOISE = new Set([
   'MODULAR',                              // PSU descriptor
   'MAG',                                 // MSI tier prefix (omitted by some distributors)
   'BLACK',                               // default color (inconsistently included)
+  'GAMING',                              // MSI line label (monitor prefix & MB series — model code differentiates)
+  // Monitor noise: resolution labels, panel types, connectivity (model code is the real key)
+  'FHD','QHD','FHC','UHD','WQHD',
+  'IPS','VA','TN','OLED','QLED',
+  'HDMI','DP',
+  'CURVO','CURVED',
   'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
 ]);
 function extractMSIModelKey(desc) {
@@ -1806,6 +1812,11 @@ function extractMSIModelKey(desc) {
   // Strip cooling fan size in mm (360MM, 240MM, 120MM) and fan-count multiples (3X, 2X)
   s = s.replace(/\b\d+\s*MM\b/ig, '');
   s = s.replace(/\b\d+\s*[Xx]\b/g, '');
+  // Strip monitor refresh rates (120HZ, 144HZ, 165HZ, 180HZ, 200HZ)
+  // Model codes already differentiate monitors; Hz is inconsistently included by distributors
+  s = s.replace(/\b\d+\s*HZ\b/ig, '');
+  // Strip standalone inch sizes (24", 27", 34") — monitor size noise; not in MB/VGA/SSD names
+  s = s.replace(/\b\d{2}(?:\.\d)?\s*["""″]/g, ' ');
   // Fix hyphens: collapse letter↔letter (A520M-A→A520MA, X870E-P→X870EP),
   // replace digit↔digit or digit↔letter-only with space (S270-240→S270 240, I5-1235U→I5 1235U)
   s = s.replace(/([A-Z])-([A-Z])/g, '$1$2');
