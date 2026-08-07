@@ -1151,7 +1151,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.07.08.2026.0';
+const APP_VERSION = '1.07.08.2026.1';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -3792,9 +3792,12 @@ function renderSugeridosTab() {
     .sg-stats { display:flex; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
     .sg-stat { background:var(--bg2); border:1.5px solid var(--border); border-radius:8px; padding:10px 16px; font-size:12px; cursor:pointer; transition:all .15s; }
     .sg-stat:hover { border-color:#88C0D0; }
-    .sg-stat.active { border-color:#A3BE8C; background:#3B4252; }
-    .sg-stat.active-rojo { border-color:#BF616A !important; background:#3B2D2D !important; }
-    .sg-stat.active-amarillo { border-color:#D08770 !important; background:#3B3428 !important; }
+    .sg-stat.active { border-color:#A3BE8C; background:#A3BE8C; color:#2E3440; }
+    .sg-stat.active b { color:#2E3440 !important; }
+    .sg-stat.active-rojo { border-color:#BF616A !important; background:#BF616A !important; color:#fff !important; }
+    .sg-stat.active-rojo b { color:#fff !important; }
+    .sg-stat.active-amarillo { border-color:#D08770 !important; background:#D08770 !important; color:#2E3440 !important; }
+    .sg-stat.active-amarillo b { color:#2E3440 !important; }
     .sg-stat b { display:block; font-size:20px; font-weight:700; }
   </style>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
