@@ -512,8 +512,6 @@
       <button id="btn-hamburger" class="btn" onclick="toggleMobileSidebar()" style="padding:6px 8px;min-width:unset"><i class="ti ti-menu-2" style="font-size:20px"></i></button>
       <div class="page-title" id="page-title">Dashboard</div>
       <div class="topbar-actions">
-        <button class="btn" onclick="exportExcel()"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</button>
-        <button class="btn" onclick="exportPDF()"><i class="ti ti-file-type-pdf" style="font-size:14px"></i> PDF</button>
         <button class="btn" id="btn-semaforo" onclick="gotoTab('semaforo')" style="color:#D08770;border-color:rgba(208,135,112,0.4)"><i class="ti ti-traffic-lights" style="font-size:14px"></i> Semáforo</button>
         <button class="btn" id="btn-sugeridos" onclick="gotoTab('sugeridos')" style="color:#A3BE8C;border-color:rgba(163,190,140,0.4)"><i class="ti ti-shopping-cart" style="font-size:14px"></i> Sugeridos</button>
         <button class="btn btn-primary" onclick="openNewModal()"><i class="ti ti-plus" style="font-size:14px"></i> Nuevo ítem</button>
@@ -1183,7 +1181,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.07.08.2026.4';
+const APP_VERSION = '1.07.08.2026.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -4051,7 +4049,7 @@ function renderShareTab() {
       <div style="font-size:13px;font-weight:700;color:var(--text);text-align:center;letter-spacing:0.02em">${SF_CAT_LABELS_SHARE[cat]||cat.toUpperCase()}</div>
       <div style="font-size:10px;color:var(--text3);text-align:center">${total.toLocaleString('es-AR')} unidades vendidas</div>
       ${donut}
-      <div style="margin-top:6px">${barsHtml}</div>
+      ${highlightDist ? '' : `<div style="margin-top:6px">${barsHtml}</div>`}
     </div>`;
   }).join('');
 
