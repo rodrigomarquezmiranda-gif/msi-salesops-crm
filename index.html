@@ -1151,7 +1151,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.07.08.2026.1';
+const APP_VERSION = '1.07.08.2026.2';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -3638,6 +3638,7 @@ async function exportSemaforoPDF() {
 // ─── SUGERIDOS DE COMPRA ───────────────────────────────────────────────────
 let _sugeridosMode = 'all'; // 'all' | 'air' | 'invid' | 'solutionbox' | 'ashir' | 'elit'
 let _sugeridosFilter = 'all'; // 'all' | 'rojo' | 'amarillo'
+let _sugeridosCoverage = 30; // días de cobertura objetivo
 const SG_COVERAGE_DAYS = 30;
 
 function buildSugeridosData() {
@@ -3803,11 +3804,17 @@ function renderSugeridosTab() {
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
     <div>
       <h2 style="margin:0;font-size:18px;font-weight:700">Sugeridos de Compra</h2>
-      <span style="font-size:12px;color:var(--text-muted)">Cobertura objetivo: ${SG_COVERAGE_DAYS} días · Stock al ${snapDate}</span>
+      <span style="font-size:12px;color:var(--text-muted)">Cobertura objetivo: ${_sugeridosCoverage} días · Stock al ${snapDate}</span>
     </div>
   </div>
-  <div class="sg-pill-bar">
-    ${modeOptions.map(o => `<button class="sg-pill${mode===o.key?' active':''}" onclick="_sugeridosMode='${o.key}';renderSugeridosTab()">${o.label}</button>`).join('')}
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
+    <div class="sg-pill-bar" style="margin-bottom:0">
+      ${modeOptions.map(o => `<button class="sg-pill${mode===o.key?' active':''}" onclick="_sugeridosMode='${o.key}';renderSugeridosTab()">${o.label}</button>`).join('')}
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+      <span style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.04em">COBERTURA:</span>
+      ${[30,45,60].map(d => `<button class="sg-pill${_sugeridosCoverage===d?' active':''}" onclick="_sugeridosCoverage=${d};renderSugeridosTab()">${d}d</button>`).join('')}
+    </div>
   </div>
   <div class="sg-stats">
     <div class="sg-stat${_sugeridosFilter==='rojo'?' active-rojo':''}" onclick="_sugeridosFilter=(_sugeridosFilter==='rojo'?'all':'rojo');renderSugeridosTab()"><b style="color:#BF616A">${rojos}</b>CRÍTICOS &lt;7d</div>
@@ -3821,7 +3828,7 @@ function renderSugeridosTab() {
       <th>STOCK</th>
       <th>VTA/SEM</th>
       <th>DÍAS COB.</th>
-      <th>SUGERIDO ${SG_COVERAGE_DAYS}D</th>
+      <th>SUGERIDO ${_sugeridosCoverage}D</th>
     </tr></thead>
     <tbody>`;
 
@@ -3834,7 +3841,7 @@ function renderSugeridosTab() {
       const stock   = isAll ? p.totalStock  : p.distStock[mode];
       const weekly  = isAll ? p.totalWeekly : p.distWeekly[mode];
       const days    = weekly > 0 ? (stock / weekly * 7) : null;
-      const sug     = weekly > 0 ? Math.max(0, Math.ceil(weekly * SG_COVERAGE_DAYS / 7) - stock) : 0;
+      const sug     = weekly > 0 ? Math.max(0, Math.ceil(weekly * _sugeridosCoverage / 7) - stock) : 0;
 
       if(p.category !== lastCat) {
         lastCat = p.category;
