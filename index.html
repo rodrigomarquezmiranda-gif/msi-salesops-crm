@@ -182,6 +182,16 @@
   /* Solo admins */
   .admin-only { display: none !important; }
   body.is-admin .admin-only { display: flex !important; }
+  /* Distribuidor: solo ve semaforo, sugeridos, pi, pricelist */
+  body.is-distributor .nav-item { display: none !important; }
+  body.is-distributor #nav-semaforo,
+  body.is-distributor #nav-sugeridos,
+  body.is-distributor #nav-pi,
+  body.is-distributor #nav-pricelist { display: flex !important; }
+  body.is-distributor .sidebar-section-label { display: none !important; }
+  /* Ocultar botones de edición/borrado en modo distribuidor */
+  body.is-distributor .add-col-btn { display: none !important; }
+  body.is-distributor #pi-search-bar .btn-primary { display: none !important; }
   /* Lectura + PI: ve todo en modo lectura y además puede cargar PIs */
   body.reader-pi .upload-zone:not(#drop-zone-pi),
   body.reader-pi .backup-area,
@@ -912,10 +922,19 @@
                   <i id="pass-vis-icon" class="ti ti-eye"></i>
                 </button>
               </div>
-              <select id="new-user-role"
+              <select id="new-user-role" onchange="toggleDistributorSelect()"
                 style="padding:8px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem;cursor:pointer">
                 <option value="readonly">Solo lectura</option>
                 <option value="admin">Administrador</option>
+                <option value="distributor">Distribuidor</option>
+              </select>
+              <select id="new-user-distributor" style="display:none;padding:8px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem;cursor:pointer">
+                <option value="">— Elegir disti —</option>
+                <option value="air">AIR COMPUTERS</option>
+                <option value="invid">INVID</option>
+                <option value="solutionbox">SOLUTION BOX</option>
+                <option value="ashir">ASHIR</option>
+                <option value="elit">ELIT</option>
               </select>
               <button class="btn btn-primary" onclick="addAllowedUser()"><i class="ti ti-plus" style="font-size:13px"></i> Agregar</button>
             </div>
@@ -1151,7 +1170,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.07.08.2026.2';
+const APP_VERSION = '1.07.08.2026.3';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1548,22 +1567,31 @@ function renderPipeline(pipe) {
   // ── PI: search + "last 5" limit ──────────────────────
   let piActiveSet = null; // null = use full db[pipe]
   if(pipe === 'pi') {
-    const total = db.pi.length;
+    // Distribuidor: filtrar sin mutar db.pi
+    let piSource = db.pi;
+    if(_currentDistributor) {
+      piSource = db.pi.filter(x => _sfMatchDist(x.client) === _currentDistributor || _sfMatchDist(x.disti) === _currentDistributor);
+      piActiveSet = new Set(piSource.map(x => x.id));
+    }
+    const total = piSource.length;
     if(_piSearch) {
-      piActiveSet = new Set(db.pi.filter(x =>
+      const searchSet = new Set(piSource.filter(x =>
         (x.name||'').toLowerCase().includes(_piSearch) ||
         (x.client||'').toLowerCase().includes(_piSearch) ||
         String(x.amount||'').includes(_piSearch)
       ).map(x => x.id));
+      piActiveSet = searchSet;
       const count = piActiveSet.size;
       document.getElementById('pi-search-notice').innerHTML =
         count ? `<span>${count} resultado${count===1?'':'s'}</span>` : `<span style="color:var(--red-text)">Sin resultados</span>`;
     } else if(!_piShowAll && total > 5) {
-      const recent = [...db.pi].sort((a,b)=>b.id-a.id).slice(0,5);
+      const recent = [...piSource].sort((a,b)=>b.id-a.id).slice(0,5);
       piActiveSet = new Set(recent.map(x => x.id));
       document.getElementById('pi-search-notice').innerHTML =
         `<span>Últimas 5 de ${total} · <a href="#" onclick="event.preventDefault();_piShowAll=true;renderPipeline('pi')" style="color:var(--brand-text);text-decoration:none">Ver todas</a></span>`;
     } else {
+      // Si ya había filtro por distribuidor, mantener piActiveSet; si no, mostrar todo
+      if(!_currentDistributor) piActiveSet = null;
       document.getElementById('pi-search-notice').innerHTML =
         total > 5 ? `<span>${total} PIs · <a href="#" onclick="event.preventDefault();_piShowAll=false;renderPipeline('pi')" style="color:var(--brand-text);text-decoration:none">Ver últimas 5</a></span>` : '';
     }
@@ -3449,6 +3477,9 @@ function renderSemaforoTab() {
   const wrap = document.getElementById('semaforo-content');
   if(!wrap) return;
 
+  // Para usuario distribuidor: mostrar solo su columna
+  const sfKeys = _currentDistributor ? [_currentDistributor] : SF_DIST_KEYS;
+
   const { products, transitData, latestSnap } = buildSemaforoData();
   const today = new Date();
   const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
@@ -3506,26 +3537,28 @@ function renderSemaforoTab() {
 <thead>
   <tr>
     <th class="sf-th-model" rowspan="2">MODELO</th>
-    ${SF_DIST_KEYS.map(dk => `<th colspan="2">${SF_DIST_LABELS[dk]}</th>`).join('')}
+    ${sfKeys.map(dk => `<th colspan="2">${SF_DIST_LABELS[dk]}</th>`).join('')}
   </tr>
   <tr>
-    ${SF_DIST_KEYS.map(() => '<th>STOCK</th><th>TRÁNSITO</th>').join('')}
+    ${sfKeys.map(() => '<th>STOCK</th><th>TRÁNSITO</th>').join('')}
   </tr>
 </thead>
 <tbody>`;
 
   let currentCat = null, altRow = false;
   products.forEach(p => {
+    // Para usuario distribuidor: ocultar filas donde no tiene stock ni tránsito
+    if(_currentDistributor && !p.distQty[_currentDistributor] && !(transitData[_currentDistributor]?.keys.has(p.normModel) || transitData[_currentDistributor]?.hasGeneral)) return;
     if(p.category !== currentCat) {
       currentCat = p.category;
-      const ncols = 1 + SF_DIST_KEYS.length * 2;
+      const ncols = 1 + sfKeys.length * 2;
       html += `<tr class="sf-cat-row"><td colspan="${ncols}">${SF_CAT_LABELS[p.category] || p.category.toUpperCase()}</td></tr>`;
       altRow = false;
     }
     const rowCls = altRow ? ' class="sf-alt"' : '';
     html += `<tr${rowCls}>`;
     html += `<td class="sf-td-model">${esc(p.displayName)}</td>`;
-    SF_DIST_KEYS.forEach(dk => {
+    sfKeys.forEach(dk => {
       const qty = p.distQty[dk] || 0;
       const sc = stockClass(qty);
       const sl = stockLabel(qty);
@@ -3752,6 +3785,8 @@ function renderSugeridosTab() {
   const el = document.getElementById('sugeridos-content');
   if(!el) return;
   const { products, latestSnap } = buildSugeridosData();
+  // Distribuidor: forzar su propio modo
+  if(_currentDistributor) _sugeridosMode = _currentDistributor;
   const mode = _sugeridosMode;
   const isAll = mode === 'all';
 
@@ -3808,9 +3843,9 @@ function renderSugeridosTab() {
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
-    <div class="sg-pill-bar" style="margin-bottom:0">
+    ${_currentDistributor ? '' : `<div class="sg-pill-bar" style="margin-bottom:0">
       ${modeOptions.map(o => `<button class="sg-pill${mode===o.key?' active':''}" onclick="_sugeridosMode='${o.key}';renderSugeridosTab()">${o.label}</button>`).join('')}
-    </div>
+    </div>`}
     <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
       <span style="font-size:11px;color:var(--text-muted);font-weight:600;letter-spacing:0.04em">COBERTURA:</span>
       ${[30,45,60].map(d => `<button class="sg-pill${_sugeridosCoverage===d?' active':''}" onclick="_sugeridosCoverage=${d};renderSugeridosTab()">${d}d</button>`).join('')}
@@ -6653,8 +6688,9 @@ const OWNER_UID    = 'iaxXkJTFWCdUSVjlgNqmGklwroA3'; // super-admin permanente
 const READONLY_UID = '4myTYcfAdheUsH74lQhIoQ2C0v12'; // legado — migrar a DB
 const _fbAuth = firebase.auth();
 let _allowedUsers = {}; // { emailKey: { email, role, uid, name, addedAt, lastLogin? } }
-let _currentUser = null; // Firebase user object del usuario logueado
-let _currentRole = null; // rol activo: 'admin' | 'readonly' | 'reader-pi'
+let _currentUser = null;       // Firebase user object del usuario logueado
+let _currentRole = null;       // rol activo: 'admin' | 'readonly' | 'reader-pi' | 'distributor'
+let _currentDistributor = null; // para rol 'distributor': clave del disti ('air'|'invid'|etc.)
 
 function _eKey(email) { return (email || '').toLowerCase().replace(/\./g, ','); }
 
@@ -6699,6 +6735,12 @@ async function _recordLogin(user) {
   }
 }
 
+function toggleDistributorSelect() {
+  const role = document.getElementById('new-user-role').value;
+  const sel  = document.getElementById('new-user-distributor');
+  if(sel) sel.style.display = role === 'distributor' ? '' : 'none';
+}
+
 function togglePassVis() {
   const inp  = document.getElementById('new-user-pass');
   const icon = document.getElementById('pass-vis-icon');
@@ -6710,7 +6752,9 @@ async function addAllowedUser() {
   const email    = (document.getElementById('new-user-email').value || '').trim().toLowerCase();
   const password = (document.getElementById('new-user-pass').value || '').trim();
   const role     = document.getElementById('new-user-role').value;
+  const distributor = role === 'distributor' ? (document.getElementById('new-user-distributor').value || '') : '';
   if (!email || !email.includes('@')) return alert('Ingresá un email válido.');
+  if (role === 'distributor' && !distributor) return alert('Seleccioná el distribuidor para este usuario.');
   const key = _eKey(email);
   if (_allowedUsers[key]) return alert('Este usuario ya está en la lista.');
 
@@ -6729,13 +6773,16 @@ async function addAllowedUser() {
     await secondaryApp.delete().catch(() => {});
   }
 
-  const entry = { email, role, uid, name: '', addedAt: new Date().toISOString() };
+  const entry = { email, role, uid, name: '', addedAt: new Date().toISOString(), ...(distributor ? { distributor } : {}) };
   await firebase.database().ref(`salesops_allowed_users/${key}`).set(entry);
   _allowedUsers[key] = entry;
   // Agregar al índice de UIDs para reglas de seguridad
   if (uid) await firebase.database().ref(`salesops_allowed_uids/${uid}`).set(true).catch(() => {});
   document.getElementById('new-user-email').value = '';
   document.getElementById('new-user-pass').value  = '';
+  document.getElementById('new-user-role').value  = 'readonly';
+  const dsel = document.getElementById('new-user-distributor');
+  if(dsel) { dsel.value = ''; dsel.style.display = 'none'; }
   renderUsersTab();
   if (uid) alert(`✓ Cuenta creada exitosamente.\n\nEmail: ${email}\nContraseña: ${password}\n\nCompartí estos datos con el usuario.`);
 }
@@ -6754,6 +6801,17 @@ async function removeAllowedUser(key) {
 async function changeUserRole(key, role) {
   await firebase.database().ref(`salesops_allowed_users/${key}/role`).set(role);
   if (_allowedUsers[key]) _allowedUsers[key].role = role;
+  // Si ya no es distribuidor, limpiar el campo distributor
+  if (role !== 'distributor') {
+    await firebase.database().ref(`salesops_allowed_users/${key}/distributor`).remove();
+    if (_allowedUsers[key]) delete _allowedUsers[key].distributor;
+  }
+  renderUsersTab();
+}
+
+async function changeUserDistributor(key, distributor) {
+  await firebase.database().ref(`salesops_allowed_users/${key}/distributor`).set(distributor);
+  if (_allowedUsers[key]) _allowedUsers[key].distributor = distributor;
 }
 
 async function renderUsersTab() {
@@ -6769,21 +6827,37 @@ async function renderUsersTab() {
     list.innerHTML = '<div class="empty-state" style="padding:2rem 0"><i class="ti ti-user-off"></i><p>No hay usuarios configurados.</p></div>';
     return;
   }
-  // Ordenar: owner primero, luego admins, luego readonly
+  const DIST_LABELS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
+  // Ordenar: owner, admin, readonly/reader-pi, distribuidor
   entries.sort(([,a],[,b]) => {
-    const rank = u => u.uid===OWNER_UID ? 0 : u.role==='admin' ? 1 : 2;
+    const rank = u => u.uid===OWNER_UID ? 0 : u.role==='admin' ? 1 : u.role==='distributor' ? 3 : 2;
     return rank(a) - rank(b);
   });
   list.innerHTML = entries.map(([key, u]) => {
     const isOwner = u.uid === OWNER_UID;
+    const isDist  = u.role === 'distributor';
     const active  = !!u.uid;
     const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
+    const distBadge = isDist && u.distributor
+      ? `<span class="pill" style="background:var(--bg2);color:var(--amber-text);font-size:10px;margin-left:6px"><i class="ti ti-building-store" style="font-size:10px"></i> ${esc(DIST_LABELS[u.distributor]||u.distributor)}</span>`
+      : '';
+    const distSelect = isDist
+      ? `<select onchange="changeUserDistributor('${key}',this.value)"
+           style="font-size:11px;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer">
+           <option value="">— Disti —</option>
+           <option value="air" ${u.distributor==='air'?'selected':''}>AIR</option>
+           <option value="invid" ${u.distributor==='invid'?'selected':''}>INVID</option>
+           <option value="solutionbox" ${u.distributor==='solutionbox'?'selected':''}>SOLUTION BOX</option>
+           <option value="ashir" ${u.distributor==='ashir'?'selected':''}>ASHIR</option>
+           <option value="elit" ${u.distributor==='elit'?'selected':''}>ELIT</option>
+         </select>`
+      : '';
     return `<div style="display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--bg);border:0.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
-      <div style="width:38px;height:38px;border-radius:50%;background:${isOwner?'var(--blue-bg)':'var(--bg2)'};display:flex;align-items:center;justify-content:center;font-size:16px;color:${isOwner?'var(--blue-text)':'var(--text3)'};flex-shrink:0">
-        <i class="ti ti-${isOwner?'shield-check':'user'}"></i>
+      <div style="width:38px;height:38px;border-radius:50%;background:${isOwner?'var(--blue-bg)':isDist?'rgba(208,135,112,0.15)':'var(--bg2)'};display:flex;align-items:center;justify-content:center;font-size:16px;color:${isOwner?'var(--blue-text)':isDist?'var(--amber-text)':'var(--text3)'};flex-shrink:0">
+        <i class="ti ti-${isOwner?'shield-check':isDist?'building-store':'user'}"></i>
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}${u.name ? `<span style="font-weight:400;color:var(--text3);margin-left:8px;font-size:12px">${esc(u.name)}</span>` : ''}</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}${u.name ? `<span style="font-weight:400;color:var(--text3);margin-left:8px;font-size:12px">${esc(u.name)}</span>` : ''}${distBadge}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">
           ${active
             ? `<span style="color:var(--green-text)"><i class="ti ti-circle-check-filled" style="font-size:10px"></i> Activo${lastLogin ? ` · último acceso ${lastLogin}` : ''}</span>`
@@ -6793,10 +6867,11 @@ async function renderUsersTab() {
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         ${isOwner
           ? `<span class="pill" style="background:var(--blue-bg);color:var(--blue-text)"><i class="ti ti-shield-check" style="font-size:10px"></i> Owner</span>`
-          : `<select onchange="changeUserRole('${key}',this.value)"
+          : `${distSelect}<select onchange="changeUserRole('${key}',this.value)"
                style="font-size:11px;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer">
                <option value="readonly" ${u.role==='readonly'?'selected':''}>Solo lectura</option>
                <option value="reader-pi" ${u.role==='reader-pi'?'selected':''}>Lectura + PI</option>
+               <option value="distributor" ${u.role==='distributor'?'selected':''}>Distribuidor</option>
                <option value="admin" ${u.role==='admin'?'selected':''}>Administrador</option>
              </select>
              <button onclick="removeAllowedUser('${key}')" class="btn btn-danger" style="padding:4px 8px;font-size:11px" title="Eliminar acceso"><i class="ti ti-trash" style="font-size:13px"></i></button>`}
@@ -6845,9 +6920,17 @@ _fbAuth.onAuthStateChanged(async (user) => {
     if (role) {
       _currentUser = user;
       _currentRole = role;
+      // Leer distribuidor si aplica
+      if (role === 'distributor') {
+        const key = _eKey(user.email);
+        _currentDistributor = _allowedUsers[key]?.distributor || null;
+      } else {
+        _currentDistributor = null;
+      }
       document.body.classList.toggle('readonly', role === 'readonly');
       document.body.classList.toggle('is-admin', role === 'admin');
       document.body.classList.toggle('reader-pi', role === 'reader-pi');
+      document.body.classList.toggle('is-distributor', role === 'distributor');
       loginScreen.style.display = 'none';
       appShell.style.display = '';
       _recordLogin(user);
@@ -6858,7 +6941,8 @@ _fbAuth.onAuthStateChanged(async (user) => {
       document.getElementById('api-key-input').value = getApiKey();
       applyBrandLogo();
       renderAll();
-      gotoTab('dashboard');
+      // Distribuidor: arrancar en Semáforo directo
+      gotoTab(role === 'distributor' ? 'semaforo' : 'dashboard');
     } else {
       _fbAuth.signOut(); // email no autorizado
       alert('Tu cuenta no tiene acceso al CRM. Contactá al administrador.');
