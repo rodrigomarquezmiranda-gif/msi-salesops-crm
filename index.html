@@ -183,11 +183,16 @@
   .admin-only { display: none !important; }
   body.is-admin .admin-only { display: flex !important; }
   /* Distribuidor: solo ve semaforo, sugeridos, pi, pricelist */
+  /* Mi Participación: solo admin y distribuidor */
+  #nav-share { display: none !important; }
+  body.is-admin #nav-share,
+  body.is-distributor #nav-share { display: flex !important; }
   body.is-distributor .nav-item { display: none !important; }
   body.is-distributor #nav-semaforo,
   body.is-distributor #nav-sugeridos,
   body.is-distributor #nav-pi,
-  body.is-distributor #nav-pricelist { display: flex !important; }
+  body.is-distributor #nav-pricelist,
+  body.is-distributor #nav-share { display: flex !important; }
   body.is-distributor .sidebar-section-label { display: none !important; }
   /* Ocultar botones de edición/borrado en modo distribuidor */
   body.is-distributor .add-col-btn { display: none !important; }
@@ -470,6 +475,9 @@
       </button>
       <button class="nav-item" id="nav-sugeridos" onclick="gotoTab('sugeridos')" style="color:#A3BE8C">
         <i class="ti ti-shopping-cart" style="color:#A3BE8C;font-size:16px"></i> Sugeridos
+      </button>
+      <button class="nav-item" id="nav-share" onclick="gotoTab('share')" style="color:#B48EAD">
+        <i class="ti ti-chart-pie" style="color:#B48EAD;font-size:16px"></i> Mi Participación
       </button>
       <button class="nav-item" id="nav-ia" onclick="gotoTab('ia')">
         <i class="ti ti-robot" style="color:#7CBAA0"></i> Analizar con IA
@@ -959,6 +967,11 @@
         <div id="sugeridos-content"></div>
       </div>
 
+      <!-- MI PARTICIPACIÓN -->
+      <div id="tab-share" class="tab-pane">
+        <div id="share-content"></div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -1170,7 +1183,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.07.08.2026.3';
+const APP_VERSION = '1.07.08.2026.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1516,8 +1529,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios','semaforo','sugeridos'];
-const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios','semaforo','sugeridos','share'];
+const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra', share:'Mi Participación' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -1551,6 +1564,7 @@ function gotoTab(tab) {
   if(tab==='usuarios') renderUsersTab();
   if(tab==='semaforo') renderSemaforoTab();
   if(tab==='sugeridos') renderSugeridosTab();
+  if(tab==='share') renderShareTab();
 }
 
 function openNewModal() {
@@ -3899,6 +3913,161 @@ function renderSugeridosTab() {
 
   html += `</tbody></table></div>`;
   el.innerHTML = html;
+}
+
+// ─── MI PARTICIPACIÓN ────────────────────────────────────────────────────────
+
+const SF_DIST_COLORS = {
+  air:         '#5E81AC',
+  invid:       '#88C0D0',
+  solutionbox: '#8FBCBB',
+  ashir:       '#B48EAD',
+  elit:        '#A3BE8C',
+};
+const SF_CAT_LABELS_SHARE = {
+  motherboard: 'Motherboards', vga: 'VGA / Tarjetas de Video',
+  ssd: 'SSD / Almacenamiento', psu: 'Fuentes de Poder',
+  cooling: 'Coolers', gabinete: 'Gabinetes',
+  monitor: 'Monitores', minipc: 'Mini PC',
+  accesorios: 'Accesorios',
+};
+
+function buildShareData() {
+  // Agregar TODAS las ventas por distribuidor × categoría
+  const data = {}; // data[cat][dk] = totalUnits
+  SF_CAT_ORDER.forEach(c => { data[c] = {}; SF_DIST_KEYS.forEach(dk => { data[c][dk] = 0; }); });
+
+  (db.weeklyReports || [])
+    .filter(r => r.reportType === 'sales')
+    .forEach(rep => {
+      const dk = rep.distributor;
+      if(!SF_DIST_KEYS.includes(dk)) return;
+      (rep.rows || []).forEach(row => {
+        if((row.qty || 0) <= 0) return;
+        const cat = classifyProductCategory(row.description);
+        if(cat === 'other' || !data[cat]) return;
+        data[cat][dk] += row.qty;
+      });
+    });
+
+  // Filtrar categorías sin ningún dato
+  const active = SF_CAT_ORDER.filter(c => SF_DIST_KEYS.some(dk => data[c][dk] > 0));
+  return { data, active };
+}
+
+function _makePieSlice(cx, cy, R, r, startDeg, endDeg, color, highlight) {
+  const rad = d => (d - 90) * Math.PI / 180;
+  const x = (radius, angle) => cx + radius * Math.cos(rad(angle));
+  const y = (radius, angle) => cy + radius * Math.sin(rad(angle));
+  const large = (endDeg - startDeg) > 180 ? 1 : 0;
+  const d = [
+    `M${x(R,startDeg).toFixed(2)},${y(R,startDeg).toFixed(2)}`,
+    `A${R},${R},0,${large},1,${x(R,endDeg).toFixed(2)},${y(R,endDeg).toFixed(2)}`,
+    `L${x(r,endDeg).toFixed(2)},${y(r,endDeg).toFixed(2)}`,
+    `A${r},${r},0,${large},0,${x(r,startDeg).toFixed(2)},${y(r,startDeg).toFixed(2)}`,
+    'Z'
+  ].join(' ');
+  const opacity = highlight === null ? 1 : (highlight ? 1 : 0.28);
+  return `<path d="${d}" fill="${color}" opacity="${opacity}" stroke="#1E2430" stroke-width="1.2"/>`;
+}
+
+function _buildDonut(catData, highlightDist) {
+  const cx = 90, cy = 90, R = 72, r = 44;
+  const total = SF_DIST_KEYS.reduce((s, dk) => s + catData[dk], 0);
+  if(total === 0) return '';
+
+  let angle = 0;
+  let slices = '';
+  SF_DIST_KEYS.forEach(dk => {
+    const val = catData[dk];
+    if(val <= 0) return;
+    const sweep = (val / total) * 360;
+    const isHighlight = highlightDist ? dk === highlightDist : null;
+    slices += _makePieSlice(cx, cy, R, r, angle, angle + sweep - 0.5, SF_DIST_COLORS[dk], isHighlight);
+    angle += sweep;
+  });
+
+  const myPct = highlightDist
+    ? Math.round((catData[highlightDist] / total) * 100)
+    : null;
+
+  const centerLabel = myPct !== null
+    ? `<text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="22" font-weight="700" fill="#ECEFF4">${myPct}%</text>
+       <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="9" fill="#9EA8BA" letter-spacing="0.5">MI SHARE</text>`
+    : `<text x="${cx}" y="${cy + 5}" text-anchor="middle" font-size="11" fill="#9EA8BA">TOTAL</text>`;
+
+  return `<svg viewBox="0 0 180 180" width="160" height="160" style="display:block;margin:0 auto">
+    <circle cx="${cx}" cy="${cy}" r="${R+4}" fill="#1E2430"/>
+    ${slices}
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#252D3A"/>
+    ${centerLabel}
+  </svg>`;
+}
+
+function renderShareTab() {
+  const el = document.getElementById('share-content');
+  if(!el) return;
+
+  const { data, active } = buildShareData();
+  const highlightDist = _currentDistributor || null;
+
+  if(!active.length) {
+    el.innerHTML = `<div class="empty-state"><i class="ti ti-chart-pie"></i><p>No hay datos de ventas cargados todavía.<br>Subí los reportes semanales de ventas para ver la participación.</p></div>`;
+    return;
+  }
+
+  // Leyenda global
+  const legendHtml = SF_DIST_KEYS.map(dk => {
+    const isMe = dk === highlightDist;
+    return `<div style="display:flex;align-items:center;gap:6px;${isMe?'font-weight:700':'opacity:0.7'}">
+      <span style="width:12px;height:12px;border-radius:3px;background:${SF_DIST_COLORS[dk]};display:inline-block;flex-shrink:0"></span>
+      <span style="font-size:12px;color:var(--text)">${SF_DIST_LABELS[dk]}${isMe?' ★':''}</span>
+    </div>`;
+  }).join('');
+
+  const cardsHtml = active.map(cat => {
+    const catData = data[cat];
+    const total = SF_DIST_KEYS.reduce((s,dk) => s + catData[dk], 0);
+    const donut = _buildDonut(catData, highlightDist);
+
+    // Mini barra de detalle por disti
+    const barsHtml = SF_DIST_KEYS
+      .filter(dk => catData[dk] > 0)
+      .sort((a,b) => catData[b] - catData[a])
+      .map(dk => {
+        const pct = Math.round((catData[dk]/total)*100);
+        const isMe = dk === highlightDist;
+        return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+          <span style="width:8px;height:8px;border-radius:2px;background:${SF_DIST_COLORS[dk]};display:inline-block;flex-shrink:0;${!isMe&&highlightDist?'opacity:0.4':''}"></span>
+          <span style="font-size:11px;color:var(--text${!isMe&&highlightDist?'3':''});min-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${SF_DIST_SHORT[dk]}</span>
+          <div style="flex:1;background:var(--bg);border-radius:3px;height:6px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:${SF_DIST_COLORS[dk]};${!isMe&&highlightDist?'opacity:0.35':''}border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;font-weight:${isMe?700:400};color:${isMe?'#ECEFF4':'var(--text3)'};min-width:32px;text-align:right">${pct}%</span>
+        </div>`;
+      }).join('');
+
+    return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px 16px;display:flex;flex-direction:column;gap:10px;min-width:240px;max-width:300px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);text-align:center;letter-spacing:0.02em">${SF_CAT_LABELS_SHARE[cat]||cat.toUpperCase()}</div>
+      <div style="font-size:10px;color:var(--text3);text-align:center">${total.toLocaleString('es-AR')} unidades vendidas</div>
+      ${donut}
+      <div style="margin-top:6px">${barsHtml}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+  <div style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+    <div>
+      <h2 style="margin:0;font-size:18px;font-weight:700">Mi Participación por Categoría</h2>
+      <span style="font-size:12px;color:var(--text-muted)">Unidades vendidas acumuladas · datos de todos los reportes de ventas cargados</span>
+    </div>
+  </div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:24px;padding:14px 16px;background:var(--bg2);border:1px solid var(--border);border-radius:8px">
+    ${legendHtml}
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:16px">
+    ${cardsHtml}
+  </div>`;
 }
 
 function getSalesPriceExportData() {
