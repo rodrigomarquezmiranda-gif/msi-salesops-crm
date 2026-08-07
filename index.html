@@ -197,6 +197,10 @@
   /* Ocultar botones de edición/borrado en modo distribuidor */
   body.is-distributor .add-col-btn { display: none !important; }
   body.is-distributor #pi-search-bar .btn-primary { display: none !important; }
+  /* Ocultar zona de carga de lista de precios para distribuidores */
+  body.is-distributor .upload-zone,
+  body.is-distributor #pricelist-diff,
+  body.is-distributor #price-filter-select { display: none !important; }
   /* Lectura + PI: ve todo en modo lectura y además puede cargar PIs */
   body.reader-pi .upload-zone:not(#drop-zone-pi),
   body.reader-pi .backup-area,
@@ -1181,7 +1185,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.07.08.2026.5';
+const APP_VERSION = '1.07.08.2026.6';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
