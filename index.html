@@ -1151,7 +1151,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.06.08.2026.9';
+const APP_VERSION = '1.06.08.2026.10';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1785,8 +1785,9 @@ const _SEMAFORO_NOISE = new Set([
   'FULLHD','FHD','QHD','FHC','UHD','WQHD',
   'IPS','VA','TN','OLED','QLED',
   'HDMI','DP',
-  'CURVO','CURVED',
+  'CURVO','CURVED','CRUVO',           // curved (CRUVO = typo variant from some distributors)
   'FREESYNC','GSYNC','SYNC',
+  'PRO',                             // MSI series prefix (inconsistently included; model code is the real key)
   'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
 ]);
 function extractMSIModelKey(desc) {
@@ -1942,8 +1943,8 @@ function semaforoDisplayName(rawDesc, category) {
   // ── MONITOR: show only model code, strip all specs ──────────────────────────
   if (category === 'monitor') {
     let m = s;
-    m = m.replace(/\*+.*/g, '');                                         // strip notes like *CAJA DAÑADA
-    ['GAMING','MSI','MONITOR','MONITORES','PANTALLA'].forEach(w => {
+    m = m.replace(/\*+/g, '');                                           // strip asterisks but KEEP text (e.g. CAJA DAÑADA)
+    ['GAMING','MSI','MONITOR','MONITORES','PANTALLA','PRO'].forEach(w => {
       m = m.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
     });
     m = m.replace(/\b\d{2}(?:[,\.]\d)?\s*["""″]/g, ' ');               // strip 24" / 24,5" / 27"
@@ -1953,7 +1954,7 @@ function semaforoDisplayName(rawDesc, category) {
     m = m.replace(/\bHDMI\b|\b\bDP\b|\bVGA\b|\bDISPLAYPORT\b/ig, ''); // connectivity
     m = m.replace(/\bCURVO\b|\bCURVED\b|\bCRUVO\b/ig, '');             // curved variants
     m = m.replace(/\bFREESYNC\b|\bGSYNC\b/ig, '');                     // sync tech
-    m = m.replace(/\bFICHA\b|\bUSA\b|\bFIJO\b|\bX24\b/ig, '');        // misc distributor noise
+    m = m.replace(/\bFICHA\b|\bUSA\b|\bFIJO\b/ig, '');                 // misc distributor noise (X24/E20/etc. kept as model codes)
     m = m.replace(/\b\d{2}\b/g, ' ');                                   // strip leftover standalone 2-digit numbers (screen sizes like 24, 27)
     m = m.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
     return m || s;
