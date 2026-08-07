@@ -1151,7 +1151,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.06.08.2026.6';
+const APP_VERSION = '1.06.08.2026.8';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1782,15 +1782,18 @@ const _SEMAFORO_NOISE = new Set([
   'BLACK',                               // default color (inconsistently included)
   'GAMING',                              // MSI line label (monitor prefix & MB series — model code differentiates)
   // Monitor noise: resolution labels, panel types, connectivity (model code is the real key)
-  'FHD','QHD','FHC','UHD','WQHD',
+  'FULLHD','FHD','QHD','FHC','UHD','WQHD',
   'IPS','VA','TN','OLED','QLED',
   'HDMI','DP',
   'CURVO','CURVED',
+  'FREESYNC','GSYNC','SYNC',
   'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
 ]);
 function extractMSIModelKey(desc) {
   let s = String(desc || '').trim().toUpperCase();
   s = s.replace(/\([^)]*\)/g, ' ');   // strip ALL parenthetical content (configs, specs, etc.)
+  s = s.replace(/"/g, '');            // remove inch marks (e.g. 27" → 27, later filtered as 2-digit number)
+  s = s.replace(/\b\d+\s*HZ\b/g, ''); // strip refresh rates (144HZ, 165HZ, etc.)
   const isBulk = /\bBULK\b/.test(s);
   s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
   // Normalize standalone W → WHITE early (cooling color abbreviation used by some distributors).
@@ -1858,7 +1861,7 @@ function extractMSIModelKey(desc) {
     .filter(t => {
       if(t.length < 2) return false;
       if(_SEMAFORO_NOISE.has(t)) return false;
-      if(/^\d{1,2}$/.test(t)) return false;
+      if(/^\d{1,2}$/.test(t)) return false;  // filter 1-2 digit standalone numbers (screen sizes, etc.)
       return true;
     });
   const capTokens = tokens.filter(t => /^\d+[GT]$/.test(t));
@@ -1944,7 +1947,7 @@ function semaforoDisplayName(rawDesc, category) {
     ['GAMING','MSI','MONITOR','MONITORES','PANTALLA'].forEach(w => {
       m = m.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
     });
-    m = m.replace(/\b\d{2}(?:\.\d)?\s*["""″]\s*/g, ' ');  // strip standalone 24", 27"
+    m = m.replace(/\b\d{2}(?:[,\.]\d)?\s*["""″]\s*/g, ' ');  // strip standalone 24", 27", 24,5"
     m = m.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
     return m || s;
   }
