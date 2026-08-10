@@ -1226,7 +1226,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.10.08.2026.8';
+const APP_VERSION = '1.10.08.2026.9';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1300,16 +1300,15 @@ function _setCountry(code) {
 }
 
 const IDB = {
-  _p: (key) => `${_currentCountry}/${key}`,
   get: async (key) => {
-    const snap = await _fbDB.ref(IDB._p(key)).get();
+    const snap = await _fbDB.ref(key).get();
     return snap.exists() ? snap.val() : null;
   },
   set: async (key, value) => {
-    await _fbDB.ref(IDB._p(key)).set(value);
+    await _fbDB.ref(key).set(value);
   },
   remove: async (key) => {
-    await _fbDB.ref(IDB._p(key)).remove();
+    await _fbDB.ref(key).remove();
   }
 };
 
