@@ -1207,7 +1207,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.10.08.2026.11';
+const APP_VERSION = '2.10.08.2026.11';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2249,18 +2249,48 @@ function ensurePdfWorkerReady() {
 }
 async function handleInvoicePDF(parsed, file) {
   const piNo = parsed.piNo;
-  const existing = piNo ? db.pi.find(x => x.name === piNo) : null;
-  if(!existing) {
-    alert(`Invoice detectado (N° ${parsed.invoiceNo})` + (piNo ? `, PI No. ${piNo}` : '') + '.\nNo encontré una Orden con ese número. Verificá que la Orden exista en el sistema antes de subir el Invoice.');
-    return;
-  }
-  // Build invoice line items for transit tracking
+  const dataUrl = file ? ('data:application/pdf;base64,' + arrayBufferToBase64(await file.arrayBuffer())) : null;
   const invoiceItems = (parsed.lineItems || []).map(li => ({
     itemCode: li.itemCode,
     marketingName: li.marketingName,
     qtyShipped: li.qtyShipped || 0
   }));
-  const dataUrl = file ? ('data:application/pdf;base64,' + arrayBufferToBase64(await file.arrayBuffer())) : null;
+
+  let existing = piNo ? db.pi.find(x => x.name === piNo) : null;
+
+  // Sin PI detrás: crear una automáticamente con los datos del Invoice
+  if (!existing) {
+    const piName = piNo || parsed.invoiceNo;
+    const autoPI = {
+      id: Date.now(),
+      pipeline: 'pi',
+      name: piName,
+      client: parsed.client || '',
+      amount: 0,
+      status: 'Entregado',
+      dueDate: parsed.invoiceDate || '',
+      priority: 'normal',
+      notes: `Orden creada automáticamente desde Invoice N° ${parsed.invoiceNo}. El cliente usa OC propia — no se emitió PI previo.`,
+      invoiceNo: parsed.invoiceNo,
+      invoiceDate: parsed.invoiceDate || null,
+      invoiceItems: invoiceItems,
+      createdAt: new Date().toISOString(),
+      createdBy: _currentUser?.email || null,
+      updatedAt: new Date().toISOString(),
+      autoFromInvoice: true
+    };
+    if (dataUrl) autoPI.invoiceFile = { name: file.name, dataUrl };
+    db.pi.push(autoPI);
+    await saveDB();
+    renderPipeline('pi');
+    alert(`✓ Orden creada automáticamente desde Invoice N° ${parsed.invoiceNo}.\n` +
+      `Cliente: ${parsed.client || '(sin datos)'}` +
+      (invoiceItems.length ? ` · ${invoiceItems.length} líneas registradas.` : '') +
+      `\n\nSi querés agregar el monto u otros datos, editala desde la lista.`);
+    return;
+  }
+
+  // PI existente: actualizar a Entregado con datos del Invoice
   const updated = {
     ...existing,
     status: 'Entregado',
@@ -2269,9 +2299,9 @@ async function handleInvoicePDF(parsed, file) {
     invoiceItems: invoiceItems.length ? invoiceItems : existing.invoiceItems || [],
     updatedAt: new Date().toISOString()
   };
-  if(dataUrl) updated.invoiceFile = { name: file.name, dataUrl };
+  if (dataUrl) updated.invoiceFile = { name: file.name, dataUrl };
   const idx = db.pi.findIndex(x => x.id === existing.id);
-  if(idx > -1) { db.pi[idx] = updated; await saveDB(); renderPipeline('pi'); }
+  if (idx > -1) { db.pi[idx] = updated; await saveDB(); renderPipeline('pi'); }
   const msg = `✓ Orden "${existing.name}" actualizada a Entregado.\nInvoice N° ${parsed.invoiceNo}` +
     (invoiceItems.length ? ` · ${invoiceItems.length} líneas de producto registradas.` : '.');
   alert(msg);
