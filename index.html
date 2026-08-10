@@ -1197,7 +1197,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.10.08.2026.5';
+const APP_VERSION = '1.10.08.2026.6';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -4215,6 +4215,51 @@ function _pbmParseXLSX(arrayBuffer) {
   return parsed;
 }
 
+// ── Índice de clientes desde base de ventas ───────────────────
+function _pbmClientIndex() {
+  // Builds two maps: cuit→name and normName→{cuit,name}
+  const byCuit = new Map();   // cuit(digits) → name
+  const byName = new Map();   // upperName → { cuit, name }
+  const allSales = (db.weeklyReports || []).filter(s => s.reportType === 'sales');
+  for (const snap of allSales) {
+    for (const row of (snap.rows || [])) {
+      const cuit = _pbmNormCuit(row.cuit || '');
+      const name = String(row.client || '').trim();
+      if (!cuit || !name) continue;
+      if (!byCuit.has(cuit)) byCuit.set(cuit, name);
+      const k = name.toUpperCase();
+      if (!byName.has(k)) byName.set(k, { cuit, name });
+    }
+  }
+  return { byCuit, byName };
+}
+
+function _pbmLookupByCuit(cuitRaw) {
+  const cuit = _pbmNormCuit(cuitRaw);
+  if (cuit.length < 8) return null;
+  const { byCuit } = _pbmClientIndex();
+  return byCuit.get(cuit) || null;
+}
+
+function _pbmSuggestClients(query) {
+  // Returns up to 8 {cuit, name} matches for a partial name or CUIT
+  query = (query || '').trim().toUpperCase();
+  if (!query || query.length < 2) return [];
+  const { byCuit, byName } = _pbmClientIndex();
+  const results = [];
+  const isDigit = /^\d+$/.test(query);
+  if (isDigit) {
+    for (const [cuit, name] of byCuit) {
+      if (cuit.startsWith(query)) { results.push({ cuit, name }); if (results.length >= 8) break; }
+    }
+  } else {
+    for (const [k, val] of byName) {
+      if (k.includes(query)) { results.push(val); if (results.length >= 8) break; }
+    }
+  }
+  return results;
+}
+
 // ── Persistencia localStorage ─────────────────────────────────
 function _pbmSave() {
   try {
@@ -4533,16 +4578,21 @@ function _pbmShowManage() {
 
     <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:14px">
       <div style="font-weight:600;font-size:12px;margin-bottom:12px;color:#aaa">AGREGAR RESELLER</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-        <div>
-          <div style="font-size:11px;color:#888;margin-bottom:4px">Nombre</div>
-          <input id="pbm-new-name" class="pbm-input" placeholder="Ej: TechStore SRL">
-        </div>
-        <div>
-          <div style="font-size:11px;color:#888;margin-bottom:4px">CUIT</div>
-          <input id="pbm-new-cuit" class="pbm-input" placeholder="XX-XXXXXXXX-X" oninput="this.value=this.value.replace(/[^0-9-]/g,'')">
-        </div>
+
+      <div style="margin-bottom:10px;position:relative">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">CUIT</div>
+        <input id="pbm-new-cuit" class="pbm-input" placeholder="XX-XXXXXXXX-X" autocomplete="off"
+          oninput="this.value=this.value.replace(/[^0-9-]/g,'');_pbmCuitInput(this.value)">
+        <div id="pbm-cuit-hint" style="font-size:11px;color:#A3BE8C;margin-top:3px;min-height:16px"></div>
       </div>
+
+      <div style="margin-bottom:10px;position:relative">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">Nombre / Razón Social</div>
+        <input id="pbm-new-name" class="pbm-input" placeholder="Ej: TechStore SRL" autocomplete="off"
+          oninput="_pbmNameInput(this.value)">
+        <div id="pbm-suggest-list" style="position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:6px;z-index:10;display:none;max-height:180px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.3)"></div>
+      </div>
+
       <button onclick="_pbmAddResellerFromModal()" class="btn btn-primary" style="width:100%;background:#C0392B;border-color:#C0392B;font-size:13px">
         <i class="ti ti-plus"></i> Agregar
       </button>
@@ -4552,7 +4602,47 @@ function _pbmShowManage() {
   document.getElementById('pbm-modal')?.remove();
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
-  document.getElementById('pbm-new-name')?.focus();
+  document.getElementById('pbm-new-cuit')?.focus();
+}
+
+function _pbmCuitInput(val) {
+  const cuit = _pbmNormCuit(val);
+  const hint = document.getElementById('pbm-cuit-hint');
+  if (cuit.length < 8) { if(hint) hint.textContent=''; return; }
+  const name = _pbmLookupByCuit(cuit);
+  if (name) {
+    if(hint) hint.innerHTML = `<i class="ti ti-check"></i> ${name}`;
+    const ni = document.getElementById('pbm-new-name');
+    if(ni && !ni.value) ni.value = name;
+  } else {
+    if(hint) hint.innerHTML = `<span style="color:#888">No encontrado en base de ventas — ingresá el nombre manualmente</span>`;
+  }
+}
+
+function _pbmNameInput(val) {
+  const box = document.getElementById('pbm-suggest-list');
+  if (!box) return;
+  const matches = _pbmSuggestClients(val);
+  if (!matches.length || val.length < 2) { box.style.display='none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = matches.map(m => `
+    <div onclick="_pbmPickSuggest('${m.cuit.replace(/'/g,"\\'")}','${m.name.replace(/'/g,"\\'")}')"
+      style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
+      onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background=''">
+      <span style="font-weight:600">${m.name}</span>
+      <span style="color:#888;font-size:11px;margin-left:8px">${_pbmFmtCuit(m.cuit)}</span>
+    </div>`).join('');
+}
+
+function _pbmPickSuggest(cuit, name) {
+  const ni = document.getElementById('pbm-new-name');
+  const ci = document.getElementById('pbm-new-cuit');
+  const hint = document.getElementById('pbm-cuit-hint');
+  const box = document.getElementById('pbm-suggest-list');
+  if(ni) ni.value = name;
+  if(ci) ci.value = _pbmFmtCuit(cuit);
+  if(hint) hint.innerHTML = `<i class="ti ti-check"></i> ${name}`;
+  if(box) box.style.display = 'none';
 }
 
 function _pbmAddResellerFromModal() {
@@ -4606,15 +4696,17 @@ function _pbmShowUpload() {
     </div>
 
     <div id="pbm-new-res-fields" style="display:none;background:rgba(255,255,255,0.04);border-radius:8px;padding:12px;margin-bottom:14px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <div style="font-size:11px;color:#888;margin-bottom:4px">Nombre</div>
-          <input id="pbm-up-name" class="pbm-input" placeholder="TechStore SRL">
-        </div>
-        <div>
-          <div style="font-size:11px;color:#888;margin-bottom:4px">CUIT</div>
-          <input id="pbm-up-newcuit" class="pbm-input" placeholder="XX-XXXXXXXX-X" oninput="this.value=this.value.replace(/[^0-9-]/g,'')">
-        </div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">CUIT</div>
+        <input id="pbm-up-newcuit" class="pbm-input" placeholder="XX-XXXXXXXX-X" autocomplete="off"
+          oninput="this.value=this.value.replace(/[^0-9-]/g,'');_pbmUpCuitInput(this.value)">
+        <div id="pbm-up-cuit-hint" style="font-size:11px;color:#A3BE8C;margin-top:3px;min-height:16px"></div>
+      </div>
+      <div style="position:relative">
+        <div style="font-size:11px;color:#888;margin-bottom:4px">Nombre / Razón Social</div>
+        <input id="pbm-up-name" class="pbm-input" placeholder="TechStore SRL" autocomplete="off"
+          oninput="_pbmUpNameInput(this.value)">
+        <div id="pbm-up-suggest" style="position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border);border-radius:6px;z-index:10;display:none;max-height:160px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.3)"></div>
       </div>
     </div>
 
@@ -4658,6 +4750,46 @@ function _pbmShowUpload() {
     document.getElementById('pbm-up-label').textContent = f.name;
     document.getElementById('pbm-up-icon').style.color = '#A3BE8C';
   });
+}
+
+function _pbmUpCuitInput(val) {
+  const cuit = _pbmNormCuit(val);
+  const hint = document.getElementById('pbm-up-cuit-hint');
+  if (cuit.length < 8) { if(hint) hint.textContent=''; return; }
+  const name = _pbmLookupByCuit(cuit);
+  if (name) {
+    if(hint) hint.innerHTML = `<i class="ti ti-check"></i> ${name}`;
+    const ni = document.getElementById('pbm-up-name');
+    if(ni && !ni.value) ni.value = name;
+  } else {
+    if(hint) hint.innerHTML = `<span style="color:#888">No encontrado — ingresá el nombre</span>`;
+  }
+}
+
+function _pbmUpNameInput(val) {
+  const box = document.getElementById('pbm-up-suggest');
+  if (!box) return;
+  const matches = _pbmSuggestClients(val);
+  if (!matches.length || val.length < 2) { box.style.display='none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = matches.map(m => `
+    <div onclick="_pbmUpPickSuggest('${m.cuit.replace(/'/g,"\\'")}','${m.name.replace(/'/g,"\\'")}')"
+      style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
+      onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background=''">
+      <span style="font-weight:600">${m.name}</span>
+      <span style="color:#888;font-size:11px;margin-left:8px">${_pbmFmtCuit(m.cuit)}</span>
+    </div>`).join('');
+}
+
+function _pbmUpPickSuggest(cuit, name) {
+  const ni = document.getElementById('pbm-up-name');
+  const ci = document.getElementById('pbm-up-newcuit');
+  const hint = document.getElementById('pbm-up-cuit-hint');
+  const box = document.getElementById('pbm-up-suggest');
+  if(ni) ni.value = name;
+  if(ci) ci.value = _pbmFmtCuit(cuit);
+  if(hint) hint.innerHTML = `<i class="ti ti-check"></i> ${name}`;
+  if(box) box.style.display = 'none';
 }
 
 function _pbmProcessUpload() {
