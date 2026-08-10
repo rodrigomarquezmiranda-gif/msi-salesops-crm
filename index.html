@@ -4085,8 +4085,8 @@ function renderShareTab() {
 // ============================================================
 // POWERED BY MSI — PBM Module
 // ============================================================
-let _pbmReports = [];      // loaded from Firebase
-let _pbmCurrent = null;    // parsed report being reviewed
+let _pbmReports = [];      // [{ name, month, rows }]
+let _pbmActiveIdx = 0;     // index of selected reseller
 
 // ── Classification engine ────────────────────────────────────
 function _pbmChassis(desc) {
@@ -4214,18 +4214,33 @@ function renderPBMTab() {
   const el = document.getElementById('pbm-content');
   if (!el) return;
 
-  const rows = _pbmCurrent;
+  const rep = _pbmReports[_pbmActiveIdx];
 
-  // No report loaded: show upload zone + saved reports
-  if (!rows) {
-    el.innerHTML = _pbmUploadZone();
+  // ── Reseller tab bar ─────────────────────────────────────
+  const tabBar = _pbmReports.length === 0 ? '' : `
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+    ${_pbmReports.map((r,i) => {
+      const active = i === _pbmActiveIdx;
+      return `<div style="display:flex;align-items:center;gap:0;background:${active?'#C0392B':'var(--card-bg)'};border:1px solid ${active?'#C0392B':'var(--border)'};border-radius:20px;overflow:hidden">
+        <button onclick="_pbmActiveIdx=${i};renderPBMTab()" style="background:none;border:none;cursor:pointer;padding:5px 14px;font-size:12px;font-weight:${active?700:400};color:${active?'#fff':'var(--text)'}">${r.name}</button>
+        <button onclick="_pbmRemove(${i})" style="background:none;border:none;cursor:pointer;padding:5px 8px 5px 0;font-size:11px;color:${active?'rgba(255,255,255,0.6)':'#666'}" title="Eliminar">×</button>
+      </div>`;
+    }).join('')}
+    <button onclick="_pbmShowDrop()" style="background:none;border:1px dashed rgba(192,57,43,0.5);border-radius:20px;padding:5px 14px;font-size:12px;color:#C0392B;cursor:pointer">
+      <i class="ti ti-plus"></i> Agregar reseller
+    </button>
+  </div>`;
+
+  // ── Upload zone (no reports or adding new) ────────────────
+  if (!rep || document.getElementById('pbm-showing-drop')) {
+    el.innerHTML = tabBar + _pbmDropHTML();
     _pbmSetupDrop();
     return;
   }
 
-  // Summary stats
-  const totalClaimed   = rows.reduce((s,r) => s + r.claimed, 0);
-  const totalCorrect   = rows.reduce((s,r) => s + r.correct, 0);
+  const rows = rep.rows;
+  const totalClaimed = rows.reduce((s,r) => s + r.claimed, 0);
+  const totalCorrect = rows.reduce((s,r) => s + r.correct, 0);
   const diff = totalCorrect - totalClaimed;
   const diffColor = diff >= 0 ? '#A3BE8C' : '#BF616A';
 
@@ -4233,8 +4248,8 @@ function renderPBMTab() {
   const byVend = {};
   rows.forEach(r => {
     if (!byVend[r.vendedor]) byVend[r.vendedor] = { claimed:0, correct:0, n:0 };
-    byVend[r.vendedor].claimed  += r.claimed;
-    byVend[r.vendedor].correct  += r.correct;
+    byVend[r.vendedor].claimed += r.claimed;
+    byVend[r.vendedor].correct += r.correct;
     byVend[r.vendedor].n++;
   });
   const vendorRows = Object.entries(byVend)
@@ -4251,25 +4266,21 @@ function renderPBMTab() {
       </tr>`;
     }).join('');
 
-  // Detail rows
   const detailRows = rows.map(r => {
     const rd = r.correct - r.claimed;
     const rc = rd >= 0 ? '#A3BE8C' : '#BF616A';
-    const lcStr = r.lc !== null ? `$${r.lc}` : '—';
     return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
       <td style="padding:5px 8px;text-align:center;color:#888;font-size:11px">${r.num}</td>
       <td style="padding:5px 8px;font-size:11px;color:#888">${r.date}</td>
       <td style="padding:5px 8px;font-size:11px">${r.invoice}</td>
       <td style="padding:5px 8px;font-size:11px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.desc.replace(/"/g,'&quot;')}">${r.desc}</td>
       <td style="padding:5px 8px;font-size:11px">${r.vendedor}</td>
-      <td style="padding:5px 8px;text-align:center;font-size:11px">
-        <span style="background:rgba(255,255,255,0.07);border-radius:4px;padding:1px 6px">#${r.prog}</span>
-      </td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px"><span style="background:rgba(255,255,255,0.07);border-radius:4px;padding:1px 6px">#${r.prog}</span></td>
       <td style="padding:5px 8px;text-align:center;font-size:11px">$${r.gab}</td>
       <td style="padding:5px 8px;text-align:center;font-size:11px">$${r.psu}</td>
       <td style="padding:5px 8px;text-align:center;font-size:11px">$${r.mb}</td>
       <td style="padding:5px 8px;text-align:center;font-size:11px">$${r.vga}</td>
-      <td style="padding:5px 8px;text-align:center;font-size:11px">${lcStr}</td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px">${r.lc!==null?'$'+r.lc:'—'}</td>
       <td style="padding:5px 8px;text-align:right;color:#A3BE8C;font-weight:700">$${r.correct}</td>
       <td style="padding:5px 8px;text-align:right;color:#888;font-size:11px">${r.claimed>0?'$'+r.claimed:'—'}</td>
       <td style="padding:5px 8px;text-align:right;color:${rc};font-weight:600;font-size:11px">${rd>=0?'+':''}$${rd||0}</td>
@@ -4278,130 +4289,122 @@ function renderPBMTab() {
 
   el.innerHTML = `
   <style>
-    .pbm-card { background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:18px 22px }
-    .pbm-metric { background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center }
-    .pbm-metric .val { font-size:26px;font-weight:700;font-family:monospace }
-    .pbm-metric .lbl { font-size:11px;color:#888;margin-top:2px }
-    .pbm-th { padding:7px 8px;text-align:center;font-size:10px;color:#888;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--card-bg) }
-    .pbm-tbl { width:100%;border-collapse:collapse;font-size:12px }
-    .pbm-tbl tr:hover { background:rgba(255,255,255,0.03) }
+    .pbm-card{background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:18px 22px}
+    .pbm-metric{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center}
+    .pbm-metric .val{font-size:26px;font-weight:700;font-family:monospace}
+    .pbm-metric .lbl{font-size:11px;color:#888;margin-top:2px}
+    .pbm-th{padding:7px 8px;text-align:center;font-size:10px;color:#888;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--card-bg)}
+    .pbm-tbl{width:100%;border-collapse:collapse;font-size:12px}
+    .pbm-tbl tr:hover{background:rgba(255,255,255,0.03)}
   </style>
 
-  <!-- Header bar -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:36px;height:36px;background:#C0392B;border-radius:8px;display:flex;align-items:center;justify-content:center">
-        <i class="ti ti-trophy" style="color:#fff;font-size:18px"></i>
+  ${tabBar}
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:32px;height:32px;background:#C0392B;border-radius:7px;display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-trophy" style="color:#fff;font-size:16px"></i>
       </div>
       <div>
-        <div style="font-weight:700;font-size:15px">Powered by MSI</div>
-        <div style="font-size:11px;color:#888">${rows.length} bundles · ${Object.keys(byVend).length} vendedores</div>
+        <div style="font-weight:700;font-size:14px">${rep.name}</div>
+        <div style="font-size:11px;color:#888">${rows.length} bundles · ${rep.month||''}</div>
       </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn" onclick="_pbmCurrent=null;renderPBMTab()" style="font-size:12px">
-        <i class="ti ti-upload"></i> Cargar otro reporte
-      </button>
-      <button class="btn btn-primary" onclick="_pbmExport()" style="font-size:12px;background:#C0392B;border-color:#C0392B">
-        <i class="ti ti-file-spreadsheet"></i> Exportar resultado
-      </button>
-    </div>
+    <button class="btn btn-primary" onclick="_pbmExport()" style="font-size:12px;background:#C0392B;border-color:#C0392B">
+      <i class="ti ti-file-spreadsheet"></i> Exportar resultado
+    </button>
   </div>
 
-  <!-- KPI row -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
-    <div class="pbm-metric">
-      <div class="val" style="color:#A3BE8C">$${totalCorrect}</div>
-      <div class="lbl">A PAGAR (calculado)</div>
-    </div>
-    <div class="pbm-metric">
-      <div class="val" style="color:#888">$${totalClaimed}</div>
-      <div class="lbl">RECLAMADO POR RESELLER</div>
-    </div>
-    <div class="pbm-metric">
-      <div class="val" style="color:${diffColor}">${diff>=0?'+':''}$${diff}</div>
-      <div class="lbl">${diff>=0?'DEUDA ADICIONAL':'A FAVOR DE MSI'}</div>
-    </div>
-    <div class="pbm-metric">
-      <div class="val">${rows.length}</div>
-      <div class="lbl">BUNDLES VALIDADOS</div>
-    </div>
+    <div class="pbm-metric"><div class="val" style="color:#A3BE8C">$${totalCorrect}</div><div class="lbl">A PAGAR</div></div>
+    <div class="pbm-metric"><div class="val" style="color:#888">$${totalClaimed}</div><div class="lbl">RECLAMADO</div></div>
+    <div class="pbm-metric"><div class="val" style="color:${diffColor}">${diff>=0?'+':''}$${diff}</div><div class="lbl">${diff>=0?'DEUDA ADICIONAL':'A FAVOR DE MSI'}</div></div>
+    <div class="pbm-metric"><div class="val">${rows.length}</div><div class="lbl">BUNDLES</div></div>
   </div>
 
-  <!-- Por vendedor -->
   <div class="pbm-card" style="margin-bottom:20px">
     <div style="font-weight:600;font-size:13px;margin-bottom:12px">Por Vendedor</div>
-    <table class="pbm-tbl">
-      <thead><tr>
-        <th class="pbm-th" style="text-align:left">Vendedor</th>
-        <th class="pbm-th">Ventas</th>
-        <th class="pbm-th">Reclamado</th>
-        <th class="pbm-th">Correcto</th>
-        <th class="pbm-th">Diferencia</th>
-      </tr></thead>
-      <tbody>${vendorRows}</tbody>
-    </table>
+    <table class="pbm-tbl"><thead><tr>
+      <th class="pbm-th" style="text-align:left">Vendedor</th>
+      <th class="pbm-th">Ventas</th><th class="pbm-th">Reclamado</th>
+      <th class="pbm-th">Correcto</th><th class="pbm-th">Diferencia</th>
+    </tr></thead><tbody>${vendorRows}</tbody></table>
   </div>
 
-  <!-- Detalle completo -->
   <div class="pbm-card" style="overflow-x:auto">
     <div style="font-weight:600;font-size:13px;margin-bottom:12px">Detalle por bundle</div>
-    <table class="pbm-tbl">
-      <thead><tr>
-        <th class="pbm-th">#</th>
-        <th class="pbm-th">Fecha</th>
-        <th class="pbm-th">Factura</th>
-        <th class="pbm-th" style="text-align:left;min-width:200px">Configuración</th>
-        <th class="pbm-th" style="text-align:left">Vendedor</th>
-        <th class="pbm-th">Prog</th>
-        <th class="pbm-th">Gab</th>
-        <th class="pbm-th">PSU</th>
-        <th class="pbm-th">MB</th>
-        <th class="pbm-th">VGA</th>
-        <th class="pbm-th">LC</th>
-        <th class="pbm-th">TOTAL</th>
-        <th class="pbm-th">Reclamado</th>
-        <th class="pbm-th">Dif</th>
-      </tr></thead>
-      <tbody>${detailRows}</tbody>
-      <tfoot>
-        <tr style="border-top:2px solid var(--border)">
-          <td colspan="11" style="padding:8px 10px;font-weight:700;text-align:right;font-size:12px">TOTAL</td>
-          <td style="padding:8px 10px;text-align:right;color:#A3BE8C;font-weight:700">$${totalCorrect}</td>
-          <td style="padding:8px 10px;text-align:right;color:#888">$${totalClaimed}</td>
-          <td style="padding:8px 10px;text-align:right;color:${diffColor};font-weight:700">${diff>=0?'+':''}$${diff}</td>
-        </tr>
-      </tfoot>
+    <table class="pbm-tbl"><thead><tr>
+      <th class="pbm-th">#</th><th class="pbm-th">Fecha</th><th class="pbm-th">Factura</th>
+      <th class="pbm-th" style="text-align:left;min-width:200px">Configuración</th>
+      <th class="pbm-th" style="text-align:left">Vendedor</th>
+      <th class="pbm-th">Prog</th><th class="pbm-th">Gab</th><th class="pbm-th">PSU</th>
+      <th class="pbm-th">MB</th><th class="pbm-th">VGA</th><th class="pbm-th">LC</th>
+      <th class="pbm-th">TOTAL</th><th class="pbm-th">Reclamado</th><th class="pbm-th">Dif</th>
+    </tr></thead>
+    <tbody>${detailRows}</tbody>
+    <tfoot><tr style="border-top:2px solid var(--border)">
+      <td colspan="11" style="padding:8px 10px;font-weight:700;text-align:right;font-size:12px">TOTAL</td>
+      <td style="padding:8px 10px;text-align:right;color:#A3BE8C;font-weight:700">$${totalCorrect}</td>
+      <td style="padding:8px 10px;text-align:right;color:#888">$${totalClaimed}</td>
+      <td style="padding:8px 10px;text-align:right;color:${diffColor};font-weight:700">${diff>=0?'+':''}$${diff}</td>
+    </tr></tfoot>
     </table>
   </div>`;
 }
 
-function _pbmUploadZone() {
+function _pbmRemove(idx) {
+  _pbmReports.splice(idx, 1);
+  _pbmActiveIdx = Math.min(_pbmActiveIdx, Math.max(0, _pbmReports.length-1));
+  renderPBMTab();
+}
+
+function _pbmShowDrop() {
+  // Temporarily inject drop zone below tab bar
+  const el = document.getElementById('pbm-content');
+  if (!el) return;
+  // Store flag so renderPBMTab knows
+  el.dataset.showDrop = '1';
+  const tabBar = el.querySelector('[data-pbm-tabbar]');
+  // Re-render with drop showing
+  _pbmRenderWithDrop();
+}
+
+function _pbmRenderWithDrop() {
+  const el = document.getElementById('pbm-content');
+  if (!el) return;
+  const tabsHtml = _pbmReports.length === 0 ? '' : `
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:20px;flex-wrap:wrap">
+    ${_pbmReports.map((r,i) => {
+      const active = i === _pbmActiveIdx;
+      return `<div style="display:flex;align-items:center;gap:0;background:${active?'#C0392B':'var(--card-bg)'};border:1px solid ${active?'#C0392B':'var(--border)'};border-radius:20px;overflow:hidden">
+        <button onclick="_pbmActiveIdx=${i};renderPBMTab()" style="background:none;border:none;cursor:pointer;padding:5px 14px;font-size:12px;font-weight:${active?700:400};color:${active?'#fff':'var(--text)'}">${r.name}</button>
+        <button onclick="_pbmRemove(${i})" style="background:none;border:none;cursor:pointer;padding:5px 8px 5px 0;font-size:11px;color:${active?'rgba(255,255,255,0.6)':'#666'}">×</button>
+      </div>`;
+    }).join('')}
+    <button style="background:rgba(192,57,43,0.15);border:1px solid #C0392B;border-radius:20px;padding:5px 14px;font-size:12px;color:#C0392B;cursor:default">
+      <i class="ti ti-plus"></i> Agregar reseller
+    </button>
+  </div>`;
+  el.innerHTML = tabsHtml + _pbmDropHTML();
+  _pbmSetupDrop();
+}
+
+function _pbmDropHTML() {
   return `
   <style>
-    .pbm-drop { border:2px dashed rgba(192,57,43,0.4);border-radius:12px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(192,57,43,0.04) }
-    .pbm-drop:hover,.pbm-drop.drag-over { border-color:#C0392B;background:rgba(192,57,43,0.10) }
+    .pbm-drop{border:2px dashed rgba(192,57,43,0.4);border-radius:12px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(192,57,43,0.04)}
+    .pbm-drop:hover,.pbm-drop.drag-over{border-color:#C0392B;background:rgba(192,57,43,0.10)}
   </style>
-  <div style="max-width:560px;margin:40px auto">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
-      <div style="width:40px;height:40px;background:#C0392B;border-radius:10px;display:flex;align-items:center;justify-content:center">
-        <i class="ti ti-trophy" style="color:#fff;font-size:20px"></i>
-      </div>
-      <div>
-        <div style="font-weight:700;font-size:16px">Powered by MSI</div>
-        <div style="font-size:12px;color:#888">Validación de reportes PBM mensuales</div>
-      </div>
-    </div>
-
+  <div style="max-width:520px;margin:20px auto">
     <div class="pbm-drop" id="pbm-drop-zone" onclick="document.getElementById('pbm-file-input').click()">
       <i class="ti ti-file-spreadsheet" style="font-size:40px;color:#C0392B;margin-bottom:12px"></i>
       <div style="font-weight:600;font-size:14px;margin-bottom:6px">Arrastrá el reporte del reseller acá</div>
-      <div style="color:#888;font-size:12px">o hacé click para seleccionar el archivo</div>
-      <div style="color:#666;font-size:11px;margin-top:8px">.xlsx · Formato Power by MSI</div>
+      <div style="color:#888;font-size:12px">o hacé click para seleccionar</div>
+      <div style="color:#666;font-size:11px;margin-top:6px">.xlsx · Formato Power by MSI</div>
     </div>
     <input type="file" id="pbm-file-input" accept=".xlsx" style="display:none" onchange="_pbmHandleFile(this.files[0])">
-
-    <div id="pbm-upload-status" style="margin-top:14px;text-align:center;font-size:12px;color:#888"></div>
+    <div id="pbm-upload-status" style="margin-top:12px;text-align:center;font-size:12px;color:#888"></div>
+    ${_pbmReports.length>0?'<div style="text-align:center;margin-top:10px"><button class="btn" onclick="renderPBMTab()" style="font-size:11px">Cancelar</button></div>':''}
   </div>`;
 }
 
@@ -4411,37 +4414,39 @@ function _pbmSetupDrop() {
   zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
   zone.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.classList.remove('drag-over');
-    const f = e.dataTransfer.files[0];
-    if (f) _pbmHandleFile(f);
+    e.preventDefault(); zone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) _pbmHandleFile(e.dataTransfer.files[0]);
   });
 }
 
 function _pbmHandleFile(file) {
   if (!file) return;
   const status = document.getElementById('pbm-upload-status');
-  if (status) status.innerHTML = `<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Procesando ${file.name}…`;
+  if (status) status.innerHTML = `<i class="ti ti-loader"></i> Procesando ${file.name}…`;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = ev => {
     try {
-      const rows = _pbmParseXLSX(e.target.result);
+      const rows = _pbmParseXLSX(ev.target.result);
       if (!rows || rows.length === 0) {
-        if (status) status.innerHTML = `<span style="color:#BF616A">No se encontraron filas válidas. Verificá el formato del archivo.</span>`;
+        if (status) status.innerHTML = `<span style="color:#BF616A">Sin filas válidas. Verificá el formato.</span>`;
         return;
       }
-      _pbmCurrent = rows;
+      // Derive reseller name from filename
+      const name = file.name.replace(/\.[^.]+$/, '').replace(/reporte[_ -]*/i,'').replace(/powered[_ -]by[_ -]msi[_ -]*/i,'').trim() || `Reseller ${_pbmReports.length+1}`;
+      _pbmReports.push({ name, month: '', rows });
+      _pbmActiveIdx = _pbmReports.length - 1;
       renderPBMTab();
     } catch(err) {
-      if (status) status.innerHTML = `<span style="color:#BF616A">Error al procesar: ${err.message}</span>`;
+      if (status) status.innerHTML = `<span style="color:#BF616A">Error: ${err.message}</span>`;
     }
   };
   reader.readAsArrayBuffer(file);
 }
 
 function _pbmExport() {
-  if (!_pbmCurrent) return;
-  const rows = _pbmCurrent;
+  const rep = _pbmReports[_pbmActiveIdx];
+  if (!rep) return;
+  const rows = rep.rows;
   const ws_data = [
     ['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC','TOTAL Correcto','Reclamado','Diferencia'],
     ...rows.map(r => [r.num,r.date,r.invoice,r.desc,r.vendedor,'#'+r.prog,r.gab,r.psu,r.mb,r.vga,r.lc!==null?r.lc:'',r.correct,r.claimed||'',r.correct-(r.claimed||0)])
@@ -4449,7 +4454,7 @@ function _pbmExport() {
   const wb  = XLSX.utils.book_new();
   const ws  = XLSX.utils.aoa_to_sheet(ws_data);
   XLSX.utils.book_append_sheet(wb, ws, 'Resultado PBM');
-  XLSX.writeFile(wb, `PBM_Resultado_${new Date().toISOString().slice(0,10)}.xlsx`);
+  XLSX.writeFile(wb, `PBM_${rep.name}_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 function getSalesPriceExportData() {
