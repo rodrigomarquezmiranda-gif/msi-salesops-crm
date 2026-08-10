@@ -1197,7 +1197,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.10.08.2026.6';
+const APP_VERSION = '1.10.08.2026.7';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -4712,7 +4712,7 @@ function _pbmShowUpload() {
 
     <div style="margin-bottom:14px">
       <div style="font-size:11px;color:#888;margin-bottom:5px">Mes del reporte</div>
-      <input id="pbm-up-month" class="pbm-input" placeholder="Ej: Julio 2026">
+      <select id="pbm-up-month" class="pbm-select">${_pbmMonthOptions()}</select>
     </div>
 
     <div id="pbm-up-drop" class="pbm-drop" style="margin-bottom:14px" onclick="document.getElementById('pbm-up-input').click()">
@@ -4750,6 +4750,26 @@ function _pbmShowUpload() {
     document.getElementById('pbm-up-label').textContent = f.name;
     document.getElementById('pbm-up-icon').style.color = '#A3BE8C';
   });
+}
+
+function _pbmMonthOptions() {
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const now = new Date();
+  const curYear = now.getFullYear();
+  const curMonth = now.getMonth(); // 0-based
+  const opts = ['<option value="">— Seleccioná el mes —</option>'];
+  // Año actual (todos los meses hasta el actual inclusive)
+  for (let m = 0; m <= curMonth; m++) {
+    const label = `${MESES[m]} ${curYear}`;
+    const selected = m === curMonth ? ' selected' : '';
+    opts.push(`<option value="${label}"${selected}>${label}</option>`);
+  }
+  // Año anterior (todos los meses)
+  for (let m = 0; m < 12; m++) {
+    const label = `${MESES[m]} ${curYear - 1}`;
+    opts.push(`<option value="${label}">${label}</option>`);
+  }
+  return opts.join('');
 }
 
 function _pbmUpCuitInput(val) {
