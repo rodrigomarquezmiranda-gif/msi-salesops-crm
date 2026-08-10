@@ -187,6 +187,8 @@
   #nav-share { display: none !important; }
   body.is-admin #nav-share,
   body.is-distributor #nav-share { display: flex !important; }
+  #nav-pbm { display: none !important; }
+  body.is-admin #nav-pbm { display: flex !important; }
   body.is-distributor .nav-item { display: none !important; }
   body.is-distributor #nav-semaforo,
   body.is-distributor #nav-sugeridos,
@@ -482,6 +484,9 @@
       </button>
       <button class="nav-item" id="nav-share" onclick="gotoTab('share')" style="color:#B48EAD">
         <i class="ti ti-chart-pie" style="color:#B48EAD;font-size:16px"></i> Mi Participación
+      </button>
+      <button class="nav-item" id="nav-pbm" onclick="gotoTab('pbm')" style="color:#C0392B">
+        <i class="ti ti-trophy" style="color:#C0392B;font-size:16px"></i> Powered by MSI
       </button>
       <button class="nav-item" id="nav-ia" onclick="gotoTab('ia')">
         <i class="ti ti-robot" style="color:#7CBAA0"></i> Analizar con IA
@@ -974,6 +979,10 @@
         <div id="share-content"></div>
       </div>
 
+      <div id="tab-pbm" class="tab-pane">
+        <div id="pbm-content"></div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -1185,7 +1194,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.07.08.2026.6';
+const APP_VERSION = '1.10.08.2026.1';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1531,8 +1540,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios','semaforo','sugeridos','share'];
-const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra', share:'Mi Participación' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','ia','notificaciones','usuarios','semaforo','sugeridos','share','pbm'];
+const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra', share:'Mi Participación', pbm:'Powered by MSI' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -1567,6 +1576,7 @@ function gotoTab(tab) {
   if(tab==='semaforo') renderSemaforoTab();
   if(tab==='sugeridos') renderSugeridosTab();
   if(tab==='share') renderShareTab();
+  if(tab==='pbm') renderPBMTab();
 }
 
 function openNewModal() {
@@ -4070,6 +4080,376 @@ function renderShareTab() {
   <div style="display:flex;flex-wrap:wrap;gap:16px">
     ${cardsHtml}
   </div>`;
+}
+
+// ============================================================
+// POWERED BY MSI — PBM Module
+// ============================================================
+let _pbmReports = [];      // loaded from Firebase
+let _pbmCurrent = null;    // parsed report being reviewed
+
+// ── Classification engine ────────────────────────────────────
+function _pbmChassis(desc) {
+  // Returns { tier, val }
+  if (/GABINETE\s+MSI\s+MEG/.test(desc)) return { tier:1, val:15 };
+  if (/GABINETE\s+MSI\s+MPG/.test(desc)) return { tier:2, val:10 };
+  if (desc.includes('MAG PANO 120R PZ'))  return { tier:2, val:10 };
+  if (desc.includes('MAG PANO M100R PZ')) return { tier:3, val:5 };
+  if (desc.includes('MAG PANO'))          return { tier:3, val:5 };
+  if (/MAG FORGE|MAG VAMPIRIC|MAG SHIELD|PRO SHIELD|PAG PANO|PRO FORGE/.test(desc)) return { tier:4, val:2 };
+  return { tier:4, val:2 };
+}
+
+function _pbmPSU(desc) {
+  const w = (desc.match(/(\d{3,4})W/) || [0,0]);
+  const watts = parseInt(w[1]) || 0;
+  if (!/FUENTE|A650|A750|A850|A1000/.test(desc)) return 2;
+  if (/BRONZE|BN\b|A650BN|A750BN/.test(desc))    return 2;
+  if (watts === 650 && /GOLD|GN\b/.test(desc))    return 2;
+  if (watts >= 750  && /GOLD|GN\b|GL\b/.test(desc)) return 5;
+  if (watts >= 850)  return 5;
+  if (/PLAT/.test(desc)) return 5;
+  return 2;
+}
+
+function _pbmMB(desc) {
+  // Hardcoded known models first
+  const knownMB = [
+    [/PRO B760M-E DDR4/,5],  [/PRO B760M-P DDR5/,5],
+    [/PRO B650M-B DDR5/,5],  [/PRO B760M-A WIFI DDR5/,5],
+    [/B550M-A PRO/,4],       [/PRO B840M/,4],
+    [/PRO B760M-P DDR4/,4],  [/PRO B850M/,4],
+    [/B850M GAMING/,4],      [/B860M GAMING/,4],
+    [/PRO B550M/,4],
+    [/MAG B760|MAG B860|MAG B850|MAG B840|MAG B650/,5],
+    [/Z890|Z790|Z690/,10],   [/X870/,5],
+    [/H810|H610|H510/,2],
+  ];
+  for (const [re, val] of knownMB) if (re.test(desc)) return val;
+  return (/PRO B/.test(desc)) ? 4 : 5;
+}
+
+function _pbmVGA(desc, chassisTier, prog) {
+  const p3 = {1:30,2:20,3:15,4:10,5:8};
+  const p4 = {1:40,2:35,3:30,4:18,5:14};
+  const v = prog===4 ? p4 : p3;
+  if (/5090/.test(desc)) return { tier:1, val:v[1] };
+  if (/5080/.test(desc)) return { tier:1, val:v[1] };
+  if (/5070 TI|5070TI/.test(desc)) return { tier:2, val:v[2] };
+  if (/5070/.test(desc)) {
+    const t = chassisTier <= 2 ? 2 : 3;
+    return { tier:t, val:v[t] };
+  }
+  if (/5060 TI|5060TI/.test(desc)) return { tier:3, val:v[3] };
+  if (/5060/.test(desc)) return { tier:4, val:v[4] };
+  if (/5050|4090|4080|4070|4060|3060|3050|1650/.test(desc)) return { tier:4, val:v[4] };
+  return { tier:5, val:v[5] };
+}
+
+function _pbmLC(desc, gpuTier) {
+  if (!/CORELIQUID|WATER COOLER CPU MSI/.test(desc)) return null;
+  if (/MEG.+CORELIQUID|CORELIQUID.+MEG/.test(desc)) return 10;
+  if (/MPG.+CORELIQUID|CORELIQUID.+MPG/.test(desc)) return 10;
+  if (/CORELIQUID [CEI]\d|[CEI]360|[CEI]240/.test(desc)) return 5;
+  // A series: tier depends on GPU
+  return gpuTier <= 3 ? 5 : 2;
+}
+
+function _pbmClassifyRow(desc) {
+  desc = (desc||'').toUpperCase();
+  const ch = _pbmChassis(desc);
+  const psu = _pbmPSU(desc);
+  const mb  = _pbmMB(desc);
+  // detect program first (LC present?)
+  const hasLC = /CORELIQUID|WATER COOLER CPU MSI/.test(desc);
+  const prog = hasLC ? 4 : 3;
+  const { tier: gpuTier, val: vga } = _pbmVGA(desc, ch.tier, prog);
+  const lc = _pbmLC(desc, gpuTier);
+  const correct = ch.val + psu + mb + vga + (lc||0);
+  return { chassisTier:ch.tier, gab:ch.val, psu, mb, vga, lc, correct, prog };
+}
+
+function _pbmParseXLSX(arrayBuffer) {
+  // Use SheetJS (loaded via CDN in the existing app)
+  const data = XLSX.read(arrayBuffer, { type:'array' });
+  const ws   = data.Sheets[data.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+  // Find header row
+  let headerRow = -1;
+  for (let i = 0; i < Math.min(rows.length,10); i++) {
+    const r = rows[i].map(c => String(c).toLowerCase());
+    if (r.some(c => c.includes('factura') || c.includes('vntid'))) { headerRow = i; break; }
+  }
+  if (headerRow < 0) return null;
+  const headers = rows[headerRow].map(c => String(c).toLowerCase().trim());
+  const iDate   = headers.findIndex(h => h.includes('fecha'));
+  const iInv    = headers.findIndex(h => h.includes('factura') || h.includes('vntid'));
+  const iDesc   = headers.findIndex(h => h.includes('config') || h.includes('vendida') || h.includes('descripci'));
+  const iVend   = headers.findIndex(h => h.includes('vendedor'));
+  const iClaim  = headers.findIndex(h => h.includes('rebate') || h.includes('monto') || h.includes('reclamado'));
+
+  const parsed = [];
+  for (let i = headerRow+1; i < rows.length; i++) {
+    const r = rows[i];
+    const desc = String(r[iDesc]||'').trim();
+    if (!desc || desc.toLowerCase().includes('ejemplo')) continue;
+    const num = parsed.length + 1;
+    const dateRaw = r[iDate];
+    let dateStr = '';
+    if (dateRaw instanceof Date) dateStr = dateRaw.toLocaleDateString('es-AR');
+    else if (typeof dateRaw === 'number') {
+      const d = XLSX.SSF.parse_date_code(dateRaw);
+      dateStr = `${String(d.d).padStart(2,'0')}/${String(d.m).padStart(2,'0')}/${d.y}`;
+    } else dateStr = String(dateRaw||'');
+
+    const claimed = parseFloat(r[iClaim]) || 0;
+    const cls = _pbmClassifyRow(desc);
+    parsed.push({ num, date:dateStr, invoice:String(r[iInv]||''), desc, vendedor:String(r[iVend]||''), claimed, ...cls });
+  }
+  return parsed;
+}
+
+// ── Render ───────────────────────────────────────────────────
+function renderPBMTab() {
+  const el = document.getElementById('pbm-content');
+  if (!el) return;
+
+  const rows = _pbmCurrent;
+
+  // No report loaded: show upload zone + saved reports
+  if (!rows) {
+    el.innerHTML = _pbmUploadZone();
+    _pbmSetupDrop();
+    return;
+  }
+
+  // Summary stats
+  const totalClaimed   = rows.reduce((s,r) => s + r.claimed, 0);
+  const totalCorrect   = rows.reduce((s,r) => s + r.correct, 0);
+  const diff = totalCorrect - totalClaimed;
+  const diffColor = diff >= 0 ? '#A3BE8C' : '#BF616A';
+
+  // Per-vendedor
+  const byVend = {};
+  rows.forEach(r => {
+    if (!byVend[r.vendedor]) byVend[r.vendedor] = { claimed:0, correct:0, n:0 };
+    byVend[r.vendedor].claimed  += r.claimed;
+    byVend[r.vendedor].correct  += r.correct;
+    byVend[r.vendedor].n++;
+  });
+  const vendorRows = Object.entries(byVend)
+    .sort((a,b) => b[1].correct - a[1].correct)
+    .map(([v,d]) => {
+      const vd = d.correct - d.claimed;
+      const vc = vd >= 0 ? '#A3BE8C' : '#BF616A';
+      return `<tr>
+        <td style="padding:6px 10px;font-weight:600">${v}</td>
+        <td style="padding:6px 10px;text-align:center">${d.n}</td>
+        <td style="padding:6px 10px;text-align:right">$${d.claimed}</td>
+        <td style="padding:6px 10px;text-align:right;font-weight:700;color:#A3BE8C">$${d.correct}</td>
+        <td style="padding:6px 10px;text-align:right;color:${vc};font-weight:600">${vd>=0?'+':''}$${vd}</td>
+      </tr>`;
+    }).join('');
+
+  // Detail rows
+  const detailRows = rows.map(r => {
+    const rd = r.correct - r.claimed;
+    const rc = rd >= 0 ? '#A3BE8C' : '#BF616A';
+    const lcStr = r.lc !== null ? `$${r.lc}` : '—';
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+      <td style="padding:5px 8px;text-align:center;color:#888;font-size:11px">${r.num}</td>
+      <td style="padding:5px 8px;font-size:11px;color:#888">${r.date}</td>
+      <td style="padding:5px 8px;font-size:11px">${r.invoice}</td>
+      <td style="padding:5px 8px;font-size:11px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.desc.replace(/"/g,'&quot;')}">${r.desc}</td>
+      <td style="padding:5px 8px;font-size:11px">${r.vendedor}</td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px">
+        <span style="background:rgba(255,255,255,0.07);border-radius:4px;padding:1px 6px">#${r.prog}</span>
+      </td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px">$${r.gab}</td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px">$${r.psu}</td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px">$${r.mb}</td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px">$${r.vga}</td>
+      <td style="padding:5px 8px;text-align:center;font-size:11px">${lcStr}</td>
+      <td style="padding:5px 8px;text-align:right;color:#A3BE8C;font-weight:700">$${r.correct}</td>
+      <td style="padding:5px 8px;text-align:right;color:#888;font-size:11px">${r.claimed>0?'$'+r.claimed:'—'}</td>
+      <td style="padding:5px 8px;text-align:right;color:${rc};font-weight:600;font-size:11px">${rd>=0?'+':''}$${rd||0}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+  <style>
+    .pbm-card { background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:18px 22px }
+    .pbm-metric { background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center }
+    .pbm-metric .val { font-size:26px;font-weight:700;font-family:monospace }
+    .pbm-metric .lbl { font-size:11px;color:#888;margin-top:2px }
+    .pbm-th { padding:7px 8px;text-align:center;font-size:10px;color:#888;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--card-bg) }
+    .pbm-tbl { width:100%;border-collapse:collapse;font-size:12px }
+    .pbm-tbl tr:hover { background:rgba(255,255,255,0.03) }
+  </style>
+
+  <!-- Header bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="width:36px;height:36px;background:#C0392B;border-radius:8px;display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-trophy" style="color:#fff;font-size:18px"></i>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:15px">Powered by MSI</div>
+        <div style="font-size:11px;color:#888">${rows.length} bundles · ${Object.keys(byVend).length} vendedores</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="_pbmCurrent=null;renderPBMTab()" style="font-size:12px">
+        <i class="ti ti-upload"></i> Cargar otro reporte
+      </button>
+      <button class="btn btn-primary" onclick="_pbmExport()" style="font-size:12px;background:#C0392B;border-color:#C0392B">
+        <i class="ti ti-file-spreadsheet"></i> Exportar resultado
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI row -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+    <div class="pbm-metric">
+      <div class="val" style="color:#A3BE8C">$${totalCorrect}</div>
+      <div class="lbl">A PAGAR (calculado)</div>
+    </div>
+    <div class="pbm-metric">
+      <div class="val" style="color:#888">$${totalClaimed}</div>
+      <div class="lbl">RECLAMADO POR RESELLER</div>
+    </div>
+    <div class="pbm-metric">
+      <div class="val" style="color:${diffColor}">${diff>=0?'+':''}$${diff}</div>
+      <div class="lbl">${diff>=0?'DEUDA ADICIONAL':'A FAVOR DE MSI'}</div>
+    </div>
+    <div class="pbm-metric">
+      <div class="val">${rows.length}</div>
+      <div class="lbl">BUNDLES VALIDADOS</div>
+    </div>
+  </div>
+
+  <!-- Por vendedor -->
+  <div class="pbm-card" style="margin-bottom:20px">
+    <div style="font-weight:600;font-size:13px;margin-bottom:12px">Por Vendedor</div>
+    <table class="pbm-tbl">
+      <thead><tr>
+        <th class="pbm-th" style="text-align:left">Vendedor</th>
+        <th class="pbm-th">Ventas</th>
+        <th class="pbm-th">Reclamado</th>
+        <th class="pbm-th">Correcto</th>
+        <th class="pbm-th">Diferencia</th>
+      </tr></thead>
+      <tbody>${vendorRows}</tbody>
+    </table>
+  </div>
+
+  <!-- Detalle completo -->
+  <div class="pbm-card" style="overflow-x:auto">
+    <div style="font-weight:600;font-size:13px;margin-bottom:12px">Detalle por bundle</div>
+    <table class="pbm-tbl">
+      <thead><tr>
+        <th class="pbm-th">#</th>
+        <th class="pbm-th">Fecha</th>
+        <th class="pbm-th">Factura</th>
+        <th class="pbm-th" style="text-align:left;min-width:200px">Configuración</th>
+        <th class="pbm-th" style="text-align:left">Vendedor</th>
+        <th class="pbm-th">Prog</th>
+        <th class="pbm-th">Gab</th>
+        <th class="pbm-th">PSU</th>
+        <th class="pbm-th">MB</th>
+        <th class="pbm-th">VGA</th>
+        <th class="pbm-th">LC</th>
+        <th class="pbm-th">TOTAL</th>
+        <th class="pbm-th">Reclamado</th>
+        <th class="pbm-th">Dif</th>
+      </tr></thead>
+      <tbody>${detailRows}</tbody>
+      <tfoot>
+        <tr style="border-top:2px solid var(--border)">
+          <td colspan="11" style="padding:8px 10px;font-weight:700;text-align:right;font-size:12px">TOTAL</td>
+          <td style="padding:8px 10px;text-align:right;color:#A3BE8C;font-weight:700">$${totalCorrect}</td>
+          <td style="padding:8px 10px;text-align:right;color:#888">$${totalClaimed}</td>
+          <td style="padding:8px 10px;text-align:right;color:${diffColor};font-weight:700">${diff>=0?'+':''}$${diff}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>`;
+}
+
+function _pbmUploadZone() {
+  return `
+  <style>
+    .pbm-drop { border:2px dashed rgba(192,57,43,0.4);border-radius:12px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(192,57,43,0.04) }
+    .pbm-drop:hover,.pbm-drop.drag-over { border-color:#C0392B;background:rgba(192,57,43,0.10) }
+  </style>
+  <div style="max-width:560px;margin:40px auto">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+      <div style="width:40px;height:40px;background:#C0392B;border-radius:10px;display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-trophy" style="color:#fff;font-size:20px"></i>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:16px">Powered by MSI</div>
+        <div style="font-size:12px;color:#888">Validación de reportes PBM mensuales</div>
+      </div>
+    </div>
+
+    <div class="pbm-drop" id="pbm-drop-zone" onclick="document.getElementById('pbm-file-input').click()">
+      <i class="ti ti-file-spreadsheet" style="font-size:40px;color:#C0392B;margin-bottom:12px"></i>
+      <div style="font-weight:600;font-size:14px;margin-bottom:6px">Arrastrá el reporte del reseller acá</div>
+      <div style="color:#888;font-size:12px">o hacé click para seleccionar el archivo</div>
+      <div style="color:#666;font-size:11px;margin-top:8px">.xlsx · Formato Power by MSI</div>
+    </div>
+    <input type="file" id="pbm-file-input" accept=".xlsx" style="display:none" onchange="_pbmHandleFile(this.files[0])">
+
+    <div id="pbm-upload-status" style="margin-top:14px;text-align:center;font-size:12px;color:#888"></div>
+  </div>`;
+}
+
+function _pbmSetupDrop() {
+  const zone = document.getElementById('pbm-drop-zone');
+  if (!zone) return;
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) _pbmHandleFile(f);
+  });
+}
+
+function _pbmHandleFile(file) {
+  if (!file) return;
+  const status = document.getElementById('pbm-upload-status');
+  if (status) status.innerHTML = `<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Procesando ${file.name}…`;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const rows = _pbmParseXLSX(e.target.result);
+      if (!rows || rows.length === 0) {
+        if (status) status.innerHTML = `<span style="color:#BF616A">No se encontraron filas válidas. Verificá el formato del archivo.</span>`;
+        return;
+      }
+      _pbmCurrent = rows;
+      renderPBMTab();
+    } catch(err) {
+      if (status) status.innerHTML = `<span style="color:#BF616A">Error al procesar: ${err.message}</span>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function _pbmExport() {
+  if (!_pbmCurrent) return;
+  const rows = _pbmCurrent;
+  const ws_data = [
+    ['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC','TOTAL Correcto','Reclamado','Diferencia'],
+    ...rows.map(r => [r.num,r.date,r.invoice,r.desc,r.vendedor,'#'+r.prog,r.gab,r.psu,r.mb,r.vga,r.lc!==null?r.lc:'',r.correct,r.claimed||'',r.correct-(r.claimed||0)])
+  ];
+  const wb  = XLSX.utils.book_new();
+  const ws  = XLSX.utils.aoa_to_sheet(ws_data);
+  XLSX.utils.book_append_sheet(wb, ws, 'Resultado PBM');
+  XLSX.writeFile(wb, `PBM_Resultado_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
 function getSalesPriceExportData() {
