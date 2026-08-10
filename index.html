@@ -4085,8 +4085,11 @@ function renderShareTab() {
 // ============================================================
 // POWERED BY MSI — PBM Module
 // ============================================================
-let _pbmReports = [];      // [{ name, month, rows }]
-let _pbmActiveIdx = 0;     // index of selected reseller
+let _pbmResellers  = [];    // [{ name, cuit }]  — directorio de resellers
+let _pbmReports    = [];    // [{ cuit, month, rows }] — reportes cargados
+let _pbmActiveCuit = null;  // CUIT activo en tab bar
+let _pbmActiveMon  = null;  // Mes activo dentro del reseller
+let _pbmPendingFile= null;  // File en espera de asignación
 
 // ── Classification engine ────────────────────────────────────
 function _pbmChassis(desc) {
@@ -4209,34 +4212,131 @@ function _pbmParseXLSX(arrayBuffer) {
   return parsed;
 }
 
+// ── Helpers ──────────────────────────────────────────────────
+function _pbmFmtCuit(c) {
+  const d = String(c||'').replace(/\D/g,'');
+  if (d.length === 11) return `${d.slice(0,2)}-${d.slice(2,10)}-${d.slice(10)}`;
+  return d || '—';
+}
+function _pbmNormCuit(c) { return String(c||'').replace(/\D/g,''); }
+function _pbmResellerByCuit(cuit) { return _pbmResellers.find(r => _pbmNormCuit(r.cuit) === _pbmNormCuit(cuit)); }
+function _pbmReportsFor(cuit) { return _pbmReports.filter(r => _pbmNormCuit(r.cuit) === _pbmNormCuit(cuit)); }
+function _pbmActiveReport() {
+  return _pbmReports.find(r => _pbmNormCuit(r.cuit)===_pbmNormCuit(_pbmActiveCuit) && r.month===_pbmActiveMon) || null;
+}
+
 // ── Render ───────────────────────────────────────────────────
 function renderPBMTab() {
   const el = document.getElementById('pbm-content');
   if (!el) return;
 
-  const rep = _pbmReports[_pbmActiveIdx];
+  // CSS once
+  if (!document.getElementById('pbm-style')) {
+    const s = document.createElement('style');
+    s.id = 'pbm-style';
+    s.textContent = `
+      .pbm-card{background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:18px 22px}
+      .pbm-metric{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center}
+      .pbm-metric .val{font-size:26px;font-weight:700;font-family:monospace}
+      .pbm-metric .lbl{font-size:11px;color:#888;margin-top:2px}
+      .pbm-th{padding:7px 8px;text-align:center;font-size:10px;color:#888;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--card-bg)}
+      .pbm-tbl{width:100%;border-collapse:collapse;font-size:12px}
+      .pbm-tbl tr:hover{background:rgba(255,255,255,0.03)}
+      .pbm-drop{border:2px dashed rgba(192,57,43,0.4);border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(192,57,43,0.04)}
+      .pbm-drop:hover,.pbm-drop.drag-over{border-color:#C0392B;background:rgba(192,57,43,0.10)}
+      .pbm-pill{display:inline-flex;align-items:center;border-radius:20px;overflow:hidden;border:1px solid var(--border);font-size:12px}
+      .pbm-pill.active{background:#C0392B;border-color:#C0392B}
+      .pbm-pill button{background:none;border:none;cursor:pointer;padding:5px 12px;font-size:12px;color:inherit}
+      .pbm-pill.active button{color:#fff}
+      .pbm-pill .x{padding:5px 8px 5px 0;font-size:11px;color:#666}
+      .pbm-pill.active .x{color:rgba(255,255,255,0.55)}
+      .pbm-input{background:var(--input-bg,rgba(255,255,255,0.07));border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;width:100%}
+      .pbm-select{background:var(--input-bg,rgba(255,255,255,0.07));border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;width:100%}
+    `;
+    document.head.appendChild(s);
+  }
 
   // ── Reseller tab bar ─────────────────────────────────────
-  const tabBar = _pbmReports.length === 0 ? '' : `
-  <div style="display:flex;align-items:center;gap:6px;margin-bottom:20px;flex-wrap:wrap">
-    ${_pbmReports.map((r,i) => {
-      const active = i === _pbmActiveIdx;
-      return `<div style="display:flex;align-items:center;gap:0;background:${active?'#C0392B':'var(--card-bg)'};border:1px solid ${active?'#C0392B':'var(--border)'};border-radius:20px;overflow:hidden">
-        <button onclick="_pbmActiveIdx=${i};renderPBMTab()" style="background:none;border:none;cursor:pointer;padding:5px 14px;font-size:12px;font-weight:${active?700:400};color:${active?'#fff':'var(--text)'}">${r.name}</button>
-        <button onclick="_pbmRemove(${i})" style="background:none;border:none;cursor:pointer;padding:5px 8px 5px 0;font-size:11px;color:${active?'rgba(255,255,255,0.6)':'#666'}" title="Eliminar">×</button>
+  const allCuits = [...new Set([
+    ..._pbmResellers.map(r => _pbmNormCuit(r.cuit)),
+    ..._pbmReports.map(r => _pbmNormCuit(r.cuit))
+  ])].filter(Boolean);
+
+  const resellerBar = `
+  <div style="display:flex;align-items:center;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+    ${allCuits.map(cuit => {
+      const res = _pbmResellerByCuit(cuit);
+      const label = res ? res.name : _pbmFmtCuit(cuit);
+      const active = _pbmNormCuit(_pbmActiveCuit) === cuit;
+      return `<div class="pbm-pill${active?' active':''}">
+        <button onclick="_pbmActiveCuit='${cuit}';_pbmActiveMon=(_pbmReportsFor('${cuit}')[0]||{}).month||null;renderPBMTab()">${label}</button>
+        <button class="x" onclick="_pbmRemoveReseller('${cuit}')" title="Quitar">×</button>
       </div>`;
     }).join('')}
-    <button onclick="_pbmShowDrop()" style="background:none;border:1px dashed rgba(192,57,43,0.5);border-radius:20px;padding:5px 14px;font-size:12px;color:#C0392B;cursor:pointer">
-      <i class="ti ti-plus"></i> Agregar reseller
+    <button onclick="_pbmShowManage()" style="background:none;border:1px dashed rgba(192,57,43,0.5);border-radius:20px;padding:5px 14px;font-size:12px;color:#C0392B;cursor:pointer">
+      <i class="ti ti-users"></i> Gestionar resellers
+    </button>
+    <button onclick="_pbmShowUpload()" style="background:none;border:1px dashed rgba(192,57,43,0.5);border-radius:20px;padding:5px 14px;font-size:12px;color:#C0392B;cursor:pointer">
+      <i class="ti ti-upload"></i> Cargar reporte
     </button>
   </div>`;
 
-  // ── Upload zone (no reports or adding new) ────────────────
-  if (!rep || document.getElementById('pbm-showing-drop')) {
-    el.innerHTML = tabBar + _pbmDropHTML();
-    _pbmSetupDrop();
+  // ── No resellers yet ──────────────────────────────────────
+  if (allCuits.length === 0) {
+    el.innerHTML = _pbmWelcomeHTML();
+    _pbmSetupDrop('pbm-drop-zone');
     return;
   }
+
+  // ── Ensure active cuit is valid ───────────────────────────
+  if (!_pbmActiveCuit || !allCuits.includes(_pbmNormCuit(_pbmActiveCuit))) {
+    _pbmActiveCuit = allCuits[0];
+    const firstRep = _pbmReportsFor(_pbmActiveCuit)[0];
+    _pbmActiveMon = firstRep ? firstRep.month : null;
+  }
+
+  const reportsForActive = _pbmReportsFor(_pbmActiveCuit);
+  const res = _pbmResellerByCuit(_pbmActiveCuit);
+
+  // ── Month sub-bar (if multiple months loaded) ─────────────
+  const months = reportsForActive.map(r => r.month);
+  const monthBar = months.length <= 1 ? '' : `
+  <div style="display:flex;align-items:center;gap:5px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:11px;color:#888;margin-right:4px">Mes:</span>
+    ${months.map(m => {
+      const a = m === _pbmActiveMon;
+      return `<button onclick="_pbmActiveMon='${m}';renderPBMTab()" style="background:${a?'rgba(192,57,43,0.18)':'none'};border:1px solid ${a?'#C0392B':'var(--border)'};border-radius:14px;padding:3px 12px;font-size:12px;color:${a?'#C0392B':'var(--text)'};cursor:pointer;font-weight:${a?700:400}">${m||'Sin mes'}</button>`;
+    }).join('')}
+    <button onclick="_pbmRemoveReport('${_pbmActiveCuit}','${_pbmActiveMon}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#666;padding:3px 6px" title="Eliminar este mes">
+      <i class="ti ti-trash" style="font-size:12px"></i>
+    </button>
+  </div>`;
+
+  // ── No reports for this reseller yet ──────────────────────
+  if (reportsForActive.length === 0) {
+    el.innerHTML = resellerBar + monthBar + `
+    <div style="max-width:520px;margin:20px auto;text-align:center">
+      <div style="font-size:13px;color:#888;margin-bottom:16px">
+        No hay reportes cargados para <strong>${res ? res.name : _pbmFmtCuit(_pbmActiveCuit)}</strong>
+        ${res ? `<span style="font-size:11px;color:#666"> · CUIT ${_pbmFmtCuit(res.cuit)}</span>` : ''}
+      </div>
+      <div class="pbm-drop" id="pbm-drop-zone" onclick="document.getElementById('pbm-file-input2').click()">
+        <i class="ti ti-file-spreadsheet" style="font-size:36px;color:#C0392B;margin-bottom:10px"></i>
+        <div style="font-weight:600;font-size:13px;margin-bottom:4px">Arrastrá el reporte PBM acá</div>
+        <div style="color:#666;font-size:11px">.xlsx · ya asignado a este reseller</div>
+      </div>
+      <input type="file" id="pbm-file-input2" accept=".xlsx" style="display:none"
+        onchange="_pbmHandlePreAssigned('${_pbmActiveCuit}',this.files[0])">
+    </div>`;
+    _pbmSetupDrop('pbm-drop-zone', f => _pbmHandlePreAssigned(_pbmActiveCuit, f));
+    return;
+  }
+
+  // Ensure active month is valid
+  if (!_pbmActiveMon || !months.includes(_pbmActiveMon)) _pbmActiveMon = months[0];
+
+  const rep = _pbmActiveReport();
+  if (!rep) { renderPBMTab(); return; }
 
   const rows = rep.rows;
   const totalClaimed = rows.reduce((s,r) => s + r.claimed, 0);
@@ -4273,7 +4373,7 @@ function renderPBMTab() {
       <td style="padding:5px 8px;text-align:center;color:#888;font-size:11px">${r.num}</td>
       <td style="padding:5px 8px;font-size:11px;color:#888">${r.date}</td>
       <td style="padding:5px 8px;font-size:11px">${r.invoice}</td>
-      <td style="padding:5px 8px;font-size:11px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.desc.replace(/"/g,'&quot;')}">${r.desc}</td>
+      <td style="padding:5px 8px;font-size:11px;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${r.desc.replace(/"/g,'&quot;')}">${r.desc}</td>
       <td style="padding:5px 8px;font-size:11px">${r.vendedor}</td>
       <td style="padding:5px 8px;text-align:center;font-size:11px"><span style="background:rgba(255,255,255,0.07);border-radius:4px;padding:1px 6px">#${r.prog}</span></td>
       <td style="padding:5px 8px;text-align:center;font-size:11px">$${r.gab}</td>
@@ -4288,30 +4388,16 @@ function renderPBMTab() {
   }).join('');
 
   el.innerHTML = `
-  <style>
-    .pbm-card{background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:18px 22px}
-    .pbm-metric{background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:14px 18px;text-align:center}
-    .pbm-metric .val{font-size:26px;font-weight:700;font-family:monospace}
-    .pbm-metric .lbl{font-size:11px;color:#888;margin-top:2px}
-    .pbm-th{padding:7px 8px;text-align:center;font-size:10px;color:#888;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--card-bg)}
-    .pbm-tbl{width:100%;border-collapse:collapse;font-size:12px}
-    .pbm-tbl tr:hover{background:rgba(255,255,255,0.03)}
-  </style>
-
-  ${tabBar}
+  ${resellerBar}
+  ${monthBar}
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:32px;height:32px;background:#C0392B;border-radius:7px;display:flex;align-items:center;justify-content:center">
-        <i class="ti ti-trophy" style="color:#fff;font-size:16px"></i>
-      </div>
-      <div>
-        <div style="font-weight:700;font-size:14px">${rep.name}</div>
-        <div style="font-size:11px;color:#888">${rows.length} bundles · ${rep.month||''}</div>
-      </div>
+    <div>
+      <div style="font-weight:700;font-size:15px">${res ? res.name : _pbmFmtCuit(_pbmActiveCuit)}</div>
+      <div style="font-size:11px;color:#888">CUIT ${_pbmFmtCuit(_pbmActiveCuit)} · ${_pbmActiveMon||''} · ${rows.length} bundles</div>
     </div>
     <button class="btn btn-primary" onclick="_pbmExport()" style="font-size:12px;background:#C0392B;border-color:#C0392B">
-      <i class="ti ti-file-spreadsheet"></i> Exportar resultado
+      <i class="ti ti-file-spreadsheet"></i> Exportar
     </button>
   </div>
 
@@ -4335,7 +4421,7 @@ function renderPBMTab() {
     <div style="font-weight:600;font-size:13px;margin-bottom:12px">Detalle por bundle</div>
     <table class="pbm-tbl"><thead><tr>
       <th class="pbm-th">#</th><th class="pbm-th">Fecha</th><th class="pbm-th">Factura</th>
-      <th class="pbm-th" style="text-align:left;min-width:200px">Configuración</th>
+      <th class="pbm-th" style="text-align:left;min-width:180px">Configuración</th>
       <th class="pbm-th" style="text-align:left">Vendedor</th>
       <th class="pbm-th">Prog</th><th class="pbm-th">Gab</th><th class="pbm-th">PSU</th>
       <th class="pbm-th">MB</th><th class="pbm-th">VGA</th><th class="pbm-th">LC</th>
@@ -4352,109 +4438,289 @@ function renderPBMTab() {
   </div>`;
 }
 
-function _pbmRemove(idx) {
-  _pbmReports.splice(idx, 1);
-  _pbmActiveIdx = Math.min(_pbmActiveIdx, Math.max(0, _pbmReports.length-1));
+// ── Welcome (first launch) ────────────────────────────────────
+function _pbmWelcomeHTML() {
+  return `
+  <div style="max-width:560px;margin:40px auto">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+      <div style="width:40px;height:40px;background:#C0392B;border-radius:10px;display:flex;align-items:center;justify-content:center">
+        <i class="ti ti-trophy" style="color:#fff;font-size:20px"></i>
+      </div>
+      <div>
+        <div style="font-weight:700;font-size:16px">Powered by MSI</div>
+        <div style="font-size:12px;color:#888">Validación de reportes PBM por reseller</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <button onclick="_pbmShowManage()" class="pbm-card" style="text-align:left;cursor:pointer;border:1px solid var(--border)">
+        <i class="ti ti-users" style="font-size:22px;color:#C0392B;margin-bottom:8px;display:block"></i>
+        <div style="font-weight:600;font-size:13px">Agregar resellers</div>
+        <div style="font-size:11px;color:#888;margin-top:3px">Registrá nombre y CUIT de cada cliente</div>
+      </button>
+      <button onclick="_pbmShowUpload()" class="pbm-card" style="text-align:left;cursor:pointer;border:1px solid var(--border)">
+        <i class="ti ti-upload" style="font-size:22px;color:#C0392B;margin-bottom:8px;display:block"></i>
+        <div style="font-weight:600;font-size:13px">Cargar reporte</div>
+        <div style="font-size:11px;color:#888;margin-top:3px">Subí el .xlsx y asignalo al reseller y mes</div>
+      </button>
+    </div>
+    <div class="pbm-drop" id="pbm-drop-zone" onclick="_pbmShowUpload()">
+      <i class="ti ti-file-spreadsheet" style="font-size:40px;color:#C0392B;margin-bottom:12px"></i>
+      <div style="font-weight:600;font-size:14px;margin-bottom:6px">O arrastrá el reporte acá</div>
+      <div style="color:#888;font-size:12px">.xlsx · Formato Power by MSI</div>
+    </div>
+  </div>`;
+}
+
+// ── Manage resellers modal ────────────────────────────────────
+function _pbmShowManage() {
+  const rows = _pbmResellers.map((r,i) => `
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px 10px;font-weight:600">${r.name}</td>
+      <td style="padding:8px 10px;color:#888;font-family:monospace;font-size:12px">${_pbmFmtCuit(r.cuit)}</td>
+      <td style="padding:8px 10px;text-align:right">
+        <button onclick="_pbmResellers.splice(${i},1);_pbmShowManage()" style="background:none;border:none;cursor:pointer;color:#BF616A;font-size:12px">
+          <i class="ti ti-trash"></i>
+        </button>
+      </td>
+    </tr>`).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'pbm-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:28px;width:480px;max-width:95vw;max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-weight:700;font-size:15px"><i class="ti ti-users" style="color:#C0392B"></i> Resellers PBM</div>
+      <button onclick="document.getElementById('pbm-modal').remove()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888">×</button>
+    </div>
+
+    ${_pbmResellers.length > 0 ? `
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+      <thead><tr>
+        <th style="text-align:left;padding:6px 10px;font-size:11px;color:#888;border-bottom:1px solid var(--border)">Nombre</th>
+        <th style="text-align:left;padding:6px 10px;font-size:11px;color:#888;border-bottom:1px solid var(--border)">CUIT</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>` : `<div style="color:#888;font-size:12px;margin-bottom:20px;text-align:center">Aún no hay resellers registrados.</div>`}
+
+    <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:14px">
+      <div style="font-weight:600;font-size:12px;margin-bottom:12px;color:#aaa">AGREGAR RESELLER</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div>
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Nombre</div>
+          <input id="pbm-new-name" class="pbm-input" placeholder="Ej: TechStore SRL">
+        </div>
+        <div>
+          <div style="font-size:11px;color:#888;margin-bottom:4px">CUIT</div>
+          <input id="pbm-new-cuit" class="pbm-input" placeholder="XX-XXXXXXXX-X" oninput="this.value=this.value.replace(/[^0-9-]/g,'')">
+        </div>
+      </div>
+      <button onclick="_pbmAddResellerFromModal()" class="btn btn-primary" style="width:100%;background:#C0392B;border-color:#C0392B;font-size:13px">
+        <i class="ti ti-plus"></i> Agregar
+      </button>
+      <div id="pbm-modal-err" style="color:#BF616A;font-size:11px;margin-top:6px;text-align:center"></div>
+    </div>
+  </div>`;
+  document.getElementById('pbm-modal')?.remove();
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+  document.getElementById('pbm-new-name')?.focus();
+}
+
+function _pbmAddResellerFromModal() {
+  const name = document.getElementById('pbm-new-name')?.value.trim();
+  const cuitRaw = document.getElementById('pbm-new-cuit')?.value.trim();
+  const cuit = _pbmNormCuit(cuitRaw);
+  const err = document.getElementById('pbm-modal-err');
+  if (!name) { if(err) err.textContent = 'Ingresá un nombre.'; return; }
+  if (cuit.length < 8) { if(err) err.textContent = 'CUIT inválido (mínimo 8 dígitos).'; return; }
+  if (_pbmResellers.some(r => _pbmNormCuit(r.cuit) === cuit)) { if(err) err.textContent = 'CUIT ya registrado.'; return; }
+  _pbmResellers.push({ name, cuit });
+  _pbmShowManage(); // re-render modal
+}
+
+function _pbmRemoveReseller(cuit) {
+  _pbmResellers = _pbmResellers.filter(r => _pbmNormCuit(r.cuit) !== _pbmNormCuit(cuit));
+  _pbmReports   = _pbmReports.filter(r => _pbmNormCuit(r.cuit) !== _pbmNormCuit(cuit));
+  if (_pbmNormCuit(_pbmActiveCuit) === _pbmNormCuit(cuit)) { _pbmActiveCuit = null; _pbmActiveMon = null; }
   renderPBMTab();
 }
 
-function _pbmShowDrop() {
-  // Temporarily inject drop zone below tab bar
-  const el = document.getElementById('pbm-content');
-  if (!el) return;
-  // Store flag so renderPBMTab knows
-  el.dataset.showDrop = '1';
-  const tabBar = el.querySelector('[data-pbm-tabbar]');
-  // Re-render with drop showing
-  _pbmRenderWithDrop();
+function _pbmRemoveReport(cuit, month) {
+  _pbmReports = _pbmReports.filter(r => !((_pbmNormCuit(r.cuit)===_pbmNormCuit(cuit)) && r.month===month));
+  _pbmActiveMon = (_pbmReportsFor(cuit)[0]||{}).month || null;
+  renderPBMTab();
 }
 
-function _pbmRenderWithDrop() {
-  const el = document.getElementById('pbm-content');
-  if (!el) return;
-  const tabsHtml = _pbmReports.length === 0 ? '' : `
-  <div style="display:flex;align-items:center;gap:6px;margin-bottom:20px;flex-wrap:wrap">
-    ${_pbmReports.map((r,i) => {
-      const active = i === _pbmActiveIdx;
-      return `<div style="display:flex;align-items:center;gap:0;background:${active?'#C0392B':'var(--card-bg)'};border:1px solid ${active?'#C0392B':'var(--border)'};border-radius:20px;overflow:hidden">
-        <button onclick="_pbmActiveIdx=${i};renderPBMTab()" style="background:none;border:none;cursor:pointer;padding:5px 14px;font-size:12px;font-weight:${active?700:400};color:${active?'#fff':'var(--text)'}">${r.name}</button>
-        <button onclick="_pbmRemove(${i})" style="background:none;border:none;cursor:pointer;padding:5px 8px 5px 0;font-size:11px;color:${active?'rgba(255,255,255,0.6)':'#666'}">×</button>
-      </div>`;
-    }).join('')}
-    <button style="background:rgba(192,57,43,0.15);border:1px solid #C0392B;border-radius:20px;padding:5px 14px;font-size:12px;color:#C0392B;cursor:default">
-      <i class="ti ti-plus"></i> Agregar reseller
+// ── Upload modal ──────────────────────────────────────────────
+function _pbmShowUpload() {
+  const opts = _pbmResellers.map(r => `<option value="${_pbmNormCuit(r.cuit)}">${r.name} — ${_pbmFmtCuit(r.cuit)}</option>`).join('');
+  const modal = document.createElement('div');
+  modal.id = 'pbm-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:28px;width:460px;max-width:95vw">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-weight:700;font-size:15px"><i class="ti ti-upload" style="color:#C0392B"></i> Cargar reporte PBM</div>
+      <button onclick="document.getElementById('pbm-modal').remove();_pbmPendingFile=null" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888">×</button>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:#888;margin-bottom:5px">Reseller</div>
+      <select id="pbm-up-cuit" class="pbm-select">
+        <option value="">— Seleccioná un reseller —</option>
+        ${opts}
+        <option value="__new__">+ Nuevo reseller…</option>
+      </select>
+    </div>
+
+    <div id="pbm-new-res-fields" style="display:none;background:rgba(255,255,255,0.04);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:11px;color:#888;margin-bottom:4px">Nombre</div>
+          <input id="pbm-up-name" class="pbm-input" placeholder="TechStore SRL">
+        </div>
+        <div>
+          <div style="font-size:11px;color:#888;margin-bottom:4px">CUIT</div>
+          <input id="pbm-up-newcuit" class="pbm-input" placeholder="XX-XXXXXXXX-X" oninput="this.value=this.value.replace(/[^0-9-]/g,'')">
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:#888;margin-bottom:5px">Mes del reporte</div>
+      <input id="pbm-up-month" class="pbm-input" placeholder="Ej: Julio 2026">
+    </div>
+
+    <div id="pbm-up-drop" class="pbm-drop" style="margin-bottom:14px" onclick="document.getElementById('pbm-up-input').click()">
+      <i class="ti ti-file-spreadsheet" id="pbm-up-icon" style="font-size:32px;color:#C0392B;margin-bottom:8px"></i>
+      <div id="pbm-up-label" style="font-weight:600;font-size:13px;margin-bottom:4px">
+        ${_pbmPendingFile ? _pbmPendingFile.name : 'Arrastrá el archivo acá'}
+      </div>
+      <div style="color:#666;font-size:11px">.xlsx · Formato Power by MSI</div>
+    </div>
+    <input type="file" id="pbm-up-input" accept=".xlsx" style="display:none" onchange="_pbmPendingFile=this.files[0];document.getElementById('pbm-up-label').textContent=this.files[0].name;document.getElementById('pbm-up-icon').style.color='#A3BE8C'">
+
+    <div id="pbm-up-err" style="color:#BF616A;font-size:11px;margin-bottom:10px;text-align:center"></div>
+
+    <button onclick="_pbmProcessUpload()" class="btn btn-primary" style="width:100%;background:#C0392B;border-color:#C0392B;font-size:13px">
+      <i class="ti ti-check"></i> Procesar reporte
     </button>
   </div>`;
-  el.innerHTML = tabsHtml + _pbmDropHTML();
-  _pbmSetupDrop();
-}
+  document.getElementById('pbm-modal')?.remove();
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal){ modal.remove(); _pbmPendingFile=null; } });
 
-function _pbmDropHTML() {
-  return `
-  <style>
-    .pbm-drop{border:2px dashed rgba(192,57,43,0.4);border-radius:12px;padding:48px 24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(192,57,43,0.04)}
-    .pbm-drop:hover,.pbm-drop.drag-over{border-color:#C0392B;background:rgba(192,57,43,0.10)}
-  </style>
-  <div style="max-width:520px;margin:20px auto">
-    <div class="pbm-drop" id="pbm-drop-zone" onclick="document.getElementById('pbm-file-input').click()">
-      <i class="ti ti-file-spreadsheet" style="font-size:40px;color:#C0392B;margin-bottom:12px"></i>
-      <div style="font-weight:600;font-size:14px;margin-bottom:6px">Arrastrá el reporte del reseller acá</div>
-      <div style="color:#888;font-size:12px">o hacé click para seleccionar</div>
-      <div style="color:#666;font-size:11px;margin-top:6px">.xlsx · Formato Power by MSI</div>
-    </div>
-    <input type="file" id="pbm-file-input" accept=".xlsx" style="display:none" onchange="_pbmHandleFile(this.files[0])">
-    <div id="pbm-upload-status" style="margin-top:12px;text-align:center;font-size:12px;color:#888"></div>
-    ${_pbmReports.length>0?'<div style="text-align:center;margin-top:10px"><button class="btn" onclick="renderPBMTab()" style="font-size:11px">Cancelar</button></div>':''}
-  </div>`;
-}
+  // Toggle new reseller fields
+  document.getElementById('pbm-up-cuit').addEventListener('change', function() {
+    document.getElementById('pbm-new-res-fields').style.display = this.value==='__new__' ? 'block' : 'none';
+  });
 
-function _pbmSetupDrop() {
-  const zone = document.getElementById('pbm-drop-zone');
-  if (!zone) return;
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('drag-over');
-    if (e.dataTransfer.files[0]) _pbmHandleFile(e.dataTransfer.files[0]);
+  // Drop onto modal zone
+  const dz = document.getElementById('pbm-up-drop');
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0]; if(!f) return;
+    _pbmPendingFile = f;
+    document.getElementById('pbm-up-label').textContent = f.name;
+    document.getElementById('pbm-up-icon').style.color = '#A3BE8C';
   });
 }
 
-function _pbmHandleFile(file) {
-  if (!file) return;
-  const status = document.getElementById('pbm-upload-status');
-  if (status) status.innerHTML = `<i class="ti ti-loader"></i> Procesando ${file.name}…`;
+function _pbmProcessUpload() {
+  const err = document.getElementById('pbm-up-err');
+  const cuitSel = document.getElementById('pbm-up-cuit')?.value;
+  const month = document.getElementById('pbm-up-month')?.value.trim();
+  let finalCuit = cuitSel;
+
+  if (!month) { if(err) err.textContent = 'Ingresá el mes del reporte.'; return; }
+  if (!_pbmPendingFile) { if(err) err.textContent = 'Seleccioná un archivo .xlsx.'; return; }
+
+  if (cuitSel === '__new__') {
+    const newName = document.getElementById('pbm-up-name')?.value.trim();
+    const newCuit = _pbmNormCuit(document.getElementById('pbm-up-newcuit')?.value);
+    if (!newName) { if(err) err.textContent = 'Ingresá el nombre del reseller.'; return; }
+    if (newCuit.length < 8) { if(err) err.textContent = 'CUIT inválido.'; return; }
+    if (!_pbmResellers.some(r => _pbmNormCuit(r.cuit)===newCuit)) {
+      _pbmResellers.push({ name: newName, cuit: newCuit });
+    }
+    finalCuit = newCuit;
+  }
+
+  if (!finalCuit) { if(err) err.textContent = 'Seleccioná un reseller.'; return; }
+
+  // Check duplicate
+  if (_pbmReports.some(r => _pbmNormCuit(r.cuit)===_pbmNormCuit(finalCuit) && r.month===month)) {
+    if(err) err.textContent = `Ya existe un reporte de "${month}" para este reseller. Eliminalo primero.`; return;
+  }
+
+  const btn = document.querySelector('#pbm-modal .btn-primary');
+  if (btn) btn.textContent = 'Procesando…';
+
+  const file = _pbmPendingFile;
   const reader = new FileReader();
   reader.onload = ev => {
     try {
       const rows = _pbmParseXLSX(ev.target.result);
       if (!rows || rows.length === 0) {
-        if (status) status.innerHTML = `<span style="color:#BF616A">Sin filas válidas. Verificá el formato.</span>`;
+        if(err) err.textContent = 'Sin filas válidas. Verificá el formato del archivo.';
+        if(btn) btn.textContent = 'Procesar reporte';
         return;
       }
-      // Derive reseller name from filename
-      const name = file.name.replace(/\.[^.]+$/, '').replace(/reporte[_ -]*/i,'').replace(/powered[_ -]by[_ -]msi[_ -]*/i,'').trim() || `Reseller ${_pbmReports.length+1}`;
-      _pbmReports.push({ name, month: '', rows });
-      _pbmActiveIdx = _pbmReports.length - 1;
+      _pbmReports.push({ cuit: _pbmNormCuit(finalCuit), month, rows });
+      _pbmActiveCuit = _pbmNormCuit(finalCuit);
+      _pbmActiveMon  = month;
+      _pbmPendingFile = null;
+      document.getElementById('pbm-modal')?.remove();
       renderPBMTab();
-    } catch(err) {
-      if (status) status.innerHTML = `<span style="color:#BF616A">Error: ${err.message}</span>`;
+    } catch(e) {
+      if(err) err.textContent = `Error: ${e.message}`;
+      if(btn) btn.textContent = 'Procesar reporte';
     }
   };
   reader.readAsArrayBuffer(file);
 }
 
+function _pbmHandlePreAssigned(cuit, file) {
+  if (!file) return;
+  _pbmPendingFile = file;
+  _pbmShowUpload();
+  // Pre-select the reseller
+  setTimeout(() => {
+    const sel = document.getElementById('pbm-up-cuit');
+    if (sel) sel.value = _pbmNormCuit(cuit);
+  }, 50);
+}
+
+function _pbmSetupDrop(zoneId, cb) {
+  const zone = document.getElementById(zoneId);
+  if (!zone) return;
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0]; if(!f) return;
+    if (cb) cb(f); else { _pbmPendingFile=f; _pbmShowUpload(); }
+  });
+}
+
 function _pbmExport() {
-  const rep = _pbmReports[_pbmActiveIdx];
+  const rep = _pbmActiveReport();
   if (!rep) return;
+  const res = _pbmResellerByCuit(rep.cuit);
   const rows = rep.rows;
   const ws_data = [
     ['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC','TOTAL Correcto','Reclamado','Diferencia'],
     ...rows.map(r => [r.num,r.date,r.invoice,r.desc,r.vendedor,'#'+r.prog,r.gab,r.psu,r.mb,r.vga,r.lc!==null?r.lc:'',r.correct,r.claimed||'',r.correct-(r.claimed||0)])
   ];
-  const wb  = XLSX.utils.book_new();
-  const ws  = XLSX.utils.aoa_to_sheet(ws_data);
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
   XLSX.utils.book_append_sheet(wb, ws, 'Resultado PBM');
-  XLSX.writeFile(wb, `PBM_${rep.name}_${new Date().toISOString().slice(0,10)}.xlsx`);
+  const fname = `PBM_${res?res.name:rep.cuit}_${rep.month||''}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fname.replace(/\s+/g,'_'));
 }
 
 function getSalesPriceExportData() {
