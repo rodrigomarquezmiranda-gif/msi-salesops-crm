@@ -540,7 +540,10 @@ document.addEventListener('DOMContentLoaded', () => _loginSelectCountry(_current
         <div>API Key de Anthropic (solo para IA)</div>
         <input type="password" id="api-key-input" placeholder="sk-ant-..." oninput="saveApiKey()" />
       </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center">v<span id="app-version-label"></span></div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px;text-align:center">
+        v<span id="app-version-label"></span>
+        · <span id="app-country-label" style="font-size:12px" title="País activo"></span>
+      </div>
       <button class="btn" onclick="signOut()" style="width:100%;font-size:11px;justify-content:center;margin-top:6px;color:var(--text3)"><i class="ti ti-logout" style="font-size:13px"></i> Cerrar sesión</button>
     </div>
   </aside>
@@ -975,6 +978,11 @@ document.addEventListener('DOMContentLoaded', () => _loginSelectCountry(_current
                 <option value="admin">Administrador</option>
                 <option value="distributor">Distribuidor</option>
               </select>
+              <select id="new-user-country"
+                style="padding:8px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem;cursor:pointer">
+                <option value="ar">🇦🇷 Argentina</option>
+                <option value="mx">🇲🇽 México</option>
+              </select>
               <select id="new-user-distributor" style="display:none;padding:8px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:0.875rem;cursor:pointer">
                 <option value="">— Elegir disti —</option>
                 <option value="air">AIR COMPUTERS</option>
@@ -1226,7 +1234,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.10.08.2026.9';
+const APP_VERSION = '1.10.08.2026.10';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7807,6 +7815,11 @@ function runOneTimeMigrations() {
 document.title = `SalesOps CRM v${APP_VERSION}`;
 const appVersionLabel = document.getElementById('app-version-label');
 if(appVersionLabel) appVersionLabel.textContent = APP_VERSION;
+function _updateCountryLabel() {
+  const el = document.getElementById('app-country-label');
+  if(el) el.textContent = (COUNTRIES[_currentCountry]||{}).flag || '🌐';
+}
+_updateCountryLabel();
 
 // ─── NOTIFICACIONES DE PRECIOS ───────────────────────────────────────────────
 let notifEmails = [];
@@ -7935,6 +7948,7 @@ async function addAllowedUser() {
   const email    = (document.getElementById('new-user-email').value || '').trim().toLowerCase();
   const password = (document.getElementById('new-user-pass').value || '').trim();
   const role     = document.getElementById('new-user-role').value;
+  const country  = document.getElementById('new-user-country')?.value || 'ar';
   const distributor = role === 'distributor' ? (document.getElementById('new-user-distributor').value || '') : '';
   if (!email || !email.includes('@')) return alert('Ingresá un email válido.');
   if (role === 'distributor' && !distributor) return alert('Seleccioná el distribuidor para este usuario.');
@@ -7956,7 +7970,7 @@ async function addAllowedUser() {
     await secondaryApp.delete().catch(() => {});
   }
 
-  const entry = { email, role, uid, name: '', addedAt: new Date().toISOString(), ...(distributor ? { distributor } : {}) };
+  const entry = { email, role, uid, name: '', addedAt: new Date().toISOString(), country, ...(distributor ? { distributor } : {}) };
   await firebase.database().ref(`salesops_allowed_users/${key}`).set(entry);
   _allowedUsers[key] = entry;
   // Agregar al índice de UIDs para reglas de seguridad
@@ -7964,6 +7978,8 @@ async function addAllowedUser() {
   document.getElementById('new-user-email').value = '';
   document.getElementById('new-user-pass').value  = '';
   document.getElementById('new-user-role').value  = 'readonly';
+  const csel = document.getElementById('new-user-country');
+  if(csel) csel.value = 'ar';
   const dsel = document.getElementById('new-user-distributor');
   if(dsel) { dsel.value = ''; dsel.style.display = 'none'; }
   renderUsersTab();
@@ -7992,6 +8008,12 @@ async function changeUserRole(key, role) {
   renderUsersTab();
 }
 
+async function changeUserCountry(key, country) {
+  await firebase.database().ref(`salesops_allowed_users/${key}/country`).set(country);
+  if (_allowedUsers[key]) _allowedUsers[key].country = country;
+  renderUsersTab();
+}
+
 async function changeUserDistributor(key, distributor) {
   await firebase.database().ref(`salesops_allowed_users/${key}/distributor`).set(distributor);
   if (_allowedUsers[key]) _allowedUsers[key].distributor = distributor;
@@ -8010,7 +8032,8 @@ async function renderUsersTab() {
     list.innerHTML = '<div class="empty-state" style="padding:2rem 0"><i class="ti ti-user-off"></i><p>No hay usuarios configurados.</p></div>';
     return;
   }
-  const DIST_LABELS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
+  const DIST_LABELS    = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
+  const COUNTRY_FLAGS  = { ar:'🇦🇷', mx:'🇲🇽' };
   // Ordenar: owner, admin, readonly/reader-pi, distribuidor
   entries.sort(([,a],[,b]) => {
     const rank = u => u.uid===OWNER_UID ? 0 : u.role==='admin' ? 1 : u.role==='distributor' ? 3 : 2;
@@ -8021,6 +8044,10 @@ async function renderUsersTab() {
     const isDist  = u.role === 'distributor';
     const active  = !!u.uid;
     const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : null;
+    const countryFlag = COUNTRY_FLAGS[u.country] || '🌐';
+    const countryBadge = !isOwner
+      ? `<span style="font-size:13px;margin-left:6px" title="${(COUNTRIES[u.country]||{}).name||u.country||'—'}">${countryFlag}</span>`
+      : '';
     const distBadge = isDist && u.distributor
       ? `<span class="pill" style="background:var(--bg2);color:var(--amber-text);font-size:10px;margin-left:6px"><i class="ti ti-building-store" style="font-size:10px"></i> ${esc(DIST_LABELS[u.distributor]||u.distributor)}</span>`
       : '';
@@ -8040,7 +8067,7 @@ async function renderUsersTab() {
         <i class="ti ti-${isOwner?'shield-check':isDist?'building-store':'user'}"></i>
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}${u.name ? `<span style="font-weight:400;color:var(--text3);margin-left:8px;font-size:12px">${esc(u.name)}</span>` : ''}${distBadge}</div>
+        <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}${u.name ? `<span style="font-weight:400;color:var(--text3);margin-left:8px;font-size:12px">${esc(u.name)}</span>` : ''}${countryBadge}${distBadge}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">
           ${active
             ? `<span style="color:var(--green-text)"><i class="ti ti-circle-check-filled" style="font-size:10px"></i> Activo${lastLogin ? ` · último acceso ${lastLogin}` : ''}</span>`
@@ -8050,7 +8077,12 @@ async function renderUsersTab() {
       <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
         ${isOwner
           ? `<span class="pill" style="background:var(--blue-bg);color:var(--blue-text)"><i class="ti ti-shield-check" style="font-size:10px"></i> Owner</span>`
-          : `${distSelect}<select onchange="changeUserRole('${key}',this.value)"
+          : `<select onchange="changeUserCountry('${key}',this.value)"
+               style="font-size:11px;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer">
+               <option value="ar" ${(u.country||'ar')==='ar'?'selected':''}>🇦🇷 AR</option>
+               <option value="mx" ${u.country==='mx'?'selected':''}>🇲🇽 MX</option>
+             </select>
+             ${distSelect}<select onchange="changeUserRole('${key}',this.value)"
                style="font-size:11px;padding:4px 8px;border-radius:6px;border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer">
                <option value="readonly" ${u.role==='readonly'?'selected':''}>Solo lectura</option>
                <option value="reader-pi" ${u.role==='reader-pi'?'selected':''}>Lectura + PI</option>
@@ -8103,10 +8135,18 @@ _fbAuth.onAuthStateChanged(async (user) => {
     if (role) {
       _currentUser = user;
       _currentRole = role;
-      // Leer distribuidor si aplica
+      // Leer país y distribuidor del registro del usuario
+      const _userKey = _eKey(user.email);
+      const _userRecord = _allowedUsers[_userKey] || {};
+      // País: del registro del usuario (admin usa selector de login como fallback)
+      if (_userRecord.country && COUNTRIES[_userRecord.country]) {
+        _setCountry(_userRecord.country);
+      }
+      // Actualizar visual del selector de país en login y badge del sidebar
+      _loginSelectCountry(_currentCountry);
+      _updateCountryLabel();
       if (role === 'distributor') {
-        const key = _eKey(user.email);
-        _currentDistributor = _allowedUsers[key]?.distributor || null;
+        _currentDistributor = _userRecord.distributor || null;
       } else {
         _currentDistributor = null;
       }
