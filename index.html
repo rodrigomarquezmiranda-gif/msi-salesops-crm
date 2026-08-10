@@ -392,6 +392,19 @@
 <div id="login-screen" style="position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px">
   <div style="font-size:2rem;font-weight:700;color:var(--text)">Sales<span style="color:var(--blue)">Ops</span> CRM</div>
   <div style="color:var(--text2);font-size:0.95rem">Iniciá sesión para continuar</div>
+
+  <!-- Selector de país -->
+  <div style="display:flex;gap:8px;margin-bottom:4px" id="login-country-selector">
+    <button id="login-btn-ar" onclick="_loginSelectCountry('ar')"
+      style="display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:2px solid transparent">
+      🇦🇷 Argentina
+    </button>
+    <button id="login-btn-mx" onclick="_loginSelectCountry('mx')"
+      style="display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:2px solid transparent">
+      🇲🇽 México
+    </button>
+  </div>
+
   <button onclick="signInWithGoogle()" style="display:flex;align-items:center;gap:10px;padding:12px 24px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:0.95rem;cursor:pointer;font-weight:500">
     <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.34-8.16 2.34-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
     Iniciar sesión con Google
@@ -403,6 +416,22 @@
     <button onclick="signInWithEmail()" style="padding:10px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-size:0.9rem;cursor:pointer;font-weight:500">Iniciar sesión</button>
   </div>
 </div>
+
+<script>
+function _loginSelectCountry(code) {
+  _setCountry(code);
+  ['ar','mx'].forEach(c => {
+    const btn = document.getElementById(`login-btn-${c}`);
+    if (!btn) return;
+    const active = c === code;
+    btn.style.background = active ? 'var(--blue)' : 'var(--bg2)';
+    btn.style.color      = active ? '#fff'        : 'var(--text)';
+    btn.style.borderColor= active ? 'var(--blue)' : 'var(--border2)';
+  });
+}
+// Inicializar estado visual al cargar
+document.addEventListener('DOMContentLoaded', () => _loginSelectCountry(_currentCountry));
+</script>
 
 <div class="app-shell" id="app-shell" style="display:none">
 
@@ -1197,7 +1226,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.10.08.2026.7';
+const APP_VERSION = '1.10.08.2026.8';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1259,16 +1288,28 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const _fbDB = firebase.database();
 
+// ── País activo ───────────────────────────────────────────────
+const COUNTRIES = {
+  ar: { name: 'Argentina', flag: '🇦🇷' },
+  mx: { name: 'México',    flag: '🇲🇽' }
+};
+let _currentCountry = localStorage.getItem('salesops_country') || 'ar';
+function _setCountry(code) {
+  _currentCountry = code;
+  localStorage.setItem('salesops_country', code);
+}
+
 const IDB = {
+  _p: (key) => `${_currentCountry}/${key}`,
   get: async (key) => {
-    const snap = await _fbDB.ref(key).get();
+    const snap = await _fbDB.ref(IDB._p(key)).get();
     return snap.exists() ? snap.val() : null;
   },
   set: async (key, value) => {
-    await _fbDB.ref(key).set(value);
+    await _fbDB.ref(IDB._p(key)).set(value);
   },
   remove: async (key) => {
-    await _fbDB.ref(key).remove();
+    await _fbDB.ref(IDB._p(key)).remove();
   }
 };
 
@@ -4260,28 +4301,47 @@ function _pbmSuggestClients(query) {
   return results;
 }
 
-// ── Persistencia localStorage ─────────────────────────────────
+// ── Persistencia Firebase (tiempo real) ───────────────────────
+let _pbmFbListener = null;
+
 function _pbmSave() {
   try {
-    localStorage.setItem('pbm_data', JSON.stringify({
+    const payload = JSON.stringify({
       resellers: _pbmResellers,
-      reports:   _pbmReports.map(r => ({
-        cuit:  r.cuit,
-        month: r.month,
-        rows:  r.rows
-      }))
-    }));
+      reports:   _pbmReports.map(r => ({ cuit: r.cuit, month: r.month, rows: r.rows }))
+    });
+    _fbDB.ref(`${_currentCountry}/salesops_pbm`).set(payload);
   } catch(e) { console.warn('PBM save error:', e); }
 }
 
 function _pbmLoad() {
+  // Cancelar listener previo si existe (cambio de país)
+  if (_pbmFbListener) {
+    _fbDB.ref(`${_currentCountry}/salesops_pbm`).off('value', _pbmFbListener);
+    _pbmFbListener = null;
+  }
+  _pbmFbListener = _fbDB.ref(`${_currentCountry}/salesops_pbm`).on('value', snap => {
+    try {
+      const raw = snap.exists() ? snap.val() : null;
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (Array.isArray(data.resellers)) _pbmResellers = data.resellers;
+      if (Array.isArray(data.reports))   _pbmReports   = data.reports;
+      // Re-render solo si el tab PBM está activo
+      const pane = document.getElementById('tab-pbm');
+      if (pane && pane.classList.contains('active')) renderPBMTab();
+    } catch(e) { console.warn('PBM load error:', e); }
+  });
+  // Migrar datos viejos de localStorage si existen
   try {
-    const raw = localStorage.getItem('pbm_data');
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    if (Array.isArray(data.resellers)) _pbmResellers = data.resellers;
-    if (Array.isArray(data.reports))   _pbmReports   = data.reports;
-  } catch(e) { console.warn('PBM load error:', e); }
+    const old = localStorage.getItem('pbm_data');
+    if (old) {
+      _fbDB.ref(`${_currentCountry}/salesops_pbm`).once('value', s => {
+        if (!s.exists()) _fbDB.ref(`${_currentCountry}/salesops_pbm`).set(old);
+      });
+      localStorage.removeItem('pbm_data');
+    }
+  } catch(e) {}
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -4468,9 +4528,14 @@ function renderPBMTab() {
       <div style="font-weight:700;font-size:15px">${res ? res.name : _pbmFmtCuit(_pbmActiveCuit)}</div>
       <div style="font-size:11px;color:#888">CUIT ${_pbmFmtCuit(_pbmActiveCuit)} · ${_pbmActiveMon||''} · ${rows.length} bundles</div>
     </div>
-    <button class="btn btn-primary" onclick="_pbmExport()" style="font-size:12px;background:#C0392B;border-color:#C0392B">
-      <i class="ti ti-file-spreadsheet"></i> Exportar
-    </button>
+    <div style="display:flex;gap:8px">
+      <button class="btn" onclick="_pbmShowEvolution()" style="font-size:12px">
+        <i class="ti ti-chart-line"></i> Evolución
+      </button>
+      <button class="btn btn-primary" onclick="_pbmExport()" style="font-size:12px;background:#C0392B;border-color:#C0392B">
+        <i class="ti ti-file-spreadsheet"></i> Exportar
+      </button>
+    </div>
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
@@ -4888,6 +4953,120 @@ function _pbmSetupDrop(zoneId, cb) {
     const f = e.dataTransfer.files[0]; if(!f) return;
     if (cb) cb(f); else { _pbmPendingFile=f; _pbmShowUpload(); }
   });
+}
+
+// ── Evolución mes a mes ───────────────────────────────────────
+function _pbmShowEvolution() {
+  // Recopilar todos los meses únicos en orden cronológico
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  function _monthSortKey(m) {
+    const parts = (m||'').split(' ');
+    const yr = parseInt(parts[1]) || 0;
+    const mo = MESES.indexOf(parts[0]);
+    return yr * 100 + (mo === -1 ? 0 : mo);
+  }
+
+  const allMonths = [...new Set(_pbmReports.map(r => r.month))].sort((a,b) => _monthSortKey(a) - _monthSortKey(b));
+  const allCuits  = [...new Set(_pbmReports.map(r => r.cuit))];
+
+  if (allMonths.length === 0) {
+    alert('No hay reportes cargados para mostrar evolución.');
+    return;
+  }
+
+  // Construir tabla: filas = resellers, columnas = meses
+  const tableHead = `<tr>
+    <th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;border-bottom:1px solid var(--border);white-space:nowrap">Reseller</th>
+    ${allMonths.map(m => `<th style="padding:8px 12px;text-align:right;font-size:11px;color:#888;border-bottom:1px solid var(--border);white-space:nowrap">${m}</th>`).join('')}
+    <th style="padding:8px 12px;text-align:right;font-size:11px;color:#888;border-bottom:1px solid var(--border)">Tendencia</th>
+  </tr>`;
+
+  const tableBody = allCuits.map(cuit => {
+    const res = _pbmResellerByCuit(cuit);
+    const label = res ? res.name : _pbmFmtCuit(cuit);
+    const vals = allMonths.map(m => {
+      const rep = _pbmReports.find(r => _pbmNormCuit(r.cuit)===cuit && r.month===m);
+      return rep ? rep.rows.reduce((s,row) => s + row.correct, 0) : null;
+    });
+
+    // Tendencia: última variación conocida
+    const known = vals.filter(v => v !== null);
+    let trend = '';
+    if (known.length >= 2) {
+      const last = known[known.length-1];
+      const prev = known[known.length-2];
+      const pct = prev > 0 ? ((last-prev)/prev*100).toFixed(1) : null;
+      if (pct !== null) {
+        const up = last >= prev;
+        trend = `<span style="color:${up?'#A3BE8C':'#BF616A'};font-weight:700">${up?'▲':'▼'} ${Math.abs(pct)}%</span>`;
+      }
+    }
+
+    const cells = allMonths.map((m, i) => {
+      const v = vals[i];
+      if (v === null) return `<td style="padding:8px 12px;text-align:right;color:#444;font-size:12px">—</td>`;
+      // Variación vs mes anterior
+      const prev = vals.slice(0, i).reverse().find(x => x !== null);
+      let badge = '';
+      if (prev !== null && prev !== undefined) {
+        const d = v - prev;
+        const c = d >= 0 ? '#A3BE8C' : '#BF616A';
+        badge = `<span style="font-size:10px;color:${c};margin-left:4px">${d>=0?'+':''}$${d}</span>`;
+      }
+      return `<td style="padding:8px 12px;text-align:right;font-size:12px;font-weight:600">$${v}${badge}</td>`;
+    }).join('');
+
+    return `<tr style="border-bottom:1px solid rgba(255,255,255,0.05)">
+      <td style="padding:8px 12px;font-size:12px;font-weight:600;white-space:nowrap">${label}</td>
+      ${cells}
+      <td style="padding:8px 12px;text-align:right">${trend}</td>
+    </tr>`;
+  }).join('');
+
+  // Fila de totales
+  const totals = allMonths.map(m => {
+    const t = _pbmReports.filter(r => r.month===m).reduce((s,r) => s + r.rows.reduce((rs,row) => rs + row.correct, 0), 0);
+    return t;
+  });
+  const totalCells = totals.map((t,i) => {
+    const prev = totals.slice(0,i).reverse().find(x => x > 0);
+    let badge = '';
+    if (prev) { const d=t-prev; const c=d>=0?'#A3BE8C':'#BF616A'; badge=`<span style="font-size:10px;color:${c};margin-left:4px">${d>=0?'+':''}$${d}</span>`; }
+    return `<td style="padding:8px 12px;text-align:right;font-weight:700;color:#A3BE8C;font-size:13px;border-top:2px solid var(--border)">$${t}${badge}</td>`;
+  }).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'pbm-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  modal.innerHTML = `
+  <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:28px;width:min(900px,95vw);max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div>
+        <div style="font-weight:700;font-size:15px"><i class="ti ti-chart-line" style="color:#C0392B"></i> Evolución PBM — mes a mes</div>
+        <div style="font-size:11px;color:#888;margin-top:2px">${allCuits.length} resellers · ${allMonths.length} meses</div>
+      </div>
+      <button onclick="document.getElementById('pbm-modal').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#888">×</button>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>${tableHead}</thead>
+        <tbody>${tableBody}</tbody>
+        <tfoot><tr>
+          <td style="padding:8px 12px;font-weight:700;font-size:12px;border-top:2px solid var(--border)">TOTAL</td>
+          ${totalCells}
+          <td style="border-top:2px solid var(--border)"></td>
+        </tr></tfoot>
+      </table>
+    </div>
+
+    <div style="margin-top:16px;font-size:11px;color:#666;text-align:center">
+      Los valores muestran el importe <strong>correcto calculado</strong> según las reglas PBM. La variación (▲▼) es respecto al mes anterior con datos.
+    </div>
+  </div>`;
+  document.getElementById('pbm-modal')?.remove();
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
 }
 
 function _pbmExport() {
