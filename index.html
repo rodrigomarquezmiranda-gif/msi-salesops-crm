@@ -1197,7 +1197,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.10.08.2026.4';
+const APP_VERSION = '1.10.08.2026.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -4215,6 +4215,30 @@ function _pbmParseXLSX(arrayBuffer) {
   return parsed;
 }
 
+// ── Persistencia localStorage ─────────────────────────────────
+function _pbmSave() {
+  try {
+    localStorage.setItem('pbm_data', JSON.stringify({
+      resellers: _pbmResellers,
+      reports:   _pbmReports.map(r => ({
+        cuit:  r.cuit,
+        month: r.month,
+        rows:  r.rows
+      }))
+    }));
+  } catch(e) { console.warn('PBM save error:', e); }
+}
+
+function _pbmLoad() {
+  try {
+    const raw = localStorage.getItem('pbm_data');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (Array.isArray(data.resellers)) _pbmResellers = data.resellers;
+    if (Array.isArray(data.reports))   _pbmReports   = data.reports;
+  } catch(e) { console.warn('PBM load error:', e); }
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 function _pbmFmtCuit(c) {
   const d = String(c||'').replace(/\D/g,'');
@@ -4481,7 +4505,7 @@ function _pbmShowManage() {
       <td style="padding:8px 10px;font-weight:600">${r.name}</td>
       <td style="padding:8px 10px;color:#888;font-family:monospace;font-size:12px">${_pbmFmtCuit(r.cuit)}</td>
       <td style="padding:8px 10px;text-align:right">
-        <button onclick="_pbmResellers.splice(${i},1);_pbmShowManage()" style="background:none;border:none;cursor:pointer;color:#BF616A;font-size:12px">
+        <button onclick="_pbmResellers.splice(${i},1);_pbmSave();_pbmShowManage()" style="background:none;border:none;cursor:pointer;color:#BF616A;font-size:12px">
           <i class="ti ti-trash"></i>
         </button>
       </td>
@@ -4540,6 +4564,7 @@ function _pbmAddResellerFromModal() {
   if (cuit.length < 8) { if(err) err.textContent = 'CUIT inválido (mínimo 8 dígitos).'; return; }
   if (_pbmResellers.some(r => _pbmNormCuit(r.cuit) === cuit)) { if(err) err.textContent = 'CUIT ya registrado.'; return; }
   _pbmResellers.push({ name, cuit });
+  _pbmSave();
   _pbmShowManage(); // re-render modal
 }
 
@@ -4547,12 +4572,14 @@ function _pbmRemoveReseller(cuit) {
   _pbmResellers = _pbmResellers.filter(r => _pbmNormCuit(r.cuit) !== _pbmNormCuit(cuit));
   _pbmReports   = _pbmReports.filter(r => _pbmNormCuit(r.cuit) !== _pbmNormCuit(cuit));
   if (_pbmNormCuit(_pbmActiveCuit) === _pbmNormCuit(cuit)) { _pbmActiveCuit = null; _pbmActiveMon = null; }
+  _pbmSave();
   renderPBMTab();
 }
 
 function _pbmRemoveReport(cuit, month) {
   _pbmReports = _pbmReports.filter(r => !((_pbmNormCuit(r.cuit)===_pbmNormCuit(cuit)) && r.month===month));
   _pbmActiveMon = (_pbmReportsFor(cuit)[0]||{}).month || null;
+  _pbmSave();
   renderPBMTab();
 }
 
@@ -4677,6 +4704,7 @@ function _pbmProcessUpload() {
       _pbmActiveCuit = _pbmNormCuit(finalCuit);
       _pbmActiveMon  = month;
       _pbmPendingFile = null;
+      _pbmSave();
       document.getElementById('pbm-modal')?.remove();
       renderPBMTab();
     } catch(e) {
@@ -7763,6 +7791,7 @@ _fbAuth.onAuthStateChanged(async (user) => {
       await loadNotifEmails();
       runOneTimeMigrations();
       loadDemo();
+      _pbmLoad();
       document.getElementById('api-key-input').value = getApiKey();
       applyBrandLogo();
       renderAll();
