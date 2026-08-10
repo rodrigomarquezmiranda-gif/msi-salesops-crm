@@ -39,7 +39,8 @@
 
   /* LAYOUT */
   .app-shell { display: flex; min-height: 100vh; }
-  .sidebar { width: 220px; background: var(--bg); border-right: 0.5px solid var(--border); padding: 0; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 10; }
+  .sidebar { width: 220px; background: var(--bg); border-right: 0.5px solid var(--border); padding: 0; display: flex; flex-direction: column; position: fixed; top: 0; bottom: 0; left: 0; z-index: 10; overflow: hidden; }
+  .sidebar-nav-scroll { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
   .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
   .topbar { background: var(--bg); border-bottom: 0.5px solid var(--border); padding: 0 1.5rem; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 5; }
   .content { padding: 1.5rem; flex: 1; }
@@ -422,6 +423,7 @@
         </div>
       </div>
     </div>
+    <div class="sidebar-nav-scroll">
     <nav class="nav-section">
       <div class="nav-label">Vistas</div>
       <button class="nav-item active" id="nav-dashboard" onclick="gotoTab('dashboard')">
@@ -498,6 +500,7 @@
         <i class="ti ti-user-cog" style="color:#7B7BC7"></i> Usuarios
       </button>
     </nav>
+    </div><!-- /sidebar-nav-scroll -->
     <div class="sidebar-footer">
       <div class="backup-area" style="margin-bottom:10px">
         <button class="btn" style="width:100%;font-size:11px;justify-content:center;margin-bottom:5px" onclick="exportBackup()"><i class="ti ti-download" style="font-size:13px"></i> Exportar respaldo</button>
@@ -1194,7 +1197,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.10.08.2026.3';
+const APP_VERSION = '1.10.08.2026.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
