@@ -393,18 +393,6 @@
   <div style="font-size:2rem;font-weight:700;color:var(--text)">Sales<span style="color:var(--blue)">Ops</span> CRM</div>
   <div style="color:var(--text2);font-size:0.95rem">Iniciá sesión para continuar</div>
 
-  <!-- Selector de país -->
-  <div style="display:flex;gap:8px;margin-bottom:4px" id="login-country-selector">
-    <button id="login-btn-ar" onclick="_loginSelectCountry('ar')"
-      style="display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:2px solid transparent">
-      🇦🇷 Argentina
-    </button>
-    <button id="login-btn-mx" onclick="_loginSelectCountry('mx')"
-      style="display:flex;align-items:center;gap:7px;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:2px solid transparent">
-      🇲🇽 México
-    </button>
-  </div>
-
   <button onclick="signInWithGoogle()" style="display:flex;align-items:center;gap:10px;padding:12px 24px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:0.95rem;cursor:pointer;font-weight:500">
     <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.34-8.16 2.34-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
     Iniciar sesión con Google
@@ -417,21 +405,6 @@
   </div>
 </div>
 
-<script>
-function _loginSelectCountry(code) {
-  _setCountry(code);
-  ['ar','mx'].forEach(c => {
-    const btn = document.getElementById(`login-btn-${c}`);
-    if (!btn) return;
-    const active = c === code;
-    btn.style.background = active ? 'var(--blue)' : 'var(--bg2)';
-    btn.style.color      = active ? '#fff'        : 'var(--text)';
-    btn.style.borderColor= active ? 'var(--blue)' : 'var(--border2)';
-  });
-}
-// Inicializar estado visual al cargar
-document.addEventListener('DOMContentLoaded', () => _loginSelectCountry(_currentCountry));
-</script>
 
 <div class="app-shell" id="app-shell" style="display:none">
 
@@ -1234,7 +1207,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.10.08.2026.10';
+const APP_VERSION = '1.10.08.2026.11';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -8142,8 +8115,6 @@ _fbAuth.onAuthStateChanged(async (user) => {
       if (_userRecord.country && COUNTRIES[_userRecord.country]) {
         _setCountry(_userRecord.country);
       }
-      // Actualizar visual del selector de país en login y badge del sidebar
-      _loginSelectCountry(_currentCountry);
       _updateCountryLabel();
       if (role === 'distributor') {
         _currentDistributor = _userRecord.distributor || null;
