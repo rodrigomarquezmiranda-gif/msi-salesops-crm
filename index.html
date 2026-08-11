@@ -1245,7 +1245,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.3';
+const APP_VERSION = '1.11.08.2026.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -8202,6 +8202,30 @@ function runOneTimeMigrations() {
       upsertSnapshot({ ...snap, id: Date.now()+Math.random(), uploadedAt: new Date().toISOString() });
     });
     db._migrations.elitPreloadV1 = true;
+    changed = true;
+  }
+  if(!db._migrations.renameA520MBulkV1) {
+    // Rename: A520M-A PRO DDR4 BULK M-ATX → A520M-A PRO DDR4 M-ATX NB
+    const _oldName = /A520M-A PRO DDR4 BULK M-ATX/gi;
+    const _newName = 'A520M-A PRO DDR4 M-ATX NB';
+    (db.pi || []).forEach(pi => {
+      if(pi.name && _oldName.test(pi.name)) { pi.name = pi.name.replace(_oldName, _newName); changed = true; }
+      if(pi.notes && _oldName.test(pi.notes)) { pi.notes = pi.notes.replace(_oldName, _newName); changed = true; }
+      if(Array.isArray(pi.invoiceItems)) {
+        pi.invoiceItems.forEach(item => {
+          if(item.marketingName && _oldName.test(item.marketingName)) {
+            item.marketingName = item.marketingName.replace(_oldName, _newName);
+            changed = true;
+          }
+        });
+      }
+    });
+    // Also rename in price list (desc field)
+    (priceList.products || []).forEach(p => {
+      if(p.desc && _oldName.test(p.desc)) { p.desc = p.desc.replace(_oldName, _newName); changed = true; }
+    });
+    if(changed) savePriceList();
+    db._migrations.renameA520MBulkV1 = true;
     changed = true;
   }
   if(changed) saveDB();
