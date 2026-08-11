@@ -1245,7 +1245,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.10';
+const APP_VERSION = '1.11.08.2026.11';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2376,6 +2376,90 @@ function ensurePdfWorkerReady() {
   })();
   return _pdfWorkerReadyPromise;
 }
+// Dialog: when no matching PI found, let user link to existing or create new with distributor+shipmentType
+function _showInvoiceLinkDialog(parsed, invoiceItems) {
+  return new Promise(resolve => {
+    const existingPIs = (db.pi || [])
+      .filter(p => p.pipeline === 'pi')
+      .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+    const piOptions = existingPIs.map(p =>
+      `<option value="${p.id}">${esc(p.name)}${p.client ? ' — '+esc(p.client) : ''}</option>`
+    ).join('');
+    const modal = document.createElement('div');
+    modal.id = 'invoice-link-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px';
+    modal.innerHTML = `
+      <div class="modal-box" style="width:100%;max-width:460px;padding:24px">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px">Invoice N° ${esc(parsed.invoiceNo||'')}</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">
+          ${parsed.piNo ? `PI Ref: ${esc(parsed.piNo)} &nbsp;·&nbsp; ` : ''}
+          ${parsed.invoiceDate ? 'Fecha: '+esc(parsed.invoiceDate) : ''}
+          ${invoiceItems.length ? ' &nbsp;·&nbsp; '+invoiceItems.length+' producto(s)' : ''}
+        </div>
+        <div class="field" style="margin-bottom:12px">
+          <label>¿A qué Orden corresponde?</label>
+          <select id="inv-link-pi" style="width:100%">
+            <option value="__new__">➕ Crear nueva Orden automáticamente</option>
+            ${piOptions}
+          </select>
+        </div>
+        <div id="inv-new-fields">
+          <div class="field" style="margin-bottom:12px">
+            <label>Distribuidor (vendedor del Invoice)</label>
+            <select id="inv-link-dist" style="width:100%">
+              <option value="">— Seleccioná —</option>
+              <option value="AIR Computacion">AIR Computación</option>
+              <option value="INVID">INVID</option>
+              <option value="SolutionBox">SolutionBox</option>
+              <option value="Ashir">Ashir</option>
+              <option value="Elit">Elit</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:16px">
+            <label>Tipo de embarque</label>
+            <select id="inv-link-shipment" style="width:100%">
+              <option value="">— Seleccioná el origen —</option>
+              <option value="miami-aereo">✈️ Miami Aéreo (10 días en tránsito)</option>
+              <option value="miami-maritimo">🚢 Miami Marítimo (30 días en tránsito)</option>
+              <option value="china-maritimo">🚢 China Marítimo (60 días en tránsito)</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="inv-link-cancel" class="btn" style="flex:1">Cancelar</button>
+          <button id="inv-link-confirm" class="btn btn-primary" style="flex:2;background:#5E81AC;border-color:#5E81AC">
+            <i class="ti ti-check"></i> Confirmar
+          </button>
+        </div>
+        <div id="inv-link-err" style="color:#BF616A;font-size:11px;margin-top:8px;text-align:center"></div>
+      </div>`;
+    document.getElementById('invoice-link-modal')?.remove();
+    document.body.appendChild(modal);
+    const piSel = document.getElementById('inv-link-pi');
+    const newFields = document.getElementById('inv-new-fields');
+    piSel.addEventListener('change', () => {
+      newFields.style.display = piSel.value === '__new__' ? '' : 'none';
+    });
+    document.getElementById('inv-link-cancel').addEventListener('click', () => { modal.remove(); resolve(null); });
+    modal.addEventListener('click', e => { if(e.target===modal) { modal.remove(); resolve(null); } });
+    document.getElementById('inv-link-confirm').addEventListener('click', () => {
+      const err = document.getElementById('inv-link-err');
+      const piVal = piSel.value;
+      if(piVal === '__new__') {
+        const dist = document.getElementById('inv-link-dist').value;
+        const ship = document.getElementById('inv-link-shipment').value;
+        if(!dist) { err.textContent = 'Seleccioná el distribuidor.'; return; }
+        if(!ship) { err.textContent = 'Seleccioná el tipo de embarque.'; return; }
+        modal.remove();
+        resolve({ mode: 'new', distributor: dist, shipmentType: ship });
+      } else {
+        modal.remove();
+        resolve({ mode: 'link', existingId: parseInt(piVal) });
+      }
+    });
+  });
+}
+
 async function handleInvoicePDF(parsed, file) {
   const piNo = parsed.piNo;
   const dataUrl = file ? ('data:application/pdf;base64,' + arrayBufferToBase64(await file.arrayBuffer())) : null;
@@ -2387,38 +2471,49 @@ async function handleInvoicePDF(parsed, file) {
 
   let existing = piNo ? db.pi.find(x => x.name === piNo) : null;
 
-  // Sin PI detrás: crear una automáticamente con los datos del Invoice
+  // Sin PI encontrado: mostrar diálogo para vincular a una Orden existente o crear nueva
   if (!existing) {
-    const piName = piNo || parsed.invoiceNo;
-    const autoPI = {
-      id: Date.now(),
-      pipeline: 'pi',
-      name: piName,
-      client: parsed.client || '',
-      amount: 0,
-      status: 'Entregado',
-      dueDate: parsed.invoiceDate || '',
-      priority: 'normal',
-      notes: `Orden creada automáticamente desde Invoice N° ${parsed.invoiceNo}. El cliente usa OC propia — no se emitió PI previo.`,
-      invoiceNo: parsed.invoiceNo,
-      invoiceDate: parsed.invoiceDate || null,
-      invoiceItems: invoiceItems,
-      transitStartDate: new Date().toISOString(),
-      transitEnded: false,
-      createdAt: new Date().toISOString(),
-      createdBy: _currentUser?.email || null,
-      updatedAt: new Date().toISOString(),
-      autoFromInvoice: true
-    };
-    if (dataUrl) autoPI.invoiceFile = { name: file.name, dataUrl };
-    db.pi.push(autoPI);
-    await saveDB();
-    renderPipeline('pi');
-    alert(`✓ Orden creada automáticamente desde Invoice N° ${parsed.invoiceNo}.\n` +
-      `Cliente: ${parsed.client || '(sin datos)'}` +
-      (invoiceItems.length ? ` · ${invoiceItems.length} líneas registradas.` : '') +
-      `\n\nSi querés agregar el monto u otros datos, editala desde la lista.`);
-    return;
+    const choice = await _showInvoiceLinkDialog(parsed, invoiceItems);
+    if(!choice) return; // cancelado
+
+    if(choice.mode === 'new') {
+      // Crear nueva Orden con distribuidor y tipo de embarque correctos
+      const piName = piNo || parsed.invoiceNo;
+      const autoPI = {
+        id: Date.now(),
+        pipeline: 'pi',
+        name: piName,
+        client: choice.distributor,
+        amount: 0,
+        status: 'Entregado',
+        dueDate: parsed.invoiceDate || '',
+        priority: 'normal',
+        notes: `Orden creada automáticamente desde Invoice N° ${parsed.invoiceNo}.`,
+        invoiceNo: parsed.invoiceNo,
+        invoiceDate: parsed.invoiceDate || null,
+        invoiceItems: invoiceItems,
+        shipmentType: choice.shipmentType,
+        transitStartDate: new Date().toISOString(),
+        transitEnded: false,
+        createdAt: new Date().toISOString(),
+        createdBy: _currentUser?.email || null,
+        updatedAt: new Date().toISOString(),
+        autoFromInvoice: true
+      };
+      if (dataUrl) autoPI.invoiceFile = { name: file.name, dataUrl };
+      db.pi.push(autoPI);
+      await saveDB();
+      renderPipeline('pi');
+      alert(`✓ Orden creada desde Invoice N° ${parsed.invoiceNo}.\n` +
+        `Distribuidor: ${choice.distributor} · ${choice.shipmentType === 'miami-aereo' ? 'Miami Aéreo' : choice.shipmentType === 'miami-maritimo' ? 'Miami Marítimo' : 'China Marítimo'}` +
+        (invoiceItems.length ? `\n${invoiceItems.length} líneas registradas.` : '') +
+        `\n\nYa aparece como tránsito activo en el Semáforo.`);
+      return;
+    }
+
+    // mode === 'link': vincular Invoice a una Orden existente
+    existing = db.pi.find(x => x.id === choice.existingId);
+    if(!existing) { alert('No se encontró la Orden seleccionada.'); return; }
   }
 
   // PI existente: actualizar a Entregado con datos del Invoice
