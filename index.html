@@ -1245,7 +1245,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.6';
+const APP_VERSION = '1.11.08.2026.7';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -3814,6 +3814,7 @@ function renderSemaforoTab() {
   // Para usuario distribuidor: mostrar solo su columna
   const sfKeys = _currentDistributor ? [_currentDistributor] : SF_DIST_KEYS;
 
+  window._sfTransitTooltipData = {};
   const { products, transitData, latestSnap, allTransitPIs } = buildSemaforoData();
   const today = new Date();
   const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
@@ -3905,18 +3906,11 @@ ${_buildTransitAlertPanel(transitData)}
       if(hasTransit) {
         const bg = isExpiring ? '#FFDDD0' : '#FFF3CD';
         const dot = isExpiring ? `<span class="sf-transit" style="color:#c0392b">●</span>` : `<span class="sf-transit">●</span>`;
-        // Build tooltip: list PIs/Invoices + expiry for this product+distributor
         const relatedPIs = transitData[dk].pisByKey[p.normModel] || (transitData[dk].hasGeneral ? transitData[dk].generalPIs : []);
-        const tooltipLines = relatedPIs.map(rpi => {
-          const exp = _piTransitExpiresAt(rpi);
-          const expStr = exp ? exp.toLocaleDateString('es-AR') : 'Sin vencimiento';
-          const invPart = rpi.invoiceNo ? ` · Inv #${rpi.invoiceNo}` : '';
-          const shipLabels = {'miami-aereo':'Aéreo','miami-maritimo':'Marítimo MIA','china-maritimo':'Marítimo CHN'};
-          const shipStr = shipLabels[rpi.shipmentType] ? ` [${shipLabels[rpi.shipmentType]}]` : '';
-          return `${rpi.name}${invPart}${shipStr}\nVence: ${expStr}`;
-        });
-        const titleAttr = tooltipLines.length ? tooltipLines.join('\n─────\n') : 'En tránsito';
-        html += `<td class="sf-td-center" style="background:${bg}" title="${titleAttr.replace(/"/g,'&quot;')}">${dot}</td>`;
+        const ttKey = `${dk}__${p.normModel}`;
+        window._sfTransitTooltipData = window._sfTransitTooltipData || {};
+        window._sfTransitTooltipData[ttKey] = { pis: relatedPIs, distLabel: SF_DIST_LABELS[dk] };
+        html += `<td class="sf-td-center" style="background:${bg};cursor:default" onmouseenter="showTransitTooltip(event,'${ttKey}')" onmouseleave="hideClientCompositionTooltip()">${dot}</td>`;
       } else {
         html += `<td class="sf-td-center"></td>`;
       }
@@ -6899,6 +6893,44 @@ function showClientCompositionTooltip(evt, clientKey) {
 function hideClientCompositionTooltip() {
   scheduleTooltipHide();
 }
+
+function showTransitTooltip(evt, key) {
+  clearTooltipHideTimer();
+  const data = window._sfTransitTooltipData && window._sfTransitTooltipData[key];
+  if(!data) return;
+  const tip = document.getElementById('client-composition-tooltip');
+  const SF_SHIP_LABEL = { 'miami-aereo':'✈️ Miami Aéreo', 'miami-maritimo':'🚢 Miami Marítimo', 'china-maritimo':'🚢 China Marítimo' };
+  let h = `<div style="font-size:11.5px;font-weight:700;color:var(--text);margin-bottom:8px">
+    <i class="ti ti-ship" style="font-size:12px;margin-right:5px;opacity:0.7"></i>${esc(data.distLabel)} — En tránsito
+  </div>`;
+  if(!data.pis.length) {
+    h += `<div style="font-size:11px;color:var(--text3)">Sin detalle de órdenes</div>`;
+  } else {
+    data.pis.forEach((pi, i) => {
+      const exp = _piTransitExpiresAt(pi);
+      const expStr = exp ? exp.toLocaleDateString('es-AR') : 'Sin vencimiento';
+      const msLeft = _piTransitExpiresInMs(pi);
+      const isExp = msLeft < 24 * 3600000 && msLeft !== Infinity;
+      const hrs = msLeft !== Infinity ? Math.max(0, Math.ceil(msLeft / 3600000)) : null;
+      const timeLeft = hrs !== null ? (hrs < 24 ? `${hrs}h restantes` : `${Math.ceil(hrs / 24)}d restantes`) : '';
+      const expStyle = isExp ? 'color:#c0392b;font-weight:700' : 'color:var(--text3)';
+      const invLine = pi.invoiceNo ? `<div style="font-size:10.5px;color:var(--text3);margin-top:1px">Inv #${esc(String(pi.invoiceNo))}</div>` : '';
+      const shipLine = SF_SHIP_LABEL[pi.shipmentType] ? `<div style="font-size:10.5px;color:var(--text3);margin-top:1px">${SF_SHIP_LABEL[pi.shipmentType]}</div>` : '';
+      h += `<div style="${i>0?'border-top:0.5px solid var(--border2);padding-top:9px;margin-top:9px':''}">
+        <div style="font-weight:600;font-size:11.5px;color:var(--text)">${esc(pi.name)}</div>
+        ${invLine}${shipLine}
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;font-size:11px">
+          <span style="color:var(--text2)">Vence: <b>${expStr}</b></span>
+          <span style="${expStyle}">${timeLeft}</span>
+        </div>
+      </div>`;
+    });
+  }
+  tip.innerHTML = h;
+  tip.style.display = 'block';
+  positionTooltipNearElement(evt.currentTarget);
+}
+
 (function initTooltipHoverBridge() {
   const tip = document.getElementById('client-composition-tooltip');
   if(!tip) return;
