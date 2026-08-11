@@ -1245,7 +1245,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.4';
+const APP_VERSION = '1.11.08.2026.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -3756,9 +3756,21 @@ function buildSemaforoData() {
   });
 
   const transitData = {};
-  SF_DIST_KEYS.forEach(dk => transitData[dk] = { keys: new Set(), hasGeneral: false, expiringKeys: new Set(), expiringPIs: [] });
+  SF_DIST_KEYS.forEach(dk => transitData[dk] = {
+    keys: new Set(),
+    pisByKey: {},    // modelKey → [pi, ...] for tooltip
+    hasGeneral: false,
+    generalPIs: [],  // PIs with no specific items (full-distributor transit)
+    expiringKeys: new Set(),
+    expiringPIs: []
+  });
+
+  // allTransitPIs: every active-transit PI with its resolved distributor key
+  const allTransitPIs = [];
+
   (db.pi || []).filter(pi => _piInTransit(pi)).forEach(pi => {
-    const dk = _sfMatchDist(pi.client);
+    // Bug fix: also check pi.disti in case client ≠ distributor name
+    const dk = _sfMatchDist(pi.client) || _sfMatchDist(pi.disti);
     if(!dk) return;
     const msLeft = _piTransitExpiresInMs(pi);
     const isExpiring = msLeft < 24 * 3600000 && msLeft !== Infinity;
@@ -3771,12 +3783,16 @@ function buildSemaforoData() {
         const k = extractMSIModelKey(li.marketingName || li.model || li.itemCode || '');
         if(k) {
           transitData[dk].keys.add(k);
+          if(!transitData[dk].pisByKey[k]) transitData[dk].pisByKey[k] = [];
+          if(!transitData[dk].pisByKey[k].find(x => x.id === pi.id)) transitData[dk].pisByKey[k].push(pi);
           if(isExpiring) transitData[dk].expiringKeys.add(k);
         }
       });
     } else {
       transitData[dk].hasGeneral = true;
+      if(!transitData[dk].generalPIs.find(x => x.id === pi.id)) transitData[dk].generalPIs.push(pi);
     }
+    if(!allTransitPIs.find(x => x.pi.id === pi.id)) allTransitPIs.push({ pi, dk });
   });
 
   products.sort((a,b) => {
@@ -3788,7 +3804,7 @@ function buildSemaforoData() {
     return a.displayName.localeCompare(b.displayName);
   });
 
-  return { products, transitData, latestSnap };
+  return { products, transitData, latestSnap, allTransitPIs };
 }
 
 function renderSemaforoTab() {
@@ -3798,7 +3814,7 @@ function renderSemaforoTab() {
   // Para usuario distribuidor: mostrar solo su columna
   const sfKeys = _currentDistributor ? [_currentDistributor] : SF_DIST_KEYS;
 
-  const { products, transitData, latestSnap } = buildSemaforoData();
+  const { products, transitData, latestSnap, allTransitPIs } = buildSemaforoData();
   const today = new Date();
   const dateStr = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}/${today.getFullYear()}`;
   const snapDates = SF_DIST_KEYS.map(dk => latestSnap[dk] ? (latestSnap[dk].periodEnd || latestSnap[dk].uploadedAt || '').slice(0,10) : null);
@@ -3889,7 +3905,18 @@ ${_buildTransitAlertPanel(transitData)}
       if(hasTransit) {
         const bg = isExpiring ? '#FFDDD0' : '#FFF3CD';
         const dot = isExpiring ? `<span class="sf-transit" style="color:#c0392b">●</span>` : `<span class="sf-transit">●</span>`;
-        html += `<td class="sf-td-center" style="background:${bg}">${dot}</td>`;
+        // Build tooltip: list PIs/Invoices + expiry for this product+distributor
+        const relatedPIs = transitData[dk].pisByKey[p.normModel] || (transitData[dk].hasGeneral ? transitData[dk].generalPIs : []);
+        const tooltipLines = relatedPIs.map(rpi => {
+          const exp = _piTransitExpiresAt(rpi);
+          const expStr = exp ? exp.toLocaleDateString('es-AR') : 'Sin vencimiento';
+          const invPart = rpi.invoiceNo ? ` · Inv #${rpi.invoiceNo}` : '';
+          const shipLabels = {'miami-aereo':'Aéreo','miami-maritimo':'Marítimo MIA','china-maritimo':'Marítimo CHN'};
+          const shipStr = shipLabels[rpi.shipmentType] ? ` [${shipLabels[rpi.shipmentType]}]` : '';
+          return `${rpi.name}${invPart}${shipStr}\nVence: ${expStr}`;
+        });
+        const titleAttr = tooltipLines.length ? tooltipLines.join('\n─────\n') : 'En tránsito';
+        html += `<td class="sf-td-center" style="background:${bg}" title="${titleAttr.replace(/"/g,'&quot;')}">${dot}</td>`;
       } else {
         html += `<td class="sf-td-center"></td>`;
       }
@@ -3899,6 +3926,62 @@ ${_buildTransitAlertPanel(transitData)}
   });
 
   html += `</tbody></table></div>`;
+
+  // ── Tabla de tránsito activo (todos los PI/Invoice en tránsito) ──────────────
+  const sfKeysForTransit = _currentDistributor ? [_currentDistributor] : SF_DIST_KEYS;
+  const transitRows = allTransitPIs.filter(x => sfKeysForTransit.includes(x.dk));
+
+  if(transitRows.length) {
+    const SF_SHIP_LABEL = {'miami-aereo':'✈️ Miami Aéreo','miami-maritimo':'🚢 Miami Mar.','china-maritimo':'🚢 China Mar.'};
+    html += `
+<div style="margin-top:24px">
+  <div style="font-weight:700;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">
+    <i class="ti ti-ship" style="font-size:13px;margin-right:6px"></i> Tránsito activo — ${transitRows.length} embarque${transitRows.length!==1?'s':''}
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:12px">
+    <thead>
+      <tr style="background:#2E3440;color:#ECEFF4">
+        <th style="padding:6px 10px;text-align:left;font-weight:700">PI / Orden</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:700">Cliente</th>
+        <th style="padding:6px 10px;text-align:center;font-weight:700">Distribuidor</th>
+        <th style="padding:6px 10px;text-align:center;font-weight:700">Embarque</th>
+        <th style="padding:6px 10px;text-align:left;font-weight:700">Productos</th>
+        <th style="padding:6px 10px;text-align:center;font-weight:700">Vence</th>
+        <th style="padding:6px 10px;text-align:center;font-weight:700">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>`;
+    transitRows.forEach(({ pi, dk }, i) => {
+      const exp = _piTransitExpiresAt(pi);
+      const expStr = exp ? exp.toLocaleDateString('es-AR') : '—';
+      const msLeft = _piTransitExpiresInMs(pi);
+      const isExpiring = msLeft < 24 * 3600000 && msLeft !== Infinity;
+      const isExpired = !isExpiring && exp && Date.now() > exp.getTime();
+      const rowBg = isExpiring ? 'rgba(192,57,43,0.07)' : (i % 2 === 0 ? 'var(--bg)' : 'var(--bg2)');
+      const expColor = isExpiring ? 'color:#c0392b;font-weight:700' : (exp ? '' : 'color:var(--text3)');
+      const srcItems = (pi.invoiceItems && pi.invoiceItems.length > 0)
+        ? pi.invoiceItems
+        : (pi.lineItems && pi.lineItems.length > 0 ? pi.lineItems : null);
+      const itemsText = srcItems
+        ? srcItems.map(li => li.marketingName || li.model || li.itemCode || '').filter(Boolean).join(', ')
+        : '— (sin detalle de productos)';
+      const invBadge = pi.invoiceNo ? `<span style="font-size:10px;background:rgba(94,129,172,0.15);color:#5E81AC;border-radius:4px;padding:1px 6px;margin-left:6px">Inv #${esc(pi.invoiceNo)}</span>` : '';
+      html += `<tr style="background:${rowBg};border-bottom:1px solid var(--border2)">
+        <td style="padding:6px 10px;font-weight:600">${esc(pi.name)}${invBadge}</td>
+        <td style="padding:6px 10px;color:var(--text2)">${esc(pi.client||'—')}</td>
+        <td style="padding:6px 10px;text-align:center"><span class="pill pill-gray">${esc(SF_DIST_LABELS[dk]||dk)}</span></td>
+        <td style="padding:6px 10px;text-align:center;font-size:11px">${SF_SHIP_LABEL[pi.shipmentType]||'—'}</td>
+        <td style="padding:6px 10px;color:var(--text2);max-width:300px;white-space:normal;font-size:11px">${esc(itemsText)}</td>
+        <td style="padding:6px 10px;text-align:center;${expColor}">${expStr}</td>
+        <td style="padding:6px 10px;text-align:center;white-space:nowrap">
+          <button class="btn" style="font-size:10px;padding:3px 8px;color:var(--amber-text);border-color:var(--amber-text)" onclick="openTransitExtend(${pi.id})">Prórroga</button>
+          <button class="btn" style="font-size:10px;padding:3px 8px;margin-left:4px;color:var(--text3)" onclick="dismissTransit(${pi.id})">Quitar</button>
+        </td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
   wrap.innerHTML = html;
 }
 
