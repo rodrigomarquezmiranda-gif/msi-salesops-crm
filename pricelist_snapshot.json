@@ -1,6 +1,6 @@
 {
-  "capturedAt": "2026-08-11T14:49:09Z",
-  "lastCheck": "11/08/2026 11:49",
+  "capturedAt": "2026-08-11T19:00:47Z",
+  "lastCheck": "11/08/2026 19:00",
   "changesFound": true,
   "priceLogic": "min(colQ, colR) — uses lower of Miami Price and Market Share price. Parser: dynamic section detection via header rows.",
   "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw | Tab: LATAM",
@@ -2536,6 +2536,16 @@
       "miamiStock": 356,
       "miamiEta": "",
       "bondedStock": 0,
+      "bondedEta": ""
+    },
+    "NAME:PRO DP21 14AM": {
+      "partNumber": "",
+      "name": "PRO DP21 14AM",
+      "category": "MiniPC",
+      "price": 182.0,
+      "miamiStock": null,
+      "miamiEta": "",
+      "bondedStock": null,
       "bondedEta": ""
     },
     "CuNUCAI3MG006B": {
