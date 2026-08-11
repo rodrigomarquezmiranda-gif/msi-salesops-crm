@@ -558,7 +558,6 @@
       <div id="tab-pi" class="tab-pane">
         <div class="export-row">
           <button class="filter-pill active" onclick="filterPipe('pi','all',this)">Todos</button>
-          <button class="filter-pill" onclick="filterPipe('pi','Creado',this)">Creado</button>
           <button class="filter-pill" onclick="filterPipe('pi','Enviado al cliente',this)">Enviado al cliente</button>
           <button class="filter-pill" onclick="filterPipe('pi','Firmado',this)">Firmado</button>
           <button class="filter-pill" onclick="filterPipe('pi','Entregado',this)">Entregado</button>
@@ -568,7 +567,7 @@
             <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none"></i>
             <input id="pi-search-input" type="text" placeholder="Buscar Orden por nombre, cliente o monto…"
               style="width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"
-              oninput="_piSearch=this.value.toLowerCase().trim();_piShowAll=!!_piSearch;renderPipeline('pi')" />
+              oninput="_piSearch=this.value.toLowerCase().trim();if(_piSearch)_piColShowAll={};renderPipeline('pi')" />
           </div>
           <span id="pi-search-notice" style="font-size:12px;color:var(--text3);white-space:nowrap"></span>
         </div>
@@ -1024,12 +1023,26 @@
     <div class="field-row">
       <div class="field">
         <label>Estado</label>
-        <select id="pf-status"></select>
+        <select id="pf-status" onchange="onPIStatusChange(this.value)"></select>
       </div>
       <div class="field">
         <label>Vencimiento</label>
         <input type="date" id="pf-date" />
       </div>
+    </div>
+    <div class="field" id="pf-shipment-wrap" style="display:none">
+      <label>Tipo de embarque</label>
+      <select id="pf-shipment-type">
+        <option value="">— Seleccioná el origen —</option>
+        <option value="miami-aereo">✈️ Miami Aéreo (10 días en tránsito)</option>
+        <option value="miami-maritimo">🚢 Miami Marítimo (30 días en tránsito)</option>
+        <option value="china-maritimo">🚢 China Marítimo (60 días en tránsito)</option>
+      </select>
+    </div>
+    <div id="pf-sign-block" style="display:none;margin-bottom:12px">
+      <button class="btn" onclick="openDigitalSign()" style="width:100%;justify-content:center;color:var(--green-text);border-color:var(--green-text)">
+        <i class="ti ti-signature" style="font-size:14px"></i> El cliente firma digitalmente (sin archivo)
+      </button>
     </div>
     <div class="field" id="pf-info-block" style="display:none">
       <div class="detail-grid" style="margin-bottom:0">
@@ -1080,6 +1093,28 @@
       <button class="btn btn-danger" id="pf-btn-delete" onclick="deletePIItem()" style="display:none">Eliminar</button>
       <button class="btn" onclick="closeOverlay('modal-pi')">Cancelar</button>
       <button class="btn btn-primary" onclick="savePIItem()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: FIRMA DIGITAL DE PI -->
+<div class="overlay" id="modal-digital-sign">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title">✍️ Confirmar firma del cliente</span>
+      <button class="modal-close" onclick="closeOverlay('modal-digital-sign')"><i class="ti ti-x"></i></button>
+    </div>
+    <div style="padding:8px 0 16px;font-size:13px;color:var(--text2);line-height:1.6">
+      Estás registrando que el comprador confirmó su aceptación de la PI:<br>
+      <strong id="digital-sign-pi-name" style="color:var(--text);font-size:14px"></strong>
+    </div>
+    <div style="background:var(--bg2);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text3);margin-bottom:16px;line-height:1.5">
+      <i class="ti ti-info-circle" style="font-size:12px;margin-right:4px"></i>
+      Esta acción quedará registrada con tu usuario y la fecha/hora actual. Si el cliente tiene archivo firmado en papel, usá el botón <em>"PI firmada por el cliente (PDF)"</em> para subir el documento.
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeOverlay('modal-digital-sign')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmDigitalSign()"><i class="ti ti-signature" style="font-size:13px"></i> Confirmar firma</button>
     </div>
   </div>
 </div>
@@ -1175,7 +1210,7 @@
 <script>
 // ─── CONFIG ───────────────────────────────────────────
 const PIPES = {
-  pi:  { label: 'Ordenes / Proforma Invoice', icon: 'ti-file-invoice',    cols: ['Creado','Enviado al cliente','Firmado','Entregado'] },
+  pi:  { label: 'Ordenes / Proforma Invoice', icon: 'ti-file-invoice',    cols: ['Enviado al cliente','Firmado','Entregado'] },
   ber: { label: 'BER',                   icon: 'ti-building-store',  cols: ['Solicitado','En aprobación','Aprobado','Reclamado a cliente','Cerrado'] },
   sor: { label: 'SOR',                   icon: 'ti-percentage',      cols: ['Activo','Por vencer','Vencido - Reclamar','Reclamado','Cobrado'] },
   sir: { label: 'SIR',                   icon: 'ti-truck-delivery',  cols: ['Solicitado','En aprobación','Aprobado','Cerrado'] },
@@ -1207,7 +1242,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '2.10.08.2026.11';
+const APP_VERSION = '3.11.08.2026.11';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1220,7 +1255,31 @@ let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
 let currentFilter = { pi:'all' };
 let _piSearch = '';
-let _piShowAll = false;
+let _piShowAll = false; // legacy compat (unused)
+let _piColShowAll = {}; // per-column "Ver todas" state
+
+const TRANSIT_DAYS = { 'miami-aereo': 10, 'miami-maritimo': 30, 'china-maritimo': 60 };
+
+function _piInTransit(pi) {
+  if (pi.status !== 'Entregado' || pi.transitEnded) return false;
+  if (!pi.shipmentType || !TRANSIT_DAYS[pi.shipmentType]) return true; // legacy: always show
+  const start = pi.transitStartDate || pi.invoiceDate || pi.updatedAt;
+  if (!start) return true;
+  const expiry = new Date(new Date(start).getTime() + TRANSIT_DAYS[pi.shipmentType] * 86400000);
+  return new Date() < expiry;
+}
+
+function _piTransitExpiresAt(pi) {
+  if (!pi.shipmentType || !TRANSIT_DAYS[pi.shipmentType]) return null;
+  const start = pi.transitStartDate || pi.invoiceDate || pi.updatedAt;
+  if (!start) return null;
+  return new Date(new Date(start).getTime() + TRANSIT_DAYS[pi.shipmentType] * 86400000);
+}
+
+function _piTransitExpiresInMs(pi) {
+  const exp = _piTransitExpiresAt(pi);
+  return exp ? exp.getTime() - Date.now() : Infinity;
+}
 let currentRebateFilter = 'all';
 let pendingItems = [];
 let _pendingPriceParsed = null;
@@ -1582,7 +1641,7 @@ function gotoTab(tab) {
   });
   document.getElementById('page-title').textContent = TITLES[tab] || tab;
   if(tab==='dashboard') renderDashboard();
-  if(tab==='pi') { _piSearch=''; _piShowAll=false; const inp=document.getElementById('pi-search-input'); if(inp) inp.value=''; }
+  if(tab==='pi') { _piSearch=''; _piColShowAll={}; const inp=document.getElementById('pi-search-input'); if(inp) inp.value=''; }
   if(tab==='rebates') renderRebatesTable();
   if(tab==='pricelist') renderPriceListView();
   if(tab==='salesprices') renderSalesPriceHistory();
@@ -1614,16 +1673,14 @@ function renderPipeline(pipe) {
   const board = document.getElementById('board-'+pipe);
   const filter = currentFilter[pipe] || 'all';
 
-  // ── PI: search + "last 5" limit ──────────────────────
+  // ── PI: search filter (distribuidor + texto) ──────────────────────
   let piActiveSet = null; // null = use full db[pipe]
   if(pipe === 'pi') {
-    // Distribuidor: filtrar sin mutar db.pi
     let piSource = db.pi;
     if(_currentDistributor) {
       piSource = db.pi.filter(x => _sfMatchDist(x.client) === _currentDistributor || _sfMatchDist(x.disti) === _currentDistributor);
       piActiveSet = new Set(piSource.map(x => x.id));
     }
-    const total = piSource.length;
     if(_piSearch) {
       const searchSet = new Set(piSource.filter(x =>
         (x.name||'').toLowerCase().includes(_piSearch) ||
@@ -1634,24 +1691,34 @@ function renderPipeline(pipe) {
       const count = piActiveSet.size;
       document.getElementById('pi-search-notice').innerHTML =
         count ? `<span>${count} resultado${count===1?'':'s'}</span>` : `<span style="color:var(--red-text)">Sin resultados</span>`;
-    } else if(!_piShowAll && total > 5) {
-      const recent = [...piSource].sort((a,b)=>b.id-a.id).slice(0,5);
-      piActiveSet = new Set(recent.map(x => x.id));
-      document.getElementById('pi-search-notice').innerHTML =
-        `<span>Últimas 5 de ${total} · <a href="#" onclick="event.preventDefault();_piShowAll=true;renderPipeline('pi')" style="color:var(--brand-text);text-decoration:none">Ver todas</a></span>`;
     } else {
-      // Si ya había filtro por distribuidor, mantener piActiveSet; si no, mostrar todo
-      if(!_currentDistributor) piActiveSet = null;
-      document.getElementById('pi-search-notice').innerHTML =
-        total > 5 ? `<span>${total} PIs · <a href="#" onclick="event.preventDefault();_piShowAll=false;renderPipeline('pi')" style="color:var(--brand-text);text-decoration:none">Ver últimas 5</a></span>` : '';
+      document.getElementById('pi-search-notice').innerHTML = '';
     }
   }
 
   board.innerHTML = cfg.cols.map(col => {
-    let items = db[pipe].filter(x => x.status === col && (!piActiveSet || piActiveSet.has(x.id)));
-    if(filter !== 'all' && filter !== col) items = [];
+    let allItems = db[pipe].filter(x => x.status === col && (!piActiveSet || piActiveSet.has(x.id)));
+    if(filter !== 'all' && filter !== col) allItems = [];
+
+    // PI: per-column max 5 with "Ver todas" toggle (only when not searching)
+    const showAll = (pipe !== 'pi') || !!_piSearch || !!_piColShowAll[col];
+    const total = allItems.length;
+    const items = (pipe === 'pi' && !showAll && total > 5)
+      ? [...allItems].sort((a,b) => b.id - a.id).slice(0, 5)
+      : allItems;
+
     const cards = items.length ? items.map(item => {
       const d = daysUntil(item.dueDate);
+      // Transit expiry badge for Entregado items
+      let transitBadge = '';
+      if(pipe === 'pi' && item.status === 'Entregado' && item.shipmentType) {
+        const msLeft = _piTransitExpiresInMs(item);
+        if(msLeft < 24 * 3600000 && msLeft > 0) {
+          transitBadge = `<span class="pill pill-red" style="font-size:9px">⚠ TRÁNSITO VENCE HOY</span>`;
+        } else if(msLeft <= 0 && !item.transitEnded) {
+          transitBadge = `<span class="pill pill-gray" style="font-size:9px">TRÁNSITO VENCIDO</span>`;
+        }
+      }
       return `<div class="card" onclick="openEdit(${item.id},'${pipe}')">
         <div class="card-title">${esc(item.name)}</div>
         ${item.client ? `<div class="card-client">${esc(item.client)}</div>` : ''}
@@ -1660,17 +1727,28 @@ function renderPipeline(pipe) {
           ${item.dueDate ? daysChip(d) : ''}
           ${(item.file || item.signedFile) ? `<span class="card-clip"><i class="ti ti-paperclip"></i></span>` : ''}
           ${item.priority === 'urgente' ? `<span class="pill pill-red" style="font-size:9px">URGENTE</span>` : item.priority === 'alta' ? `<span class="pill pill-amber" style="font-size:9px">ALTA</span>` : ''}
+          ${transitBadge}
         </div>
         ${item.amount ? `<div class="card-amount">USD ${Number(item.amount).toLocaleString('es-AR')}</div>` : ''}
         ${item.createdBy ? `<div class="admin-only" style="font-size:10px;color:var(--text3);margin-top:4px;display:none"><i class="ti ti-user" style="font-size:10px"></i> ${esc(item.createdBy.split('@')[0])}</div>` : ''}
       </div>`;
     }).join('') : '';
+
+    // "Ver todas" / "Ver menos" footer for PI columns
+    let colFooter = '';
+    if(pipe === 'pi' && !_piSearch && total > 5) {
+      colFooter = showAll
+        ? `<button class="add-col-btn" style="color:var(--text3)" onclick="event.stopPropagation();_piColShowAll['${col}']=false;renderPipeline('pi')"><i class="ti ti-chevron-up" style="font-size:12px"></i> Ver menos</button>`
+        : `<button class="add-col-btn" style="color:var(--brand-text)" onclick="event.stopPropagation();_piColShowAll['${col}']=true;renderPipeline('pi')"><i class="ti ti-chevron-down" style="font-size:12px"></i> Ver todas (${total})</button>`;
+    }
+
     return `<div class="pipe-col">
       <div class="pipe-col-header">
         <span class="pipe-col-title">${col}</span>
-        <span class="pipe-col-count">${items.length}</span>
+        <span class="pipe-col-count">${total}</span>
       </div>
       ${cards}
+      ${colFooter}
       <button class="add-col-btn" onclick="openNewInCol('${pipe}','${col}')"><i class="ti ti-plus" style="font-size:13px"></i> Agregar</button>
     </div>`;
   }).join('');
@@ -1704,6 +1782,13 @@ function updatePIStatusOptions(selectVal) {
   const sel = document.getElementById('pf-status');
   sel.innerHTML = cols.map(c => `<option value="${c}">${c}</option>`).join('');
   if(selectVal && cols.includes(selectVal)) sel.value = selectVal;
+  onPIStatusChange(sel.value);
+}
+function onPIStatusChange(val) {
+  const shipWrap = document.getElementById('pf-shipment-wrap');
+  const signBlock = document.getElementById('pf-sign-block');
+  if(shipWrap) shipWrap.style.display = (val === 'Entregado') ? 'block' : 'none';
+  if(signBlock) signBlock.style.display = (val === 'Enviado al cliente') ? 'block' : 'none';
 }
 function updateInfoBlock(po, salesOrderDate, dispatchDate) {
   const block = document.getElementById('pf-info-block');
@@ -1744,7 +1829,9 @@ function openPINew(statusHint, prefill) {
   document.getElementById('pf-priority').value = 'normal';
   document.getElementById('pf-notes').value = '';
   updateInfoBlock(prefill?.customerPO, prefill?.salesOrderDate, prefill?.dispatchDate);
-  updatePIStatusOptions(statusHint || 'Creado');
+  const _validStatus = PIPES.pi.cols.includes(statusHint) ? statusHint : 'Enviado al cliente';
+  updatePIStatusOptions(_validStatus);
+  const _st = document.getElementById('pf-shipment-type'); if(_st) _st.value = '';
   refreshPIFileUI();
   renderPIItemsTable();
   openOverlay('modal-pi');
@@ -1766,6 +1853,8 @@ function openPIEdit(id) {
   document.getElementById('pf-notes').value = item.notes || '';
   updateInfoBlock(item.customerPO, item.salesOrderDate, item.dispatchDate);
   updatePIStatusOptions(item.status);
+  const _st = document.getElementById('pf-shipment-type');
+  if(_st) _st.value = item.shipmentType || '';
   refreshPIFileUI();
   renderPIItemsTable();
   // Mostrar "Cargado por" solo para admins
@@ -1801,11 +1890,15 @@ function savePIItem() {
   const name = document.getElementById('pf-name').value.trim();
   if(!name) { document.getElementById('pf-name').focus(); alert('Ingresá el N° de PI antes de guardar.'); return; }
   const existing = editingPIId ? db.pi.find(x=>x.id===editingPIId) : null;
+  const newStatus = document.getElementById('pf-status').value;
+  const newShipmentType = document.getElementById('pf-shipment-type')?.value || '';
+  const wasEntregado = existing?.status === 'Entregado';
+  const isNowEntregado = newStatus === 'Entregado';
   const item = {
     id: editingPIId || Date.now(), pipeline:'pi', name,
     client: document.getElementById('pf-client').value.trim(),
     amount: parseFloat(document.getElementById('pf-amount').value) || 0,
-    status: document.getElementById('pf-status').value,
+    status: newStatus,
     dueDate: document.getElementById('pf-date').value,
     priority: document.getElementById('pf-priority').value,
     notes: document.getElementById('pf-notes').value.trim(),
@@ -1815,6 +1908,11 @@ function savePIItem() {
     file: _pendingPIOrigFile || existing?.file || null,
     signedFile: _pendingPISignedFile || existing?.signedFile || null,
     lineItems: (_pendingPILineItems && _pendingPILineItems.length) ? _pendingPILineItems : (existing?.lineItems || []),
+    shipmentType: newShipmentType || existing?.shipmentType || '',
+    transitStartDate: isNowEntregado ? (existing?.transitStartDate || new Date().toISOString()) : (existing?.transitStartDate || null),
+    transitEnded: existing?.transitEnded || false,
+    digitallySignedAt: existing?.digitallySignedAt || null,
+    digitallySignedBy: existing?.digitallySignedBy || null,
     createdAt: existing?.createdAt || new Date().toISOString(),
     createdBy: existing?.createdBy || _currentUser?.email || null,
     updatedAt: new Date().toISOString()
@@ -1828,6 +1926,34 @@ function deletePIItem() {
   if(!confirm('¿Eliminar esta PI?')) return;
   db.pi = db.pi.filter(x => x.id !== editingPIId);
   saveDB(); renderAll(); closeOverlay('modal-pi');
+}
+
+function openDigitalSign() {
+  const piName = document.getElementById('pf-name')?.value || '(sin nombre)';
+  openOverlay('modal-digital-sign');
+  document.getElementById('digital-sign-pi-name').textContent = piName;
+}
+async function confirmDigitalSign() {
+  // If editing an existing PI, update it directly
+  if(editingPIId) {
+    const idx = db.pi.findIndex(x => x.id === editingPIId);
+    if(idx > -1) {
+      db.pi[idx] = {
+        ...db.pi[idx],
+        status: 'Firmado',
+        digitallySignedAt: new Date().toISOString(),
+        digitallySignedBy: _currentUser?.email || null,
+        updatedAt: new Date().toISOString()
+      };
+      await saveDB();
+      renderAll();
+    }
+  }
+  // Also update the status selector in the modal
+  const sel = document.getElementById('pf-status');
+  if(sel) { sel.value = 'Firmado'; onPIStatusChange('Firmado'); }
+  closeOverlay('modal-digital-sign');
+  if(editingPIId) closeOverlay('modal-pi');
 }
 
 // ─── PI PDF: lectura y parseo del template MSI ───────
@@ -2274,6 +2400,8 @@ async function handleInvoicePDF(parsed, file) {
       invoiceNo: parsed.invoiceNo,
       invoiceDate: parsed.invoiceDate || null,
       invoiceItems: invoiceItems,
+      transitStartDate: new Date().toISOString(),
+      transitEnded: false,
       createdAt: new Date().toISOString(),
       createdBy: _currentUser?.email || null,
       updatedAt: new Date().toISOString(),
@@ -2297,6 +2425,8 @@ async function handleInvoicePDF(parsed, file) {
     invoiceNo: parsed.invoiceNo,
     invoiceDate: parsed.invoiceDate || existing.invoiceDate || null,
     invoiceItems: invoiceItems.length ? invoiceItems : existing.invoiceItems || [],
+    transitStartDate: existing.transitStartDate || new Date().toISOString(),
+    transitEnded: false,
     updatedAt: new Date().toISOString()
   };
   if (dataUrl) updated.invoiceFile = { name: file.name, dataUrl };
@@ -2325,7 +2455,7 @@ async function handlePIFile(file) {
       refreshPIFileUI();
     } else {
       const looksSigned = /signed|firmad/i.test(file.name);
-      openPINew(looksSigned ? 'Firmado' : 'Creado', parsed);
+      openPINew(looksSigned ? 'Firmado' : 'Enviado al cliente', parsed);
       _pendingPIOrigFile = { name:file.name, dataUrl };
       if(looksSigned) _pendingPISignedFile = { name:file.name, dataUrl };
       refreshPIFileUI();
@@ -3524,17 +3654,23 @@ function buildSemaforoData() {
   });
 
   const transitData = {};
-  SF_DIST_KEYS.forEach(dk => transitData[dk] = { keys: new Set(), hasGeneral: false });
-  (db.pi || []).filter(pi => pi.status === 'Entregado').forEach(pi => {
+  SF_DIST_KEYS.forEach(dk => transitData[dk] = { keys: new Set(), hasGeneral: false, expiringKeys: new Set(), expiringPIs: [] });
+  (db.pi || []).filter(pi => _piInTransit(pi)).forEach(pi => {
     const dk = _sfMatchDist(pi.client);
     if(!dk) return;
+    const msLeft = _piTransitExpiresInMs(pi);
+    const isExpiring = msLeft < 24 * 3600000 && msLeft !== Infinity;
+    if(isExpiring) transitData[dk].expiringPIs.push(pi);
     const srcItems = (pi.invoiceItems && pi.invoiceItems.length > 0)
       ? pi.invoiceItems
       : (pi.lineItems && pi.lineItems.length > 0 ? pi.lineItems : null);
     if(srcItems) {
       srcItems.forEach(li => {
         const k = extractMSIModelKey(li.marketingName || li.model || li.itemCode || '');
-        if(k) transitData[dk].keys.add(k);
+        if(k) {
+          transitData[dk].keys.add(k);
+          if(isExpiring) transitData[dk].expiringKeys.add(k);
+        }
       });
     } else {
       transitData[dk].hasGeneral = true;
@@ -3612,6 +3748,7 @@ function renderSemaforoTab() {
     <i class="ti ti-file-type-pdf" style="font-size:14px"></i> Exportar PDF
   </button>
 </div>
+${_buildTransitAlertPanel(transitData)}
 <div class="sf-wrap">
 <table class="sf-table">
 <thead>
@@ -3646,9 +3783,14 @@ function renderSemaforoTab() {
         ? `<td class="sf-td-center ${sc}">${sl}</td>`
         : `<td class="sf-td-center"></td>`;
       const hasTransit = transitData[dk].keys.has(p.normModel) || transitData[dk].hasGeneral;
-      html += hasTransit
-        ? `<td class="sf-td-center" style="background:#FFF3CD"><span class="sf-transit">●</span></td>`
-        : `<td class="sf-td-center"></td>`;
+      const isExpiring = transitData[dk].expiringKeys.has(p.normModel) || (transitData[dk].hasGeneral && transitData[dk].expiringPIs.length > 0);
+      if(hasTransit) {
+        const bg = isExpiring ? '#FFDDD0' : '#FFF3CD';
+        const dot = isExpiring ? `<span class="sf-transit" style="color:#c0392b">●</span>` : `<span class="sf-transit">●</span>`;
+        html += `<td class="sf-td-center" style="background:${bg}">${dot}</td>`;
+      } else {
+        html += `<td class="sf-td-center"></td>`;
+      }
     });
     html += `</tr>`;
     altRow = !altRow;
@@ -3656,6 +3798,153 @@ function renderSemaforoTab() {
 
   html += `</tbody></table></div>`;
   wrap.innerHTML = html;
+}
+
+// ─── TRANSIT: ALERT PANEL + EXTEND / DISMISS ─────────────────────────────────
+function _buildTransitAlertPanel(transitData) {
+  // Collect all expiring PIs across distributors (deduplicate by pi.id)
+  const seen = new Set();
+  const expiringAll = [];
+  SF_DIST_KEYS.forEach(dk => {
+    (transitData[dk].expiringPIs || []).forEach(pi => {
+      if(!seen.has(pi.id)) { seen.add(pi.id); expiringAll.push(pi); }
+    });
+  });
+  if(!expiringAll.length) return '';
+
+  const rows = expiringAll.map(pi => {
+    const ms = _piTransitExpiresInMs(pi);
+    const hrs = Math.max(0, Math.ceil(ms / 3600000));
+    const label = hrs === 0 ? 'Vence en menos de 1 hora' : `Vence en ${hrs} hora${hrs !== 1 ? 's' : ''}`;
+    const shipLabel = { 'miami-aereo': '✈️ Miami Aéreo', 'miami-maritimo': '🚢 Miami Marítimo', 'china-maritimo': '🚢 China Marítimo' }[pi.shipmentType] || pi.shipmentType || '';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid rgba(192,57,43,0.15)">
+      <span style="font-size:14px">⚠️</span>
+      <div style="flex:1;min-width:0">
+        <span style="font-weight:600;font-size:13px">${esc(pi.name)}</span>
+        <span style="color:var(--text3);font-size:12px;margin-left:8px">${esc(pi.client||'')} · ${shipLabel}</span>
+        <span style="color:var(--red-text);font-size:12px;margin-left:8px">${label}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn" style="font-size:11px;padding:4px 10px;color:var(--amber-text);border-color:var(--amber-text)" onclick="openTransitExtend(${pi.id})">Prórroga</button>
+        <button class="btn" style="font-size:11px;padding:4px 10px;color:var(--text3)" onclick="dismissTransit(${pi.id})">Quitar del tránsito</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div style="background:rgba(192,57,43,0.07);border:1px solid rgba(192,57,43,0.3);border-radius:10px;padding:12px 16px;margin-bottom:16px">
+    <div style="font-weight:700;font-size:12px;color:var(--red-text);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px">
+      <i class="ti ti-alert-triangle" style="font-size:13px;margin-right:4px"></i> ${expiringAll.length} embarque${expiringAll.length!==1?'s':''} próximos a vencer
+    </div>
+    ${rows}
+  </div>`;
+}
+
+async function dismissTransit(piId) {
+  if(!confirm('¿Confirmar que el embarque llegó y quitarlo del tránsito?')) return;
+  const idx = db.pi.findIndex(x => x.id === piId);
+  if(idx > -1) {
+    db.pi[idx] = { ...db.pi[idx], transitEnded: true, updatedAt: new Date().toISOString() };
+    await saveDB();
+    renderSemaforoTab();
+    renderPipeline('pi');
+  }
+}
+
+function openTransitExtend(piId) {
+  const pi = db.pi.find(x => x.id === piId);
+  if(!pi) return;
+  const expAt = _piTransitExpiresAt(pi);
+  const expStr = expAt ? expAt.toLocaleDateString('es-AR') : '(sin vencimiento)';
+  const days = prompt(`Prórroga de tránsito para "${pi.name}"\nVencimiento actual: ${expStr}\n\n¿Cuántos días adicionales querés agregar?`, '15');
+  if(!days || isNaN(parseInt(days))) return;
+  const addDays = parseInt(days);
+  if(addDays <= 0 || addDays > 365) { alert('Ingresá entre 1 y 365 días.'); return; }
+  const idx = db.pi.findIndex(x => x.id === piId);
+  if(idx > -1) {
+    const cur = db.pi[idx];
+    const baseStart = cur.transitStartDate || cur.invoiceDate || cur.updatedAt;
+    const baseExpiry = expAt ? expAt.getTime() : (baseStart ? new Date(baseStart).getTime() + (TRANSIT_DAYS[cur.shipmentType]||0)*86400000 : Date.now());
+    const newStart = new Date(baseExpiry - (TRANSIT_DAYS[cur.shipmentType]||0)*86400000 + addDays*86400000).toISOString();
+    db.pi[idx] = { ...cur, transitStartDate: newStart, transitEnded: false, updatedAt: new Date().toISOString() };
+    saveDB();
+    renderSemaforoTab();
+    renderPipeline('pi');
+    alert(`✓ Prórroga aplicada. Nuevo vencimiento: ${_piTransitExpiresAt(db.pi[idx])?.toLocaleDateString('es-AR')}`);
+  }
+}
+
+// ─── PI ALERTS: 12h unsigned, 4h transit expiry ────────────────────────────────
+let _piAlertInterval = null;
+function _startPIAlerts() {
+  _checkPIAlerts();
+  if(!_piAlertInterval) _piAlertInterval = setInterval(_checkPIAlerts, 4 * 60 * 60 * 1000); // every 4h
+}
+
+function _checkPIAlerts() {
+  const now = Date.now();
+  const alerts = [];
+
+  (db.pi || []).forEach(pi => {
+    // 12h alert: Enviado al cliente, no firmado
+    if(pi.status === 'Enviado al cliente' && !pi.signedFile && !pi.digitallySignedAt) {
+      const lastKey = `alert_unsigned_${pi.id}`;
+      const last = parseInt(localStorage.getItem(lastKey) || '0');
+      if(now - last > 12 * 3600000) {
+        alerts.push({ type: 'unsigned', pi });
+        localStorage.setItem(lastKey, String(now));
+      }
+    }
+
+    // 4h alert: transit expiring within 24h
+    if(_piInTransit(pi) && pi.shipmentType) {
+      const msLeft = _piTransitExpiresInMs(pi);
+      if(msLeft < 24 * 3600000 && msLeft > 0) {
+        const lastKey = `alert_transit_${pi.id}`;
+        const last = parseInt(localStorage.getItem(lastKey) || '0');
+        if(now - last > 4 * 3600000) {
+          alerts.push({ type: 'transit', pi });
+          localStorage.setItem(lastKey, String(now));
+        }
+      }
+    }
+  });
+
+  if(!alerts.length) return;
+
+  const msgs = alerts.map(a => {
+    if(a.type === 'unsigned') return `📋 "${a.pi.name}" fue enviada al cliente y aún no está firmada.`;
+    if(a.type === 'transit') {
+      const ms = _piTransitExpiresInMs(a.pi);
+      const hrs = Math.ceil(ms / 3600000);
+      return `🚢 "${a.pi.name}" vence en tránsito en ${hrs}h.`;
+    }
+    return '';
+  }).filter(Boolean).join('\n');
+
+  // Update notification badge
+  const nb = document.getElementById('nb-alerts');
+  if(nb) {
+    const cur = parseInt(nb.textContent || '0') || 0;
+    nb.style.display = 'inline';
+    nb.textContent = cur + alerts.length;
+  }
+
+  // Show in-app toast if tab is visible
+  if(document.visibilityState === 'visible') {
+    _showPIAlertToast(msgs);
+  }
+}
+
+function _showPIAlertToast(msg) {
+  let toast = document.getElementById('pi-alert-toast');
+  if(!toast) {
+    toast = document.createElement('div');
+    toast.id = 'pi-alert-toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;right:24px;max-width:360px;background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.18);z-index:9999;font-size:13px;white-space:pre-line;line-height:1.5';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<div style="font-weight:600;margin-bottom:6px;color:var(--amber-text)"><i class="ti ti-bell" style="font-size:13px"></i> Alertas de Órdenes</div>${esc(msg)}<br><button class="btn" style="margin-top:10px;font-size:11px;width:100%;justify-content:center" onclick="document.getElementById('pi-alert-toast').remove()">Cerrar</button>`;
+  setTimeout(() => { if(toast.parentNode) toast.remove(); }, 30000);
 }
 
 async function exportSemaforoPDF() {
@@ -7779,7 +8068,7 @@ function loadDemo() {
   const d = n => { const dt=new Date(); dt.setDate(dt.getDate()+n); return dt.toISOString().split('T')[0]; };
   db.pi = [
     { id:1, pipeline:'pi', name:'PI-DEMO-0001', client:'Dell Argentina', amount:18500, customerPO:'', salesOrderDate:d(-10), dispatchDate:'', dueDate:d(40), status:'Enviado al cliente', priority:'alta', notes:'', file:null, signedFile:null, lineItems:[{itemCode:'9S6-3CE49H-076',marketingName:'MAG 274QPF X32',ordered:50,unitPrice:170,amount:8500},{itemCode:'9S6-3BC81M-004',marketingName:'MAG 245F X24',ordered:147,unitPrice:68,amount:9996}], createdAt:new Date().toISOString() },
-    { id:2, pipeline:'pi', name:'PI-DEMO-0002', client:'HP Inc.', amount:9200, customerPO:'', salesOrderDate:d(-3), dispatchDate:'', dueDate:d(40), status:'Creado', priority:'normal', notes:'', file:null, signedFile:null, lineItems:[{itemCode:'9S6-3CE41H-057',marketingName:'MAG 274QF X24',ordered:70,unitPrice:130,amount:9100},{itemCode:'9S6-3CE51T-002',marketingName:'MAG 272F',ordered:1,unitPrice:87,amount:87}], createdAt:new Date().toISOString() }
+    { id:2, pipeline:'pi', name:'PI-DEMO-0002', client:'HP Inc.', amount:9200, customerPO:'', salesOrderDate:d(-3), dispatchDate:'', dueDate:d(40), status:'Enviado al cliente', priority:'normal', notes:'', file:null, signedFile:null, lineItems:[{itemCode:'9S6-3CE41H-057',marketingName:'MAG 274QF X24',ordered:70,unitPrice:130,amount:9100},{itemCode:'9S6-3CE51T-002',marketingName:'MAG 272F',ordered:1,unitPrice:87,amount:87}], createdAt:new Date().toISOString() }
   ];
   db.sor = [
     { id:3, pipeline:'sor', name:'Jun 01- MSI- ELIT- VENE- SOR', disti:'ELIT LATAM CORP', client:'VENEX', creditNoteNum:'CN#232537', customerClaimNum:'', programStart:d(-37), programEnd:d(-1), totalClaimQty:160, status:'Vencido - Reclamar', priority:'urgente', notes:'', items:[{model:'PRO B840M-B',qtyStock:275,pct:5,note:null,approvedBy:null,approvedDate:null,finalQty:32,claimQty:160}], createdAt:new Date().toISOString() },
@@ -8166,6 +8455,7 @@ _fbAuth.onAuthStateChanged(async (user) => {
       document.getElementById('api-key-input').value = getApiKey();
       applyBrandLogo();
       renderAll();
+      _startPIAlerts();
       // Distribuidor: arrancar en Semáforo directo
       gotoTab(role === 'distributor' ? 'semaforo' : 'dashboard');
     } else {
