@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-08-11T18:07:09Z",
-  "lastCheck": "11/08/2026 18:07",
-  "changesFound": false,
+  "capturedAt": "2026-08-11T21:41:50.312481+00:00",
+  "lastCheck": "11/08/2026 21:41",
+  "changesFound": true,
   "priceLogic": "min(colQ, colR) — uses lower of Miami Price and Market Share price. Parser: dynamic section detection via header rows.",
   "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw | Tab: LATAM",
   "notifEmails": [
@@ -13,9 +13,9 @@
       "name": "GeForce RTX 5070 Ti 16G FRIEREN EDITION OC",
       "category": "Bundle",
       "price": 1060.0,
-      "miamiStock": 480.0,
+      "miamiStock": 480,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "GGB-FE": {
@@ -23,9 +23,9 @@
       "name": "MSI GAMING GEAR BUNDLE FRIEREN EDITION",
       "category": "Bundle",
       "price": 140.0,
-      "miamiStock": 57.0,
+      "miamiStock": 57,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5090-32SLS": {
@@ -33,9 +33,9 @@
       "name": "GeForce RTX 5090 32G SUPRIM LIQUID SOC",
       "category": "VGA",
       "price": 4250.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5090-32SPS": {
@@ -43,9 +43,9 @@
       "name": "GeForce RTX 5090 32G SUPRIM SOC",
       "category": "VGA",
       "price": 4150.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5090-32GTC": {
@@ -53,9 +53,9 @@
       "name": "GeForce RTX 5090 32G GAMING TRIO OC",
       "category": "VGA",
       "price": 4050.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5090-32V3C": {
@@ -63,9 +63,9 @@
       "name": "GeForce RTX 5090 32G VENTUS 3X OC",
       "category": "VGA",
       "price": 3900.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5080-16GTCW": {
@@ -73,19 +73,20 @@
       "name": "GeForce RTX 5080 16G GAMING TRIO OC WHITE",
       "category": "VGA",
       "price": 1645.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL"
     },
     "G5080-16GTC": {
       "partNumber": "G5080-16GTC",
       "name": "GeForce RTX 5080 16G GAMING TRIO OC",
       "category": "VGA",
       "price": 1645.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5080-16I3CB": {
@@ -93,9 +94,9 @@
       "name": "GeForce RTX 5080 16G INSPIRE 3X OC BLACK",
       "category": "VGA",
       "price": 1565.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5080-16V3CW": {
@@ -103,19 +104,20 @@
       "name": "GeForce RTX 5080 16G VENTUS 3X OC WHITE",
       "category": "VGA",
       "price": 1510.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL"
     },
     "G5080-16V3CP": {
       "partNumber": "G5080-16V3CP",
       "name": "GeForce RTX 5080 16G VENTUS 3X OC PLUS",
       "category": "VGA",
       "price": 1510.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5080-16V3C": {
@@ -123,9 +125,9 @@
       "name": "GeForce RTX 5080 16G VENTUS 3X OC",
       "category": "VGA",
       "price": 1460.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5080-16S3C": {
@@ -133,9 +135,9 @@
       "name": "Geforce RTX 5080 16G SHADOW 3X OC",
       "category": "VGA",
       "price": 1420.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G507T-16MEC": {
@@ -143,19 +145,20 @@
       "name": "GeForce RTX 5070 Ti 16G MLG EDITION OC",
       "category": "VGA",
       "price": 1150.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL"
     },
     "G507T-16GTC": {
       "partNumber": "G507T-16GTC",
       "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC",
       "category": "VGA",
       "price": 1130.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G507T-16GTCW": {
@@ -163,9 +166,9 @@
       "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC WHITE",
       "category": "VGA",
       "price": 1130.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G507T-16V3CB": {
@@ -173,9 +176,9 @@
       "name": "GeForce RTX 5070 Ti 16G VENTUS 3X OC BLACK",
       "category": "VGA",
       "price": 1090.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G507T-16V3C": {
@@ -183,9 +186,9 @@
       "name": "Geforce RTX 5070 TI 16G VENTUS 3X OC",
       "category": "VGA",
       "price": 1070.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G507T-16S3C": {
@@ -193,9 +196,9 @@
       "name": "Geforce RTX 5070 TI 16G SHADOW 3X OC",
       "category": "VGA",
       "price": 1060.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5070-12GTC": {
@@ -203,9 +206,9 @@
       "name": "Geforce RTX 5070 12G GAMING TRIO OC",
       "category": "VGA",
       "price": 780.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5070-12V3C": {
@@ -213,9 +216,9 @@
       "name": "Geforce RTX 5070 12G VENTUS 3X OC",
       "category": "VGA",
       "price": 740.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "ETA 8/15 8pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5070-12S3C": {
@@ -223,9 +226,9 @@
       "name": "Geforce RTX 5070 12G SHADOW 3X OC",
       "category": "VGA",
       "price": 740.0,
-      "miamiStock": 99.0,
+      "miamiStock": 99,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5070-12V2CB": {
@@ -233,9 +236,9 @@
       "name": "GeForce RTX 5070 12G VENTUS 2X OC BLACK",
       "category": "VGA",
       "price": 735.0,
-      "miamiStock": 127.0,
+      "miamiStock": 127,
       "miamiEta": "ETA 8/15 108pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5070-12V2C": {
@@ -243,9 +246,9 @@
       "name": "Geforce RTX 5070 12G VENTUS 2X OC",
       "category": "VGA",
       "price": 735.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5070-12S2C": {
@@ -253,9 +256,9 @@
       "name": "Geforce RTX 5070 12G SHADOW 2X OC",
       "category": "VGA",
       "price": 725.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G506T-16GTCW": {
@@ -263,19 +266,20 @@
       "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC WHITE",
       "category": "VGA",
       "price": 730.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL"
     },
     "G506T-16GTC": {
       "partNumber": "G506T-16GTC",
       "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC",
       "category": "VGA",
       "price": 730.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G506T-16GC": {
@@ -283,9 +287,9 @@
       "name": "Geforce RTX 5060 Ti 16G GAMING OC",
       "category": "VGA",
       "price": 720.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G506T-16V3C": {
@@ -293,19 +297,20 @@
       "name": "Geforce RTX 5060 Ti 16G VENTUS 3X OC",
       "category": "VGA",
       "price": 730.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL"
     },
     "G506T-16V2CBP": {
       "partNumber": "G506T-16V2CBP",
       "name": "GeForce RTX 5060 Ti 16G VENTUS 2X OC BLACK PLUS",
       "category": "VGA",
       "price": 720.0,
-      "miamiStock": 10.0,
+      "miamiStock": 10,
       "miamiEta": "10pcs ETA 8/11",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G506T-16V2CP": {
@@ -313,9 +318,9 @@
       "name": "Geforce RTX 5060 Ti 16G VENTUS 2X OC PLUS",
       "category": "VGA",
       "price": 720.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G506T-16S2CP": {
@@ -323,9 +328,9 @@
       "name": "Geforce RTX 5060 Ti 16G SHADOW 2X OC PLUS",
       "category": "VGA",
       "price": 710.0,
-      "miamiStock": 1000.0,
+      "miamiStock": 1000,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G506T-8GTCW": {
@@ -333,19 +338,20 @@
       "name": "GeForce RTX 5060 Ti 8G GAMING TRIO OC WHITE",
       "category": "VGA",
       "price": 494.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL"
     },
     "G506T-8GTC": {
       "partNumber": "G506T-8GTC",
       "name": "Geforce RTX 5060 Ti 8G GAMING TRIO OC",
       "category": "VGA",
       "price": 494.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "ETA 9/1 760pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G506T-8GC": {
@@ -353,9 +359,9 @@
       "name": "Geforce RTX 5060 Ti 8G GAMING OC",
       "category": "VGA",
       "price": 485.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 476.0,
+      "bondedStock": 476,
       "bondedEta": ""
     },
     "G506T8V2CWP": {
@@ -363,9 +369,9 @@
       "name": "GeForce RTX 5060 Ti 8G VENTUS 2X OC WHITE PLUS",
       "category": "VGA",
       "price": 465.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G506T-8V2CP": {
@@ -373,9 +379,9 @@
       "name": "Geforce RTX 5060 Ti 8G VENTUS 2X OC PLUS",
       "category": "VGA",
       "price": 465.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "ETA 9/1 2394pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G506T-8S2CP": {
@@ -383,19 +389,20 @@
       "name": "GeForce RTX 5060 Ti 8G SHADOW 2X OC PLUS",
       "category": "VGA",
       "price": 460.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL"
     },
     "G5060-8GC": {
       "partNumber": "G5060-8GC",
       "name": "Geforce RTX 5060 8G GAMING OC",
       "category": "VGA",
       "price": 448.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "ETA 8/15 72pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5060-8V3C": {
@@ -403,9 +410,9 @@
       "name": "Geforce RTX 5060 8G VENTUS 3X OC",
       "category": "VGA",
       "price": 430.0,
-      "miamiStock": 168.0,
+      "miamiStock": 168,
       "miamiEta": "168pcs ETA 8/11 + ETA 8/13 84pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5060-8V2CW": {
@@ -413,9 +420,9 @@
       "name": "Geforce RTX 5060 8G VENTUS 2X OC WHITE",
       "category": "VGA",
       "price": 422.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "ETA 8/15 84pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5060-8V2C": {
@@ -423,9 +430,9 @@
       "name": "Geforce RTX 5060 8G VENTUS 2X OC",
       "category": "VGA",
       "price": 422.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "ETA 8/15 392pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5060-8S2C": {
@@ -433,9 +440,9 @@
       "name": "Geforce RTX 5060 8G SHADOW 2X OC",
       "category": "VGA",
       "price": 420.0,
-      "miamiStock": 52.0,
+      "miamiStock": 52,
       "miamiEta": "ETA 8/15 1152pcs + ETA 8/21 2101pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5050-8GC": {
@@ -443,9 +450,9 @@
       "name": "Geforce RTX 5050 8G GAMING OC",
       "category": "VGA",
       "price": 395.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5050-8V2C": {
@@ -453,9 +460,9 @@
       "name": "Geforce RTX 5050 8G VENTUS 2X OC",
       "category": "VGA",
       "price": 378.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G5050-8S2C": {
@@ -463,9 +470,9 @@
       "name": "Geforce RTX 5050 8G SHADOW 2X OC",
       "category": "VGA",
       "price": 373.0,
-      "miamiStock": 1.0,
+      "miamiStock": 1,
       "miamiEta": "ETA 8/15 541pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G3060V2X12C1": {
@@ -473,9 +480,9 @@
       "name": "GeForce RTX 3060 VENTUS 2X 12G OC V1",
       "category": "VGA",
       "price": 430.0,
-      "miamiStock": 3000.0,
+      "miamiStock": 3000,
       "miamiEta": "",
-      "bondedStock": null,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G3050V2X6C": {
@@ -483,9 +490,9 @@
       "name": "GeForce RTX 3050 VENTUS 2X 6G OC",
       "category": "VGA",
       "price": 255.0,
-      "miamiStock": 1892.0,
+      "miamiStock": 1892,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G3050LP6C": {
@@ -493,9 +500,9 @@
       "name": "GeForce RTX 3050 LP 6G OC",
       "category": "VGA",
       "price": 255.0,
-      "miamiStock": 1648.0,
+      "miamiStock": 1648,
       "miamiEta": "ETA 8/15 630pcs + ETA 9/23 3370pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G103044PC": {
@@ -503,9 +510,9 @@
       "name": "GeForce GT 1030 4GD4 LP OC",
       "category": "VGA",
       "price": 95.0,
-      "miamiStock": 500.0,
+      "miamiStock": 500,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G7102D3P": {
@@ -513,9 +520,9 @@
       "name": "GT 710 2GD3 LP",
       "category": "VGA",
       "price": 50.0,
-      "miamiStock": 645.0,
+      "miamiStock": 645,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "G2101D3": {
@@ -523,9 +530,9 @@
       "name": "N210-MD1G/D3",
       "category": "VGA",
       "price": 30.0,
-      "miamiStock": 331.0,
+      "miamiStock": 331,
       "miamiEta": "ETA 8/15 3000pcs",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "X870ETMAHAWKWIFPZ": {
@@ -533,9 +540,9 @@
       "name": "MAG X870E TOMAHAWK MAX WIFI PZ",
       "category": "MB",
       "price": 282.0,
-      "miamiStock": 20.0,
+      "miamiStock": 20,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "PROZ890SWIFIPZ": {
@@ -543,19 +550,20 @@
       "name": "PRO Z890-S WIFI PZ",
       "category": "MB",
       "price": 227.0,
-      "miamiStock": 5.0,
+      "miamiStock": 5,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL Soon"
     },
     "B850GPWIFIPZ": {
       "partNumber": "B850GPWIFIPZ",
       "name": "B850 GAMING PLUS WIFI PZ",
       "category": "MB",
       "price": 195.0,
-      "miamiStock": 50.0,
+      "miamiStock": 50,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "Z890GODLIKE": {
@@ -563,9 +571,9 @@
       "name": "MEG Z890 GODLIKE",
       "category": "MB",
       "price": 968.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "Z890ACE": {
@@ -573,9 +581,9 @@
       "name": "MEG Z890 ACE",
       "category": "MB",
       "price": 550.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "Z890CARBONWIFI": {
@@ -583,9 +591,9 @@
       "name": "MPG Z890 CARBON WIFI",
       "category": "MB",
       "price": 360.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "Z890TOMAHAWKWIFIII": {
@@ -593,19 +601,20 @@
       "name": "MAG Z890 TOMAHAWK WIFI II",
       "category": "MB",
       "price": 244.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "NEW"
     },
     "Z890TOMAHAWKWIFI": {
       "partNumber": "Z890TOMAHAWKWIFI",
       "name": "MAG Z890 TOMAHAWK WIFI",
       "category": "MB",
       "price": 244.0,
-      "miamiStock": 83.0,
+      "miamiStock": 83,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "Z890GAMINGPWIFI6E": {
@@ -613,29 +622,31 @@
       "name": "Z890 GAMING PLUS WIFI6E",
       "category": "MB",
       "price": 195.0,
-      "miamiStock": 100.0,
+      "miamiStock": 100,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "NEW"
     },
     "Z890GAMINGPWIFI": {
       "partNumber": "Z890GAMINGPWIFI",
       "name": "Z890 GAMING PLUS WIFI",
       "category": "MB",
       "price": 180.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL"
     },
     "Z890PWIFI": {
       "partNumber": "Z890PWIFI",
       "name": "PRO Z890-P WIFI",
       "category": "MB",
       "price": 190.0,
-      "miamiStock": 13.0,
+      "miamiStock": 13,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "Z890SWIFI": {
@@ -643,29 +654,31 @@
       "name": "PRO Z890-S WIFI",
       "category": "MB",
       "price": 180.0,
-      "miamiStock": 3.0,
+      "miamiStock": 3,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL Soon"
     },
     "Z890SWHITEWIFI": {
       "partNumber": "Z890SWHITEWIFI",
       "name": "PRO Z890-S WIFI WHITE",
       "category": "MB",
       "price": 190.0,
-      "miamiStock": 8.0,
+      "miamiStock": 8,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL Soon"
     },
     "B860TOMAHAWKWIFI": {
       "partNumber": "B860TOMAHAWKWIFI",
       "name": "MAG B860 TOMAHAWK WIFI",
       "category": "MB",
       "price": 170.0,
-      "miamiStock": 35.0,
+      "miamiStock": 35,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "B860GPLUSWIFI": {
@@ -673,29 +686,31 @@
       "name": "B860 GAMING PLUS WIFI",
       "category": "MB",
       "price": 155.0,
-      "miamiStock": 10.0,
+      "miamiStock": 10,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL Soon"
     },
     "B860MGPW": {
       "partNumber": "B860MGPW",
       "name": "B860M GAMING PLUS WIFI",
       "category": "MB",
       "price": 140.0,
-      "miamiStock": 0.0,
+      "miamiStock": 0,
       "miamiEta": "",
-      "bondedStock": 0.0,
-      "bondedEta": ""
+      "bondedStock": 0,
+      "bondedEta": "",
+      "status": "EOL"
     },
     "PROB860MB": {
       "partNumber": "PROB860MB",
       "name": "PRO B860M-E",
       "category": "MB",
       "price": 90.0,
-      "miamiStock": 860.0,
+      "miamiStock": 860,
       "miamiEta": "",
-      "bondedStock": 0.0,
+      "bondedStock": 0,
       "bondedEta": ""
     },
     "PROB860MS": {

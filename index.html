@@ -1245,7 +1245,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.7';
+const APP_VERSION = '1.11.08.2026.8';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -3795,6 +3795,38 @@ function buildSemaforoData() {
     if(!allTransitPIs.find(x => x.pi.id === pi.id)) allTransitPIs.push({ pi, dk });
   });
 
+  // Add transit-only rows: products in transit that have 0 stock (no row in main table).
+  // This way ALL transit items are visible in the Semáforo even if the distributor
+  // currently shows qty = 0 in their stock snapshot.
+  const stockKeys = new Set(products.map(p => p.normModel));
+  SF_DIST_KEYS.forEach(dk => {
+    transitData[dk].keys.forEach(k => {
+      if(stockKeys.has(k)) return; // already in table
+      // Resolve description from the PI's invoiceItems
+      const relPIs = transitData[dk].pisByKey[k] || [];
+      let desc = '';
+      for(const pi of relPIs) {
+        const srcItems = (pi.invoiceItems && pi.invoiceItems.length) ? pi.invoiceItems
+          : (pi.lineItems && pi.lineItems.length) ? pi.lineItems : null;
+        if(!srcItems) continue;
+        for(const li of srcItems) {
+          const lk = extractMSIModelKey(li.marketingName || li.model || li.itemCode || '');
+          if(lk === k) { desc = li.marketingName || li.model || li.itemCode || ''; break; }
+        }
+        if(desc) break;
+      }
+      if(!desc) return; // can't resolve, skip
+      const cat = classifyProductCategory(desc);
+      if(cat === 'other') return;
+      const displayName = semaforoDisplayName(desc, cat);
+      // Only add if not already added (avoid duplicates across distributors)
+      if(!stockKeys.has(k)) {
+        stockKeys.add(k);
+        products.push({ model: desc, normModel: k, category: cat, distQty: {}, displayName, isTransitOnly: true });
+      }
+    });
+  });
+
   products.sort((a,b) => {
     const ai = SF_CAT_ORDER.indexOf(a.category), bi = SF_CAT_ORDER.indexOf(b.category);
     const ao = ai === -1 ? 99 : ai, bo = bi === -1 ? 99 : bi;
@@ -3893,14 +3925,19 @@ ${_buildTransitAlertPanel(transitData)}
     }
     const rowCls = altRow ? ' class="sf-alt"' : '';
     html += `<tr${rowCls}>`;
-    html += `<td class="sf-td-model">${esc(p.displayName)}</td>`;
+    // Transit-only rows: product has 0 stock but is in active transit — show with italic label + transit badge
+    const transitOnlyLabel = p.isTransitOnly
+      ? `<span style="font-style:italic;color:var(--text2)">${esc(p.displayName)}</span> <span style="font-size:9px;background:rgba(255,243,205,0.8);color:#8a5c00;border:0.5px solid #e0c060;border-radius:3px;padding:1px 5px;vertical-align:middle">EN TRÁNSITO</span>`
+      : esc(p.displayName);
+    html += `<td class="sf-td-model">${transitOnlyLabel}</td>`;
     sfKeys.forEach(dk => {
       const qty = p.distQty[dk] || 0;
       const sc = stockClass(qty);
       const sl = stockLabel(qty);
-      html += sc
-        ? `<td class="sf-td-center ${sc}">${sl}</td>`
-        : `<td class="sf-td-center"></td>`;
+      // Transit-only rows: show "—" in stock cell instead of empty
+      html += p.isTransitOnly
+        ? `<td class="sf-td-center" style="color:var(--text3)">—</td>`
+        : (sc ? `<td class="sf-td-center ${sc}">${sl}</td>` : `<td class="sf-td-center"></td>`);
       const hasTransit = transitData[dk].keys.has(p.normModel) || transitData[dk].hasGeneral;
       const isExpiring = transitData[dk].expiringKeys.has(p.normModel) || (transitData[dk].hasGeneral && transitData[dk].expiringPIs.length > 0);
       if(hasTransit) {

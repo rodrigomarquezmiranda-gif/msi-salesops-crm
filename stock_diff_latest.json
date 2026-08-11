@@ -1,0 +1,86 @@
+{
+  "checkedAt": "2026-08-11T21:41:50.312481+00:00",
+  "hasChanges": true,
+  "changes": [
+    {
+      "type": "eol",
+      "partNo": "G5080-16GTCW",
+      "name": "GeForce RTX 5080 16G GAMING TRIO OC WHITE",
+      "status": "EOL"
+    },
+    {
+      "type": "eol",
+      "partNo": "G5080-16V3CW",
+      "name": "GeForce RTX 5080 16G VENTUS 3X OC WHITE",
+      "status": "EOL"
+    },
+    {
+      "type": "eol",
+      "partNo": "G507T-16MEC",
+      "name": "GeForce RTX 5070 Ti 16G MLG EDITION OC",
+      "status": "EOL"
+    },
+    {
+      "type": "eol",
+      "partNo": "G506T-16GTCW",
+      "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC WHITE",
+      "status": "EOL"
+    },
+    {
+      "type": "eol",
+      "partNo": "G506T-16V3C",
+      "name": "Geforce RTX 5060 Ti 16G VENTUS 3X OC",
+      "status": "EOL"
+    },
+    {
+      "type": "eol",
+      "partNo": "G506T-8GTCW",
+      "name": "GeForce RTX 5060 Ti 8G GAMING TRIO OC WHITE",
+      "status": "EOL"
+    },
+    {
+      "type": "eol",
+      "partNo": "G506T-8S2CP",
+      "name": "GeForce RTX 5060 Ti 8G SHADOW 2X OC PLUS",
+      "status": "EOL"
+    },
+    {
+      "type": "eol",
+      "partNo": "PROZ890SWIFIPZ",
+      "name": "PRO Z890-S WIFI PZ",
+      "status": "EOL Soon"
+    },
+    {
+      "type": "eol",
+      "partNo": "Z890GAMINGPWIFI",
+      "name": "Z890 GAMING PLUS WIFI",
+      "status": "EOL"
+    },
+    {
+      "type": "eol",
+      "partNo": "Z890SWIFI",
+      "name": "PRO Z890-S WIFI",
+      "status": "EOL Soon"
+    },
+    {
+      "type": "eol",
+      "partNo": "Z890SWHITEWIFI",
+      "name": "PRO Z890-S WIFI WHITE",
+      "status": "EOL Soon"
+    },
+    {
+      "type": "eol",
+      "partNo": "B860GPLUSWIFI",
+      "name": "B860 GAMING PLUS WIFI",
+      "status": "EOL Soon"
+    },
+    {
+      "type": "eol",
+      "partNo": "B860MGPW",
+      "name": "B860M GAMING PLUS WIFI",
+      "status": "EOL"
+    }
+  ],
+  "summary": "13 cambio(s) detectado(s)",
+  "productsChecked": 69
+}
