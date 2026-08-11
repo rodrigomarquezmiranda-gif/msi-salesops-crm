@@ -602,7 +602,8 @@
       <!-- LISTA DE PRECIOS -->
       <div id="tab-pricelist" class="tab-pane">
         <!-- Panel: Stock Update automático desde Google Drive -->
-        <div id="stock-update-panel" style="margin-bottom:1.25rem"></div>
+        <div id="stock-update-panel" style="margin-bottom:0"></div>
+        <div id="stock-changelog-panel" style="margin-bottom:1.25rem"></div>
         <div id="pricelist-summary"></div>
         <div class="upload-zone" id="drop-zone-price" onclick="document.getElementById('file-input-price').click()" style="margin:1rem 0">
           <i class="ti ti-cloud-upload"></i>
@@ -1245,7 +1246,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.11';
+const APP_VERSION = '1.11.08.2026.12';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2270,9 +2271,19 @@ function parsePIPdfLines(lines) {
 // ─── INVOICE PDF PARSER ─────────────────────────────────────────────────────
 // Invoice format: "Invoice NNNNN" header, "PI No. : NNNNN", table with
 // Category | Item Code | Marketing Name | Description | COO | Qty Shipped | Tax | Unit Price | Amount
-const INVOICE_ITEM_CODE_RE = /^[A-Z0-9]{2,4}-[A-Z0-9]{4,9}-[A-Z0-9]{2,5}$/;
+// More permissive: catches MS-7E42-030, 912-7D12-001, G271QPX model-style codes, etc.
+const INVOICE_ITEM_CODE_RE = /^[A-Z0-9]{2,6}-[A-Z0-9]{3,10}(?:-[A-Z0-9]{2,7})?$|^[A-Z][A-Z0-9]{4,14}$/;
 function parseInvoiceLineItems(lines) {
-  const headerIdx = lines.findIndex(l => /Item\s+Code/i.test(l) && /Marketing\s+Name/i.test(l));
+  // Header may be on one line or split across adjacent lines by pdfjs
+  let headerIdx = lines.findIndex(l => /Item\s+Code/i.test(l) && /Marketing\s+Name/i.test(l));
+  if(headerIdx === -1) {
+    const icIdx = lines.findIndex(l => /Item\s+Code/i.test(l));
+    if(icIdx > -1) {
+      for(let j = icIdx; j <= Math.min(icIdx + 3, lines.length - 1); j++) {
+        if(/Marketing\s+Name/i.test(lines[j])) { headerIdx = j; break; }
+      }
+    }
+  }
   if(headerIdx === -1) return [];
   const footerIdx = lines.findIndex((l,i) => i > headerIdx && /Total\s+Gross\s+Weight|^Remark:|^Bank\s+Inform/i.test(l));
   const end = footerIdx > headerIdx ? footerIdx : lines.length;
@@ -2376,85 +2387,139 @@ function ensurePdfWorkerReady() {
   })();
   return _pdfWorkerReadyPromise;
 }
-// Dialog: when no matching PI found, let user link to existing or create new with distributor+shipmentType
+// Dialog: when no matching PI found, let user link to existing or create new
 function _showInvoiceLinkDialog(parsed, invoiceItems) {
   return new Promise(resolve => {
-    const existingPIs = (db.pi || [])
-      .filter(p => p.pipeline === 'pi')
+    const allPIs = (db.pi || []).filter(p => p.pipeline === 'pi')
       .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
-    const piOptions = existingPIs.map(p =>
-      `<option value="${p.id}">${esc(p.name)}${p.client ? ' — '+esc(p.client) : ''}</option>`
-    ).join('');
+
+    const parsedBanner = invoiceItems.length
+      ? `<div style="margin-bottom:14px;padding:7px 10px;background:rgba(163,190,140,0.1);border-radius:6px;border:0.5px solid rgba(163,190,140,0.3)">
+           <div style="font-size:10.5px;color:var(--green-text);font-weight:600;margin-bottom:3px"><i class="ti ti-package"></i> ${invoiceItems.length} producto(s) detectado(s)</div>
+           <div style="font-size:10px;color:var(--text3);line-height:1.5">${invoiceItems.map(li => esc(li.marketingName||li.itemCode||'')).filter(Boolean).join(' · ')}</div>
+         </div>`
+      : `<div style="margin-bottom:14px;padding:7px 10px;background:rgba(235,203,139,0.08);border-radius:6px;border:0.5px solid rgba(235,203,139,0.3)">
+           <div style="font-size:10.5px;color:var(--amber-text);font-weight:600"><i class="ti ti-alert-triangle"></i> No se pudieron leer los productos del PDF — el embarque igual quedará registrado</div>
+         </div>`;
+
     const modal = document.createElement('div');
     modal.id = 'invoice-link-modal';
-    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(46,52,64,0.65);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px';
     modal.innerHTML = `
-      <div class="modal-box" style="width:100%;max-width:460px;padding:24px">
-        <div style="font-size:15px;font-weight:700;margin-bottom:4px">Invoice N° ${esc(parsed.invoiceNo||'')}</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px">
-          ${parsed.piNo ? `PI Ref: ${esc(parsed.piNo)} &nbsp;·&nbsp; ` : ''}
-          ${parsed.invoiceDate ? 'Fecha: '+esc(parsed.invoiceDate) : ''}
-          ${invoiceItems.length ? ' &nbsp;·&nbsp; '+invoiceItems.length+' producto(s)' : ''}
+      <div style="width:100%;max-width:420px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);box-shadow:0 8px 32px rgba(46,52,64,0.4);padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text)">Invoice N° ${esc(parsed.invoiceNo||'—')}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${[parsed.piNo?'PI Ref: '+esc(parsed.piNo):null, parsed.invoiceDate?esc(parsed.invoiceDate):null].filter(Boolean).join(' · ')}</div>
+          </div>
+          <button id="inv-link-x" style="background:none;border:none;color:var(--text3);font-size:15px;cursor:pointer;padding:0;line-height:1;margin-left:12px">✕</button>
         </div>
-        <div class="field" style="margin-bottom:12px">
-          <label>¿A qué Orden corresponde?</label>
-          <select id="inv-link-pi" style="width:100%">
-            <option value="__new__">➕ Crear nueva Orden automáticamente</option>
-            ${piOptions}
-          </select>
+        ${parsedBanner}
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:5px">¿A qué Orden corresponde?</div>
+          <input id="inv-pi-search" type="text" placeholder="Buscar Orden por nombre o cliente…" autocomplete="off"
+            style="width:100%;padding:6px 10px;background:var(--bg);border:0.5px solid var(--border2);border-radius:5px;font-size:12px;color:var(--text);box-sizing:border-box;outline:none">
+          <div id="inv-pi-results" style="display:none;margin-top:3px;max-height:150px;overflow-y:auto;border:0.5px solid var(--border2);border-radius:5px;background:var(--bg)"></div>
+          <div id="inv-pi-selected" style="display:none;margin-top:5px;font-size:11.5px;padding:5px 8px;background:rgba(94,129,172,0.12);border-radius:5px;color:var(--text2)"></div>
         </div>
         <div id="inv-new-fields">
-          <div class="field" style="margin-bottom:12px">
-            <label>Distribuidor (vendedor del Invoice)</label>
-            <select id="inv-link-dist" style="width:100%">
-              <option value="">— Seleccioná —</option>
-              <option value="AIR Computacion">AIR Computación</option>
-              <option value="INVID">INVID</option>
-              <option value="SolutionBox">SolutionBox</option>
-              <option value="Ashir">Ashir</option>
-              <option value="Elit">Elit</option>
-            </select>
-          </div>
-          <div class="field" style="margin-bottom:16px">
-            <label>Tipo de embarque</label>
-            <select id="inv-link-shipment" style="width:100%">
-              <option value="">— Seleccioná el origen —</option>
-              <option value="miami-aereo">✈️ Miami Aéreo (10 días en tránsito)</option>
-              <option value="miami-maritimo">🚢 Miami Marítimo (30 días en tránsito)</option>
-              <option value="china-maritimo">🚢 China Marítimo (60 días en tránsito)</option>
-            </select>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+            <div>
+              <div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:4px">Distribuidor</div>
+              <select id="inv-link-dist" style="width:100%;padding:6px 8px;background:var(--bg);border:0.5px solid var(--border2);border-radius:5px;font-size:12px;color:var(--text)">
+                <option value="">— Seleccioná —</option>
+                <option value="AIR Computacion">AIR Computación</option>
+                <option value="INVID">INVID</option>
+                <option value="SolutionBox">SolutionBox</option>
+                <option value="Ashir">Ashir</option>
+                <option value="Elit">Elit</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:4px">Tipo de embarque</div>
+              <select id="inv-link-shipment" style="width:100%;padding:6px 8px;background:var(--bg);border:0.5px solid var(--border2);border-radius:5px;font-size:12px;color:var(--text)">
+                <option value="">— Seleccioná —</option>
+                <option value="miami-aereo">✈️ Miami Aéreo</option>
+                <option value="miami-maritimo">🚢 Miami Marítimo</option>
+                <option value="china-maritimo">🚢 China Marítimo</option>
+              </select>
+            </div>
           </div>
         </div>
         <div style="display:flex;gap:8px">
-          <button id="inv-link-cancel" class="btn" style="flex:1">Cancelar</button>
-          <button id="inv-link-confirm" class="btn btn-primary" style="flex:2;background:#5E81AC;border-color:#5E81AC">
+          <button id="inv-link-cancel" style="flex:1;padding:7px;background:none;border:0.5px solid var(--border2);border-radius:5px;font-size:12px;color:var(--text2);cursor:pointer">Cancelar</button>
+          <button id="inv-link-confirm" style="flex:2;padding:7px;background:#5E81AC;border:none;border-radius:5px;font-size:12px;font-weight:600;color:#fff;cursor:pointer">
             <i class="ti ti-check"></i> Confirmar
           </button>
         </div>
-        <div id="inv-link-err" style="color:#BF616A;font-size:11px;margin-top:8px;text-align:center"></div>
+        <div id="inv-link-err" style="color:#BF616A;font-size:11px;margin-top:7px;text-align:center"></div>
       </div>`;
+
     document.getElementById('invoice-link-modal')?.remove();
     document.body.appendChild(modal);
-    const piSel = document.getElementById('inv-link-pi');
+
+    let _selPIId = null;
+    const searchEl  = document.getElementById('inv-pi-search');
+    const resultsEl = document.getElementById('inv-pi-results');
+    const selEl     = document.getElementById('inv-pi-selected');
     const newFields = document.getElementById('inv-new-fields');
-    piSel.addEventListener('change', () => {
-      newFields.style.display = piSel.value === '__new__' ? '' : 'none';
+
+    function _renderPIResults(q) {
+      const qn = (q||'').toLowerCase();
+      const matches = qn.length > 0
+        ? allPIs.filter(p => (p.name||'').toLowerCase().includes(qn) || (p.client||'').toLowerCase().includes(qn) || (p.invoiceNo||'').toLowerCase().includes(qn)).slice(0,10)
+        : allPIs.slice(0,10);
+      resultsEl.innerHTML = matches.length === 0
+        ? `<div style="padding:8px 10px;font-size:11px;color:var(--text3)">Sin coincidencias — se creará una Orden nueva</div>`
+        : matches.map(p => `<div data-piid="${p.id}" style="padding:7px 10px;cursor:pointer;font-size:11.5px;border-bottom:0.5px solid var(--border2)">
+              <span style="font-weight:600;color:var(--text)">${esc(p.name)}</span>
+              ${p.client?`<span style="color:var(--text3);margin-left:6px;font-size:10.5px">${esc(p.client)}</span>`:''}
+              ${p.invoiceNo?`<span style="margin-left:5px;font-size:9.5px;background:rgba(94,129,172,0.15);color:#5E81AC;border-radius:3px;padding:1px 4px">Inv #${esc(p.invoiceNo)}</span>`:''}
+            </div>`).join('');
+      resultsEl.querySelectorAll('[data-piid]').forEach(el => {
+        el.addEventListener('mouseover', () => el.style.background = 'rgba(255,255,255,0.05)');
+        el.addEventListener('mouseout',  () => el.style.background = '');
+        el.addEventListener('click', () => {
+          _selPIId = parseInt(el.dataset.piid);
+          const pi = allPIs.find(p => p.id === _selPIId);
+          searchEl.value = '';
+          resultsEl.style.display = 'none';
+          selEl.style.display = 'block';
+          selEl.innerHTML = `<i class="ti ti-link" style="margin-right:4px"></i>Vinculado a: <strong>${esc(pi?.name||'?')}</strong>${pi?.client?' — '+esc(pi.client):''}
+            <span id="inv-desvincular" style="margin-left:8px;color:var(--text3);cursor:pointer;font-size:10px">✕ desvincular</span>`;
+          newFields.style.display = 'none';
+          document.getElementById('inv-desvincular')?.addEventListener('click', () => {
+            _selPIId = null;
+            selEl.style.display = 'none';
+            newFields.style.display = '';
+            searchEl.value = '';
+          });
+        });
+      });
+      resultsEl.style.display = 'block';
+    }
+
+    searchEl.addEventListener('focus', () => { if(!_selPIId) _renderPIResults(searchEl.value); });
+    searchEl.addEventListener('input', () => { _selPIId = null; selEl.style.display='none'; newFields.style.display=''; _renderPIResults(searchEl.value); });
+    document.addEventListener('mousedown', function _hide(e) {
+      if(!resultsEl.contains(e.target) && e.target !== searchEl) resultsEl.style.display = 'none';
     });
-    document.getElementById('inv-link-cancel').addEventListener('click', () => { modal.remove(); resolve(null); });
-    modal.addEventListener('click', e => { if(e.target===modal) { modal.remove(); resolve(null); } });
+
+    const _close = () => { modal.remove(); resolve(null); };
+    document.getElementById('inv-link-x').addEventListener('click', _close);
+    document.getElementById('inv-link-cancel').addEventListener('click', _close);
+    modal.addEventListener('click', e => { if(e.target === modal) _close(); });
+
     document.getElementById('inv-link-confirm').addEventListener('click', () => {
       const err = document.getElementById('inv-link-err');
-      const piVal = piSel.value;
-      if(piVal === '__new__') {
+      if(_selPIId) {
+        modal.remove(); resolve({ mode: 'link', existingId: _selPIId });
+      } else {
         const dist = document.getElementById('inv-link-dist').value;
         const ship = document.getElementById('inv-link-shipment').value;
         if(!dist) { err.textContent = 'Seleccioná el distribuidor.'; return; }
         if(!ship) { err.textContent = 'Seleccioná el tipo de embarque.'; return; }
-        modal.remove();
-        resolve({ mode: 'new', distributor: dist, shipmentType: ship });
-      } else {
-        modal.remove();
-        resolve({ mode: 'link', existingId: parseInt(piVal) });
+        modal.remove(); resolve({ mode: 'new', distributor: dist, shipmentType: ship });
       }
     });
   });
@@ -3132,7 +3197,8 @@ function renderPriceListView() {
 }
 // ─── STOCK UPDATE PANEL (Google Drive automático) ───────────────────────────
 const STOCK_GDRIVE_FILE_ID = '1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw';
-const STOCK_DIFF_FB_KEY    = 'salesops_stock_diff';
+const STOCK_DIFF_FB_KEY      = 'salesops_stock_diff';
+const STOCK_CHANGELOG_FB_KEY = 'salesops_stock_changelog';
 
 async function renderStockUpdatePanel() {
   const panel = document.getElementById('stock-update-panel');
@@ -3142,8 +3208,30 @@ async function renderStockUpdatePanel() {
     const snap = await _fbDB.ref(STOCK_DIFF_FB_KEY).get();
     const data = snap.exists() ? snap.val() : null;
     _renderStockPanel(panel, data ? JSON.parse(data) : null);
+    loadStockChangelog();
   } catch(e) {
     panel.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:6px 0">No se pudo cargar el estado del Stock Update.</div>`;
+  }
+}
+
+async function refreshStockPanel() {
+  const panel = document.getElementById('stock-update-panel');
+  if(!panel) return;
+  panel.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0"><i class="ti ti-refresh" style="font-size:12px"></i> Actualizando desde Firebase...</div>`;
+  try {
+    const snap = await _fbDB.ref(STOCK_DIFF_FB_KEY).get();
+    const data = snap.exists() ? JSON.parse(snap.val()) : null;
+    if(data) {
+      const user = firebase.auth ? firebase.auth().currentUser : null;
+      data.triggeredBy = user ? (user.displayName || user.email || 'usuario') : 'usuario';
+      data.triggerMode = 'manual';
+      data.refreshedAt = new Date().toISOString();
+      await _fbDB.ref(STOCK_DIFF_FB_KEY).set(JSON.stringify(data));
+    }
+    _renderStockPanel(panel, data);
+    loadStockChangelog();
+  } catch(e) {
+    panel.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0">No se pudo actualizar.</div>`;
   }
 }
 
@@ -3156,13 +3244,23 @@ function _renderStockPanel(panel, data) {
           <div style="font-weight:600;font-size:13px">Stock Update MSI — Google Drive</div>
           <div style="font-size:12px;color:var(--text3);margin-top:2px">Sin datos todavía. El chequeo automático corre a las 9:30 y 18:30 hs.</div>
         </div>
+        <button class="btn" style="font-size:11px;flex-shrink:0" onclick="refreshStockPanel()">
+          <i class="ti ti-refresh" style="font-size:12px"></i> Refrescar
+        </button>
       </div>`;
     return;
   }
 
-  const ts = data.checkedAt ? new Date(data.checkedAt).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+  const ts = data.checkedAt ? new Date(data.checkedAt).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
   const isNew = data.hasChanges && (!data.viewedAt || data.viewedAt < data.checkedAt);
   const badgeHtml = isNew ? `<span class="pill pill-amber" style="font-size:10px;margin-left:8px">● CAMBIOS DETECTADOS</span>` : '';
+
+  // Who + mode
+  const triggeredBy = data.triggeredBy || 'sistema';
+  const triggerMode = data.triggerMode || 'auto';
+  const triggerLabel = triggerMode === 'manual'
+    ? `<i class="ti ti-user" style="font-size:11px;vertical-align:-1px"></i> Actualizado por <b>${esc(triggeredBy)}</b>`
+    : `<i class="ti ti-robot" style="font-size:11px;vertical-align:-1px"></i> Chequeo automático`;
 
   let changesHtml = '';
   if(data.hasChanges && data.changes && data.changes.length) {
@@ -3191,11 +3289,16 @@ function _renderStockPanel(panel, data) {
         <i class="ti ti-brand-google-drive" style="font-size:20px;color:#4285f4;flex-shrink:0"></i>
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;font-size:13px">Stock Update MSI — Google Drive ${badgeHtml}</div>
-          <div style="font-size:12px;color:var(--text3);margin-top:2px">Último chequeo: ${ts} hs · Chequeo automático: 9:30 y 18:30</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${triggerLabel} · ${ts} hs</div>
         </div>
-        <button class="btn" style="font-size:11px;flex-shrink:0" onclick="markStockDiffViewed()">
-          <i class="ti ti-check" style="font-size:12px"></i> Marcar como visto
-        </button>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn" style="font-size:11px" onclick="refreshStockPanel()">
+            <i class="ti ti-refresh" style="font-size:12px"></i> Refrescar
+          </button>
+          ${isNew ? `<button class="btn" style="font-size:11px" onclick="markStockDiffViewed()">
+            <i class="ti ti-check" style="font-size:12px"></i> Marcar visto
+          </button>` : ''}
+        </div>
       </div>
       ${changesHtml}
     </div>`;
@@ -3223,10 +3326,53 @@ async function markStockDiffViewed() {
       await _fbDB.ref(STOCK_DIFF_FB_KEY).set(JSON.stringify(data));
     }
     renderStockUpdatePanel();
-    // Clear badge
     const nb = document.getElementById('nb-pricelist');
     if(nb) nb.style.display = 'none';
   } catch(e) {}
+}
+
+// ─── HISTORIAL DE CHEQUEOS ──────────────────────────────────────────────────
+async function loadStockChangelog() {
+  const panel = document.getElementById('stock-changelog-panel');
+  if(!panel) return;
+  try {
+    const snap = await _fbDB.ref(STOCK_CHANGELOG_FB_KEY).orderByKey().limitToLast(20).get();
+    if(!snap.exists()) { panel.innerHTML = ''; return; }
+    const entries = [];
+    snap.forEach(child => entries.unshift(child.val())); // más reciente primero
+    renderStockChangelog(panel, entries);
+  } catch(e) { panel.innerHTML = ''; }
+}
+
+function renderStockChangelog(panel, entries) {
+  if(!entries || !entries.length) { panel.innerHTML = ''; return; }
+  const rows = entries.map(e => {
+    const ts = e.checkedAt ? new Date(e.checkedAt).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+    const mode = e.triggerMode === 'manual'
+      ? `<i class="ti ti-user" style="font-size:11px;vertical-align:-1px;color:var(--brand-text)"></i> ${esc(e.triggeredBy||'usuario')}`
+      : `<i class="ti ti-robot" style="font-size:11px;vertical-align:-1px;color:var(--text3)"></i> Sistema`;
+    const badge = e.hasChanges
+      ? `<span class="pill pill-amber" style="font-size:10px">${e.changeCount||'?'} cambios</span>`
+      : `<span style="font-size:11px;color:var(--text3)">Sin cambios</span>`;
+    return `<tr>
+      <td style="font-size:12px;white-space:nowrap;color:var(--text2)">${ts} hs</td>
+      <td style="font-size:12px">${mode}</td>
+      <td style="font-size:12px">${badge}</td>
+      <td style="font-size:11px;color:var(--text3)">${esc(e.summary||'')}</td>
+    </tr>`;
+  }).join('');
+  panel.innerHTML = `
+    <div style="margin-top:1rem">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-history" style="font-size:13px"></i> Historial de chequeos
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead><tr><th>Fecha/hora</th><th>Disparado por</th><th>Resultado</th><th>Detalle</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 async function exportPriceListExcel() {
@@ -4000,7 +4146,10 @@ ${_buildTransitAlertPanel(transitData)}
 <thead>
   <tr>
     <th class="sf-th-model" rowspan="2">MODELO</th>
-    ${sfKeys.map(dk => `<th colspan="2">${SF_DIST_LABELS[dk]}</th>`).join('')}
+    ${sfKeys.map(dk => {
+      const hasGen = transitData[dk].hasGeneral;
+      return `<th colspan="2">${SF_DIST_LABELS[dk]}${hasGen ? `<span title="Embarque activo (sin detalle de productos)" style="margin-left:6px;font-size:11px;cursor:help;vertical-align:middle">📦</span>` : ''}</th>`;
+    }).join('')}
   </tr>
   <tr>
     ${sfKeys.map(() => '<th>STOCK</th><th>TRÁNSITO</th>').join('')}
@@ -4011,7 +4160,7 @@ ${_buildTransitAlertPanel(transitData)}
   let currentCat = null, altRow = false;
   products.forEach(p => {
     // Para usuario distribuidor: ocultar filas donde no tiene stock ni tránsito
-    if(_currentDistributor && !p.distQty[_currentDistributor] && !(transitData[_currentDistributor]?.keys.has(p.normModel) || transitData[_currentDistributor]?.hasGeneral)) return;
+    if(_currentDistributor && !p.distQty[_currentDistributor] && !transitData[_currentDistributor]?.keys.has(p.normModel)) return;
     if(p.category !== currentCat) {
       currentCat = p.category;
       const ncols = 1 + sfKeys.length * 2;
@@ -4033,8 +4182,8 @@ ${_buildTransitAlertPanel(transitData)}
       html += p.isTransitOnly
         ? `<td class="sf-td-center" style="color:var(--text3)">—</td>`
         : (sc ? `<td class="sf-td-center ${sc}">${sl}</td>` : `<td class="sf-td-center"></td>`);
-      const hasTransit = transitData[dk].keys.has(p.normModel) || transitData[dk].hasGeneral;
-      const isExpiring = transitData[dk].expiringKeys.has(p.normModel) || (transitData[dk].hasGeneral && transitData[dk].expiringPIs.length > 0);
+      const hasTransit = transitData[dk].keys.has(p.normModel);
+      const isExpiring = transitData[dk].expiringKeys.has(p.normModel);
       if(hasTransit) {
         const bg = isExpiring ? '#FFDDD0' : '#FFF3CD';
         const dot = isExpiring ? `<span class="sf-transit" style="color:#c0392b">●</span>` : `<span class="sf-transit">●</span>`;
@@ -4320,7 +4469,7 @@ async function exportSemaforoPDF() {
       const lbl = stockLabel(qty);
       const col = stockColor(qty);
       row.push({ content: lbl, styles: col ? {fillColor:col, textColor:[255,255,255], fontStyle:'bold', halign:'center'} : {halign:'center'} });
-      const hasT = transitData[dk].keys.has(p.normModel) || transitData[dk].hasGeneral;
+      const hasT = transitData[dk].keys.has(p.normModel);
       row.push({ content: hasT ? '●' : '', styles: hasT ? {fillColor:[235,203,139], textColor:[31,42,68], halign:'center', fontSize:10} : {halign:'center'} });
     });
     body.push(row);
