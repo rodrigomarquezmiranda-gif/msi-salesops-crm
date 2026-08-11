@@ -1245,7 +1245,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.5';
+const APP_VERSION = '1.11.08.2026.6';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5847,7 +5847,16 @@ function resolveSnapshotPeriods(snapshots) {
     }
   });
 }
+// Normalize product descriptions on ingest: rename known legacy variants
+function _normalizeProductDesc(desc) {
+  if(!desc) return desc;
+  return desc.replace(/A520M-A PRO DDR4 BULK M-ATX/gi, 'A520M-A PRO DDR4 M-ATX NB');
+}
+
 function upsertSnapshot(snap) {
+  // Normalize product descriptions before storing
+  if(snap.rows) snap.rows = snap.rows.map(r => r.description ? { ...r, description: _normalizeProductDesc(r.description) } : r);
+
   // Solo se considera "el mismo archivo vuelto a subir" si coincide proveedor, tipo, nombre
   // de archivo Y el contenido es idéntico — en ese caso se reemplaza la carga anterior.
   // Cualquier otro caso se agrega como semana nueva: nunca se pisa una carga en silencio
@@ -8288,7 +8297,7 @@ function runOneTimeMigrations() {
     changed = true;
   }
   if(!db._migrations.renameA520MBulkV1) {
-    // Rename: A520M-A PRO DDR4 BULK M-ATX → A520M-A PRO DDR4 M-ATX NB
+    // Rename: A520M-A PRO DDR4 BULK M-ATX → A520M-A PRO DDR4 M-ATX NB (PI + pricelist)
     const _oldName = /A520M-A PRO DDR4 BULK M-ATX/gi;
     const _newName = 'A520M-A PRO DDR4 M-ATX NB';
     (db.pi || []).forEach(pi => {
@@ -8303,12 +8312,26 @@ function runOneTimeMigrations() {
         });
       }
     });
-    // Also rename in price list (desc field)
     (priceList.products || []).forEach(p => {
       if(p.desc && _oldName.test(p.desc)) { p.desc = p.desc.replace(_oldName, _newName); changed = true; }
     });
     if(changed) savePriceList();
     db._migrations.renameA520MBulkV1 = true;
+    changed = true;
+  }
+  if(!db._migrations.renameA520MBulkV2) {
+    // Rename in weekly reports (distributor XLS rows) — the main source of Ranking de Clientes data
+    const _oldName2 = /A520M-A PRO DDR4 BULK M-ATX/gi;
+    const _newName2 = 'A520M-A PRO DDR4 M-ATX NB';
+    (db.weeklyReports || []).forEach(snap => {
+      (snap.rows || []).forEach(row => {
+        if(row.description && _oldName2.test(row.description)) {
+          row.description = row.description.replace(_oldName2, _newName2);
+          changed = true;
+        }
+      });
+    });
+    db._migrations.renameA520MBulkV2 = true;
     changed = true;
   }
   if(changed) saveDB();
