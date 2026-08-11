@@ -1245,7 +1245,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.8';
+const APP_VERSION = '1.11.08.2026.9';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7085,6 +7085,120 @@ function getResellerYears() {
 }
 
 let _resellerYear = {};
+let _resellerShowAll  = { t1: false, t2: false, t3: false };
+let _resellerEvolOpen = { t1: false, t2: false, t3: false };
+let _resellerEvolSel  = { t1: new Set(), t2: new Set(), t3: new Set() };
+let _rsDragSrcIdx = null, _rsDragSrcTier = null;
+
+const _RS_EVOL_COLORS = ['#88C0D0','#A3BE8C','#EBCB8B','#D08770','#BF616A','#B48EAD','#5E81AC','#81A1C1'];
+
+function _rsToggleEvol(tier) {
+  _resellerEvolOpen[tier] = !_resellerEvolOpen[tier];
+  renderResellerTab(tier);
+}
+function _rsToggleEvolSel(tier, id) {
+  if(_resellerEvolSel[tier].has(id)) _resellerEvolSel[tier].delete(id);
+  else _resellerEvolSel[tier].add(id);
+  renderResellerTab(tier);
+}
+function _rsToggleShowAll(tier) {
+  _resellerShowAll[tier] = !_resellerShowAll[tier];
+  renderResellerTab(tier);
+}
+function _rsDragStart(e, tier, idx) {
+  _rsDragSrcTier = tier; _rsDragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+}
+function _rsDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function _rsDrop(e, tier, idx) {
+  e.preventDefault();
+  if(_rsDragSrcTier !== tier || _rsDragSrcIdx === null || _rsDragSrcIdx === idx) return;
+  const arr = db.resellers[tier];
+  const [item] = arr.splice(_rsDragSrcIdx, 1);
+  arr.splice(idx, 0, item);
+  _rsDragSrcIdx = null;
+  saveDB();
+  renderResellerTab(tier);
+}
+
+function buildResellerLineChart(series, months) {
+  if(!months.length || !series.length) return `<div style="color:var(--text3);font-size:12px;padding:20px 0;text-align:center">Sin datos para el período seleccionado</div>`;
+  const W = 720, H = 200, PL = 46, PR = 16, PT = 14, PB = 36;
+  const cW = W - PL - PR, cH = H - PT - PB;
+  const allVals = series.flatMap(s => months.map(m => s.data[m] || 0));
+  const maxVal = Math.max(...allVals, 1);
+  const xS = i => months.length > 1 ? (i / (months.length - 1)) * cW : cW / 2;
+  const yS = v => cH - (v / maxVal) * cH;
+  const niceMax = Math.ceil(maxVal / 10) * 10;
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => Math.round(niceMax * f));
+
+  let grid = yTicks.map(v => {
+    const y = yS(v);
+    return `<line x1="0" y1="${y}" x2="${cW}" y2="${y}" stroke="var(--border2)" stroke-width="0.5"/>
+            <text x="-6" y="${y+4}" text-anchor="end" font-size="10" fill="var(--text3)">${v}</text>`;
+  }).join('');
+
+  let xLbls = months.map((m, i) => {
+    const lbl = MONTHS_ES_SHORT[parseInt(m.slice(5))-1] + (months.filter(x=>x.slice(0,4)!==m.slice(0,4)).length ? ` '${m.slice(2,4)}` : '');
+    return `<text x="${xS(i)}" y="${cH+16}" text-anchor="middle" font-size="10" fill="var(--text3)">${lbl}</text>`;
+  }).join('');
+
+  let linesHtml = series.map(s => {
+    const pts = months.map((m, i) => `${xS(i)},${yS(s.data[m]||0)}`).join(' ');
+    const dots = months.map((m, i) => {
+      const v = s.data[m] || 0;
+      return v > 0
+        ? `<circle cx="${xS(i)}" cy="${yS(v)}" r="3.5" fill="${s.color}"/>
+           <text x="${xS(i)}" y="${yS(v)-7}" text-anchor="middle" font-size="9" fill="${s.color}" font-weight="600">${v}</text>`
+        : '';
+    }).join('');
+    return `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}`;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">
+    <g transform="translate(${PL},${PT})">${grid}${xLbls}${linesHtml}</g>
+  </svg>`;
+}
+
+function buildResellerEvolutionPanel(tier, resellers, currentYear, months) {
+  const sel = _resellerEvolSel[tier];
+  const tierColor = { t1:'#F0C040', t2:'#9DB8C8', t3:'#B08060' }[tier];
+  const pills = resellers.map((r, i) => {
+    const active = sel.has(r.id);
+    const col = _RS_EVOL_COLORS[i % _RS_EVOL_COLORS.length];
+    return `<button onclick="_rsToggleEvolSel('${tier}','${r.id}')" style="padding:5px 12px;border-radius:20px;border:1.5px solid ${col};background:${active?col:'transparent'};color:${active?'#fff':col};font-size:12px;font-weight:600;cursor:pointer;transition:all .15s">${esc(r.name)}</button>`;
+  }).join('');
+
+  let chartHtml = '';
+  if(sel.size === 0) {
+    chartHtml = `<div style="text-align:center;color:var(--text3);font-size:12px;padding:24px 0">Seleccioná al menos un reseller arriba para ver la evolución</div>`;
+  } else {
+    const series = resellers
+      .filter((r, i) => sel.has(r.id))
+      .map((r, i) => {
+        const raw = resellers.indexOf(r);
+        const col = _RS_EVOL_COLORS[raw % _RS_EVOL_COLORS.length];
+        const data = getResellerMonthlyData(r, currentYear);
+        const ttlByMonth = {};
+        months.forEach(m => {
+          let sum = 0;
+          RESELLER_LINE_KEYS.forEach(k => sum += (data[k][m] || 0));
+          ttlByMonth[m] = sum;
+        });
+        return { label: r.name, color: col, data: ttlByMonth };
+      });
+    const legend = series.map(s => `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text2)"><span style="display:inline-block;width:14px;height:3px;background:${s.color};border-radius:2px"></span>${esc(s.label)}</span>`).join('');
+    chartHtml = `<div style="margin-bottom:8px;display:flex;flex-wrap:wrap;gap:10px">${legend}</div>${buildResellerLineChart(series, months)}`;
+  }
+
+  return `<div style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:12px;padding:16px 20px;margin-bottom:22px">
+    <div style="font-size:12px;font-weight:700;color:${tierColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">
+      <i class="ti ti-chart-line" style="font-size:13px;margin-right:5px"></i>Evolución de resellers — ${currentYear}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">${pills}</div>
+    ${chartHtml}
+  </div>`;
+}
 
 function renderResellerTab(tier) {
   const wrap = document.getElementById('resellers-' + tier + '-content');
@@ -7136,6 +7250,10 @@ function renderResellerTab(tier) {
   const tierLabel = { t1:'T1', t2:'T2', t3:'T3' }[tier];
   const tierColor = { t1:'#F0C040', t2:'#9DB8C8', t3:'#B08060' }[tier];
 
+  const evolOpen = _resellerEvolOpen[tier];
+  const showAll  = _resellerShowAll[tier];
+  const PAGE = 5;
+
   let html = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
       <div style="display:flex;align-items:center;gap:10px">
@@ -7147,6 +7265,9 @@ function renderResellerTab(tier) {
         <select style="padding:6px 10px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px" onchange="_resellerYear['${tier}']=this.value;renderResellerTab('${tier}')">
           ${years.map(y => `<option value="${y}" ${y===currentYear?'selected':''}>${y}</option>`).join('')}
         </select>
+        <button class="btn${evolOpen?' btn-primary':''}" onclick="_rsToggleEvol('${tier}')" style="${evolOpen?'':'color:'+tierColor+';border-color:'+tierColor+'40'}">
+          <i class="ti ti-chart-line" style="font-size:13px"></i> Evolución
+        </button>
         <button class="btn btn-primary" onclick="openAddResellerModal('${tier}')"><i class="ti ti-plus" style="font-size:13px"></i> Agregar reseller</button>
       </div>
     </div>`;
@@ -7154,16 +7275,29 @@ function renderResellerTab(tier) {
   if(resellers.length === 0) {
     html += `<div class="empty-state"><i class="ti ti-users-group"></i><p>No hay resellers configurados para ${tierLabel}.<br>Hacé clic en "Agregar reseller" para empezar.</p></div>`;
   } else {
-    resellers.forEach(reseller => {
+    if(evolOpen) html += buildResellerEvolutionPanel(tier, resellers, currentYear, months);
+
+    const visible = (!showAll && resellers.length > PAGE) ? resellers.slice(0, PAGE) : resellers;
+    visible.forEach((reseller, i) => {
       const data = getResellerMonthlyData(reseller, currentYear);
-      html += buildResellerBlock(reseller, tier, data, currentYear, months, quarters, activeQuarters);
+      html += buildResellerBlock(reseller, tier, i, data, currentYear, months, quarters, activeQuarters);
     });
+
+    if(resellers.length > PAGE) {
+      html += `<div style="text-align:center;padding:12px 0">
+        <button class="btn" onclick="_rsToggleShowAll('${tier}')" style="font-size:13px">
+          ${showAll
+            ? `<i class="ti ti-chevron-up" style="font-size:12px"></i> Ver menos`
+            : `<i class="ti ti-chevron-down" style="font-size:12px"></i> Ver todos (${resellers.length})`}
+        </button>
+      </div>`;
+    }
   }
   html += buildAddResellerModal(tier);
   wrap.innerHTML = html;
 }
 
-function buildResellerBlock(reseller, tier, data, year, months, quarters, activeQuarters) {
+function buildResellerBlock(reseller, tier, idx, data, year, months, quarters, activeQuarters) {
   // Build header row: line label | months per Q | Q total | target | ...
   let thMonths = '';
   let totalByLine = {};
@@ -7225,8 +7359,13 @@ function buildResellerBlock(reseller, tier, data, year, months, quarters, active
 
   const matchInfo = _getResellerMatchInfo(reseller);
 
-  return `<div class="reseller-block">
+  return `<div class="reseller-block" draggable="true"
+      ondragstart="_rsDragStart(event,'${tier}',${idx})"
+      ondragover="_rsDragOver(event)"
+      ondrop="_rsDrop(event,'${tier}',${idx})"
+      style="cursor:default">
     <div class="reseller-block-header">
+      <span style="cursor:grab;color:var(--text3);font-size:16px;padding:0 6px 0 0;flex-shrink:0;user-select:none" title="Arrastrar para reordenar">⠿</span>
       <span style="font-weight:700;font-size:14px;color:var(--text)">${esc(reseller.name)}</span>
       ${getResellerCuits(reseller).length > 0 ? `<span style="font-size:11px;color:var(--text3)">CUIT ${getResellerCuits(reseller).map(esc).join(' · ')}</span>` : ''}
       ${matchInfo ? `<span style="font-size:11px;color:var(--text3)">→ ${esc(matchInfo)}</span>` : '<span style="font-size:11px;color:var(--red-text)"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Sin coincidencias en reportes — configurar CUIT</span>'}
