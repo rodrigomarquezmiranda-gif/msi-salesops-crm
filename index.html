@@ -1245,7 +1245,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.9';
+const APP_VERSION = '1.11.08.2026.10';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5661,6 +5661,16 @@ function classifyProductCategory(description) {
       if(re.test(norm)) return cat.key;
     }
   }
+  // ── Fallback: MSI model-code patterns for short descriptions (e.g. invoice items)
+  // These won't have "Monitor" / "Motherboard" in the text — classify by code shape.
+  // Monitors: MP-series (Pro Monitor), MAG NNNx, Gxxx-series, OPTIX
+  if(/\bMP\d{3}\b/.test(norm)) return 'monitor';
+  if(/\bMAG\s*\d{3}[A-Z0-9]*\b/.test(norm)) return 'monitor';
+  if(/\bG\d{3}[A-Z]\b/.test(norm)) return 'monitor';
+  if(/\bOPTIX\b/.test(norm)) return 'monitor';
+  // Motherboards: Axxx / Bxxx / Hxxx / Zxxx / Xxxx / PRO Axxx / PRO Bxxx
+  if(/\b[ABHZX]\d{3}M\b/.test(norm)) return 'motherboard';
+  if(/\bPRO\s+[BHZ]\d{3}\b/.test(norm)) return 'motherboard';
   return 'other';
 }
 // ─── Emparejamiento de productos entre distribuidores (comparador de rotación) ───
