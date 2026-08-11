@@ -442,6 +442,7 @@
       </button>
       <button class="nav-item" id="nav-pricelist" onclick="gotoTab('pricelist')">
         <i class="ti ti-tag" style="color:#4EAACC"></i> Lista de Precios
+        <span id="nb-pricelist" style="display:none;background:#D08770;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:auto">●</span>
       </button>
       <button class="nav-item" id="nav-salesprices" onclick="gotoTab('salesprices')">
         <i class="ti ti-currency-dollar" style="color:#5A9E6F"></i> Precios de Venta
@@ -600,6 +601,8 @@
 
       <!-- LISTA DE PRECIOS -->
       <div id="tab-pricelist" class="tab-pane">
+        <!-- Panel: Stock Update automático desde Google Drive -->
+        <div id="stock-update-panel" style="margin-bottom:1.25rem"></div>
         <div id="pricelist-summary"></div>
         <div class="upload-zone" id="drop-zone-price" onclick="document.getElementById('file-input-price').click()" style="margin:1rem 0">
           <i class="ti ti-cloud-upload"></i>
@@ -1242,7 +1245,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '3.11.08.2026.11';
+const APP_VERSION = '4.11.08.2026.11';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1643,7 +1646,7 @@ function gotoTab(tab) {
   if(tab==='dashboard') renderDashboard();
   if(tab==='pi') { _piSearch=''; _piColShowAll={}; const inp=document.getElementById('pi-search-input'); if(inp) inp.value=''; }
   if(tab==='rebates') renderRebatesTable();
-  if(tab==='pricelist') renderPriceListView();
+  if(tab==='pricelist') { renderPriceListView(); renderStockUpdatePanel(); }
   if(tab==='salesprices') renderSalesPriceHistory();
   if(tab==='rotation') { renderRotationTab(); renderRotationHistory(); }
   if(tab==='trend') updateTrendProductOptions();
@@ -3032,6 +3035,105 @@ function renderPriceListView() {
   applyPriceFilter();
   renderLastDiffReadOnly();
 }
+// ─── STOCK UPDATE PANEL (Google Drive automático) ───────────────────────────
+const STOCK_GDRIVE_FILE_ID = '1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw';
+const STOCK_DIFF_FB_KEY    = 'salesops_stock_diff';
+
+async function renderStockUpdatePanel() {
+  const panel = document.getElementById('stock-update-panel');
+  if(!panel) return;
+  panel.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:6px 0"><i class="ti ti-refresh" style="font-size:12px"></i> Cargando estado del Stock Update...</div>`;
+  try {
+    const snap = await _fbDB.ref(STOCK_DIFF_FB_KEY).get();
+    const data = snap.exists() ? snap.val() : null;
+    _renderStockPanel(panel, data ? JSON.parse(data) : null);
+  } catch(e) {
+    panel.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:6px 0">No se pudo cargar el estado del Stock Update.</div>`;
+  }
+}
+
+function _renderStockPanel(panel, data) {
+  if(!data) {
+    panel.innerHTML = `
+      <div style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+        <i class="ti ti-brand-google-drive" style="font-size:20px;color:#4285f4"></i>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">Stock Update MSI — Google Drive</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">Sin datos todavía. El chequeo automático corre a las 9:30 y 18:30 hs.</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const ts = data.checkedAt ? new Date(data.checkedAt).toLocaleString('es-AR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+  const isNew = data.hasChanges && (!data.viewedAt || data.viewedAt < data.checkedAt);
+  const badgeHtml = isNew ? `<span class="pill pill-amber" style="font-size:10px;margin-left:8px">● CAMBIOS DETECTADOS</span>` : '';
+
+  let changesHtml = '';
+  if(data.hasChanges && data.changes && data.changes.length) {
+    const rows = data.changes.slice(0,20).map(c => {
+      if(c.type === 'price') return `<tr><td style="font-family:monospace;font-size:11px">${esc(c.partNo)}</td><td style="font-size:11px">${esc(c.name)}</td><td style="font-size:11px;color:var(--red-text)">USD ${c.oldPrice}</td><td style="font-size:11px;color:var(--green-text)">USD ${c.newPrice}</td></tr>`;
+      if(c.type === 'new') return `<tr><td style="font-family:monospace;font-size:11px">${esc(c.partNo)}</td><td style="font-size:11px">${esc(c.name)}</td><td colspan="2" style="font-size:11px;color:var(--green-text)">NUEVO · USD ${c.newPrice}</td></tr>`;
+      if(c.type === 'eol') return `<tr><td style="font-family:monospace;font-size:11px">${esc(c.partNo)}</td><td style="font-size:11px">${esc(c.name)}</td><td colspan="2" style="font-size:11px;color:var(--text3)">EOL / discontinuado</td></tr>`;
+      if(c.type === 'stock') return `<tr><td style="font-family:monospace;font-size:11px">${esc(c.partNo)}</td><td style="font-size:11px">${esc(c.name)}</td><td style="font-size:11px">${c.oldStock} uds</td><td style="font-size:11px;color:${c.newStock>c.oldStock?'var(--green-text)':'var(--amber-text)'}">${c.newStock} uds</td></tr>`;
+      return '';
+    }).join('');
+    const more = data.changes.length > 20 ? `<tr><td colspan="4" style="font-size:11px;color:var(--text3);padding:6px">… y ${data.changes.length - 20} más</td></tr>` : '';
+    changesHtml = `<div style="margin-top:12px;border-top:0.5px solid var(--border);padding-top:10px">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px">Cambios detectados</div>
+      <div class="table-scroll"><table class="data-table" style="font-size:11px">
+        <thead><tr><th>Parte</th><th>Modelo</th><th>Antes</th><th>Ahora</th></tr></thead>
+        <tbody>${rows}${more}</tbody>
+      </table></div>
+    </div>`;
+  } else if(!data.hasChanges) {
+    changesHtml = `<div style="font-size:12px;color:var(--text3);margin-top:8px"><i class="ti ti-circle-check" style="color:var(--green-text)"></i> Sin cambios respecto al chequeo anterior.</div>`;
+  }
+
+  panel.innerHTML = `
+    <div style="background:var(--bg2);border:0.5px solid ${isNew?'var(--amber-text)':'var(--border2)'};border-radius:10px;padding:14px 16px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <i class="ti ti-brand-google-drive" style="font-size:20px;color:#4285f4;flex-shrink:0"></i>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">Stock Update MSI — Google Drive ${badgeHtml}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">Último chequeo: ${ts} hs · Chequeo automático: 9:30 y 18:30</div>
+        </div>
+        <button class="btn" style="font-size:11px;flex-shrink:0" onclick="markStockDiffViewed()">
+          <i class="ti ti-check" style="font-size:12px"></i> Marcar como visto
+        </button>
+      </div>
+      ${changesHtml}
+    </div>`;
+}
+
+function _watchStockDiffBadge() {
+  _fbDB.ref(STOCK_DIFF_FB_KEY).on('value', snap => {
+    const nb = document.getElementById('nb-pricelist');
+    if(!nb) return;
+    if(!snap.exists()) { nb.style.display = 'none'; return; }
+    try {
+      const data = JSON.parse(snap.val());
+      const isNew = data.hasChanges && (!data.viewedAt || data.viewedAt < data.checkedAt);
+      nb.style.display = isNew ? 'inline' : 'none';
+    } catch(e) { nb.style.display = 'none'; }
+  });
+}
+
+async function markStockDiffViewed() {
+  try {
+    const snap = await _fbDB.ref(STOCK_DIFF_FB_KEY).get();
+    if(snap.exists()) {
+      const data = JSON.parse(snap.val());
+      data.viewedAt = new Date().toISOString();
+      await _fbDB.ref(STOCK_DIFF_FB_KEY).set(JSON.stringify(data));
+    }
+    renderStockUpdatePanel();
+    // Clear badge
+    const nb = document.getElementById('nb-pricelist');
+    if(nb) nb.style.display = 'none';
+  } catch(e) {}
+}
+
 async function exportPriceListExcel() {
   const allItems = priceList.products || [];
   if(!allItems.filter(p=>!p.isSubSection).length) { alert('No hay lista de precios cargada.'); return; }
@@ -8456,6 +8558,7 @@ _fbAuth.onAuthStateChanged(async (user) => {
       applyBrandLogo();
       renderAll();
       _startPIAlerts();
+      _watchStockDiffBadge();
       // Distribuidor: arrancar en Semáforo directo
       gotoTab(role === 'distributor' ? 'semaforo' : 'dashboard');
     } else {
