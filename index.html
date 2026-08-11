@@ -1246,7 +1246,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.12';
+const APP_VERSION = '1.11.08.2026.13';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2332,9 +2332,56 @@ function parseInvoiceLineItems(lines) {
   if(pending) items.push(pending);
   return items;
 }
+// Fallback item detection: scan raw invoice text for price-list model names.
+// Used when the structured table parser finds nothing (different invoice format).
+function _matchInvoiceItemsFromPriceList(rawText) {
+  const products = (typeof priceList !== 'undefined' ? priceList?.products || [] : [])
+    .filter(p => !p.isSubSection && p.desc && p.desc.length >= 3);
+  if(!products.length) return [];
+
+  const TEXT = rawText.toUpperCase();
+  const matched = [];
+  const seenKeys = new Set();
+
+  products.forEach(p => {
+    const k = extractMSIModelKey(p.desc);
+    if(!k || seenKeys.has(k)) return;
+
+    // 1. Try exact part-number / item-code match
+    if(p.code && p.code.length >= 5 && TEXT.includes(p.code.toUpperCase())) {
+      seenKeys.add(k); matched.push({ itemCode: p.code, marketingName: p.desc, qtyShipped: 0 }); return;
+    }
+
+    // 2. Strip category & brand prefix to get the bare model string
+    //    e.g. "MB MSI AM4 A520M-A PRO DDR4 M-ATX NB" → "A520M-A PRO DDR4 M-ATX NB"
+    //         "MONITOR MSI MAG 244F"                   → "MAG 244F"
+    let bare = p.desc.toUpperCase()
+      .replace(/^(?:MB|VGA|PLACA(?:\s+DE\s+V[IÍ]DEO)?|MONITOR|MOUSE|TECLADO|HEADSET|AURICULAR|SSD|LAPTOP|NOTEBOOK|PC)\s+/,'')
+      .replace(/^MSI\s+/,'')
+      .replace(/^(?:AM[45]|FM[12]|LGA\d+|INTEL|AMD)\s+/,'')
+      .replace(/\s+/g,' ').trim();
+
+    // 3. Exact match of bare model string
+    if(bare.length >= 5 && TEXT.includes(bare)) {
+      seenKeys.add(k); matched.push({ itemCode: p.code||'', marketingName: p.desc, qtyShipped: 0 }); return;
+    }
+
+    // 4. Try first N words progressively (minimum 6 chars total)
+    const words = bare.split(/\s+/);
+    for(let n = Math.min(words.length, 4); n >= 1; n--) {
+      const chunk = words.slice(0, n).join(' ');
+      if(chunk.length >= 6 && TEXT.includes(chunk)) {
+        seenKeys.add(k); matched.push({ itemCode: p.code||'', marketingName: p.desc, qtyShipped: 0 }); return;
+      }
+    }
+  });
+
+  return matched;
+}
+
 function parseInvoicePdfLines(lines) {
   const text = lines.join('\n');
-  // Check if it's an invoice: look for "Invoice NNNN" and "PI No."
+  // Check if it's an invoice: look for "Invoice NNNN"
   const invoiceNoMatch = text.match(/Invoice\s+(\d{5,})/i);
   const piNoMatch = text.match(/PI\s+No\.\s*:?\s*(\d{5,})/i);
   if(!invoiceNoMatch) return null; // not an invoice
@@ -2346,7 +2393,23 @@ function parseInvoicePdfLines(lines) {
   if(billIdx > -1) {
     for(let i=billIdx+1; i<lines.length; i++) { if(lines[i].trim()) { client = dedupeRepeatedLine(lines[i]); break; } }
   }
-  const lineItems = parseInvoiceLineItems(lines);
+
+  // Primary: structured table parser
+  let lineItems = parseInvoiceLineItems(lines);
+
+  // Fallback: scan full text for price-list model names
+  if(!lineItems.length) {
+    lineItems = _matchInvoiceItemsFromPriceList(text);
+  } else {
+    // Supplement: add any price-list matches not already found by the table parser
+    const foundKeys = new Set(lineItems.map(li => extractMSIModelKey(li.marketingName||li.itemCode||'')).filter(Boolean));
+    const extra = _matchInvoiceItemsFromPriceList(text).filter(li => {
+      const k = extractMSIModelKey(li.marketingName||'');
+      return k && !foundKeys.has(k);
+    });
+    if(extra.length) lineItems = [...lineItems, ...extra];
+  }
+
   return { isInvoice: true, invoiceNo, piNo, invoiceDate: pdfDateToISO(invoiceDateRaw), client, lineItems };
 }
 
