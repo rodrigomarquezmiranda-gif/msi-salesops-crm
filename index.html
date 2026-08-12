@@ -1254,7 +1254,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.12.2026.4';
+const APP_VERSION = '1.11.12.2026.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1346,7 +1346,7 @@ const COUNTRIES = {
   mx: { name: 'México',    flag: '🇲🇽' }
 };
 let _currentCountry = localStorage.getItem('salesops_country') || 'ar';
-function _setCountry(code) {
+async function _setCountry(code) {
   _currentCountry = code;
   localStorage.setItem('salesops_country', code);
 }
@@ -1841,7 +1841,7 @@ async function handleBrandLogoUpload(input) {
   reader.readAsDataURL(file);
   input.value = '';
 }
-function resetBrandLogo() {
+async function resetBrandLogo() {
   if(!await _confirm('¿Volver al logo de MSI por defecto?', {title:'Logo por defecto', danger:true})) return;
   localStorage.removeItem('salesops_brandlogo');
   applyBrandLogo();
@@ -1878,7 +1878,7 @@ async function importBackup(input) {
   }
   input.value = '';
 }
-function resetRotationData() {
+async function resetRotationData() {
   if(!await _confirm('¿Borrar TODAS las cargas de Rotación de Stock? No se puede deshacer.\n\nSi no estás seguro, exportá un respaldo primero.', {title:'Borrar rotación', danger:true, okLabel:'Borrar todo'})) return;
   db.weeklyReports = [];
   saveDB();
