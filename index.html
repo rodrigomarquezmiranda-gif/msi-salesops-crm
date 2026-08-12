@@ -1254,7 +1254,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.12.2026.3';
+const APP_VERSION = '1.11.12.2026.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2838,7 +2838,7 @@ function ensurePdfWorkerReady() {
   return _pdfWorkerReadyPromise;
 }
 // Dialog: when no matching PI found, let user link to existing or create new
-function _showInvoiceLinkDialog(parsed, invoiceItems) {
+function _showInvoiceLinkDialog(parsed, invoiceItems, preselectedPI) {
   return new Promise(resolve => {
     const allPIs = (db.pi || []).filter(p => p.pipeline === 'pi')
       .sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
@@ -2914,6 +2914,32 @@ function _showInvoiceLinkDialog(parsed, invoiceItems) {
     const selEl     = document.getElementById('inv-pi-selected');
     const newFields = document.getElementById('inv-new-fields');
 
+    // Pre-select PI if passed (auto-matched from invoice piNo)
+    if(preselectedPI) {
+      _selPIId = preselectedPI.id;
+      newFields.style.display = 'none';
+      selEl.style.display = 'block';
+      selEl.innerHTML = `<i class="ti ti-link" style="margin-right:4px"></i>Vinculado a: <strong>${esc(preselectedPI.name||'?')}</strong>${preselectedPI.client?' — '+esc(preselectedPI.client):''}
+        <span id="inv-desvincular" style="margin-left:8px;color:var(--text3);cursor:pointer;font-size:10px">✕ desvincular</span>
+        <div style="margin-top:8px">
+          <div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:4px">Tipo de embarque</div>
+          <select id="inv-link-shipment-linked" style="width:100%;padding:6px 8px;background:var(--bg);border:0.5px solid var(--border2);border-radius:5px;font-size:12px;color:var(--text)">
+            <option value="">— Seleccioná —</option>
+            <option value="miami-aereo">✈️ Miami Aéreo (10 días)</option>
+            <option value="miami-maritimo">🚢 Miami Marítimo (30 días)</option>
+            <option value="china-maritimo">🚢 China Marítimo (60 días)</option>
+          </select>
+        </div>`;
+      const existShip = document.getElementById('inv-link-shipment-linked');
+      if(existShip && preselectedPI.shipmentType) existShip.value = preselectedPI.shipmentType;
+      document.getElementById('inv-desvincular')?.addEventListener('click', () => {
+        _selPIId = null;
+        selEl.style.display = 'none';
+        newFields.style.display = '';
+        searchEl.value = '';
+      });
+    }
+
     function _renderPIResults(q) {
       const qn = (q||'').toLowerCase();
       const matches = qn.length > 0
@@ -2936,7 +2962,17 @@ function _showInvoiceLinkDialog(parsed, invoiceItems) {
           resultsEl.style.display = 'none';
           selEl.style.display = 'block';
           selEl.innerHTML = `<i class="ti ti-link" style="margin-right:4px"></i>Vinculado a: <strong>${esc(pi?.name||'?')}</strong>${pi?.client?' — '+esc(pi.client):''}
-            <span id="inv-desvincular" style="margin-left:8px;color:var(--text3);cursor:pointer;font-size:10px">✕ desvincular</span>`;
+            <span id="inv-desvincular" style="margin-left:8px;color:var(--text3);cursor:pointer;font-size:10px">✕ desvincular</span>
+            <div style="margin-top:8px">
+              <div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:4px">Tipo de embarque</div>
+              <select id="inv-link-shipment-linked" style="width:100%;padding:6px 8px;background:var(--bg);border:0.5px solid var(--border2);border-radius:5px;font-size:12px;color:var(--text)">
+                <option value="">— Seleccioná —</option>
+                <option value="miami-aereo">✈️ Miami Aéreo (10 días)</option>
+                <option value="miami-maritimo">🚢 Miami Marítimo (30 días)</option>
+                <option value="china-maritimo">🚢 China Marítimo (60 días)</option>
+              </select>
+            </div>`;
+          if(pi?.shipmentType) { const s = document.getElementById('inv-link-shipment-linked'); if(s) s.value = pi.shipmentType; }
           newFields.style.display = 'none';
           document.getElementById('inv-desvincular')?.addEventListener('click', () => {
             _selPIId = null;
@@ -2963,7 +2999,9 @@ function _showInvoiceLinkDialog(parsed, invoiceItems) {
     document.getElementById('inv-link-confirm').addEventListener('click', () => {
       const err = document.getElementById('inv-link-err');
       if(_selPIId) {
-        modal.remove(); resolve({ mode: 'link', existingId: _selPIId });
+        const linkedShip = document.getElementById('inv-link-shipment-linked')?.value || '';
+        if(!linkedShip) { err.textContent = 'Seleccioná el tipo de embarque.'; return; }
+        modal.remove(); resolve({ mode: 'link', existingId: _selPIId, shipmentType: linkedShip });
       } else {
         const dist = document.getElementById('inv-link-dist').value;
         const ship = document.getElementById('inv-link-shipment').value;
@@ -2986,12 +3024,11 @@ async function handleInvoicePDF(parsed, file) {
 
   let existing = piNo ? db.pi.find(x => x.name === piNo) : null;
 
-  // Sin PI encontrado: mostrar diálogo para vincular a una Orden existente o crear nueva
-  if (!existing) {
-    const choice = await _showInvoiceLinkDialog(parsed, invoiceItems);
-    if(!choice) return; // cancelado
+  // Siempre mostrar diálogo para elegir tipo de embarque (PI pre-seleccionada si coincide)
+  const choice = await _showInvoiceLinkDialog(parsed, invoiceItems, existing || null);
+  if(!choice) return; // cancelado
 
-    if(choice.mode === 'new') {
+  if(choice.mode === 'new') {
       // Crear nueva Orden con distribuidor y tipo de embarque correctos
       const piName = piNo || parsed.invoiceNo;
       const autoPI = {
@@ -3025,12 +3062,15 @@ async function handleInvoicePDF(parsed, file) {
       return;
     }
 
-    // mode === 'link': vincular Invoice a una Orden existente
+  // mode === 'link': vincular Invoice a una Orden existente
+  if(choice.mode === 'link') {
     existing = db.pi.find(x => x.id === choice.existingId);
     if(!existing) { _alert('No se encontró la Orden seleccionada.', {type:'error'}); return; }
   }
 
   // PI existente: actualizar a Entregado con datos del Invoice
+  // transitStartDate: si el invoice tiene fecha, usarla; sino mantener la que ya tenía
+  const chosenShipType = choice.shipmentType || existing.shipmentType || '';
   const updated = {
     ...existing,
     status: 'Entregado',
@@ -3038,8 +3078,10 @@ async function handleInvoicePDF(parsed, file) {
     invoiceDate: parsed.invoiceDate || existing.invoiceDate || null,
     invoiceItems: invoiceItems.length ? invoiceItems
       : (existing.invoiceItems?.length ? existing.invoiceItems : existing.lineItems || []),
-    transitStartDate: existing.transitStartDate
-      || (parsed.invoiceDate ? new Date(parsed.invoiceDate.slice(0,10) + 'T12:00:00').toISOString() : new Date().toISOString()),
+    shipmentType: chosenShipType,
+    transitStartDate: parsed.invoiceDate
+      ? new Date(parsed.invoiceDate.slice(0,10) + 'T12:00:00').toISOString()
+      : (existing.transitStartDate || new Date().toISOString()),
     transitEnded: false,
     updatedAt: new Date().toISOString()
   };
@@ -4702,8 +4744,9 @@ ${_buildTransitAlertPanel(transitData)}
         <td style="padding:6px 10px;color:var(--text2);max-width:300px;white-space:normal;font-size:11px">${esc(itemsText)}</td>
         <td style="padding:6px 10px;text-align:center;${expColor}">${expStr}</td>
         <td style="padding:6px 10px;text-align:center;white-space:nowrap">
-          <button class="btn" style="font-size:10px;padding:3px 8px;color:var(--amber-text);border-color:var(--amber-text)" onclick="openTransitExtend(${pi.id})">Prórroga</button>
-          <button class="btn" style="font-size:10px;padding:3px 8px;margin-left:4px;color:var(--text3)" onclick="dismissTransit(${pi.id})">Quitar</button>
+          <button class="btn" style="font-size:10px;padding:3px 8px;color:var(--text2)" onclick="openPIEdit(${pi.id})" title="Editar fecha y tipo de embarque"><i class="ti ti-pencil" style="font-size:11px"></i></button>
+          <button class="btn" style="font-size:10px;padding:3px 8px;margin-left:3px;color:var(--amber-text);border-color:var(--amber-text)" onclick="openTransitExtend(${pi.id})">Prórroga</button>
+          <button class="btn" style="font-size:10px;padding:3px 8px;margin-left:3px;color:var(--text3)" onclick="dismissTransit(${pi.id})">Quitar</button>
         </td>
       </tr>`;
     });
@@ -4738,6 +4781,7 @@ function _buildTransitAlertPanel(transitData) {
         <span style="color:var(--red-text);font-size:12px;margin-left:8px">${label}</span>
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn" style="font-size:11px;padding:4px 8px;color:var(--text2)" onclick="openPIEdit(${pi.id})" title="Editar"><i class="ti ti-pencil" style="font-size:12px"></i></button>
         <button class="btn" style="font-size:11px;padding:4px 10px;color:var(--amber-text);border-color:var(--amber-text)" onclick="openTransitExtend(${pi.id})">Prórroga</button>
         <button class="btn" style="font-size:11px;padding:4px 10px;color:var(--text3)" onclick="dismissTransit(${pi.id})">Quitar del tránsito</button>
       </div>
