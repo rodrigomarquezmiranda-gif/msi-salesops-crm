@@ -571,6 +571,10 @@
               oninput="_piSearch=this.value.toLowerCase().trim();if(_piSearch)_piColShowAll={};renderPipeline('pi')" />
           </div>
           <span id="pi-search-notice" style="font-size:12px;color:var(--text3);white-space:nowrap"></span>
+          <button id="pi-sync-btn" onclick="_manualSyncPI()" title="Recargar órdenes desde la nube"
+            style="display:flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text2);font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">
+            <i class="ti ti-refresh" style="font-size:13px"></i> Sincronizar
+          </button>
         </div>
         <div class="upload-zone" id="drop-zone-pi" onclick="document.getElementById('file-input-pi').click()" style="margin-bottom:1.25rem">
           <i class="ti ti-cloud-upload"></i>
@@ -1246,7 +1250,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.17';
+const APP_VERSION = '1.11.08.2026.18';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1560,6 +1564,26 @@ function _startRealtimeSync() {
     });
     _syncListeners[key] = listener;
   });
+}
+
+// Botón manual de sincronización en el tab de Órdenes
+async function _manualSyncPI() {
+  const btn = document.getElementById('pi-sync-btn');
+  if(btn) { btn.disabled = true; btn.querySelector('i').style.animation = 'spin 0.8s linear infinite'; }
+  try {
+    const piRaw = await IDB.get('salesops_pi').catch(()=>null);
+    if(piRaw) db.pi = JSON.parse(piRaw);
+    renderPipeline('pi');
+    const nb = document.getElementById('nb-pi');
+    if(nb) nb.textContent = db.pi.length;
+    // Breve feedback visual
+    if(btn) { btn.style.color = 'var(--green-text,#22c55e)'; btn.querySelector('i').style.animation=''; btn.innerHTML='<i class="ti ti-check" style="font-size:13px"></i> Listo'; }
+    setTimeout(() => {
+      if(btn) { btn.disabled=false; btn.style.color=''; btn.innerHTML='<i class="ti ti-refresh" style="font-size:13px"></i> Sincronizar'; }
+    }, 2000);
+  } catch(e) {
+    if(btn) { btn.disabled=false; btn.style.color=''; btn.innerHTML='<i class="ti ti-refresh" style="font-size:13px"></i> Sincronizar'; }
+  }
 }
 
 let _syncToastTimer = null;
