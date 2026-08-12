@@ -1246,7 +1246,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.14';
+const APP_VERSION = '1.11.08.2026.15';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2271,8 +2271,9 @@ function parsePIPdfLines(lines) {
 // ─── INVOICE PDF PARSER ─────────────────────────────────────────────────────
 // Invoice format: "Invoice NNNNN" header, "PI No. : NNNNN", table with
 // Category | Item Code | Marketing Name | Description | COO | Qty Shipped | Tax | Unit Price | Amount
-// More permissive: catches MS-7E42-030, 912-7D12-001, G271QPX model-style codes, etc.
-const INVOICE_ITEM_CODE_RE = /^[A-Z0-9]{2,6}-[A-Z0-9]{3,10}(?:-[A-Z0-9]{2,7})?$|^[A-Z][A-Z0-9]{4,14}$/;
+// Matches MSI invoice item codes: two-segment or three-segment dash-separated alphanumeric
+// e.g. S10-43G0170-EC4, 306-7G34R13-004, MS-7E42-030, 912-7D12-001
+const INVOICE_ITEM_CODE_RE = /^[A-Z0-9]{2,6}-[A-Z0-9]{3,10}(?:-[A-Z0-9]{2,7})?$/;
 function parseInvoiceLineItems(lines) {
   // Header may be on one line or split across adjacent lines by pdfjs
   let headerIdx = lines.findIndex(l => /Item\s+Code/i.test(l) && /Marketing\s+Name/i.test(l));
@@ -2297,35 +2298,60 @@ function parseInvoiceLineItems(lines) {
     if(INVOICE_ITEM_CODE_RE.test(firstToken)) {
       if(pending) items.push(pending);
       // Try to parse full row on one line:
-      // ItemCode  MarketingName  [Description]  COO  QtyShipped  Tax%  UnitPrice  Amount  [LineNo]
+      // ItemCode  MarketingName  [Description]  COO  QtyShipped  Tax%  UnitPrice  Amount
       const cooMatch = l.match(new RegExp('\\b(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
       let marketingName = '', qtyShipped = 0, category = '';
       if(cooMatch) {
         const before = l.slice(firstToken.length, cooMatch.index).trim();
         const after = cooMatch[2].trim();
-        // before = "MarketingName  [Description]"
-        // Split before on 2+ spaces to try to separate marketing name from internal description
         const parts = before.split(/\s{2,}/);
         marketingName = parts[0] || before;
-        const nums = after.match(/([\d,]+)\s+\d+\s+Tax\s+\d+%\s+([\d,]+\.\d{2})/i);
+        // Match "QTY 0% PRICE" or "QTY TAX PRICE" patterns
+        const nums = after.match(/([\d,]+)\s+(?:\d+\s+Tax\s+)?\d+%\s+([\d,]+\.\d{2})/i);
         if(nums) qtyShipped = parseInt(nums[1].replace(/,/g,''));
       } else {
-        // COO not on same line, extract what we can
-        marketingName = l.slice(firstToken.length).trim().split(/\s{2,}/)[0];
+        // COO not on same line. The qty may appear as a trailing integer on this line
+        // (PDF columns: ItemCode | Marketing Name | Qty — all at same Y).
+        // e.g. "S10-43G0170-EC4 FORCE GC30 V2 150" → name="FORCE GC30 V2", qty=150
+        const afterCode = l.slice(firstToken.length).trim();
+        const trailingQty = afterCode.match(/^(.*?)\s+(\d{1,5})\s*$/);
+        if(trailingQty && !/[A-Z]/.test(trailingQty[2])) {
+          // Last token is a pure integer — treat as qty
+          marketingName = trailingQty[1].split(/\s{2,}/)[0].trim();
+          qtyShipped = parseInt(trailingQty[2]);
+        } else {
+          marketingName = afterCode.split(/\s{2,}/)[0].trim();
+        }
       }
       pending = { itemCode: firstToken, marketingName: marketingName.trim(), qtyShipped, category };
     } else if(pending) {
-      // continuation / COO line
+      // Continuation line — could be: COO at start, qty-only, marketing name suffix, or data mid-line
       const cooMatch = l.match(new RegExp('^(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
       if(cooMatch) {
         const after = cooMatch[2].trim();
-        const nums = after.match(/([\d,]+)\s+\d+\s+Tax\s+\d+%\s+([\d,]+\.\d{2})/i);
+        const nums = after.match(/([\d,]+)\s+(?:\d+\s+Tax\s+)?\d+%\s+([\d,]+\.\d{2})/i);
         if(nums && !pending.qtyShipped) pending.qtyShipped = parseInt(nums[1].replace(/,/g,''));
         items.push(pending); pending = null;
-      } else if(!pending.qtyShipped) {
-        // might be a qty-only continuation
-        const qm = l.match(/^([\d,]+)\s+\d+\s+Tax/i);
-        if(qm) { pending.qtyShipped = parseInt(qm[1].replace(/,/g,'')); items.push(pending); pending=null; }
+      } else {
+        // COO appears mid-line (e.g. "Chassis MEG MAESTRO 900R , All 0% 420.00 5,040.00")
+        const cooMid = l.match(new RegExp('\\b(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
+        if(cooMid && /\d+\s*%/.test(cooMid[2])) {
+          const after2 = cooMid[2].trim();
+          const nums2 = after2.match(/([\d,]+)\s+(?:\d+\s+Tax\s+)?\d+%\s+([\d,]+\.\d{2})/i);
+          if(nums2 && !pending.qtyShipped) pending.qtyShipped = parseInt(nums2[1].replace(/,/g,''));
+          items.push(pending); pending = null;
+        } else if(!pending.qtyShipped) {
+          // qty-only continuation
+          const qm = l.match(/^([\d,]+)\s+\d+\s+Tax/i);
+          if(qm) { pending.qtyShipped = parseInt(qm[1].replace(/,/g,'')); items.push(pending); pending=null; }
+          else {
+            // Short word-only line may be marketing name continuation (e.g., "WHITE", "900R suffix")
+            const tokens = l.trim().split(/\s+/);
+            if(tokens.length <= 2 && tokens.every(t => /^[A-Z0-9]+$/i.test(t)) && !/^\d+$/.test(tokens[0])) {
+              pending.marketingName = (pending.marketingName + ' ' + l.trim()).trim();
+            }
+          }
+        }
       }
     }
   }
@@ -2333,7 +2359,10 @@ function parseInvoiceLineItems(lines) {
   return items;
 }
 // Fallback item detection: scan raw invoice text for price-list model names.
-// Used when the structured table parser finds nothing (different invoice format).
+// ONLY used when the structured table parser finds ZERO items (different invoice format).
+// Conservative matching: requires a multi-word model string or exact part code — single
+// common words like "CHINA", "WHITE", "ALL" can appear anywhere in invoice metadata and
+// would produce false positives if matched alone.
 function _matchInvoiceItemsFromPriceList(rawText) {
   const products = (typeof priceList !== 'undefined' ? priceList?.products || [] : [])
     .filter(p => !p.isSubSection && p.desc && p.desc.length >= 3);
@@ -2343,35 +2372,48 @@ function _matchInvoiceItemsFromPriceList(rawText) {
   const matched = [];
   const seenKeys = new Set();
 
+  // Common invoice noise words that appear in metadata/headers but are not product names.
+  // Prevent matching them as single-token "bare" product names.
+  const NOISE_WORDS = new Set(['CHINA','WHITE','BLACK','GAMING','CHASSIS','ALL','REMOTE','GEAR',
+    'CONTROLLER','DESCRIPTION','CATEGORY','MARKETING','AMOUNT','PRICE','QUANTITY','SHIPPED',
+    'TAXABLE','SUBTOTAL','TOTAL','INVOICE','SHIPPING','REMARK','DELIVERY','FORWARDER']);
+
   products.forEach(p => {
     const k = extractMSIModelKey(p.desc);
     if(!k || seenKeys.has(k)) return;
 
-    // 1. Try exact part-number / item-code match
+    // 1. Exact part-number / item-code match (most reliable)
     if(p.code && p.code.length >= 5 && TEXT.includes(p.code.toUpperCase())) {
       seenKeys.add(k); matched.push({ itemCode: p.code, marketingName: p.desc, qtyShipped: 0 }); return;
     }
 
-    // 2. Strip category & brand prefix to get the bare model string
-    //    e.g. "MB MSI AM4 A520M-A PRO DDR4 M-ATX NB" → "A520M-A PRO DDR4 M-ATX NB"
-    //         "MONITOR MSI MAG 244F"                   → "MAG 244F"
+    // 2. Strip category & brand prefix to get the bare model identifier
+    //    "MB MSI AM4 A520M-A PRO DDR4 M-ATX NB" → "A520M-A PRO DDR4 M-ATX NB"
+    //    "MONITOR MSI MAG 244F"                   → "MAG 244F"
     let bare = p.desc.toUpperCase()
-      .replace(/^(?:MB|VGA|PLACA(?:\s+DE\s+V[IÍ]DEO)?|MONITOR|MOUSE|TECLADO|HEADSET|AURICULAR|SSD|LAPTOP|NOTEBOOK|PC)\s+/,'')
+      .replace(/^(?:MB|VGA|PLACA(?:\s+DE\s+V[IÍ]DEO)?|MONITOR|MOUSE|TECLADO|HEADSET|AURICULAR|SSD|LAPTOP|NOTEBOOK|PC|GABINETE|ACCESORIOS?)\s+/,'')
       .replace(/^MSI\s+/,'')
       .replace(/^(?:AM[45]|FM[12]|LGA\d+|INTEL|AMD)\s+/,'')
       .replace(/\s+/g,' ').trim();
 
-    // 3. Exact match of bare model string
-    if(bare.length >= 5 && TEXT.includes(bare)) {
+    const words = bare.split(/\s+/).filter(w => w.length > 0);
+
+    // 3. Full bare string match (exact, must be at least 2 words OR 10+ chars single word)
+    if(words.length >= 2 && bare.length >= 6 && TEXT.includes(bare)) {
+      seenKeys.add(k); matched.push({ itemCode: p.code||'', marketingName: p.desc, qtyShipped: 0 }); return;
+    }
+    if(words.length === 1 && bare.length >= 10 && !NOISE_WORDS.has(bare) && TEXT.includes(bare)) {
       seenKeys.add(k); matched.push({ itemCode: p.code||'', marketingName: p.desc, qtyShipped: 0 }); return;
     }
 
-    // 4. Try first N words progressively (minimum 6 chars total)
-    const words = bare.split(/\s+/);
-    for(let n = Math.min(words.length, 4); n >= 1; n--) {
-      const chunk = words.slice(0, n).join(' ');
-      if(chunk.length >= 6 && TEXT.includes(chunk)) {
-        seenKeys.add(k); matched.push({ itemCode: p.code||'', marketingName: p.desc, qtyShipped: 0 }); return;
+    // 4. Progressive multi-word match (minimum 2 words, minimum 8 total chars)
+    //    This avoids matching single generic words that appear in invoice headers/metadata.
+    if(words.length >= 2) {
+      for(let n = Math.min(words.length, 4); n >= 2; n--) {
+        const chunk = words.slice(0, n).join(' ');
+        if(chunk.length >= 8 && TEXT.includes(chunk)) {
+          seenKeys.add(k); matched.push({ itemCode: p.code||'', marketingName: p.desc, qtyShipped: 0 }); return;
+        }
       }
     }
   });
@@ -2397,17 +2439,11 @@ function parseInvoicePdfLines(lines) {
   // Primary: structured table parser
   let lineItems = parseInvoiceLineItems(lines);
 
-  // Fallback: scan full text for price-list model names
+  // Fallback only: scan full text for price-list model names when the table parser found nothing.
+  // Do NOT run as supplement — the invoice text contains many non-product words (metadata,
+  // category names, COO values, etc.) that would produce false positive matches.
   if(!lineItems.length) {
     lineItems = _matchInvoiceItemsFromPriceList(text);
-  } else {
-    // Supplement: add any price-list matches not already found by the table parser
-    const foundKeys = new Set(lineItems.map(li => extractMSIModelKey(li.marketingName||li.itemCode||'')).filter(Boolean));
-    const extra = _matchInvoiceItemsFromPriceList(text).filter(li => {
-      const k = extractMSIModelKey(li.marketingName||'');
-      return k && !foundKeys.has(k);
-    });
-    if(extra.length) lineItems = [...lineItems, ...extra];
   }
 
   return { isInvoice: true, invoiceNo, piNo, invoiceDate: pdfDateToISO(invoiceDateRaw), client, lineItems };
