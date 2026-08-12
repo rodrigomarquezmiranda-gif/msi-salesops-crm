@@ -1250,7 +1250,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.18';
+const APP_VERSION = '1.11.08.2026.19';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1571,18 +1571,34 @@ async function _manualSyncPI() {
   const btn = document.getElementById('pi-sync-btn');
   if(btn) { btn.disabled = true; btn.querySelector('i').style.animation = 'spin 0.8s linear infinite'; }
   try {
-    const piRaw = await IDB.get('salesops_pi').catch(()=>null);
-    if(piRaw) db.pi = JSON.parse(piRaw);
+    const snap = await _fbDB.ref('salesops_pi').get();
+    const piRaw = snap.exists() ? snap.val() : null;
+    const piList = piRaw ? JSON.parse(piRaw) : [];
+    db.pi = piList;
     renderPipeline('pi');
     const nb = document.getElementById('nb-pi');
     if(nb) nb.textContent = db.pi.length;
-    // Breve feedback visual
-    if(btn) { btn.style.color = 'var(--green-text,#22c55e)'; btn.querySelector('i').style.animation=''; btn.innerHTML='<i class="ti ti-check" style="font-size:13px"></i> Listo'; }
+
+    // Diagnóstico: mostrar qué hay en Firebase
+    const count = piList.length;
+    const names = piList.slice(-5).map(p => `• ${p.name || p.id || '(sin nombre)'} — ${p.client || ''}`).join('\n');
+    console.info(`[Sync PI] Firebase contiene ${count} órdenes:\n`, piList.map(p => `${p.name} (${p.client})`));
+
+    if(btn) {
+      btn.disabled=false; btn.style.color='var(--brand-text)';
+      btn.querySelector('i').style.animation='';
+      btn.innerHTML=`<i class="ti ti-check" style="font-size:13px"></i> ${count} órdenes`;
+      btn.title = count ? `Últimas 5:\n${names}` : 'No hay órdenes en Firebase';
+    }
     setTimeout(() => {
-      if(btn) { btn.disabled=false; btn.style.color=''; btn.innerHTML='<i class="ti ti-refresh" style="font-size:13px"></i> Sincronizar'; }
-    }, 2000);
+      if(btn) { btn.style.color=''; btn.title='Recargar órdenes desde la nube'; btn.innerHTML='<i class="ti ti-refresh" style="font-size:13px"></i> Sincronizar'; }
+    }, 6000);
   } catch(e) {
-    if(btn) { btn.disabled=false; btn.style.color=''; btn.innerHTML='<i class="ti ti-refresh" style="font-size:13px"></i> Sincronizar'; }
+    console.error('[Sync PI] Error:', e);
+    if(btn) { btn.disabled=false; btn.style.color='var(--red,#ef4444)'; btn.innerHTML=`<i class="ti ti-alert-circle" style="font-size:13px"></i> Error: ${e?.code || e?.message || 'desconocido'}`; }
+    setTimeout(() => {
+      if(btn) { btn.style.color=''; btn.innerHTML='<i class="ti ti-refresh" style="font-size:13px"></i> Sincronizar'; }
+    }, 5000);
   }
 }
 
