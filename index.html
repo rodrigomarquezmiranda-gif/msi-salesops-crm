@@ -1246,7 +1246,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.15';
+const APP_VERSION = '1.11.08.2026.16';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2325,33 +2325,33 @@ function parseInvoiceLineItems(lines) {
       }
       pending = { itemCode: firstToken, marketingName: marketingName.trim(), qtyShipped, category };
     } else if(pending) {
-      // Continuation line — could be: COO at start, qty-only, marketing name suffix, or data mid-line
-      const cooMatch = l.match(new RegExp('^(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
-      if(cooMatch) {
-        const after = cooMatch[2].trim();
-        const nums = after.match(/([\d,]+)\s+(?:\d+\s+Tax\s+)?\d+%\s+([\d,]+\.\d{2})/i);
-        if(nums && !pending.qtyShipped) pending.qtyShipped = parseInt(nums[1].replace(/,/g,''));
-        items.push(pending); pending = null;
+      // Continuation line processing.
+      // FIRST: check if it's a model-name suffix like "900R", "WHITE", "E14L".
+      // These are all-uppercase alphanumeric tokens (1–2 words, no punctuation, not purely digits).
+      // Lowercase-start words like "Gaming", "Gear", "Chassis" (PDF category labels) fail this check.
+      const contTokens = l.trim().split(/\s+/);
+      const isModelSuffix = contTokens.length >= 1 && contTokens.length <= 2
+        && contTokens.every(t => /^[A-Z0-9]+$/.test(t))   // ALL-CAPS alphanumeric only
+        && !/^\d+$/.test(contTokens[0]);                   // not a bare number
+      if(isModelSuffix) {
+        // Append to marketing name regardless of whether qty is already set.
+        // e.g.: "900R" appends to "MEG MAESTRO" → "MEG MAESTRO 900R"
+        //       "WHITE" appends to "FORCE GC30 V2" → "FORCE GC30 V2 WHITE"
+        pending.marketingName = (pending.marketingName + ' ' + l.trim()).trim();
       } else {
-        // COO appears mid-line (e.g. "Chassis MEG MAESTRO 900R , All 0% 420.00 5,040.00")
-        const cooMid = l.match(new RegExp('\\b(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
-        if(cooMid && /\d+\s*%/.test(cooMid[2])) {
-          const after2 = cooMid[2].trim();
-          const nums2 = after2.match(/([\d,]+)\s+(?:\d+\s+Tax\s+)?\d+%\s+([\d,]+\.\d{2})/i);
-          if(nums2 && !pending.qtyShipped) pending.qtyShipped = parseInt(nums2[1].replace(/,/g,''));
+        const cooMatch = l.match(new RegExp('^(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
+        if(cooMatch) {
+          const after = cooMatch[2].trim();
+          const nums = after.match(/([\d,]+)\s+(?:\d+\s+Tax\s+)?\d+%\s+([\d,]+\.\d{2})/i);
+          if(nums && !pending.qtyShipped) pending.qtyShipped = parseInt(nums[1].replace(/,/g,''));
           items.push(pending); pending = null;
         } else if(!pending.qtyShipped) {
-          // qty-only continuation
+          // qty-only continuation (legacy format: QTY TAX% PRICE)
           const qm = l.match(/^([\d,]+)\s+\d+\s+Tax/i);
           if(qm) { pending.qtyShipped = parseInt(qm[1].replace(/,/g,'')); items.push(pending); pending=null; }
-          else {
-            // Short word-only line may be marketing name continuation (e.g., "WHITE", "900R suffix")
-            const tokens = l.trim().split(/\s+/);
-            if(tokens.length <= 2 && tokens.every(t => /^[A-Z0-9]+$/i.test(t)) && !/^\d+$/.test(tokens[0])) {
-              pending.marketingName = (pending.marketingName + ' ' + l.trim()).trim();
-            }
-          }
         }
+        // All other continuation lines (e.g. description text, price rows) are ignored —
+        // the item will be pushed when the next item code is found or at end of loop.
       }
     }
   }
@@ -2686,7 +2686,8 @@ async function handleInvoicePDF(parsed, file) {
     status: 'Entregado',
     invoiceNo: parsed.invoiceNo,
     invoiceDate: parsed.invoiceDate || existing.invoiceDate || null,
-    invoiceItems: invoiceItems.length ? invoiceItems : existing.invoiceItems || [],
+    invoiceItems: invoiceItems.length ? invoiceItems
+      : (existing.invoiceItems?.length ? existing.invoiceItems : existing.lineItems || []),
     transitStartDate: existing.transitStartDate || new Date().toISOString(),
     transitEnded: false,
     updatedAt: new Date().toISOString()
