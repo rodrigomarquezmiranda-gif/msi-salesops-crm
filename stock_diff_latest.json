@@ -1,1 +1,18 @@
-{"checkedAt": "2026-08-12T15:28:27.740399+00:00", "hasChanges": false, "changeCount": 0, "changes": [], "summary": "Primera ejecuci\u00f3n: snapshot inicial guardado (68 productos)", "triggeredBy": "sistema", "triggerMode": "auto"}
+{
+  "checkedAt": "2026-08-12T23:10:25.305054+00:00",
+  "sheetDate": "2026-08-10",
+  "hasChanges": true,
+  "changeCount": 1,
+  "changes": [
+    {
+      "type": "new",
+      "partNo": "GGB-FE",
+      "name": "MSI GAMING GEAR BUNDLE FRIEREN EDITION",
+      "newPrice": 140,
+      "newStock": 57
+    }
+  ],
+  "summary": "1 cambio(s) detectado(s)",
+  "triggeredBy": "sistema",
+  "triggerMode": "auto"
+}
