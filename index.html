@@ -1246,7 +1246,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.08.2026.13';
+const APP_VERSION = '1.11.08.2026.14';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -4121,12 +4121,14 @@ function buildSemaforoData() {
       }
       if(!desc) return; // can't resolve, skip
       const cat = classifyProductCategory(desc);
-      if(cat === 'other') return;
-      const displayName = semaforoDisplayName(desc, cat);
+      // Transit items from an explicit invoice are ALWAYS shown — never silently dropped.
+      // If the classifier can't identify the category, fall back to 'accesorios'.
+      const resolvedCat = cat === 'other' ? 'accesorios' : cat;
+      const displayName = semaforoDisplayName(desc, resolvedCat);
       // Only add if not already added (avoid duplicates across distributors)
       if(!stockKeys.has(k)) {
         stockKeys.add(k);
-        products.push({ model: desc, normModel: k, category: cat, distQty: {}, displayName, isTransitOnly: true });
+        products.push({ model: desc, normModel: k, category: resolvedCat, distQty: {}, displayName, isTransitOnly: true });
       }
     });
   });
@@ -5933,12 +5935,12 @@ const CATEGORY_KEYWORDS = [
   { key:'motherboard', label:'Motherboards',       keywords:['MOTHERBOARDS','MOTHERBOARD','MOTHER BOARD','PLACA MADRE','MB','MOTHER','MOT'] },
   { key:'monitor',     label:'Monitores',           keywords:['MONITORES','MONITOR','MON'] },
   { key:'vga',         label:'Placas de Video',      keywords:['PLACA DE VIDEO','TARJETA GRAFICA','PLACA MSI','GEFORCE','GEFORC','VGA','VIDEO','RTX','GTX','RADEON'] },
-  { key:'gabinete',    label:'Gabinetes',            keywords:['GABINETES','GABINETE','CHASSIS','GAB'] },
+  { key:'gabinete',    label:'Gabinetes',            keywords:['GABINETES','GABINETE','CHASSIS','GAB','MAESTRO','MEG MAESTRO','TOWER','COMPUTER CASE','PC CASE','MID TOWER','FULL TOWER','CASE ATX','ATX CASE'] },
   { key:'psu',         label:'Fuentes',              keywords:['FUENTE DE ALIMENTACION','FUENTE','PSU'] },
   { key:'minipc',      label:'Mini PC',              keywords:['MINIPC','MINI PC','CUBI'] },
   { key:'ssd',         label:'Almacenamiento (SSD)', keywords:['DISCO DE ESTADO SOLIDO','SSD','DISCO SOLIDO','DISCO','SOLIDO'] },
   { key:'cooling',     label:'Cooling',              keywords:['WATERCOOLING','WATERCOOLER','WATER COOLING','CORELIQUID','CORE LIQUID','CPU COOLER','AIR COOLER','COOLER','WATER'] },
-  { key:'accesorios',  label:'Accesorios',           keywords:['TECLADOS','TECLADO','TEC','MOUSE','MOU','AURICULARES','AURICULAR','AURIS','FORGE GK100 COMBO','FORGE GK 100 COMBO','FORGE GK100LS','FORGE GK100 LS','FORGE GK100','FORGE GK 100LS','FORGE GK 100 LS','FORGE GK 100','GAMEPAD','GAME PAD','JOYSTICK','MODULO TPM','TPM','ACC'] },
+  { key:'accesorios',  label:'Accesorios',           keywords:['TECLADOS','TECLADO','TEC','MOUSE','MOU','AURICULARES','AURICULAR','AURIS','FORGE GK100 COMBO','FORGE GK 100 COMBO','FORGE GK100LS','FORGE GK100 LS','FORGE GK100','FORGE GK 100LS','FORGE GK 100 LS','FORGE GK 100','GAMEPAD','GAME PAD','JOYSTICK','MODULO TPM','TPM','ACC','FORCE GC','FORCE GC30','FORCE GC20','GC30','GC20','HEADSET','HEADPHONE','CONTROLLER','CONTROLADOR','CLUTCH','VIGOR GK','INTERCEPTOR','SPATULA','THUNDERSTRUCK'] },
 ];
 const CATEGORY_LABELS = Object.fromEntries(CATEGORY_KEYWORDS.map(c => [c.key, c.label]));
 CATEGORY_LABELS.other = 'Otros';
@@ -5978,6 +5980,15 @@ function classifyProductCategory(description) {
   // Motherboards: Axxx / Bxxx / Hxxx / Zxxx / Xxxx / PRO Axxx / PRO Bxxx
   if(/\b[ABHZX]\d{3}M\b/.test(norm)) return 'motherboard';
   if(/\bPRO\s+[BHZ]\d{3}\b/.test(norm)) return 'motherboard';
+  // Gabinetes: MAESTRO, TOWER variants, numbered case models (e.g. 900R, 700M, 500M)
+  if(/\bMAESTRO\b/.test(norm)) return 'gabinete';
+  if(/\b(?:MID|FULL|ATX)\s*TOWER\b/.test(norm)) return 'gabinete';
+  if(/\bMEG\s+\w+\s*\d{3}R?\b/.test(norm)) return 'gabinete';
+  // Accesorios: GC-series controllers, headsets, peripherals
+  if(/\bGC\s*\d{2}\b/.test(norm)) return 'accesorios';
+  if(/\bFORCE\s+GC\b/.test(norm)) return 'accesorios';
+  if(/\b(?:HEADSET|HEADPHONE|EARPHONE)\b/.test(norm)) return 'accesorios';
+  if(/\b(?:CLUTCH|VIGOR|INTERCEPTOR)\b/.test(norm)) return 'accesorios';
   return 'other';
 }
 // ─── Emparejamiento de productos entre distribuidores (comparador de rotación) ───
