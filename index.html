@@ -3784,7 +3784,27 @@ function _renderStockPanel(panel, data) {
       </table></div>
     </div>`;
   } else if(!data.hasChanges) {
-    changesHtml = `<div style="font-size:12px;color:var(--text3);margin-top:8px"><i class="ti ti-circle-check" style="color:var(--green-text)"></i> Sin cambios respecto al chequeo anterior.</div>`;
+    if(data.lastChanges && data.lastChanges.length) {
+      const lastTs = data.lastChangesAt ? new Date(data.lastChangesAt).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+      const lastRows = data.lastChanges.slice(0,20).map(c => {
+        if(c.type==='price') return `<tr><td style="font-family:monospace;font-size:11px">${esc(c.partNo)}</td><td style="font-size:11px">${esc(c.name)}</td><td style="font-size:11px;color:var(--red-text)">USD ${c.oldPrice}</td><td style="font-size:11px;color:var(--green-text)">USD ${c.newPrice}</td></tr>`;
+        if(c.type==='new') return `<tr><td style="font-family:monospace;font-size:11px">${esc(c.partNo)}</td><td style="font-size:11px">${esc(c.name)}</td><td colspan="2" style="font-size:11px;color:var(--green-text)">NUEVO · USD ${c.newPrice}</td></tr>`;
+        if(c.type==='removed'||c.type==='eol') return `<tr><td style="font-family:monospace;font-size:11px">${esc(c.partNo)}</td><td style="font-size:11px">${esc(c.name)}</td><td colspan="2" style="font-size:11px;color:var(--text3)">Retirado / EOL</td></tr>`;
+        if(c.type==='stock') return `<tr><td style="font-family:monospace;font-size:11px">${esc(c.partNo)}</td><td style="font-size:11px">${esc(c.name)}</td><td style="font-size:11px">${c.oldStock} uds</td><td style="font-size:11px;color:${c.newStock>c.oldStock?'var(--green-text)':'var(--amber-text)'}">${c.newStock} uds</td></tr>`;
+        return '';
+      }).join('');
+      const lastMore = data.lastChanges.length > 20 ? `<tr><td colspan="4" style="font-size:11px;color:var(--text3);padding:6px">… y ${data.lastChanges.length-20} más</td></tr>` : '';
+      changesHtml = `<div style="margin-top:12px;border-top:0.5px solid var(--border);padding-top:10px">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-circle-check" style="color:var(--green-text);margin-right:4px"></i>Sin cambios en este chequeo &nbsp;·&nbsp; Últimos cambios detectados: <b>${lastTs} hs</b></div>
+        <div style="font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px">Últimos cambios registrados</div>
+        <div class="table-scroll"><table class="data-table" style="font-size:11px">
+          <thead><tr><th>Parte</th><th>Modelo</th><th>Antes</th><th>Ahora</th></tr></thead>
+          <tbody>${lastRows}${lastMore}</tbody>
+        </table></div>
+      </div>`;
+    } else {
+      changesHtml = `<div style="font-size:12px;color:var(--text3);margin-top:8px"><i class="ti ti-circle-check" style="color:var(--green-text)"></i> Sin cambios respecto al chequeo anterior.</div>`;
+    }
   }
 
   panel.innerHTML = `
@@ -3833,6 +3853,106 @@ async function markStockDiffViewed() {
     const nb = document.getElementById('nb-pricelist');
     if(nb) nb.style.display = 'none';
   } catch(e) {}
+}
+
+// ─── STOCK DIFF DESDE DRAG & DROP (Excel LATAM) ─────────────────────────────
+async function handleLatamStockDiff(products, sourceFile) {
+  try {
+    // Build new snapshot dict from parsed products
+    const newSnap = {};
+    products.filter(p => !p.isSubSection && p.code && p.price !== null).forEach(p => {
+      newSnap[p.code] = {
+        name: p.desc || '',
+        category: p.category || '',
+        miamiStock: p.miamiStock || 0,
+        miamiPrice: p.price || 0,
+        miamiEta: p.miamiEta || '',
+        bondedStock: p.bondedStock || 0,
+      };
+    });
+
+    // Get old snapshot from Firebase
+    let oldSnap = null;
+    try {
+      const snapRef = await _fbDB.ref('salesops_stock_snapshot').get();
+      if(snapRef.exists()) {
+        const raw = snapRef.val();
+        oldSnap = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      }
+    } catch(e) {}
+
+    // Compare
+    const changes = [];
+    if(oldSnap) {
+      const allParts = new Set([...Object.keys(oldSnap), ...Object.keys(newSnap)]);
+      for(const partNo of [...allParts].sort()) {
+        const old = oldSnap[partNo];
+        const nw  = newSnap[partNo];
+        if(!old && nw)  { changes.push({type:'new',     partNo, name:nw.name,  category:nw.category,       newPrice:nw.miamiPrice}); }
+        else if(old && !nw) { changes.push({type:'removed', partNo, name:old.name, category:old.category||''}); }
+        else if(old && nw) {
+          if(Math.abs(nw.miamiPrice - old.miamiPrice) > 1)
+            changes.push({type:'price', partNo, name:nw.name, category:nw.category, oldPrice:old.miamiPrice, newPrice:nw.miamiPrice});
+          if(Math.abs((nw.miamiStock||0) - (old.miamiStock||0)) >= 200)
+            changes.push({type:'stock', partNo, name:nw.name, category:nw.category, oldStock:old.miamiStock||0, newStock:nw.miamiStock||0});
+        }
+      }
+    }
+
+    const now = new Date().toISOString();
+    const user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+    const userName = user ? (user.displayName || user.email || 'usuario') : 'usuario';
+
+    // Preserve lastChanges from previous diff
+    let lastChanges = [], lastChangesAt = null;
+    try {
+      const prevDiff = await _fbDB.ref(STOCK_DIFF_FB_KEY).get();
+      if(prevDiff.exists()) {
+        const pd = JSON.parse(prevDiff.val());
+        if(pd.hasChanges && pd.changes && pd.changes.length) { lastChanges = pd.changes; lastChangesAt = pd.checkedAt; }
+        else if(pd.lastChanges && pd.lastChanges.length)     { lastChanges = pd.lastChanges; lastChangesAt = pd.lastChangesAt; }
+      }
+    } catch(e) {}
+
+    const diff = {
+      checkedAt:     now,
+      productCount:  Object.keys(newSnap).length,
+      hasChanges:    changes.length > 0,
+      changeCount:   changes.length,
+      changes:       changes.length > 0 ? changes.slice(0,100) : [],
+      lastChanges:   changes.length > 0 ? changes.slice(0,100) : lastChanges,
+      lastChangesAt: changes.length > 0 ? now : lastChangesAt,
+      summary:       changes.length > 0 ? `${changes.length} cambio(s) detectado(s)` : 'Sin cambios',
+      triggeredBy:   userName,
+      triggerMode:   'manual',
+      sourceFile:    sourceFile || '',
+    };
+
+    // Write to Firebase
+    await _fbDB.ref(STOCK_DIFF_FB_KEY).set(JSON.stringify(diff));
+    await _fbDB.ref('salesops_stock_snapshot').set(JSON.stringify(newSnap));
+    await _fbDB.ref(STOCK_CHANGELOG_FB_KEY).push({
+      checkedAt:   now,
+      productCount: diff.productCount,
+      hasChanges:  diff.hasChanges,
+      changeCount: diff.changeCount,
+      summary:     diff.summary,
+      triggerMode: 'manual',
+      triggeredBy: userName,
+    });
+
+    // Refresh stock panel
+    await renderStockUpdatePanel();
+    if(changes.length > 0) {
+      _alert(`${changes.length} cambio(s) detectado(s) en la lista de precios.`, {type:'success', title:'Stock Update'});
+    } else if(!oldSnap) {
+      _alert(`Snapshot inicial guardado: ${Object.keys(newSnap).length} productos. La próxima carga va a detectar cambios automáticamente.`, {type:'success', title:'Stock Update'});
+    } else {
+      _alert('Sin cambios respecto al snapshot anterior.', {type:'info', title:'Stock Update'});
+    }
+  } catch(err) {
+    console.error('handleLatamStockDiff:', err);
+  }
 }
 
 // ─── HISTORIAL DE CHEQUEOS ──────────────────────────────────────────────────
@@ -4143,8 +4263,9 @@ async function handlePriceFile(file){
   try{
     const parsedList=await parsePriceListFile(file);
     if(parsedList.isLatamFormat){
-      // LATAM format: products already extracted, no mapping needed
+      // LATAM format: update price list view AND run stock diff comparison
       finalizePriceUploadDirect(parsedList.products,parsedList.sourceFile);
+      handleLatamStockDiff(parsedList.products, parsedList.sourceFile);
       return;
     }
     if(parsedList.codeCol===-1){_pendingPriceParsed=parsedList;openColumnMapping(parsedList);return;}
