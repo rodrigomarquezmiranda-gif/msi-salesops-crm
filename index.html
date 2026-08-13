@@ -1254,7 +1254,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.12.2026.5';
+const APP_VERSION = '1.11.12.2026.6';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2347,6 +2347,10 @@ const _SEMAFORO_NOISE = new Set([
   'CURVO','CURVED','CRUVO',           // curved (CRUVO = typo variant from some distributors)
   'FREESYNC','GSYNC','SYNC',
   'PRO',                             // MSI series prefix (inconsistently included; model code is the real key)
+  'GAMER',                           // monitor line prefix ("GAMER MAG 255F …") — model code is the real key
+  'RAPID','FLAT',                    // monitor panel/response descriptors
+  'PIVOTEABLE','PIVOTABLE','PIVOT',  // ergonomics descriptor
+  'MS',                              // response time unit (after number strip)
   'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
 ]);
 function extractMSIModelKey(desc) {
@@ -2390,6 +2394,12 @@ function extractMSIModelKey(desc) {
   // Strip monitor refresh rates (120HZ, 144HZ, 165HZ, 180HZ, 200HZ)
   // Model codes already differentiate monitors; Hz is inconsistently included by distributors
   s = s.replace(/\b\d+\s*HZ\b/ig, '');
+  // Strip response time specs (0.5MS, 0.03MS, 1MS, 5MS) — monitor-only spec noise
+  s = s.replace(/\b\d+(?:[.,]\d+)?\s*MS\b/ig, '');
+  // Strip connectivity port counts (2XHDMI, 1XDP, 3XUSB, 1XVGA) — monitor spec noise
+  s = s.replace(/\b\d+\s*[Xx]\s*(?:HDMI|DP|USB|VGA|DVI|DISPLAYPORT)\b/ig, '');
+  // Strip panel-size shorthand suffixes (X24, X27, X32) — monitor bundle/regional variant labels
+  s = s.replace(/\bX\d{2}\b/g, '');
   // Strip standalone inch sizes (24", 27", 34") — monitor size noise; not in MB/VGA/SSD names
   s = s.replace(/\b\d{2}(?:\.\d)?\s*["""″]/g, ' ');
   // Fix hyphens: collapse letter↔letter (A520M-A→A520MA, X870E-P→X870EP),
@@ -2503,9 +2513,10 @@ function semaforoDisplayName(rawDesc, category) {
   if (category === 'monitor') {
     let m = s;
     m = m.replace(/\*+/g, '');                                           // strip asterisks but KEEP text (e.g. CAJA DAÑADA)
-    ['GAMING','MSI','MONITOR','MONITORES','PANTALLA','PRO'].forEach(w => {
+    ['GAMING','GAMER','MSI','MONITOR','MONITORES','PANTALLA','PRO','RAPID','FLAT','PIVOTEABLE','PIVOTABLE'].forEach(w => {
       m = m.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
     });
+    m = m.replace(/\b\d+(?:[.,]\d+)?\s*MS\b/ig, ''); // strip response times (0.5MS, 0.03MS, 1MS)
     m = m.replace(/\b\d{2}(?:[,\.]\d)?\s*["""″]/g, ' ');               // strip 24" / 24,5" / 27"
     m = m.replace(/\b\d+\s*[MG]?HZ\b/ig, '');                          // strip 144HZ, 200HZ, 100MHZ, etc.
     m = m.replace(/\bFULLHD\b|\bFHD\b|\bQHD\b|\bWQHD\b|\bUHD\b/ig, ''); // resolution labels

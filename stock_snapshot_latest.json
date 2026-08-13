@@ -3,313 +3,313 @@
     "name": "GeForce RTX 5070 Ti 16G FRIEREN EDITION OC",
     "status": "New",
     "miamiStock": 480,
-    "miamiPrice": 1060
+    "miamiPrice": 1060.0
   },
   "GGB-FE": {
     "name": "MSI GAMING GEAR BUNDLE FRIEREN EDITION",
     "status": "New",
     "miamiStock": 57,
-    "miamiPrice": 140
+    "miamiPrice": 140.0
   },
   "G5090-32SLS": {
     "name": "GeForce RTX 5090 32G SUPRIM LIQUID SOC",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 4250
+    "miamiPrice": 4250.0
   },
   "G5090-32SPS": {
     "name": "GeForce RTX 5090 32G SUPRIM SOC",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 4150
+    "miamiPrice": 4150.0
   },
   "G5090-32GTC": {
     "name": "GeForce RTX 5090 32G GAMING TRIO OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 4050
+    "miamiPrice": 4050.0
   },
   "G5090-32V3C": {
     "name": "GeForce RTX 5090 32G VENTUS 3X OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 3900
+    "miamiPrice": 3900.0
   },
   "G5080-16GTCW": {
     "name": "GeForce RTX 5080 16G GAMING TRIO OC WHITE",
     "status": "EOL",
     "miamiStock": 0,
-    "miamiPrice": 1645
+    "miamiPrice": 1645.0
   },
   "G5080-16GTC": {
     "name": "GeForce RTX 5080 16G GAMING TRIO OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 1645
+    "miamiPrice": 1645.0
   },
   "G5080-16I3CB": {
     "name": "GeForce RTX 5080 16G INSPIRE 3X OC BLACK",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 1565
+    "miamiPrice": 1565.0
   },
   "G5080-16V3CW": {
     "name": "GeForce RTX 5080 16G VENTUS 3X OC WHITE",
     "status": "EOL",
     "miamiStock": 0,
-    "miamiPrice": 1510
+    "miamiPrice": 1510.0
   },
   "G5080-16V3CP": {
     "name": "GeForce RTX 5080 16G VENTUS 3X OC PLUS",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 1510
+    "miamiPrice": 1510.0
   },
   "G5080-16V3C": {
     "name": "GeForce RTX 5080 16G VENTUS 3X OC",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 1460
+    "miamiPrice": 1460.0
   },
   "G5080-16S3C": {
     "name": "Geforce RTX 5080 16G SHADOW 3X OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 1420
+    "miamiPrice": 1420.0
   },
   "G507T-16MEC": {
     "name": "GeForce RTX 5070 Ti 16G MLG EDITION OC",
     "status": "EOL",
     "miamiStock": 0,
-    "miamiPrice": 1150
+    "miamiPrice": 1150.0
   },
   "G507T-16GTC": {
     "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 1130
+    "miamiPrice": 1130.0
   },
   "G507T-16GTCW": {
     "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC WHITE",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 1130
+    "miamiPrice": 1130.0
   },
   "G507T-16V3CB": {
     "name": "GeForce RTX 5070 Ti 16G VENTUS 3X OC BLACK",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 1090
+    "miamiPrice": 1090.0
   },
   "G507T-16V3C": {
     "name": "Geforce RTX 5070 TI 16G VENTUS 3X OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 1070
+    "miamiPrice": 1070.0
   },
   "G507T-16S3C": {
     "name": "Geforce RTX 5070 TI 16G SHADOW 3X OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 1060
+    "miamiPrice": 1060.0
   },
   "G5070-12GTC": {
     "name": "Geforce RTX 5070 12G GAMING TRIO OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 780
+    "miamiPrice": 780.0
   },
   "G5070-12V3C": {
     "name": "Geforce RTX 5070 12G VENTUS 3X OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 740
+    "miamiPrice": 740.0
   },
   "G5070-12S3C": {
     "name": "Geforce RTX 5070 12G SHADOW 3X OC",
     "status": "Focus",
     "miamiStock": 99,
-    "miamiPrice": 740
+    "miamiPrice": 740.0
   },
   "G5070-12V2CB": {
     "name": "GeForce RTX 5070 12G VENTUS 2X OC BLACK",
     "status": "Focus",
     "miamiStock": 127,
-    "miamiPrice": 735
+    "miamiPrice": 735.0
   },
   "G5070-12V2C": {
     "name": "Geforce RTX 5070 12G VENTUS 2X OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 735
+    "miamiPrice": 735.0
   },
   "G5070-12S2C": {
     "name": "Geforce RTX 5070 12G SHADOW 2X OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 725
+    "miamiPrice": 725.0
   },
   "G506T-16GTCW": {
     "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC WHITE",
     "status": "EOL",
     "miamiStock": 0,
-    "miamiPrice": 730
+    "miamiPrice": 730.0
   },
   "G506T-16GTC": {
     "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 730
+    "miamiPrice": 730.0
   },
   "G506T-16GC": {
     "name": "Geforce RTX 5060 Ti 16G GAMING OC",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 720
+    "miamiPrice": 720.0
   },
   "G506T-16V3C": {
     "name": "Geforce RTX 5060 Ti 16G VENTUS 3X OC",
     "status": "EOL",
     "miamiStock": 0,
-    "miamiPrice": 730
+    "miamiPrice": 730.0
   },
   "G506T-16V2CBP": {
     "name": "GeForce RTX 5060 Ti 16G VENTUS 2X OC BLACK PLUS",
     "status": "Focus",
     "miamiStock": 10,
-    "miamiPrice": 720
+    "miamiPrice": 720.0
   },
   "G506T-16V2CP": {
     "name": "Geforce RTX 5060 Ti 16G VENTUS 2X OC PLUS",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 720
+    "miamiPrice": 720.0
   },
   "G506T-16S2CP": {
     "name": "Geforce RTX 5060 Ti 16G SHADOW 2X OC PLUS",
     "status": "Focus",
     "miamiStock": 1000,
-    "miamiPrice": 710
+    "miamiPrice": 710.0
   },
   "G506T-8GTCW": {
     "name": "GeForce RTX 5060 Ti 8G GAMING TRIO OC WHITE",
     "status": "EOL",
     "miamiStock": 0,
-    "miamiPrice": 494
+    "miamiPrice": 494.0
   },
   "G506T-8GTC": {
     "name": "Geforce RTX 5060 Ti 8G GAMING TRIO OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 494
+    "miamiPrice": 494.0
   },
   "G506T-8GC": {
     "name": "Geforce RTX 5060 Ti 8G GAMING OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 485
+    "miamiPrice": 485.0
   },
   "G506T8V2CWP": {
     "name": "GeForce RTX 5060 Ti 8G VENTUS 2X OC WHITE PLUS",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 465
+    "miamiPrice": 465.0
   },
   "G506T-8V2CP": {
     "name": "Geforce RTX 5060 Ti 8G VENTUS 2X OC PLUS",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 465
+    "miamiPrice": 465.0
   },
   "G506T-8S2CP": {
     "name": "GeForce RTX 5060 Ti 8G SHADOW 2X OC PLUS",
     "status": "EOL",
     "miamiStock": 0,
-    "miamiPrice": 460
+    "miamiPrice": 460.0
   },
   "G5060-8GC": {
     "name": "Geforce RTX 5060 8G GAMING OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 448
+    "miamiPrice": 448.0
   },
   "G5060-8V3C": {
     "name": "Geforce RTX 5060 8G VENTUS 3X OC",
     "status": "Focus",
     "miamiStock": 168,
-    "miamiPrice": 430
+    "miamiPrice": 430.0
   },
   "G5060-8V2CW": {
     "name": "Geforce RTX 5060 8G VENTUS 2X OC WHITE",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 422
+    "miamiPrice": 422.0
   },
   "G5060-8V2C": {
     "name": "Geforce RTX 5060 8G VENTUS 2X OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 422
+    "miamiPrice": 422.0
   },
   "G5060-8S2C": {
     "name": "Geforce RTX 5060 8G SHADOW 2X OC",
     "status": "Focus",
     "miamiStock": 52,
-    "miamiPrice": 420
+    "miamiPrice": 420.0
   },
   "G5050-8GC": {
     "name": "Geforce RTX 5050 8G GAMING OC",
     "status": "",
     "miamiStock": 0,
-    "miamiPrice": 395
+    "miamiPrice": 395.0
   },
   "G5050-8V2C": {
     "name": "Geforce RTX 5050 8G VENTUS 2X OC",
     "status": "Focus",
     "miamiStock": 0,
-    "miamiPrice": 378
+    "miamiPrice": 378.0
   },
   "G5050-8S2C": {
     "name": "Geforce RTX 5050 8G SHADOW 2X OC",
     "status": "Focus",
     "miamiStock": 1,
-    "miamiPrice": 373
+    "miamiPrice": 373.0
   },
   "G3060V2X12C1": {
     "name": "GeForce RTX 3060 VENTUS 2X 12G OC V1",
-    "status": "NEW",
+    "status": "New",
     "miamiStock": 3000,
-    "miamiPrice": 430
+    "miamiPrice": 430.0
   },
   "G3050V2X6C": {
     "name": "GeForce RTX 3050 VENTUS 2X 6G OC",
     "status": "Focus",
     "miamiStock": 1892,
-    "miamiPrice": 255
+    "miamiPrice": 255.0
   },
   "G3050LP6C": {
     "name": "GeForce RTX 3050 LP 6G OC",
     "status": "Focus",
     "miamiStock": 1648,
-    "miamiPrice": 255
+    "miamiPrice": 255.0
   },
   "G103044PC": {
     "name": "GeForce GT 1030 4GD4 LP OC",
     "status": "",
     "miamiStock": 500,
-    "miamiPrice": 95
+    "miamiPrice": 95.0
   },
   "G7102D3P": {
     "name": "GT 710 2GD3 LP",
     "status": "",
     "miamiStock": 645,
-    "miamiPrice": 50
+    "miamiPrice": 50.0
   },
   "G2101D3": {
     "name": "N210-MD1G/D3",
     "status": "",
     "miamiStock": 331,
-    "miamiPrice": 30
+    "miamiPrice": 30.0
   },
   "X870ETMAHAWKWIFPZ": {
     "name": "MAG X870E TOMAHAWK MAX WIFI PZ",
@@ -349,7 +349,7 @@
   },
   "Z890TOMAHAWKWIFIII": {
     "name": "MAG Z890 TOMAHAWK WIFI II",
-    "status": "NEW",
+    "status": "New",
     "miamiStock": 0,
     "miamiPrice": 244.0
   },
@@ -361,7 +361,7 @@
   },
   "Z890GAMINGPWIFI6E": {
     "name": "Z890 GAMING PLUS WIFI6E",
-    "status": "NEW",
+    "status": "New",
     "miamiStock": 100,
     "miamiPrice": 195.0
   },
