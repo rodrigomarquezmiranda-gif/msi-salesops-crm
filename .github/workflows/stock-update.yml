@@ -1,0 +1,204 @@
+name: MSI Stock & Price Update
+
+on:
+  schedule:
+    # AM run: 12:30 UTC = 09:30 ART
+    - cron: '30 12 * * 1-5'
+    # PM run: 21:30 UTC = 18:30 ART
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      trigger_mode:
+        description: 'Modo de disparo'
+        required: false
+        default: 'manual'
+
+jobs:
+  stock-diff:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run stock diff and push to Firebase
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        run: |
+          python3 - << 'PYEOF'
+          import json, glob, re, urllib.request, os
+          from datetime import datetime, timezone
+
+          WORKSPACE = "."
+
+          PRICELIST_FILE  = f"{WORKSPACE}/pricelist_snapshot.json"
+          SNAPSHOT_FILE   = f"{WORKSPACE}/stock_snapshot_latest.json"
+          DIFF_FILE       = f"{WORKSPACE}/stock_diff_latest.json"
+          CHANGELOG_FILE  = f"{WORKSPACE}/stock_changelog.json"
+
+          FB_BASE    = "https://msi-crm-default-rtdb.firebaseio.com"
+          FB_API_KEY = os.environ["FIREBASE_API_KEY"]
+
+          def fb_put(path, data_str):
+              url = f"{FB_BASE}/{path}.json?key={FB_API_KEY}"
+              body = json.dumps(data_str).encode('utf-8')
+              req = urllib.request.Request(url, data=body, method='PUT',
+                                           headers={'Content-Type': 'application/json'})
+              urllib.request.urlopen(req, timeout=15)
+
+          def fb_post(path, obj):
+              url = f"{FB_BASE}/{path}.json?key={FB_API_KEY}"
+              body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
+              req = urllib.request.Request(url, data=body, method='POST',
+                                           headers={'Content-Type': 'application/json'})
+              urllib.request.urlopen(req, timeout=15)
+
+          with open(PRICELIST_FILE) as f:
+              pricelist = json.load(f)
+
+          raw_products = pricelist.get("products", {})
+
+          def safe_int(v):
+              try:
+                  m = re.match(r'(\d+)', str(v).strip())
+                  return int(m.group(1)) if m else 0
+              except:
+                  return 0
+
+          def safe_float(v):
+              try:
+                  return float(str(v).replace('$','').replace(',','').strip())
+              except:
+                  return 0.0
+
+          new_snapshot = {}
+          for partNo, p in raw_products.items():
+              new_snapshot[partNo] = {
+                  "name":        p.get("name", ""),
+                  "category":    p.get("category", ""),
+                  "miamiStock":  safe_int(p.get("miamiStock", 0)),
+                  "miamiPrice":  safe_float(p.get("price", 0)),
+                  "miamiEta":    p.get("miamiEta", ""),
+                  "bondedStock": safe_int(p.get("bondedStock", 0)),
+              }
+
+          print(f"Productos parseados: {len(new_snapshot)}")
+
+          try:
+              with open(SNAPSHOT_FILE) as f:
+                  old_snapshot = json.load(f)
+              print(f"Snapshot anterior: {len(old_snapshot)} productos")
+          except:
+              old_snapshot = None
+              print("Sin snapshot anterior — guardando baseline")
+
+          last_changes = []
+          last_changes_at = None
+          try:
+              with open(DIFF_FILE) as f:
+                  prev_diff = json.load(f)
+              if prev_diff.get('hasChanges') and prev_diff.get('changes'):
+                  last_changes    = prev_diff['changes']
+                  last_changes_at = prev_diff['checkedAt']
+              elif prev_diff.get('lastChanges'):
+                  last_changes    = prev_diff['lastChanges']
+                  last_changes_at = prev_diff.get('lastChangesAt')
+          except:
+              pass
+
+          changes = []
+          if old_snapshot:
+              all_parts = set(old_snapshot.keys()) | set(new_snapshot.keys())
+              for partNo in sorted(all_parts):
+                  old = old_snapshot.get(partNo)
+                  new = new_snapshot.get(partNo)
+                  if old is None and new is not None:
+                      changes.append({"type":"new", "partNo":partNo, "name":new["name"], "category":new["category"], "newPrice":new["miamiPrice"]})
+                  elif old is not None and new is None:
+                      changes.append({"type":"removed", "partNo":partNo, "name":old["name"], "category":old.get("category","")})
+                  elif old and new:
+                      try:
+                          if abs(new["miamiPrice"] - old["miamiPrice"]) > 1:
+                              changes.append({"type":"price", "partNo":partNo, "name":new["name"], "category":new["category"],
+                                              "oldPrice":old["miamiPrice"], "newPrice":new["miamiPrice"]})
+                      except: pass
+                      try:
+                          if abs(new["miamiStock"] - old["miamiStock"]) >= 200:
+                              changes.append({"type":"stock", "partNo":partNo, "name":new["name"], "category":new["category"],
+                                              "oldStock":old["miamiStock"], "newStock":new["miamiStock"]})
+                      except: pass
+
+          now_iso = datetime.now(timezone.utc).isoformat()
+          has_changes = len(changes) > 0
+
+          trigger_mode = os.environ.get("GITHUB_EVENT_NAME", "schedule")
+          triggered_by = "sistema"
+
+          diff_payload = {
+              "checkedAt":     now_iso,
+              "productCount":  len(new_snapshot),
+              "hasChanges":    has_changes,
+              "changeCount":   len(changes),
+              "changes":       changes[:100] if has_changes else [],
+              "lastChanges":   changes[:100] if has_changes else last_changes,
+              "lastChangesAt": now_iso       if has_changes else last_changes_at,
+              "summary":       f"{len(changes)} cambio(s) detectado(s)" if has_changes else "Sin cambios",
+              "triggeredBy":   triggered_by,
+              "triggerMode":   trigger_mode,
+          }
+
+          changelog_entry = {
+              "checkedAt":    now_iso,
+              "productCount": len(new_snapshot),
+              "hasChanges":   has_changes,
+              "changeCount":  len(changes),
+              "summary":      diff_payload["summary"],
+              "triggerMode":  trigger_mode,
+              "triggeredBy":  triggered_by,
+          }
+
+          with open(SNAPSHOT_FILE, 'w') as f:
+              json.dump(new_snapshot, f, ensure_ascii=False, indent=2)
+          print(f"Snapshot guardado: {len(new_snapshot)} productos")
+
+          with open(DIFF_FILE, 'w') as f:
+              json.dump(diff_payload, f, ensure_ascii=False, indent=2)
+          print(f"Diff guardado: {len(changes)} cambios")
+
+          try:
+              with open(CHANGELOG_FILE) as f:
+                  changelog = json.load(f)
+          except:
+              changelog = []
+          changelog.append(changelog_entry)
+          changelog = changelog[-90:]
+          with open(CHANGELOG_FILE, 'w') as f:
+              json.dump(changelog, f, ensure_ascii=False, indent=2)
+          print(f"Changelog actualizado: {len(changelog)} entradas")
+
+          fb_put("salesops_stock_diff",     json.dumps(diff_payload, ensure_ascii=False))
+          fb_put("salesops_stock_snapshot", json.dumps(new_snapshot, ensure_ascii=False))
+          fb_post("salesops_stock_changelog", changelog_entry)
+          print("Firebase actualizado OK")
+
+          print(f"\nRESUMEN: {diff_payload['summary']}")
+          if changes:
+              for c in changes:
+                  if   c['type']=='price':   print(f"  [PRECIO]   {c['partNo']} ({c['category']}) - {c['name']}: ${c['oldPrice']} -> ${c['newPrice']}")
+                  elif c['type']=='stock':   print(f"  [STOCK]    {c['partNo']} ({c['category']}) - {c['name']}: {c['oldStock']} -> {c['newStock']}")
+                  elif c['type']=='new':     print(f"  [NUEVO]    {c['partNo']} ({c['category']}) - {c['name']}: ${c['newPrice']}")
+                  elif c['type']=='removed': print(f"  [REMOVIDO] {c['partNo']} ({c['category']}) - {c['name']}")
+          PYEOF
+
+      - name: Commit updated snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add stock_snapshot_latest.json stock_diff_latest.json stock_changelog.json
+          git diff --staged --quiet || git commit -m "chore: stock/price update $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
