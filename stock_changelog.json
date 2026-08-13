@@ -10,5 +10,14 @@
     "hasChanges": false,
     "changeCount": 0,
     "summary": "Sin cambios"
+  },
+  {
+    "checkedAt": "2026-08-13T22:23:36.145204+00:00",
+    "productCount": 326,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "auto",
+    "triggeredBy": "sistema"
   }
 ]
