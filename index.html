@@ -1264,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.14.08.26.3';
+const APP_VERSION = '1.14.08.26.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2549,8 +2549,9 @@ const _MSI_PRICE_LIST = new Map([
   ['CORELIQUID I240', ['MAG CORELIQUID I240', 'cooling']],
   ['CORELIQUID I240 WHITE', ['MAG CORELIQUID I240 WHITE', 'cooling']],
   ['D3 MD1G N210', ['N210-MD1G/D3', 'other']],
-  ['E12L MP225', ['PRO MP225 E12L', 'monitor']],
   ['E12VL MP225', ['PRO MP225 E12VL', 'monitor']],
+  ['E12L MP225', ['PRO MP225', 'monitor']],
+  ['E12VL MP225', ['PRO MP225', 'monitor']],
   ['E14A MP242', ['PRO MP242 E14A', 'monitor']],
   ['E14A MP271', ['PRO MP271 E14A', 'monitor']],
   ['E14A MP273W', ['PRO MP273W E14A', 'monitor']],
@@ -2598,7 +2599,7 @@ const _MSI_PRICE_LIST = new Map([
   ['MAX TOMAHAWK WIFI X870E', ['MAG X870E TOMAHAWK MAX WIFI', 'motherboard']],
   ['MAX WIFI X870E', ['MAG X870E GAMING MAX WIFI', 'motherboard']],
   ['MP225', ['PRO MP225', 'monitor']],
-  ['MP225V', ['PRO MP225V', 'monitor']],
+  ['MP225V', ['PRO MP225', 'monitor']],
   ['MP243L', ['PRO MP243L', 'monitor']],
   ['MP243W', ['PRO MP243W', 'monitor']],
   ['MP245PG', ['PRO MP245PG', 'monitor']],
@@ -2719,6 +2720,10 @@ function extractMSIModelKey(desc) {
   // E-codes with following letters (E14L, E14A, E12VL, E16M) are preserved as they ARE part of
   // the model name for PRO monitors (e.g. "PRO MP271 E14A") and some MPG monitors (E16M).
   s = s.replace(/\bE\d{2}\b/g, '');
+  // PRO MP225 / MP225V: V suffix and all E-code packaging variants (E12L, E12VL) are NOT
+  // model differentiators for this SKU — strip them so all variants collapse to one key "MP225".
+  s = s.replace(/\bMP225V\b/g, 'MP225');
+  if(/\bMP225\b/.test(s)) s = s.replace(/\bE\d{1,2}[A-Z]+\b/g, '');
   // Strip standalone inch sizes (24", 27", 34") — monitor size noise; not in MB/VGA/SSD names
   s = s.replace(/\b\d{2}(?:\.\d)?\s*["""″]/g, ' ');
   // Fix hyphens: collapse letter↔letter (A520M-A→A520MA, X870E-P→X870EP),
@@ -2916,24 +2921,95 @@ const COO_LIST = ['VIETNAM','CHINA','INDIA','TAIWAN','U\\.S\\.A\\.?','USA','MEXI
 const PI_ITEM_RE_STRICT = new RegExp('^(\\S+)\\s+(.+?)\\s+(' + COO_LIST.join('|') + ')\\s+(\\d+)\\s+(\\d+)\\s+Tax\\s+(\\d+)%\\s+([\\d,]+\\.\\d{2})\\s+([\\d,]+\\.\\d{2})\\s+\\d+\\s*$', 'i');
 const PI_ITEM_RE_FALLBACK = /^(\S+)\s+(.+?)\s+(\d+)\s+(\d+)\s+Tax\s+(\d+)%\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+\d+\s*$/i;
 function parsePILineItems(lines) {
-  const headerIdx = lines.findIndex(l => /Item\s+Code/i.test(l) && /Marketing\s+Name/i.test(l));
-  const footerIdx = lines.findIndex(l => /Total\s+Gross\s+Weight|^Remark:/i.test(l));
+  // Detect header — "Item Code" and "Marketing Name" may be on the same line (normal PDFs)
+  // or on separate consecutive lines (column-per-line PDFs like SMART CENTER PI).
+  let headerIdx = lines.findIndex(l => /Item\s+Code/i.test(l) && /Marketing\s+Name/i.test(l));
+  if(headerIdx === -1) {
+    const icIdx = lines.findIndex(l => /Item\s+Code/i.test(l));
+    if(icIdx > -1) {
+      for(let j = icIdx; j <= Math.min(icIdx+5, lines.length-1); j++) {
+        if(/Marketing\s+Name/i.test(lines[j])) { headerIdx = j; break; }
+      }
+    }
+  }
   if(headerIdx === -1) return [];
-  const end = footerIdx > headerIdx ? footerIdx : lines.length;
+  const footerIdx = lines.findIndex((l,i) => i > headerIdx && /Total\s+Gross\s+Weight|^Remark:/i.test(l));
+  const end = footerIdx !== -1 ? footerIdx : lines.length;
+
+  // PASS 1: single-line regex — works when PDF rows are Y-grouped correctly by buildLinesFromPdfItems.
+  // The first item may have column header labels (COO, Ordered, Shipped…) mixed into the marketing
+  // name when they happen to share the same PDF Y band — strip them after matching.
   const items = [];
   for(let i=headerIdx+1; i<end; i++) {
-    const l = lines[i];
+    const l = (lines[i]||'').trim();
+    if(!l) continue;
     let m = l.match(PI_ITEM_RE_STRICT);
     if(m) {
-      items.push({ itemCode:m[1], marketingName:m[2].trim(), coo:m[3].trim(), ordered:parseInt(m[4]), unitPrice:parseFloat(m[7].replace(/,/g,'')), amount:parseFloat(m[8].replace(/,/g,'')) });
+      let name = m[2].trim().replace(/\s*\bCOO\b\s*.*$/i,'').replace(/\s*\b(?:Ordered|Shipped|Unit\s+Price|Amount)\b.*$/i,'').trim();
+      items.push({ itemCode:m[1], marketingName:name, coo:m[3].trim(), ordered:parseInt(m[4]), unitPrice:parseFloat(m[7].replace(/,/g,'')), amount:parseFloat(m[8].replace(/,/g,'')) });
       continue;
     }
     m = l.match(PI_ITEM_RE_FALLBACK);
     if(m) {
-      items.push({ itemCode:m[1], marketingName:m[2].trim(), coo:'', ordered:parseInt(m[3]), unitPrice:parseFloat(m[6].replace(/,/g,'')), amount:parseFloat(m[7].replace(/,/g,'')) });
+      let name = m[2].trim().replace(/\s*\bCOO\b\s*.*$/i,'').replace(/\s*\b(?:Ordered|Shipped|Unit\s+Price|Amount)\b.*$/i,'').trim();
+      items.push({ itemCode:m[1], marketingName:name, coo:'', ordered:parseInt(m[3]), unitPrice:parseFloat(m[6].replace(/,/g,'')), amount:parseFloat(m[7].replace(/,/g,'')) });
     }
   }
-  return items;
+  if(items.length > 0) return items;
+
+  // PASS 2: column-per-line fallback — each table cell is on its own line (PDF stores columns at
+  // different Y coordinates so buildLinesFromPdfItems cannot group them into one row).
+  // Pattern per item: ItemCode → MarketingName → [COO] → qtyOrdered → qtyShipped → Tax N% → unitPrice → amount → [lineSeq]
+  const PI_CODE_DETECT = /^[A-Z0-9]{2,6}-[A-Z0-9]{4,12}-[A-Z0-9]{2,8}$/i;
+  const COO_DETECT = new RegExp('^(' + COO_LIST.join('|') + ')$', 'i');
+  // Labels that appear as column headers in some PDFs — skip them, they are not data
+  const SKIP_LABEL = /^(Item\s+Code|Marketing\s+Name|COO|Ordered|Shipped|Unit\s+Price|Amount|Carton)$/i;
+
+  let p = null;
+  const items2 = [];
+
+  for(let i=headerIdx+1; i<end; i++) {
+    const l = (lines[i]||'').trim();
+    if(!l || SKIP_LABEL.test(l)) continue;
+
+    if(PI_CODE_DETECT.test(l)) {
+      if(p && p.marketingName && p.ordered > 0) { const {_st,...item}=p; items2.push(item); }
+      p = { itemCode:l, marketingName:'', coo:'', ordered:0, unitPrice:0, amount:0, _st:'name' };
+      continue;
+    }
+    if(!p) continue;
+
+    switch(p._st) {
+      case 'name': p.marketingName = l; p._st = 'coo'; break;
+      case 'coo':
+        if(COO_DETECT.test(l))         { p.coo = l.toUpperCase(); p._st = 'qty'; }
+        else if(/^\d+$/.test(l))       { p.ordered = parseInt(l); p._st = 'shipped'; }
+        else if(/^Tax\s+\d+%$/i.test(l)){ p._st = 'price'; }
+        // else: noise label — skip
+        break;
+      case 'qty':
+        if(/^\d+$/.test(l)) { p.ordered = parseInt(l); p._st = 'shipped'; }
+        break;
+      case 'shipped':
+        if(/^\d+$/.test(l)) p._st = 'tax';
+        break;
+      case 'tax':
+        if(/^Tax\s+\d+%$/i.test(l)) p._st = 'price';
+        break;
+      case 'price': {
+        const v = parseFloat(l.replace(/,/g,''));
+        if(!isNaN(v)) { p.unitPrice = v; p._st = 'amount'; }
+        break;
+      }
+      case 'amount': {
+        const v = parseFloat(l.replace(/,/g,''));
+        if(!isNaN(v)) { p.amount = v; p._st = 'done'; }
+        break;
+      }
+    }
+  }
+  if(p && p.marketingName && p.ordered > 0) { const {_st,...item}=p; items2.push(item); }
+  return items2;
 }
 function parsePIPdfLines(lines) {
   const text = lines.join('\n');
@@ -6931,7 +7007,7 @@ function classifyProductCategory(description) {
   if(/\bG\d{3}[A-Z]\b/.test(norm)) return 'monitor';
   if(/\bOPTIX\b/.test(norm)) return 'monitor';
   // Motherboards: Axxx / Bxxx / Hxxx / Zxxx / Xxxx / PRO Axxx / PRO Bxxx
-  if(/\b[ABHZX]\d{3}M\b/.test(norm)) return 'motherboard';
+  if(/\b[ABHZX]\d{3}[A-Z0-9]*\b/.test(norm)) return 'motherboard';
   if(/\bPRO\s+[BHZ]\d{3}\b/.test(norm)) return 'motherboard';
   // Gabinetes: MAESTRO, TOWER variants, numbered case models (e.g. 900R, 700M, 500M)
   if(/\bMAESTRO\b/.test(norm)) return 'gabinete';
