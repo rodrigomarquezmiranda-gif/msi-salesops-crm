@@ -4029,14 +4029,40 @@ const STOCK_GDRIVE_FILE_ID = '1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw';
 const STOCK_DIFF_FB_KEY      = 'salesops_stock_diff';
 const STOCK_CHANGELOG_FB_KEY = 'salesops_stock_changelog';
 
+// Lee stock_diff_latest.json desde el directorio local (mismo que index.html).
+// El scheduled task lo escribe aunque el sandbox no pueda llegar a Firebase.
+// El CRM (browser) sí tiene red completa → hace el PUT a Firebase en nombre del task.
+async function _fetchLocalStockDiff() {
+  try {
+    const r = await fetch('./stock_diff_latest.json?_=' + Date.now(), { cache: 'no-store' });
+    return r.ok ? await r.json() : null;
+  } catch(e) { return null; }
+}
+
 async function renderStockUpdatePanel() {
   const panel = document.getElementById('stock-update-panel');
   if(!panel) return;
   panel.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:6px 0"><i class="ti ti-refresh" style="font-size:12px"></i> Cargando estado del Stock Update...</div>`;
   try {
-    const snap = await _fbDB.ref(STOCK_DIFF_FB_KEY).get();
-    const data = snap.exists() ? snap.val() : null;
-    _renderStockPanel(panel, data ? JSON.parse(data) : null);
+    // 1. Intentar Firebase
+    let data = null;
+    try {
+      const snap = await _fbDB.ref(STOCK_DIFF_FB_KEY).get();
+      if (snap.exists()) data = JSON.parse(snap.val());
+    } catch(e) {}
+
+    // 2. Archivo local — más nuevo o Firebase vacío → usar local
+    const local = await _fetchLocalStockDiff();
+    if (local && (!data || local.checkedAt > data.checkedAt)) {
+      data = local;
+      // El browser sí llega a Firebase: sincronizar en nombre del scheduled task
+      try {
+        await _fbDB.ref(STOCK_DIFF_FB_KEY).set(JSON.stringify(data));
+        console.log('[StockSync] archivo local → Firebase OK');
+      } catch(e) { console.warn('[StockSync] sync a Firebase falló (no crítico):', e); }
+    }
+
+    _renderStockPanel(panel, data);
     loadStockChangelog();
   } catch(e) {
     panel.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:6px 0">No se pudo cargar el estado del Stock Update.</div>`;
@@ -4286,10 +4312,22 @@ async function loadStockChangelog() {
   if(!panel) return;
   try {
     const snap = await _fbDB.ref(STOCK_CHANGELOG_FB_KEY).orderByKey().limitToLast(20).get();
-    if(!snap.exists()) { panel.innerHTML = ''; return; }
-    const entries = [];
-    snap.forEach(child => entries.unshift(child.val())); // más reciente primero
-    renderStockChangelog(panel, entries);
+    if(snap.exists()) {
+      const entries = [];
+      snap.forEach(child => entries.unshift(child.val())); // más reciente primero
+      renderStockChangelog(panel, entries);
+      return;
+    }
+  } catch(e) {}
+  // Fallback: archivo local stock_changelog.json (escrito por el scheduled task)
+  try {
+    const r = await fetch('./stock_changelog.json?_=' + Date.now(), { cache: 'no-store' });
+    if (r.ok) {
+      const log = await r.json();
+      if (Array.isArray(log) && log.length) {
+        renderStockChangelog(panel, [...log].reverse().slice(0, 20));
+      } else { panel.innerHTML = ''; }
+    } else { panel.innerHTML = ''; }
   } catch(e) { panel.innerHTML = ''; }
 }
 
