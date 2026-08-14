@@ -2907,7 +2907,7 @@ function _showInvoiceLinkDialog(parsed, invoiceItems, preselectedPI) {
               <div style="font-size:11px;color:var(--text2);font-weight:600;margin-bottom:4px">Distribuidor</div>
               <select id="inv-link-dist" style="width:100%;padding:6px 8px;background:var(--bg);border:0.5px solid var(--border2);border-radius:5px;font-size:12px;color:var(--text)">
                 <option value="">— Seleccioná —</option>
-                <option value="AIR Computacion">AIR Computación</option>
+                <option value="AIR Computers">AIR Computers</option>
                 <option value="INVID">INVID</option>
                 <option value="SolutionBox">SolutionBox</option>
                 <option value="Ashir">Ashir</option>
@@ -4597,7 +4597,7 @@ const SF_CAT_LABELS  = {
 // Call this when reading client from a parsed PDF before saving/prefilling.
 function _normalizeClientName(s) {
   const nc = String(s||'').toUpperCase().replace(/\s+/g,' ').trim();
-  if(nc.includes('SMART CENTER') || nc.includes('AIR S.R.L') || nc.includes('AIR SRL')) return 'AIR Computacion';
+  if(nc.includes('SMART CENTER') || nc.includes('AIR S.R.L') || nc.includes('AIR SRL')) return 'AIR Computers';
   if(nc.includes('A2 MGT') || nc.includes('A2MGT') || nc.includes('JUKEBOX')) return 'INVID';
   return s; // unchanged
 }
