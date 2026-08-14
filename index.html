@@ -1264,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.14.08.26.1';
+const APP_VERSION = '1.14.08.26.2';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2646,7 +2646,7 @@ function parsePIPdfLines(lines) {
   let dueDate = null;
   if(salesOrderDate && netDays) { const d = new Date(salesOrderDate); d.setDate(d.getDate()+netDays); dueDate = d.toISOString().split('T')[0]; }
   const lineItems = parsePILineItems(lines);
-  return { piNumber, client, customerPO, salesOrderDate, dispatchDate: pdfDateToISO(dispatchDateRaw), amount: totalRaw ? parseFloat(totalRaw.replace(/,/g,'')) : null, netDays, dueDate, lineItems };
+  return { piNumber, client: _normalizeClientName(client), customerPO, salesOrderDate, dispatchDate: pdfDateToISO(dispatchDateRaw), amount: totalRaw ? parseFloat(totalRaw.replace(/,/g,'')) : null, netDays, dueDate, lineItems };
 }
 // ─── INVOICE PDF PARSER ─────────────────────────────────────────────────────
 // Invoice format: "Invoice NNNNN" header, "PI No. : NNNNN", table with
@@ -2711,7 +2711,7 @@ function parseInvoiceLineItems(lines) {
       // Lowercase-start words like "Gaming", "Gear", "Chassis" (PDF category labels) fail this check.
       const contTokens = l.trim().split(/\s+/);
       const isModelSuffix = contTokens.length >= 1 && contTokens.length <= 2
-        && contTokens.every(t => /^[A-Z0-9]+$/.test(t))   // ALL-CAPS alphanumeric only
+        && contTokens.every(t => /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(t))   // ALL-CAPS alphanumeric; hyphens allowed (e.g. QD-OLED)
         && !/^\d+$/.test(contTokens[0]);                   // not a bare number
       if(isModelSuffix) {
         // Append to marketing name regardless of whether qty is already set.
@@ -2826,7 +2826,7 @@ function parseInvoicePdfLines(lines) {
     lineItems = _matchInvoiceItemsFromPriceList(text);
   }
 
-  return { isInvoice: true, invoiceNo, piNo, invoiceDate: pdfDateToISO(invoiceDateRaw), client, lineItems };
+  return { isInvoice: true, invoiceNo, piNo, invoiceDate: pdfDateToISO(invoiceDateRaw), client: _normalizeClientName(client), lineItems };
 }
 
 async function parsePIPdfFromBuffer(buf) {
@@ -4593,10 +4593,18 @@ const SF_CAT_LABELS  = {
   psu:'FUENTES', cooling:'COOLING', gabinete:'GABINETES',
   monitor:'MONITORES', minipc:'MINI PC / PRO DT', accesorios:'ACCESORIOS'
 };
+// Maps known razón-social aliases to the canonical client name stored in Firebase.
+// Call this when reading client from a parsed PDF before saving/prefilling.
+function _normalizeClientName(s) {
+  const nc = String(s||'').toUpperCase().replace(/\s+/g,' ').trim();
+  if(nc.includes('SMART CENTER') || nc.includes('AIR S.R.L') || nc.includes('AIR SRL')) return 'AIR Computacion';
+  if(nc.includes('A2 MGT') || nc.includes('A2MGT') || nc.includes('JUKEBOX')) return 'INVID';
+  return s; // unchanged
+}
 function _sfMatchDist(clientStr) {
   const nc = String(clientStr||'').toUpperCase().replace(/\s+/g,' ').trim();
-  if(nc.includes('AIR')) return 'air';
-  if(nc.includes('INVID')) return 'invid';
+  if(nc.includes('AIR') || nc.includes('SMART CENTER') || nc.includes('AIR S.R.L') || nc.includes('AIR SRL')) return 'air';
+  if(nc.includes('INVID') || nc.includes('A2 MGT') || nc.includes('A2MGT') || nc.includes('JUKEBOX')) return 'invid';
   if(nc.includes('SOLUTION')) return 'solutionbox';
   if(nc.includes('ASHIR')) return 'ashir';
   if(nc.includes('ELIT')) return 'elit';
@@ -4688,19 +4696,36 @@ function buildSemaforoData() {
       if(stockKeys.has(k)) return; // already in table
       // Resolve description from the PI's invoiceItems
       const relPIs = transitData[dk].pisByKey[k] || [];
-      let desc = '';
+      let desc = '', liCategory = '';
       for(const pi of relPIs) {
         const srcItems = (pi.invoiceItems && pi.invoiceItems.length) ? pi.invoiceItems
           : (pi.lineItems && pi.lineItems.length) ? pi.lineItems : null;
         if(!srcItems) continue;
         for(const li of srcItems) {
           const lk = extractMSIModelKey(li.marketingName || li.model || li.itemCode || '');
-          if(lk === k) { desc = li.marketingName || li.model || li.itemCode || ''; break; }
+          if(lk === k) {
+            desc = li.marketingName || li.model || li.itemCode || '';
+            liCategory = li.category || '';
+            break;
+          }
         }
         if(desc) break;
       }
       if(!desc) return; // can't resolve, skip
-      const cat = classifyProductCategory(desc);
+      // Use li.category from the invoice as a classification hint (reliable for MPG monitors, etc.)
+      let cat = null;
+      if(liCategory) {
+        const lc = liCategory.toUpperCase();
+        if(/MONITOR/.test(lc))                cat = 'monitor';
+        else if(/VGA|VIDEO/.test(lc))         cat = 'vga';
+        else if(/MOTHER|MB/.test(lc))         cat = 'motherboard';
+        else if(/COOLER|COOLING/.test(lc))    cat = 'cooling';
+        else if(/FUENTE|PSU/.test(lc))        cat = 'psu';
+        else if(/SSD|DISCO/.test(lc))         cat = 'ssd';
+        else if(/GABINETE|CHASSIS/.test(lc))  cat = 'gabinete';
+        else if(/MINI.?PC/.test(lc))          cat = 'minipc';
+      }
+      if(!cat) cat = classifyProductCategory(desc);
       // Transit items from an explicit invoice are ALWAYS shown — never silently dropped.
       // If the classifier can't identify the category, fall back to 'accesorios'.
       const resolvedCat = cat === 'other' ? 'accesorios' : cat;
@@ -6554,9 +6579,10 @@ function classifyProductCategory(description) {
   }
   // ── Fallback: MSI model-code patterns for short descriptions (e.g. invoice items)
   // These won't have "Monitor" / "Motherboard" in the text — classify by code shape.
-  // Monitors: MP-series (Pro Monitor), MAG NNNx, Gxxx-series, OPTIX
+  // Monitors: MP-series (Pro Monitor), MAG NNNx, Gxxx-series, OPTIX, MPG NNNx (ultrawide/OLED)
   if(/\bMP\d{3}\b/.test(norm)) return 'monitor';
   if(/\bMAG\s*\d{3}[A-Z0-9]*\b/.test(norm)) return 'monitor';
+  if(/\bMPG\s*\d{3}[A-Z0-9]*\b/.test(norm)) return 'monitor'; // MPG 491CQPX, MPG 341CQPX, etc. (excludes MPG MAESTRO/CORELIQUID via keyword check above)
   if(/\bG\d{3}[A-Z]\b/.test(norm)) return 'monitor';
   if(/\bOPTIX\b/.test(norm)) return 'monitor';
   // Motherboards: Axxx / Bxxx / Hxxx / Zxxx / Xxxx / PRO Axxx / PRO Bxxx
