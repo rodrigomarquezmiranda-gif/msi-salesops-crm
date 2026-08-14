@@ -27,7 +27,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install google-auth --break-system-packages
+        run: pip install google-auth requests --break-system-packages
 
       - name: Run stock diff and push to Firebase
         env:
