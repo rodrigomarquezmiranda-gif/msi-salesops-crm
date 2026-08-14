@@ -179,7 +179,8 @@
   body.readonly .api-key-area,
   body.readonly [onclick="importItems()"],
   body.readonly [onclick="document.getElementById('pf-file-input').click()"],
-  body.readonly [onclick="document.getElementById('pf-signed-input').click()"] { display: none !important; }
+  body.readonly [onclick="document.getElementById('pf-signed-input').click()"],
+  body.readonly [onclick="document.getElementById('pf-invoice-input').click()"] { display: none !important; }
   /* Solo admins */
   .admin-only { display: none !important; }
   body.is-admin .admin-only { display: flex !important; }
@@ -1092,6 +1093,15 @@
       </div>
       <input type="file" id="pf-signed-input" accept=".pdf" style="display:none" onchange="attachPIFile(this,'signed')" />
     </div>
+    <div class="field">
+      <label>Invoice (PDF)</label>
+      <div class="attach-row">
+        <span class="attach-name" id="pf-invoice-name">Sin archivo</span>
+        <button class="btn" type="button" id="pf-download-invoice" onclick="downloadPIFile('invoice')" style="display:none"><i class="ti ti-download"></i></button>
+        <button class="btn" type="button" onclick="document.getElementById('pf-invoice-input').click()"><i class="ti ti-upload"></i></button>
+      </div>
+      <input type="file" id="pf-invoice-input" accept=".pdf" style="display:none" onchange="attachPIFile(this,'invoice')" />
+    </div>
     <div id="pf-items-wrap" style="display:none;margin-bottom:14px">
       <label style="display:block;font-size:11px;font-weight:500;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">Modelos vendidos (del PDF)</label>
       <div style="max-height:160px;overflow-y:auto;border:0.5px solid var(--border);border-radius:8px">
@@ -1254,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.11.12.2026.6';
+const APP_VERSION = '1.11.12.2026.7';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2112,8 +2122,8 @@ function openNewInCol(pipe, status) {
 
 // ─── PI MODAL ─────────────────────────────────────────
 let editingPIId = null;
-let _pendingPIOrigFile = null, _pendingPISignedFile = null;
-let _existingPIFile = null, _existingPISignedFile = null;
+let _pendingPIOrigFile = null, _pendingPISignedFile = null, _pendingPIInvoiceFile = null;
+let _existingPIFile = null, _existingPISignedFile = null, _existingPIInvoiceFile = null;
 let _pendingPIExtra = {};
 let _pendingPILineItems = [];
 
@@ -2154,11 +2164,14 @@ function refreshPIFileUI() {
   const signedName = _pendingPISignedFile?.name || _existingPISignedFile?.name || null;
   document.getElementById('pf-signed-name').textContent = signedName || 'Sin archivo';
   document.getElementById('pf-download-signed').style.display = (_pendingPISignedFile || _existingPISignedFile) ? 'inline-flex' : 'none';
+  const invoiceName = _pendingPIInvoiceFile?.name || _existingPIInvoiceFile?.name || null;
+  document.getElementById('pf-invoice-name').textContent = invoiceName || 'Sin archivo';
+  document.getElementById('pf-download-invoice').style.display = (_pendingPIInvoiceFile || _existingPIInvoiceFile) ? 'inline-flex' : 'none';
 }
 function openPINew(statusHint, prefill) {
   editingPIId = null;
-  _pendingPIOrigFile = null; _pendingPISignedFile = null;
-  _existingPIFile = null; _existingPISignedFile = null;
+  _pendingPIOrigFile = null; _pendingPISignedFile = null; _pendingPIInvoiceFile = null;
+  _existingPIFile = null; _existingPISignedFile = null; _existingPIInvoiceFile = null;
   _pendingPIExtra = { customerPO: prefill?.customerPO, salesOrderDate: prefill?.salesOrderDate, dispatchDate: prefill?.dispatchDate };
   _pendingPILineItems = prefill?.lineItems || [];
   document.getElementById('modal-pi-title').textContent = 'Nueva Orden';
@@ -2182,8 +2195,9 @@ function openPINew(statusHint, prefill) {
 function openPIEdit(id) {
   const item = db.pi.find(x => x.id===id); if(!item) return;
   editingPIId = id;
-  _pendingPIOrigFile = null; _pendingPISignedFile = null;
+  _pendingPIOrigFile = null; _pendingPISignedFile = null; _pendingPIInvoiceFile = null;
   _existingPIFile = item.file || null; _existingPISignedFile = item.signedFile || null;
+  _existingPIInvoiceFile = item.invoiceFile || null;
   _pendingPIExtra = { customerPO: item.customerPO, salesOrderDate: item.salesOrderDate, dispatchDate: item.dispatchDate };
   _pendingPILineItems = item.lineItems || [];
   document.getElementById('modal-pi-title').textContent = 'Editar Orden';
@@ -2223,7 +2237,8 @@ async function attachPIFile(input, kind) {
     const buf = await file.arrayBuffer();
     const dataUrl = 'data:application/pdf;base64,' + arrayBufferToBase64(buf);
     if(kind === 'orig') _pendingPIOrigFile = { name:file.name, dataUrl };
-    else { _pendingPISignedFile = { name:file.name, dataUrl }; document.getElementById('pf-status').value = 'Firmado'; }
+    else if(kind === 'signed') { _pendingPISignedFile = { name:file.name, dataUrl }; document.getElementById('pf-status').value = 'Firmado'; }
+    else if(kind === 'invoice') _pendingPIInvoiceFile = { name:file.name, dataUrl };
     refreshPIFileUI();
   } catch(err) {
     _alert('No se pudo leer el PDF: ' + err.message, {type:'error'});
@@ -2231,7 +2246,9 @@ async function attachPIFile(input, kind) {
   input.value = '';
 }
 function downloadPIFile(kind) {
-  const f = kind === 'orig' ? (_pendingPIOrigFile || _existingPIFile) : (_pendingPISignedFile || _existingPISignedFile);
+  const f = kind === 'orig' ? (_pendingPIOrigFile || _existingPIFile)
+          : kind === 'signed' ? (_pendingPISignedFile || _existingPISignedFile)
+          : (_pendingPIInvoiceFile || _existingPIInvoiceFile);
   if(!f) return;
   const a = document.createElement('a'); a.href = f.dataUrl; a.download = f.name || (kind+'.pdf'); a.click();
 }
@@ -2256,6 +2273,7 @@ async function savePIItem() {
     dispatchDate: _pendingPIExtra.dispatchDate ?? existing?.dispatchDate ?? '',
     file: _pendingPIOrigFile || existing?.file || null,
     signedFile: _pendingPISignedFile || existing?.signedFile || null,
+    invoiceFile: _pendingPIInvoiceFile || existing?.invoiceFile || null,
     lineItems: (_pendingPILineItems && _pendingPILineItems.length) ? _pendingPILineItems : (existing?.lineItems || []),
     shipmentType: newShipmentType || existing?.shipmentType || '',
     transitStartDate: (() => {
