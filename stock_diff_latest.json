@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
   "checkedAt": "2026-08-14T22:37:30.123511+00:00",
+=======
+  "checkedAt": "2026-08-14T22:01:24.793265+00:00",
+>>>>>>> 2d2cf198d8319e6f2459e98a4df69ce1c0c41604
   "productCount": 326,
   "hasChanges": false,
   "changeCount": 0,
@@ -8,5 +12,9 @@
   "lastChangesAt": null,
   "summary": "Sin cambios",
   "triggeredBy": "sistema",
+<<<<<<< HEAD
   "triggerMode": "auto"
+=======
+  "triggerMode": "schedule"
+>>>>>>> 2d2cf198d8319e6f2459e98a4df69ce1c0c41604
 }
