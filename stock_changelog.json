@@ -19,5 +19,14 @@
     "summary": "Sin cambios",
     "triggerMode": "auto",
     "triggeredBy": "sistema"
+  },
+  {
+    "checkedAt": "2026-08-14T03:22:14.608901+00:00",
+    "productCount": 326,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "workflow_dispatch",
+    "triggeredBy": "sistema"
   }
 ]
