@@ -26,13 +26,18 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install dependencies
+        run: pip install google-auth --break-system-packages
+
       - name: Run stock diff and push to Firebase
         env:
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           python3 - << 'PYEOF'
           import json, glob, re, urllib.request, os
           from datetime import datetime, timezone
+          import google.oauth2.service_account
+          import google.auth.transport.requests
 
           WORKSPACE = "."
 
@@ -41,21 +46,33 @@ jobs:
           DIFF_FILE       = f"{WORKSPACE}/stock_diff_latest.json"
           CHANGELOG_FILE  = f"{WORKSPACE}/stock_changelog.json"
 
-          FB_BASE    = "https://msi-crm-default-rtdb.firebaseio.com"
-          FB_API_KEY = os.environ["FIREBASE_API_KEY"]
+          FB_BASE = "https://msi-crm-default-rtdb.firebaseio.com"
+
+          sa_info = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
+          credentials = google.oauth2.service_account.Credentials.from_service_account_info(
+              sa_info,
+              scopes=[
+                  "https://www.googleapis.com/auth/firebase.database",
+                  "https://www.googleapis.com/auth/userinfo.email",
+              ]
+          )
+          credentials.refresh(google.auth.transport.requests.Request())
+          TOKEN = credentials.token
 
           def fb_put(path, data_str):
-              url = f"{FB_BASE}/{path}.json?key={FB_API_KEY}"
+              url = f"{FB_BASE}/{path}.json"
               body = json.dumps(data_str).encode('utf-8')
               req = urllib.request.Request(url, data=body, method='PUT',
-                                           headers={'Content-Type': 'application/json'})
+                                           headers={'Content-Type': 'application/json',
+                                                    'Authorization': f'Bearer {TOKEN}'})
               urllib.request.urlopen(req, timeout=15)
 
           def fb_post(path, obj):
-              url = f"{FB_BASE}/{path}.json?key={FB_API_KEY}"
+              url = f"{FB_BASE}/{path}.json"
               body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
               req = urllib.request.Request(url, data=body, method='POST',
-                                           headers={'Content-Type': 'application/json'})
+                                           headers={'Content-Type': 'application/json',
+                                                    'Authorization': f'Bearer {TOKEN}'})
               urllib.request.urlopen(req, timeout=15)
 
           with open(PRICELIST_FILE) as f:
