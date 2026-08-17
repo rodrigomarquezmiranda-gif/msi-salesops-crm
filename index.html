@@ -1264,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.14.08.26.5';
+const APP_VERSION = '1.14.08.26.6';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2311,9 +2311,10 @@ async function savePIItem() {
 }
 async function deletePIItem() {
   if(!editingPIId) return;
-  if(!await _confirm('¿Eliminar esta PI? No se puede deshacer.', {title:'Eliminar Orden', danger:true, okLabel:'Eliminar'})) return;
-  db.pi = db.pi.filter(x => x.id !== editingPIId);
-  saveDB(); renderAll(); closeOverlay('modal-pi');
+  if(!await _confirm('¿Eliminar esta PI? No se puede deshacer.\n\nSe borrará de Firebase para todos los usuarios.', {title:'Eliminar Orden', danger:true, okLabel:'Eliminar permanentemente'})) return;
+  closeOverlay('modal-pi');
+  // Usar tombstone para que el borrado se propague a Firebase y no vuelva en el merge
+  await adminDeletePI(editingPIId);
 }
 
 function openDigitalSign() {
