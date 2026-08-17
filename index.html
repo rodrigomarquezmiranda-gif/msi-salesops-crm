@@ -1264,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.14.08.26.4';
+const APP_VERSION = '1.14.08.26.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -3056,15 +3056,31 @@ function parseInvoiceLineItems(lines) {
   for(let i = headerIdx+1; i < end; i++) {
     const l = lines[i].trim();
     if(!l) continue;
-    const firstToken = l.split(/\s+/)[0];
+    const toks = l.split(/\s+/);
+    let firstToken = toks[0], codePos = 0, categoryLabel = '';
+    // Some invoice formats (e.g. A2 MGT LLC) have a Category column (VGA, MB, Monitor…)
+    // before the Item Code. If the first token is not an item code, scan the next 2 tokens.
+    if(!INVOICE_ITEM_CODE_RE.test(firstToken)) {
+      for(let j = 1; j < Math.min(3, toks.length); j++) {
+        if(INVOICE_ITEM_CODE_RE.test(toks[j])) {
+          categoryLabel = toks.slice(0, j).join(' ');
+          firstToken    = toks[j];
+          codePos       = l.indexOf(firstToken, categoryLabel.length);
+          break;
+        }
+      }
+    }
     if(INVOICE_ITEM_CODE_RE.test(firstToken)) {
       if(pending) items.push(pending);
       // Try to parse full row on one line:
-      // ItemCode  MarketingName  [Description]  COO  QtyShipped  Tax%  UnitPrice  Amount
+      // [Category]  ItemCode  MarketingName  [Description]  COO  QtyShipped  Tax%  UnitPrice  Amount
       const cooMatch = l.match(new RegExp('\\b(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
-      let marketingName = '', qtyShipped = 0, category = '';
+      let marketingName = '', qtyShipped = 0, category = categoryLabel;
       if(cooMatch) {
-        const before = l.slice(firstToken.length, cooMatch.index).trim();
+        let before = l.slice(codePos + firstToken.length, cooMatch.index).trim();
+        // Strip "Description" column when present: MSI uses a backslash path like "MS-V531\GeForce RTX"
+        // that appears after the marketing name in the same Y-grouped line. Remove it.
+        before = before.replace(/\s+\S*\\\S*(\s.*)?$/, '').trim();
         const after = cooMatch[2].trim();
         const parts = before.split(/\s{2,}/);
         marketingName = parts[0] || before;
@@ -3075,7 +3091,7 @@ function parseInvoiceLineItems(lines) {
         // COO not on same line. The qty may appear as a trailing integer on this line
         // (PDF columns: ItemCode | Marketing Name | Qty — all at same Y).
         // e.g. "S10-43G0170-EC4 FORCE GC30 V2 150" → name="FORCE GC30 V2", qty=150
-        const afterCode = l.slice(firstToken.length).trim();
+        const afterCode = l.slice(codePos + firstToken.length).trim();
         const trailingQty = afterCode.match(/^(.*?)\s+(\d{1,5})\s*$/);
         if(trailingQty && !/[A-Z]/.test(trailingQty[2])) {
           // Last token is a pure integer — treat as qty
