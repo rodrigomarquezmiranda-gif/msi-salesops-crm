@@ -1479,9 +1479,14 @@ function _piMergeTransaction() {
     }
     // Merge: indexar por id. Primero los remotos, luego los locales los sobreescriben.
     // Los PI que estén en Firebase pero no en la copia local del usuario se PRESERVAN.
+    // IMPORTANTE — tombstones (_deleted:true): si el admin borró un PI, se escribe
+    // { id, _deleted:true } a Firebase para que TODOS los clientes propaguen el borrado.
+    // El tombstone sobreescribe el registro original en remote.
     const byId = {};
     remote.forEach(p => { if(p && p.id) byId[p.id] = p; });
     (db.pi || []).forEach(p => { if(p && p.id) byId[p.id] = p; });
+    // Asegurar que los tombstones locales siempre ganen (nunca vuelvan a ser revividos por remote)
+    (db._piTombstones || []).forEach(id => { byId[id] = { id, _deleted: true }; });
     return JSON.stringify(Object.values(byId));
   });
 }
@@ -1538,7 +1543,11 @@ function _startRealtimeSync() {
         // raw puede ser string JSON (formato viejo) o ya un JS object/array (post-transacción)
         try {
           const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-          db.pi = Array.isArray(parsed) ? parsed : Object.values(parsed).filter(Boolean);
+          let all = Array.isArray(parsed) ? parsed : Object.values(parsed).filter(Boolean);
+          // Acumular tombstones para que el merge los siga propagando en saveDB
+          const t = all.filter(p => p._deleted).map(p => p.id);
+          if(t.length) db._piTombstones = [...new Set([...(db._piTombstones||[]), ...t])];
+          db.pi = all.filter(p => !p._deleted);
         } catch(e) {}
       },
       render: () => {
@@ -1629,7 +1638,13 @@ async function _manualSyncPI() {
         piList = Array.isArray(parsed) ? parsed : Object.values(parsed).filter(Boolean);
       } catch(e) { piList = []; }
     }
-    db.pi = piList;
+    // Filtrar tombstones: PIs marcados _deleted:true por adminDeletePI no deben aparecer.
+    // Los tombstones se conservan en db._piTombstones para que el merge los siga propagando.
+    const tombstones = piList.filter(p => p._deleted).map(p => p.id);
+    if(tombstones.length) {
+      db._piTombstones = [...new Set([...(db._piTombstones||[]), ...tombstones])];
+    }
+    db.pi = piList.filter(p => !p._deleted);
     renderPipeline('pi');
     const nb = document.getElementById('nb-pi');
     if(nb) nb.textContent = db.pi.length;
@@ -5358,6 +5373,7 @@ ${_buildTransitAlertPanel(transitData)}
           <button class="btn" style="font-size:10px;padding:3px 8px;color:var(--text2)" onclick="openPIEdit(${pi.id})" title="Editar fecha y tipo de embarque"><i class="ti ti-pencil" style="font-size:11px"></i></button>
           <button class="btn" style="font-size:10px;padding:3px 8px;margin-left:3px;color:var(--amber-text);border-color:var(--amber-text)" onclick="openTransitExtend(${pi.id})">Prórroga</button>
           <button class="btn" style="font-size:10px;padding:3px 8px;margin-left:3px;color:var(--text3)" onclick="dismissTransit(${pi.id})">Quitar</button>
+          ${_currentRole==='admin'?`<button class="btn" style="font-size:10px;padding:3px 8px;margin-left:3px;color:#c0392b;border-color:#c0392b" onclick="adminDeletePI(${pi.id})" title="Eliminar permanentemente">Eliminar</button>`:''}
         </td>
       </tr>`;
     });
@@ -5405,6 +5421,24 @@ function _buildTransitAlertPanel(transitData) {
     </div>
     ${rows}
   </div>`;
+}
+
+// ─── BORRADO PERMANENTE DE PI (solo admin) ───────────────────────────────────
+// Escribe un tombstone { id, _deleted:true } a Firebase. El _piMergeTransaction lo
+// propaga a todos los clientes. Todos los sincronizadores filtran _deleted en carga.
+async function adminDeletePI(piId) {
+  const pi = db.pi.find(x => x.id == piId);
+  const label = pi ? `PI ${pi.name || piId} — ${pi.client || ''}` : `PI ${piId}`;
+  if(!await _confirm(`¿Eliminar permanentemente ${label}?\n\nEsta acción borrará la orden y todos sus datos de Firebase para todos los usuarios. No se puede deshacer.`, {title:'Eliminar orden', okLabel:'Eliminar permanentemente', okClass:'danger'})) return;
+  // Remover de la copia local
+  db.pi = db.pi.filter(x => x.id != piId);
+  // Registrar tombstone para que el merge lo propague
+  if(!db._piTombstones) db._piTombstones = [];
+  if(!db._piTombstones.includes(String(piId))) db._piTombstones.push(String(piId));
+  await saveDB();
+  renderPipeline('pi');
+  renderSemaforoTab();
+  _alert(`Orden ${piId} eliminada permanentemente.`, {type:'success'});
 }
 
 async function dismissTransit(piId) {
