@@ -1,5 +1,14 @@
 [
   {
+    "checkedAt": "2026-08-17T14:03:46.309004+00:00",
+    "productCount": 326,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "schedule",
+    "triggeredBy": "sistema"
+  },
+  {
     "checkedAt": "2026-08-17T15:29:41.516709+00:00",
     "productCount": 326,
     "hasChanges": false,
