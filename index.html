@@ -1264,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.14.08.26.6';
+const APP_VERSION = '1.14.08.26.7';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7358,13 +7358,13 @@ async function handleRotationFiles(fileList) {
   // En carga masiva no interrumpimos con un cartel por archivo: usamos la mejor suposición y
   // las dejamos marcadas para revisar después desde "Cargas recientes".
   if(!isBulk) {
-    allSnapshots.forEach(snap => {
+    for(const snap of allSnapshots) {
       if(snap.periodGuessed && !snap.noDatePrompt) {
         const label = `No pude detectar la fecha del reporte de ${DISTRIBUTORS[snap.distributor]} (${snap.reportType==='sales'?'Ventas':'Stock'}, archivo: ${snap.sourceFile}).\n\n¿A qué fecha corresponde esta carga? (formato DD/MM/AAAA)`;
-        const chosen = promptForDate(label, snap.periodEnd);
+        const chosen = await promptForDate(label, snap.periodEnd);
         if(chosen && chosen !== snap.periodEnd) { snap.periodStart = chosen; snap.periodEnd = chosen; snap.periodGuessed = false; }
       }
-    });
+    }
   }
 
   let upgradedCount = 0;
@@ -7403,7 +7403,7 @@ dropZoneRotation.addEventListener('dragleave', () => dropZoneRotation.classList.
 dropZoneRotation.addEventListener('drop', e => { e.preventDefault(); dropZoneRotation.classList.remove('dragover'); if(e.dataTransfer.files.length) handleRotationFiles(e.dataTransfer.files); });
 fileInputRotation.addEventListener('change', e => { if(e.target.files.length) handleRotationFiles(e.target.files); e.target.value=''; });
 
-function fmtRotDate(d) { return d ? d.split('-').reverse().join('/') : '-'; }
+function fmtRotDate(d) { if(!d || typeof d !== 'string') return '-'; return d.split('-').reverse().join('/'); }
 function rotationDeltaCell(curr, prev) {
   if(prev==null) return '-';
   if(curr==null) curr = 0;
@@ -7444,7 +7444,7 @@ function getRotationAlertCount() {
   Object.keys(DISTRIBUTORS).forEach(distKey => {
     ['stock','sales'].forEach(reportType => {
       const snaps = db.weeklyReports.filter(s => s.distributor===distKey && s.reportType===reportType)
-        .sort((a,b) => (b.periodEnd||'').localeCompare(a.periodEnd||'') || (b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+        .sort((a,b) => String(b.periodEnd||'').localeCompare(String(a.periodEnd||'')) || String(b.uploadedAt||'').localeCompare(String(a.uploadedAt||'')));
       const latest = snaps[0];
       if(!latest) { count++; return; }
       const daysSince = Math.floor((todayMs - new Date(latest.periodEnd).getTime()) / DAY_MS);
@@ -7471,7 +7471,7 @@ function weeksBetweenMondays(startMonday, endMonday) {
   return weeks;
 }
 function getMissingWeeksForDistributor(distKey, reportType) {
-  const snaps = db.weeklyReports.filter(s => s.distributor===distKey && s.reportType===reportType && s.periodEnd && !s.periodGuessed);
+  const snaps = db.weeklyReports.filter(s => s.distributor===distKey && s.reportType===reportType && s.periodEnd && typeof s.periodEnd === 'string' && !s.periodGuessed);
   if(snaps.length === 0) return { weeks: [], firstWeek: null, lastWeek: null };
   // Cada carga cubre TODAS las semanas entre su fecha de inicio y de fin, no solo la última.
   // Esto es clave cuando el proveedor manda un archivo con varios meses de historial de una
@@ -7518,7 +7518,7 @@ function renderRotationStatusBoard() {
   Object.keys(DISTRIBUTORS).forEach(distKey => {
     ['stock','sales'].forEach(reportType => {
       const snaps = db.weeklyReports.filter(s => s.distributor===distKey && s.reportType===reportType)
-        .sort((a,b) => (b.periodEnd||'').localeCompare(a.periodEnd||'') || (b.uploadedAt||'').localeCompare(a.uploadedAt||''));
+        .sort((a,b) => String(b.periodEnd||'').localeCompare(String(a.periodEnd||'')) || String(b.uploadedAt||'').localeCompare(String(a.uploadedAt||'')));
       const latest = snaps[0];
       let daysSince = null, status, cls;
       if(!latest) { status = 'Sin ninguna carga'; cls = 'pill-red'; }
@@ -7546,6 +7546,12 @@ function renderRotationStatusBoard() {
   </table>`;
 }
 function renderRotationTab() {
+  // Self-heal: remove any snaps with a non-string periodEnd (e.g. serialized Promise → {})
+  const badSnaps = db.weeklyReports.filter(s => s.periodEnd && typeof s.periodEnd !== 'string');
+  if(badSnaps.length) {
+    db.weeklyReports = db.weeklyReports.filter(s => !s.periodEnd || typeof s.periodEnd === 'string');
+    saveDB();
+  }
   renderRotationStatusBoard();
   const dists = currentRotationFilter==='all' ? Object.keys(DISTRIBUTORS) : [currentRotationFilter];
   const wrap = document.getElementById('rotation-content');
@@ -7561,7 +7567,8 @@ function renderRotationTab() {
     const latestStock = stockSnaps[0], prevStock = stockSnaps[1];
     const salesAgg = new Map();
     salesSnaps.forEach(snap => {
-      snap.rows.forEach(r => {
+      (snap.rows||[]).forEach(r => {
+        if(!r.code) return;
         const k = r.code.toUpperCase();
         if(!salesAgg.has(k)) salesAgg.set(k, { code:r.code, description:r.description, qty:0 });
         const a = salesAgg.get(k);
@@ -7571,7 +7578,7 @@ function renderRotationTab() {
     });
     const numSalesWeeks = salesSnaps.length;
     const codes = new Set();
-    (latestStock?.rows||[]).forEach(r=>codes.add(r.code.toUpperCase()));
+    (latestStock?.rows||[]).forEach(r=>{ if(r.code) codes.add(r.code.toUpperCase()); });
     salesAgg.forEach((v,k)=>codes.add(k));
     const prevStockMap = new Map((prevStock?.rows||[]).map(r=>[r.code.toUpperCase(), r.qty]));
     const stockMap = new Map((latestStock?.rows||[]).map(r=>[r.code.toUpperCase(), r]));
@@ -7642,7 +7649,7 @@ function renderRotationHistory() {
   // limpiar selección de ids que ya no existen (por ejemplo tras un borrado)
   const validIds = new Set(snaps.map(s=>s.id));
   selectedRotationSnapshotIds.forEach(id => { if(!validIds.has(id)) selectedRotationSnapshotIds.delete(id); });
-  const missingClient = s => s.reportType==='sales' && !s.rows.some(r => r.client || r.cuit);
+  const missingClient = s => s.reportType==='sales' && !(s.rows||[]).some(r => r.client || r.cuit);
   const anyMissing = snaps.some(missingClient);
   const selCount = selectedRotationSnapshotIds.size;
   const allChecked = selCount > 0 && selCount === snaps.length;
