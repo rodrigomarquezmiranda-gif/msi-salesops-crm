@@ -1264,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.14.08.26.7';
+const APP_VERSION = '1.17.08.26.2';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7131,7 +7131,8 @@ const REPORT_FORMATS = [
     map:{ code:'CODIGO', description:'DESCRIPCION', qty:'SUELTO' } },
   { distributor:'elit', reportType:'sales',
     requiredHeaders:['codigo_pro','detalle','cantidad','cliente','fecha','cuit'],
-    map:{ code:'codigo_pro', description:'detalle', qty:'cantidad', date:'fecha', unitPrice:'precio', client:'cliente', cuit:'cuit' } },
+    map:{ code:'codigo_pro', description:'detalle', qty:'cantidad', date:'fecha', unitPrice:'precio', client:'cliente', cuit:'cuit' },
+    noDatePrompt: true },
   { distributor:'elit', reportType:'stock',
     requiredHeaders:['codigo_pro','detalle','stock','disponible'],
     map:{ code:'codigo_pro', description:'detalle', qty:'stock' },
@@ -7267,9 +7268,18 @@ function resolveSnapshotPeriods(snapshots) {
   // Resuelve fechas faltantes mirando TODO el lote subido junto (no solo el mismo archivo),
   // así el stock de un proveedor puede tomar la fecha de su propio reporte de ventas aunque
   // vengan en archivos separados, siempre que se hayan subido en la misma tanda.
+  // Si tampoco hay hermano en el lote, busca en cargas previas de db.weeklyReports.
   snapshots.forEach(snap => {
     if(!snap.periodEnd) {
-      const sibling = snapshots.find(s => s.distributor===snap.distributor && s.reportType==='sales' && s.periodEnd);
+      // 1. buscar hermano de ventas en el mismo lote
+      let sibling = snapshots.find(s => s.distributor===snap.distributor && s.reportType==='sales' && s.periodEnd);
+      // 2. si no hay, buscar la carga de ventas más reciente ya existente para ese distribuidor
+      if(!sibling) {
+        const existing = (db.weeklyReports||[])
+          .filter(s => s.distributor===snap.distributor && s.reportType==='sales' && s.periodEnd && typeof s.periodEnd === 'string')
+          .sort((a,b) => b.periodEnd.localeCompare(a.periodEnd));
+        sibling = existing[0] || null;
+      }
       if(sibling) { snap.periodStart = snap.periodStart || sibling.periodStart; snap.periodEnd = sibling.periodEnd; }
     }
     if(!snap.periodEnd) {
