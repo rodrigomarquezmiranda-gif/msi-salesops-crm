@@ -1,18 +1,6 @@
 [
   {
-    "checkedAt": "2026-08-12T23:10:25.305054+00:00",
-    "hasChanges": true,
-    "changeCount": 1,
-    "summary": "1 cambio(s) detectado(s)"
-  },
-  {
-    "checkedAt": "2026-08-13T13:30:18.869189+00:00",
-    "hasChanges": false,
-    "changeCount": 0,
-    "summary": "Sin cambios"
-  },
-  {
-    "checkedAt": "2026-08-13T22:23:36.145204+00:00",
+    "checkedAt": "2026-08-17T15:29:41.516709+00:00",
     "productCount": 326,
     "hasChanges": false,
     "changeCount": 0,
@@ -21,47 +9,12 @@
     "triggeredBy": "sistema"
   },
   {
-    "checkedAt": "2026-08-14T03:22:14.608901+00:00",
+    "checkedAt": "2026-08-17T15:31:04.558678+00:00",
     "productCount": 326,
     "hasChanges": false,
     "changeCount": 0,
     "summary": "Sin cambios",
-    "triggerMode": "workflow_dispatch",
-    "triggeredBy": "sistema"
-  },
-  {
-    "checkedAt": "2026-08-14T15:13:07.948165+00:00",
-    "productCount": 326,
-    "hasChanges": false,
-    "changeCount": 0,
-    "summary": "Sin cambios",
-    "triggerMode": "schedule",
-    "triggeredBy": "sistema"
-  },
-  {
-    "checkedAt": "2026-08-14T18:05:00.612066+00:00",
-    "productCount": 326,
-    "hasChanges": false,
-    "changeCount": 0,
-    "summary": "Sin cambios",
-    "triggerMode": "workflow_dispatch",
-    "triggeredBy": "sistema"
-  },
-  {
-<<<<<<< HEAD
-    "checkedAt": "2026-08-14T22:37:30.123511+00:00",
-=======
-    "checkedAt": "2026-08-14T22:01:24.793265+00:00",
->>>>>>> 2d2cf198d8319e6f2459e98a4df69ce1c0c41604
-    "productCount": 326,
-    "hasChanges": false,
-    "changeCount": 0,
-    "summary": "Sin cambios",
-<<<<<<< HEAD
     "triggerMode": "auto",
-=======
-    "triggerMode": "schedule",
->>>>>>> 2d2cf198d8319e6f2459e98a4df69ce1c0c41604
     "triggeredBy": "sistema"
   }
 ]
