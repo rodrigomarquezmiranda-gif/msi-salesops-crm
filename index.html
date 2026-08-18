@@ -770,6 +770,8 @@
             <option value="amount_asc">Ordenar: Menor monto</option>
             <option value="qty_desc">Ordenar: Mayor cantidad</option>
             <option value="qty_asc">Ordenar: Menor cantidad</option>
+            <option value="asp_desc">Ordenar: Mayor ASP</option>
+            <option value="asp_asc">Ordenar: Menor ASP</option>
             <option value="name_asc">Ordenar: Nombre (A-Z)</option>
           </select>
         </div>
@@ -1264,7 +1266,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.18.08.26.3';
+const APP_VERSION = '1.18.08.26.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9014,9 +9016,13 @@ function renderClientsTab(resetPaging) {
     const qDigits = q.replace(/\D/g, '');
     ranking = ranking.filter(c => c.name.toLowerCase().includes(q) || (qDigits.length >= 4 && c.cuit.includes(qDigits)));
   }
+  // Compute ASP (Average Selling Price = amount / qty) for each client
+  ranking.forEach(c => { c.asp = (c.qty > 0 && c.amount > 0) ? c.amount / c.qty : 0; });
   if(sortKey === 'qty_desc') ranking.sort((a,b) => b.qty-a.qty);
   else if(sortKey === 'qty_asc') ranking.sort((a,b) => a.qty-b.qty);
   else if(sortKey === 'amount_asc') ranking.sort((a,b) => a.amount-b.amount);
+  else if(sortKey === 'asp_desc') ranking.sort((a,b) => b.asp-a.asp);
+  else if(sortKey === 'asp_asc') ranking.sort((a,b) => a.asp-b.asp);
   else if(sortKey === 'name_asc') ranking.sort((a,b) => a.name.localeCompare(b.name));
   else ranking.sort((a,b) => b.amount-a.amount);
 
@@ -9050,13 +9056,14 @@ function renderClientsTab(resetPaging) {
       </div>`
     : '';
   wrap.innerHTML = `<div class="table-scroll"><table class="data-table">
-    <thead><tr><th>#</th><th>Cliente</th><th>CUIT</th>${thSort('Unidades','qty_asc','qty_desc')}${thSort('Monto USD','amount_asc','amount_desc')}<th>Modelos distintos</th><th>Proveedores</th></tr></thead>
+    <thead><tr><th>#</th><th>Cliente</th><th style="display:none">CUIT</th>${thSort('Unidades','qty_asc','qty_desc')}${thSort('Monto USD','amount_asc','amount_desc')}${hasAnyAmount ? thSort('ASP','asp_asc','asp_desc') : ''}<th>Modelos distintos</th><th>Proveedores</th></tr></thead>
     <tbody>${visibleRanking.map((c,i) => `<tr class="row-clickable${selectedClientKey===c.key?' row-new':''}" onclick="selectRankingClient('${c.key.replace(/'/g,"\\'")}')">
       <td>${i+1}</td>
       <td><span class="client-name-hover" onmouseenter="showClientCompositionTooltip(event,'${c.key.replace(/'/g,"\\'")}')" onmouseleave="hideClientCompositionTooltip()">${esc(c.name)}</span>${c.aliases.length>1?` <span style="color:var(--text3);font-size:10px" title="${esc(c.aliases.join(' / '))}">(${c.aliases.length} variantes de nombre)</span>`:''}</td>
-      <td>${c.cuit ? formatCuit(c.cuit) : '<span style="color:var(--text3)">sin CUIT</span>'}</td>
+      <td style="display:none">${c.cuit ? formatCuit(c.cuit) : ''}</td>
       <td>${c.qty}</td>
       <td>${hasAnyAmount ? (c.amount ? 'USD '+c.amount.toLocaleString('es-AR') : '-') : '-'}</td>
+      ${hasAnyAmount ? `<td>${c.asp > 0 ? 'USD '+c.asp.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '-'}</td>` : ''}
       <td>${c.distinctProducts}</td>
       <td>${c.distributors.map(d=>`<span class="pill pill-gray" style="margin-right:3px">${esc(DISTRIBUTORS[d])}</span>`).join('')}</td>
     </tr>`).join('')}</tbody>
