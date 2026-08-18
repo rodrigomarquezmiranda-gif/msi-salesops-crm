@@ -25,5 +25,23 @@
     "summary": "Sin cambios",
     "triggerMode": "auto",
     "triggeredBy": "sistema"
+  },
+  {
+    "checkedAt": "2026-08-17T21:37:47.782204+00:00",
+    "productCount": 326,
+    "hasChanges": true,
+    "changeCount": 41,
+    "summary": "41 cambio(s) detectado(s)",
+    "triggerMode": "auto",
+    "triggeredBy": "sistema"
+  },
+  {
+    "checkedAt": "2026-08-17T22:25:48.777132+00:00",
+    "productCount": 326,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "auto",
+    "triggeredBy": "sistema"
   }
 ]

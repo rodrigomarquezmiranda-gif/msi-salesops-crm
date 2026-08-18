@@ -1,0 +1,61 @@
+name: Firebase Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'stock_diff_latest.json'
+      - 'stock_snapshot_latest.json'
+      - 'stock_changelog.json'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Push to Firebase
+        env:
+          FB_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        run: |
+          python3 << 'EOF'
+          import json, urllib.request, os
+
+          FB_BASE   = "https://msi-crm-default-rtdb.firebaseio.com"
+          FB_API_KEY = os.environ["FB_API_KEY"]
+
+          def fb_put(path, data):
+              url  = f"{FB_BASE}/{path}.json?key={FB_API_KEY}"
+              body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+              req  = urllib.request.Request(url, data=body, method="PUT",
+                                            headers={"Content-Type": "application/json"})
+              urllib.request.urlopen(req, timeout=15)
+              print(f"PUT {path} OK")
+
+          def fb_post(path, data):
+              url  = f"{FB_BASE}/{path}.json?key={FB_API_KEY}"
+              body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+              req  = urllib.request.Request(url, data=body, method="POST",
+                                            headers={"Content-Type": "application/json"})
+              urllib.request.urlopen(req, timeout=15)
+              print(f"POST {path} OK")
+
+          with open("stock_diff_latest.json") as f:
+              diff = json.load(f)
+
+          with open("stock_snapshot_latest.json") as f:
+              snapshot = json.load(f)
+
+          with open("stock_changelog.json") as f:
+              changelog = json.load(f)
+
+          fb_put("salesops_stock_diff",     json.dumps(diff,     ensure_ascii=False))
+          fb_put("salesops_stock_snapshot", json.dumps(snapshot, ensure_ascii=False))
+
+          # Solo postea la entrada más reciente del changelog
+          if changelog:
+              fb_post("salesops_stock_changelog", changelog[-1])
+
+          print("Firebase sync completado.")
+          EOF

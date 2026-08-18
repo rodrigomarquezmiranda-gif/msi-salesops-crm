@@ -1,11 +1,340 @@
 {
-  "checkedAt": "2026-08-17T15:31:04.558678+00:00",
+  "checkedAt": "2026-08-17T22:25:48.777132+00:00",
   "productCount": 326,
   "hasChanges": false,
   "changeCount": 0,
   "changes": [],
-  "lastChanges": [],
-  "lastChangesAt": null,
+  "lastChanges": [
+    {
+      "type": "stock",
+      "partNo": "A520MAPRO",
+      "name": "A520M-A PRO",
+      "category": "MB",
+      "oldStock": 3470,
+      "newStock": 1130
+    },
+    {
+      "type": "stock",
+      "partNo": "B550MAPRO",
+      "name": "B550M-A PRO",
+      "category": "MB",
+      "oldStock": 1320,
+      "newStock": 1120
+    },
+    {
+      "type": "stock",
+      "partNo": "B550MB",
+      "name": "PRO B550M-B",
+      "category": "MB",
+      "oldStock": 410,
+      "newStock": 10
+    },
+    {
+      "type": "price",
+      "partNo": "B550MGPWIFI6E",
+      "name": "B550M GAMING PLUS WIFI6E",
+      "category": "MB",
+      "oldPrice": 76.0,
+      "newPrice": 80.0
+    },
+    {
+      "type": "stock",
+      "partNo": "CFAA13",
+      "name": "MAG COREFROZR AA13",
+      "category": "Cooling",
+      "oldStock": 1024,
+      "newStock": 352
+    },
+    {
+      "type": "stock",
+      "partNo": "CLA12360",
+      "name": "MAG CORELIQUID A12 360",
+      "category": "Cooling",
+      "oldStock": 1199,
+      "newStock": 1493
+    },
+    {
+      "type": "stock",
+      "partNo": "G2101D3",
+      "name": "N210-MD1G/D3",
+      "category": "VGA",
+      "oldStock": 331,
+      "newStock": 31
+    },
+    {
+      "type": "stock",
+      "partNo": "G242LE14",
+      "name": "G242L E14",
+      "category": "Monitor",
+      "oldStock": 240,
+      "newStock": 0
+    },
+    {
+      "type": "stock",
+      "partNo": "G3050V2X6C",
+      "name": "GeForce RTX 3050 VENTUS 2X 6G OC",
+      "category": "VGA",
+      "oldStock": 1892,
+      "newStock": 1584
+    },
+    {
+      "type": "stock",
+      "partNo": "G3060V2X12C1",
+      "name": "GeForce RTX 3060 VENTUS 2X 12G OC V1",
+      "category": "VGA",
+      "oldStock": 3000,
+      "newStock": 1490
+    },
+    {
+      "type": "stock",
+      "partNo": "G507T-16FEC",
+      "name": "GeForce RTX 5070 Ti 16G FRIEREN EDITION OC",
+      "category": "Bundle",
+      "oldStock": 480,
+      "newStock": 136
+    },
+    {
+      "type": "stock",
+      "partNo": "MAG245FX24",
+      "name": "MAG 245F X24",
+      "category": "Monitor",
+      "oldStock": 800,
+      "newStock": 580
+    },
+    {
+      "type": "stock",
+      "partNo": "MAG245PFX24",
+      "name": "MAG 245PF X24",
+      "category": "Monitor",
+      "oldStock": 184,
+      "newStock": 459
+    },
+    {
+      "type": "stock",
+      "partNo": "MAG255FX24",
+      "name": "MAG 255F X24",
+      "category": "Monitor",
+      "oldStock": 1220,
+      "newStock": 178
+    },
+    {
+      "type": "stock",
+      "partNo": "MAG272FX24",
+      "name": "MAG 272F X24",
+      "category": "Monitor",
+      "oldStock": 631,
+      "newStock": 411
+    },
+    {
+      "type": "stock",
+      "partNo": "MAG272QPQD-OLEDX24",
+      "name": "MAG 272QP QD-OLED X24",
+      "category": "Monitor",
+      "oldStock": 509,
+      "newStock": 230
+    },
+    {
+      "type": "stock",
+      "partNo": "MAG274QFX24",
+      "name": "MAG 274QF X24",
+      "category": "Monitor",
+      "oldStock": 972,
+      "newStock": 52
+    },
+    {
+      "type": "stock",
+      "partNo": "MAG32C6X",
+      "name": "MAG 32C6X",
+      "category": "Monitor",
+      "oldStock": 320,
+      "newStock": 0
+    },
+    {
+      "type": "stock",
+      "partNo": "PROA520MS",
+      "name": "PRO A520M-S",
+      "category": "MB",
+      "oldStock": 1120,
+      "newStock": 720
+    },
+    {
+      "type": "price",
+      "partNo": "PROB650MB",
+      "name": "PRO B650M-B",
+      "category": "MB",
+      "oldPrice": 66.0,
+      "newPrice": 71.0
+    },
+    {
+      "type": "stock",
+      "partNo": "PROB760ED4",
+      "name": "PRO B760M-E DDR4",
+      "category": "MB",
+      "oldStock": 1000,
+      "newStock": 300
+    },
+    {
+      "type": "price",
+      "partNo": "PROB760PD4",
+      "name": "PRO B760M-P DDR4",
+      "category": "MB",
+      "oldPrice": 70.0,
+      "newPrice": 77.0
+    },
+    {
+      "type": "stock",
+      "partNo": "PROB760PD4",
+      "name": "PRO B760M-P DDR4",
+      "category": "MB",
+      "oldStock": 370,
+      "newStock": 120
+    },
+    {
+      "type": "stock",
+      "partNo": "PROB840M-PWIFI6E",
+      "name": "PRO B840M-P WIFI6E",
+      "category": "MB",
+      "oldStock": 200,
+      "newStock": 0
+    },
+    {
+      "type": "stock",
+      "partNo": "PROB840MB",
+      "name": "PRO B840M-B",
+      "category": "MB",
+      "oldStock": 3200,
+      "newStock": 3000
+    },
+    {
+      "type": "price",
+      "partNo": "PROB850MPWIFI",
+      "name": "PRO B850M-P WIFI",
+      "category": "MB",
+      "oldPrice": 115.0,
+      "newPrice": 130.0
+    },
+    {
+      "type": "price",
+      "partNo": "PROB860MS",
+      "name": "PRO B860M-S",
+      "category": "MB",
+      "oldPrice": 75.0,
+      "newPrice": 85.0
+    },
+    {
+      "type": "price",
+      "partNo": "PROH410MAP",
+      "name": "H410M-A PRO",
+      "category": "MB",
+      "oldPrice": 48.0,
+      "newPrice": 51.0
+    },
+    {
+      "type": "stock",
+      "partNo": "PROH410MAP",
+      "name": "H410M-A PRO",
+      "category": "MB",
+      "oldStock": 1020,
+      "newStock": 0
+    },
+    {
+      "type": "stock",
+      "partNo": "PROH610MGD4",
+      "name": "PRO H610M-G DDR4",
+      "category": "MB",
+      "oldStock": 615,
+      "newStock": 0
+    },
+    {
+      "type": "stock",
+      "partNo": "PROMP225E12L",
+      "name": "PRO MP225 E12L",
+      "category": "Monitor",
+      "oldStock": 0,
+      "newStock": 1890
+    },
+    {
+      "type": "stock",
+      "partNo": "PROMP251E14L",
+      "name": "PRO MP251 E14L",
+      "category": "Monitor",
+      "oldStock": 1580,
+      "newStock": 2080
+    },
+    {
+      "type": "stock",
+      "partNo": "PROMP271E14A",
+      "name": "PRO MP271 E14A",
+      "category": "Monitor",
+      "oldStock": 244,
+      "newStock": 1368
+    },
+    {
+      "type": "stock",
+      "partNo": "ProMP225E12VL",
+      "name": "PRO MP225 E12VL",
+      "category": "Monitor",
+      "oldStock": 3615,
+      "newStock": 2695
+    },
+    {
+      "type": "stock",
+      "partNo": "ProMP251L E2",
+      "name": "PRO MP251L E2",
+      "category": "Monitor",
+      "oldStock": 135,
+      "newStock": 1565
+    },
+    {
+      "type": "stock",
+      "partNo": "SS270S240G",
+      "name": "SPATIUM S270 SATA 2.5” 240GB",
+      "category": "SSD",
+      "oldStock": 5000,
+      "newStock": 4600
+    },
+    {
+      "type": "stock",
+      "partNo": "SS270S480G",
+      "name": "SPATIUM S270 SATA 2.5” 480GB",
+      "category": "SSD",
+      "oldStock": 7200,
+      "newStock": 5800
+    },
+    {
+      "type": "price",
+      "partNo": "X87EGODLIKE",
+      "name": "MEG X870E GODLIKE",
+      "category": "MB",
+      "oldPrice": 968.0,
+      "newPrice": 1100.0
+    },
+    {
+      "type": "price",
+      "partNo": "Z890ACE",
+      "name": "MEG Z890 ACE",
+      "category": "MB",
+      "oldPrice": 550.0,
+      "newPrice": 600.0
+    },
+    {
+      "type": "price",
+      "partNo": "Z890CARBONWIFI",
+      "name": "MPG Z890 CARBON WIFI",
+      "category": "MB",
+      "oldPrice": 360.0,
+      "newPrice": 420.0
+    },
+    {
+      "type": "price",
+      "partNo": "Z890GODLIKE",
+      "name": "MEG Z890 GODLIKE",
+      "category": "MB",
+      "oldPrice": 968.0,
+      "newPrice": 1150.0
+    }
+  ],
+  "lastChangesAt": "2026-08-17T21:37:47.782204+00:00",
   "summary": "Sin cambios",
   "triggeredBy": "sistema",
   "triggerMode": "auto"
