@@ -2686,6 +2686,7 @@ const _SEMAFORO_NOISE = new Set([
 ]);
 function extractMSIModelKey(desc) {
   let s = String(desc || '').trim().toUpperCase();
+  s = s.replace(/\s+MS-[A-Z0-9-]+/ig, '');  // strip MSI internal part codes (MS-3BC6, MS-3CE8, etc.)
   s = s.replace(/\([^)]*\)/g, ' ');   // strip ALL parenthetical content (configs, specs, etc.)
   s = s.replace(/"/g, '');            // remove inch marks (e.g. 27" → 27, later filtered as 2-digit number)
   s = s.replace(/\b\d+\s*HZ\b/g, ''); // strip refresh rates (144HZ, 165HZ, etc.)
@@ -2790,6 +2791,7 @@ function extractMSIModelKey(desc) {
 function semaforoDisplayName(rawDesc, category) {
   let s = String(rawDesc || '').trim().toUpperCase();
   // ── Common pre-processing (same transforms as extractMSIModelKey, no sort) ──
+  s = s.replace(/\s+MS-[A-Z0-9-]+/ig, '');  // strip MSI internal part codes (MS-3BC6, MS-3CE8, etc.)
   s = s.replace(/\([^)]*\)/g, ' ');
   s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
   s = s.replace(/\bW\b/g, 'WHITE');                           // early: before any strip consumes "240 W"
