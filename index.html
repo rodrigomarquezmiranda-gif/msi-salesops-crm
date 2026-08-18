@@ -1266,7 +1266,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.18.08.26.4';
+const APP_VERSION = '1.18.08.26.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7830,7 +7830,7 @@ function buildBarChartSVG(points, color) {
     const barH = maxV>0 ? (p.value/maxV)*innerH : 0;
     const x = cx - barW/2, y = padT + (innerH-barH);
     return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH,0).toFixed(1)}" rx="4" style="fill:${color}" />
-      <text x="${cx.toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="middle" font-size="11" style="fill:var(--text2)">${p.value}</text>
+      <text x="${cx.toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="middle" font-size="11" style="fill:var(--text2)">${p.value.toLocaleString('es-AR',{maximumFractionDigits:1})}</text>
       <text x="${cx.toFixed(1)}" y="${h-padB+16}" text-anchor="middle" font-size="10" style="fill:var(--text3)">${esc(p.label)}</text>`;
   }).join('');
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">
