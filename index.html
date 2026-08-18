@@ -1264,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.17.08.26.2';
+const APP_VERSION = '1.17.08.26.3';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2729,11 +2729,9 @@ function extractMSIModelKey(desc) {
   s = s.replace(/\b\d+(?:[.,]\d+)?\s*MS\b/ig, '');
   // Strip connectivity port counts (2XHDMI, 1XDP, 3XUSB, 1XVGA) — monitor spec noise
   s = s.replace(/\b\d+\s*[Xx]\s*(?:HDMI|DP|USB|VGA|DVI|DISPLAYPORT)\b/ig, '');
-  // Strip panel-size shorthand suffixes (X24, X27, X32) when they're a SUFFIX (model comes before).
-  // Do NOT strip when X24/X27/X32 is the only identifier (e.g. spec-format "X24 BLACK,26.5,...").
-  if(/,/.test(rawDesc)) {
-    // Spec-format description: X24 is the primary key — keep it
-  } else {
+  // Strip panel-size shorthand suffixes (X24, X27, X32) only when NOT spec-format.
+  // In spec-format (commas present, e.g. "X24 BLACK,26.5,ANTI-REFLECTIVE"), X24 IS the model key.
+  if(!/,/.test(desc)) {
     s = s.replace(/\bX\d{2}\b/g, '');
   }
   // Strip carton-quantity packaging codes (E20, E16, E18, E14, E12) — NOT model differentiators.
@@ -2860,6 +2858,15 @@ function semaforoDisplayName(rawDesc, category) {
     const _plEntry = _MSI_PRICE_LIST.get(_plKey);
     if (_plEntry && _plEntry[1] === 'monitor') return _plEntry[0];
     // Fallback: strip spec noise manually (products not yet in price list)
+    // Spec-format descriptions (commas = comma-separated specs, e.g. "X24 BLACK,26.5,ANTI-REFLECTIVE"):
+    // use model ID + size extracted from spec tokens instead of trying to strip everything.
+    if(/,/.test(rawDesc)) {
+      const parts = rawDesc.split(',').map(p => p.trim());
+      const modelId = parts[0];   // e.g. "X24 BLACK" or "X24 ID1/BLACK-BLACK"
+      const sizeMatch = rawDesc.match(/\b(\d{2}(?:\.\d)?)\b(?![A-Z%])/i);
+      const size = sizeMatch ? sizeMatch[1] + '"' : '';
+      return [modelId, size].filter(Boolean).join(' ');
+    }
     let m = s;
     m = m.replace(/\*+/g, '');                                           // strip asterisks but KEEP text (e.g. CAJA DAÑADA)
     ['GAMING','GAMER','MSI','MONITOR','MONITORES','PANTALLA','PRO','RAPID','FLAT','PIVOTEABLE','PIVOTABLE'].forEach(w => {
