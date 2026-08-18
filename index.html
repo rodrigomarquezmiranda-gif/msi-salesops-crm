@@ -2729,8 +2729,13 @@ function extractMSIModelKey(desc) {
   s = s.replace(/\b\d+(?:[.,]\d+)?\s*MS\b/ig, '');
   // Strip connectivity port counts (2XHDMI, 1XDP, 3XUSB, 1XVGA) — monitor spec noise
   s = s.replace(/\b\d+\s*[Xx]\s*(?:HDMI|DP|USB|VGA|DVI|DISPLAYPORT)\b/ig, '');
-  // Strip panel-size shorthand suffixes (X24, X27, X32) — monitor bundle/regional variant labels
-  s = s.replace(/\bX\d{2}\b/g, '');
+  // Strip panel-size shorthand suffixes (X24, X27, X32) when they're a SUFFIX (model comes before).
+  // Do NOT strip when X24/X27/X32 is the only identifier (e.g. spec-format "X24 BLACK,26.5,...").
+  if(/,/.test(rawDesc)) {
+    // Spec-format description: X24 is the primary key — keep it
+  } else {
+    s = s.replace(/\bX\d{2}\b/g, '');
+  }
   // Strip carton-quantity packaging codes (E20, E16, E18, E14, E12) — NOT model differentiators.
   // E-codes with following letters (E14L, E14A, E12VL, E16M) are preserved as they ARE part of
   // the model name for PRO monitors (e.g. "PRO MP271 E14A") and some MPG monitors (E16M).
@@ -7056,6 +7061,10 @@ function classifyProductCategory(description) {
   if(/\bMPG\s*\d{3}[A-Z0-9]*\b/.test(norm)) return 'monitor'; // MPG 491CQPX, MPG 341CQPX, etc. (excludes MPG MAESTRO/CORELIQUID via keyword check above)
   if(/\bG\d{3}[A-Z]\b/.test(norm)) return 'monitor';
   if(/\bOPTIX\b/.test(norm)) return 'monitor';
+  // Spec-format monitor descriptions: decimal inch size (26.5, 27.0, 24.5, 31.5…) is a strong signal
+  if(/\b(?:2[0-9]|3[0-9]|4[0-9])\.\d\b/.test(description)) return 'monitor';
+  // X24 / X27 / X32 as standalone identifier = LatAm regional monitor variant label
+  if(/\bX(?:2[0-9]|3[0-9])\b/i.test(description) && /,/.test(description)) return 'monitor';
   // Motherboards: Axxx / Bxxx / Hxxx / Zxxx / Xxxx / PRO Axxx / PRO Bxxx
   if(/\b[ABHZX]\d{3}[A-Z0-9]*\b/.test(norm)) return 'motherboard';
   if(/\bPRO\s+[BHZ]\d{3}\b/.test(norm)) return 'motherboard';
