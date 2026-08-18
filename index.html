@@ -1264,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.18.08.26.2';
+const APP_VERSION = '1.18.08.26.3';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5190,6 +5190,10 @@ function buildSemaforoData() {
         if(desc) break;
       }
       if(!desc) return; // can't resolve, skip
+      // Skip spec-format panel descriptions like "X24 BLACK,26.5,IPS" or "X24 ID1/BLACK-BLACK,26.5,...".
+      // These are monitor spec snippets from invoices — not real model names; the actual model
+      // is already displayed via another row. Identified by starting with X## and containing commas.
+      if(/,/.test(desc) && /^\s*X\d{2}\b/i.test(desc)) return;
       // Use li.category from the invoice as a classification hint (reliable for MPG monitors, etc.)
       let cat = null;
       if(liCategory) {
