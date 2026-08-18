@@ -36,7 +36,34 @@
     "triggeredBy": "sistema"
   },
   {
+    "checkedAt": "2026-08-17T22:02:24.033041+00:00",
+    "productCount": 326,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "schedule",
+    "triggeredBy": "sistema"
+  },
+  {
     "checkedAt": "2026-08-17T22:25:48.777132+00:00",
+    "productCount": 326,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "auto",
+    "triggeredBy": "sistema"
+  },
+  {
+    "checkedAt": "2026-08-18T13:16:15.850377+00:00",
+    "productCount": 326,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "schedule",
+    "triggeredBy": "sistema"
+  },
+  {
+    "checkedAt": "2026-08-18T13:20:51.078275+00:00",
     "productCount": 326,
     "hasChanges": false,
     "changeCount": 0,
