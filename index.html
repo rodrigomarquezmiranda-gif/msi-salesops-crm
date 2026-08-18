@@ -1264,7 +1264,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.17.08.26.3';
+const APP_VERSION = '1.18.08.26.1';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -3106,9 +3106,13 @@ function parseInvoiceLineItems(lines) {
       let marketingName = '', qtyShipped = 0, category = categoryLabel;
       if(cooMatch) {
         let before = l.slice(codePos + firstToken.length, cooMatch.index).trim();
-        // Strip "Description" column when present: MSI uses a backslash path like "MS-V531\GeForce RTX"
-        // that appears after the marketing name in the same Y-grouped line. Remove it.
+        // Strip "Description" column when present.
+        // Older MSI invoices use a backslash path: "MS-V531\GeForce RTX"
         before = before.replace(/\s+\S*\\\S*(\s.*)?$/, '').trim();
+        // SMART CENTER invoices: Description column starts with MSI part code "MS-XXXXX,"
+        // or color/spec like "ID1/Color-Color,size,..." — strip from that point.
+        before = before.replace(/\s+MS-[A-Z0-9]+[, ].*/i, '').trim();
+        before = before.replace(/\s+ID\d+\/\S+.*/i, '').trim();
         const after = cooMatch[2].trim();
         const parts = before.split(/\s{2,}/);
         marketingName = parts[0] || before;
@@ -3132,18 +3136,26 @@ function parseInvoiceLineItems(lines) {
       pending = { itemCode: firstToken, marketingName: marketingName.trim(), qtyShipped, category };
     } else if(pending) {
       // Continuation line processing.
-      // FIRST: check if it's a model-name suffix like "900R", "WHITE", "E14L".
-      // These are all-uppercase alphanumeric tokens (1–2 words, no punctuation, not purely digits).
-      // Lowercase-start words like "Gaming", "Gear", "Chassis" (PDF category labels) fail this check.
+      // Extract model-name tokens from the front of the line, stopping at Description column content
+      // (comma-separated specs, anti-glare words, COO countries, bare numbers).
+      // Handles single-token suffixes ("900R", "WHITE"), multi-token model continuations ("QD-OLED X24"),
+      // and mixed lines where the Description column immediately follows ("QD-OLED X24 Black,26.5,Anti-Glare").
+      // Lowercase-start words like "Gaming", "Gear", "Chassis" fail the ALL-CAPS check and are ignored.
       const contTokens = l.trim().split(/\s+/);
-      const isModelSuffix = contTokens.length >= 1 && contTokens.length <= 2
-        && contTokens.every(t => /^[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(t))   // ALL-CAPS alphanumeric; hyphens allowed (e.g. QD-OLED)
-        && !/^\d+$/.test(contTokens[0]);                   // not a bare number
-      if(isModelSuffix) {
-        // Append to marketing name regardless of whether qty is already set.
-        // e.g.: "900R" appends to "MEG MAESTRO" → "MEG MAESTRO 900R"
-        //       "WHITE" appends to "FORCE GC30 V2" → "FORCE GC30 V2 WHITE"
-        pending.marketingName = (pending.marketingName + ' ' + l.trim()).trim();
+      const modelPart = [];
+      for(const t of contTokens) {
+        if(/,/.test(t)) break;                               // comma → Description content starts
+        if(/^(?:ID\d+\/|Anti-|Glare|Reflec)/i.test(t)) break; // spec/anti-glare words
+        if(!/^[A-Z0-9]+(?:-[A-Z0-9]+)*$/.test(t)) break;   // must be ALL-CAPS alphanumeric (hyphens OK)
+        if(/^\d+$/.test(t)) break;                          // bare number = qty
+        if(COO_RE.test(t)) break;                           // COO country name
+        modelPart.push(t);
+      }
+      if(modelPart.length > 0) {
+        // Append model-name tokens to the pending marketing name.
+        // e.g. "900R" → "MEG MAESTRO 900R"
+        //      "QD-OLED X24" (from "QD-OLED X24 Black,26.5,Anti-Reflectio") → "MAG 274QP QD-OLED X24"
+        pending.marketingName = (pending.marketingName + ' ' + modelPart.join(' ')).trim();
       } else {
         const cooMatch = l.match(new RegExp('^(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
         if(cooMatch) {
