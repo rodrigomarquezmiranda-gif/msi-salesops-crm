@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-08-18T13:20:51.078275+00:00",
+  "checkedAt": "2026-08-18T21:50:24.911939+00:00",
   "productCount": 326,
   "hasChanges": false,
   "changeCount": 0,
@@ -337,5 +337,5 @@
   "lastChangesAt": "2026-08-17T21:37:47.782204+00:00",
   "summary": "Sin cambios",
   "triggeredBy": "sistema",
-  "triggerMode": "auto"
+  "triggerMode": "schedule"
 }
