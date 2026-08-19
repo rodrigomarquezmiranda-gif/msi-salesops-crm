@@ -1299,7 +1299,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.26.6';
+const APP_VERSION = '1.19.08.26.7';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7578,7 +7578,6 @@ function renderEtailersTab() {
   const stockSnaps = snaps.filter(s=>s.reportType==='stock').sort((a,b)=>String(b.periodEnd||'').localeCompare(String(a.periodEnd||'')));
   const salesSnaps = snaps.filter(s=>s.reportType==='sales').sort((a,b)=>String(b.periodEnd||'').localeCompare(String(a.periodEnd||'')));
   const latestStock = stockSnaps[0];
-  const latestSales = salesSnaps[0];
 
   // Badge
   const nb = document.getElementById('nb-etailers');
@@ -7586,90 +7585,102 @@ function renderEtailersTab() {
 
   const contentEl = document.getElementById('etailers-content');
 
-  if(!latestStock && !latestSales) {
+  if(!latestStock && salesSnaps.length === 0) {
     contentEl.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text2);font-size:14px">Todavía no hay datos de ${ETAILER_LABELS[_currentEtailerFilter]}. Subí el reporte semanal arriba.</div>`;
   } else {
-    // Build price lookup from pricelist
+    // Price lookup from pricelist
     const plMap = new Map();
     (priceList?.products||[]).filter(p=>!p.isSubSection&&p.code&&p.price!=null).forEach(p => plMap.set(p.code.toUpperCase().trim(), p.price));
 
-    // Merge stock + sales by code
+    // ── ACUMULAR todas las semanas de ventas ──
+    const salesAgg = new Map(); // code → { code, desc, totalQty, weeksPresent }
+    salesSnaps.forEach(snap => {
+      snap.rows.forEach(r => {
+        const k = r.code.toUpperCase();
+        if(!salesAgg.has(k)) salesAgg.set(k, { code:r.code, desc:r.description||'', totalQty:0, weeksPresent:0 });
+        const a = salesAgg.get(k);
+        a.totalQty += (r.qty||0);
+        a.weeksPresent++;
+      });
+    });
+    const nWeeks = salesSnaps.length;
+    const periodStart = salesSnaps.length ? salesSnaps[salesSnaps.length-1].periodStart : null;
+    const periodEnd   = salesSnaps.length ? salesSnaps[0].periodEnd : null;
+
+    // Latest stock map
     const stockMap = new Map();
-    if(latestStock) latestStock.rows.forEach(r => stockMap.set(r.code.toUpperCase(), r));
-    const salesMap = new Map();
-    if(latestSales) latestSales.rows.forEach(r => salesMap.set(r.code.toUpperCase(), r));
-    const allCodes = new Set([...stockMap.keys(), ...salesMap.keys()]);
+    if(latestStock) latestStock.rows.forEach(r => stockMap.set(r.code.toUpperCase(), r.qty||0));
 
+    // Merge
+    const allCodes = new Set([...salesAgg.keys(), ...stockMap.keys()]);
     const merged = Array.from(allCodes).map(k => {
-      const s = stockMap.get(k);
-      const v = salesMap.get(k);
-      const code = (s||v).code;
-      const desc = (s||v).description;
-      const stockQty = s ? (s.qty||0) : null;
-      const soldQty  = v ? (v.qty||0) : null;
+      const sv = salesAgg.get(k);
+      const stockQty  = stockMap.has(k) ? stockMap.get(k) : null;
+      const totalSold = sv ? sv.totalQty : 0;
+      const avgPerWeek = (sv && nWeeks>0) ? sv.totalQty/nWeeks : null;
       const listPrice = plMap.get(k) || null;
-      const weeksCover = (stockQty!=null && soldQty!=null && soldQty>0) ? stockQty/soldQty : null;
-      const revenue = (soldQty!=null && listPrice!=null) ? soldQty*listPrice : null;
-      return { code, desc, stockQty, soldQty, listPrice, weeksCover, revenue };
+      const weeksCover = (stockQty!=null && avgPerWeek!=null && avgPerWeek>0) ? stockQty/avgPerWeek : null;
+      const revenue = (totalSold>0 && listPrice!=null) ? totalSold*listPrice : null;
+      return {
+        code: sv ? sv.code : k,
+        desc: sv ? sv.desc : (latestStock?.rows.find(r=>r.code.toUpperCase()===k)?.description||''),
+        stockQty, totalSold, avgPerWeek, listPrice, weeksCover, revenue
+      };
     });
 
-    // Sort: best sellers first (soldQty desc), then stock-only by stock desc
-    merged.sort((a,b) => {
-      const av = a.soldQty ?? -1;
-      const bv = b.soldQty ?? -1;
-      return bv - av || (b.stockQty||0) - (a.stockQty||0);
-    });
+    // Sort by total sold desc
+    merged.sort((a,b) => b.totalSold - a.totalSold || (b.stockQty||0) - (a.stockQty||0));
 
-    const totalStock = merged.reduce((s,r)=>s+(r.stockQty||0),0);
-    const totalSold  = merged.reduce((s,r)=>s+(r.soldQty||0),0);
-    const totalRev   = merged.filter(r=>r.revenue!=null).reduce((s,r)=>s+r.revenue,0);
-    const hasPrices  = merged.some(r=>r.listPrice!=null);
-    const periodLabel = latestSales
-      ? `${fmtRotDate(latestSales.periodStart)}${latestSales.periodStart!==latestSales.periodEnd?' al '+fmtRotDate(latestSales.periodEnd):''}`
-      : latestStock ? `${fmtRotDate(latestStock.periodEnd)}` : '';
+    const top20 = merged.slice(0, 20);
+    const totalStock  = merged.reduce((s,r)=>s+(r.stockQty||0),0);
+    const totalSold   = merged.reduce((s,r)=>s+r.totalSold,0);
+    const totalRev    = merged.filter(r=>r.revenue!=null).reduce((s,r)=>s+r.revenue,0);
+    const hasPrices   = merged.some(r=>r.listPrice!=null);
+    const periodLabel = (periodStart && periodEnd)
+      ? `${fmtRotDate(periodStart)}${periodStart!==periodEnd?' al '+fmtRotDate(periodEnd):''}`
+      : '';
 
     // KPI strip
     let kpis = `<div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem">`;
-    kpis += `<div class="metric"><div class="metric-label">Stock total</div><div class="metric-value">${totalStock.toLocaleString('es-AR')}</div></div>`;
-    if(latestSales) kpis += `<div class="metric"><div class="metric-label">Vendido (semana)</div><div class="metric-value">${totalSold.toLocaleString('es-AR')}</div></div>`;
-    if(latestSales && totalSold>0) {
-      const avgCover = (totalStock/totalSold);
-      const cls = avgCover<2?'days-urgent':avgCover<5?'days-warn':'days-ok';
-      kpis += `<div class="metric"><div class="metric-label">Cobertura media</div><div class="metric-value"><span class="days-chip ${cls}">${avgCover.toFixed(1)} sem.</span></div></div>`;
-    }
-    if(hasPrices && totalRev>0) kpis += `<div class="metric"><div class="metric-label">Revenue estimado (semana)</div><div class="metric-value">USD ${totalRev.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0})}</div></div>`;
+    kpis += `<div class="metric"><div class="metric-label">Semanas cargadas</div><div class="metric-value">${nWeeks}</div></div>`;
+    kpis += `<div class="metric"><div class="metric-label">Unidades vendidas (total)</div><div class="metric-value">${totalSold.toLocaleString('es-AR')}</div></div>`;
+    if(nWeeks>0) kpis += `<div class="metric"><div class="metric-label">Promedio semanal</div><div class="metric-value">${Math.round(totalSold/nWeeks).toLocaleString('es-AR')} uds/sem</div></div>`;
+    if(latestStock) kpis += `<div class="metric"><div class="metric-label">Stock actual</div><div class="metric-value">${totalStock.toLocaleString('es-AR')}</div></div>`;
+    if(hasPrices && totalRev>0) kpis += `<div class="metric"><div class="metric-label">Revenue acum. estimado</div><div class="metric-value">USD ${totalRev.toLocaleString('es-AR',{maximumFractionDigits:0})}</div></div>`;
     kpis += `</div>`;
 
-    // Table
+    // Top 20 table
     let tbl = `<div class="alert-section">
       <div class="section-header">
-        <div class="section-title">Rotación ${ETAILER_LABELS[_currentEtailerFilter]} · ${periodLabel}</div>
-        <span style="font-size:12px;color:var(--text2)">${merged.length} SKUs</span>
+        <div class="section-title">🏆 Top 20 más vendidos · ${ETAILER_LABELS[_currentEtailerFilter]}</div>
+        <span style="font-size:12px;color:var(--text2)">${periodLabel ? periodLabel+' · ' : ''}${nWeeks} semana${nWeeks!==1?'s':''} acumuladas</span>
       </div>
       <div class="table-scroll"><table class="data-table">
         <thead><tr>
           <th>#</th><th>Código</th><th>Descripción</th>
-          <th style="text-align:right">Vendido</th>
-          <th style="text-align:right">Stock</th>
-          <th style="text-align:center">Cobertura</th>
+          <th style="text-align:right">Total vendido</th>
+          <th style="text-align:right">Prom/sem</th>
+          ${latestStock?'<th style="text-align:right">Stock</th><th style="text-align:center">Cobertura</th>':''}
           ${hasPrices?'<th style="text-align:right">Precio lista</th><th style="text-align:right">Revenue est.</th>':''}
         </tr></thead><tbody>`;
 
-    merged.forEach((r,i) => {
+    top20.forEach((r,i) => {
       const coverCell = r.weeksCover!=null
         ? `<span class="days-chip ${r.weeksCover<2?'days-urgent':r.weeksCover<5?'days-warn':'days-ok'}">${r.weeksCover.toFixed(1)} sem.</span>`
-        : (r.stockQty!=null && r.stockQty>0 && r.soldQty===0 ? '<span class="pill pill-gray" style="font-size:10px">sin ventas</span>' : '—');
+        : (r.stockQty!=null && r.stockQty>0 ? '<span class="pill pill-gray" style="font-size:10px">sin ventas</span>' : '—');
       tbl += `<tr>
-        <td style="color:var(--text3);font-size:11px">${i+1}</td>
+        <td style="color:var(--brand-text);font-size:12px;font-weight:600">${i+1}</td>
         <td><code style="font-size:12px">${esc(r.code)}</code></td>
         <td style="font-size:12px">${esc(r.desc)}</td>
-        <td style="text-align:right;font-weight:${r.soldQty>0?'600':'400'};color:${r.soldQty>0?'var(--text)':'var(--text3)'}">${r.soldQty!=null?r.soldQty.toLocaleString('es-AR'):'—'}</td>
-        <td style="text-align:right">${r.stockQty!=null?r.stockQty.toLocaleString('es-AR'):'—'}</td>
-        <td style="text-align:center">${coverCell}</td>
-        ${hasPrices?`<td style="text-align:right;font-size:12px">${r.listPrice!=null?'USD '+r.listPrice.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td><td style="text-align:right;font-size:12px">${r.revenue!=null?'USD '+r.revenue.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0}):'—'}</td>`:''}
+        <td style="text-align:right;font-weight:600">${r.totalSold.toLocaleString('es-AR')}</td>
+        <td style="text-align:right;color:var(--text2);font-size:12px">${r.avgPerWeek!=null?r.avgPerWeek.toLocaleString('es-AR',{maximumFractionDigits:1}):'—'}</td>
+        ${latestStock?`<td style="text-align:right">${r.stockQty!=null?r.stockQty.toLocaleString('es-AR'):'—'}</td><td style="text-align:center">${coverCell}</td>`:''}
+        ${hasPrices?`<td style="text-align:right;font-size:12px">${r.listPrice!=null?'USD '+r.listPrice.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td><td style="text-align:right;font-size:12px">${r.revenue!=null?'USD '+r.revenue.toLocaleString('es-AR',{maximumFractionDigits:0}):'—'}</td>`:''}
       </tr>`;
     });
-    tbl += `</tbody></table></div></div>`;
+    tbl += `</tbody></table></div>`;
+    if(merged.length > 20) tbl += `<div style="font-size:12px;color:var(--text2);margin-top:6px;padding:0 4px">${merged.length-20} SKUs más no aparecen en el top 20.</div>`;
+    tbl += `</div>`;
 
     contentEl.innerHTML = kpis + tbl;
   }
