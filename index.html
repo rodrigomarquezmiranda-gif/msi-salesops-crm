@@ -1266,7 +1266,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.26.1';
+const APP_VERSION = '1.19.08.26.2';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7304,13 +7304,17 @@ function resolveSnapshotPeriods(snapshots) {
   // Resuelve fechas faltantes mirando TODO el lote subido junto (no solo el mismo archivo),
   // así el stock de un proveedor puede tomar la fecha de su propio reporte de ventas aunque
   // vengan en archivos separados, siempre que se hayan subido en la misma tanda.
-  // Si tampoco hay hermano en el lote, busca en cargas previas de db.weeklyReports.
+  // Para ventas sin fecha también busca en cargas previas de db.weeklyReports.
+  // STOCK: es una foto puntual del inventario — su fecha natural es HOY, no la de un reporte
+  // de ventas anterior (que puede ser de semanas atrás y causaría un falso "Atrasado").
   snapshots.forEach(snap => {
     if(!snap.periodEnd) {
-      // 1. buscar hermano de ventas en el mismo lote
+      // 1. buscar hermano de ventas en el mismo lote (aplica a stock y ventas)
       let sibling = snapshots.find(s => s.distributor===snap.distributor && s.reportType==='sales' && s.periodEnd);
-      // 2. si no hay, buscar la carga de ventas más reciente ya existente para ese distribuidor
-      if(!sibling) {
+      // 2. para ventas sin fecha: buscar carga existente más reciente del mismo distribuidor.
+      //    NO se aplica a stock: el stock sin fecha toma la fecha de hoy (ver más abajo),
+      //    no la de un reporte de ventas previo que podría ser de semanas atrás.
+      if(!sibling && snap.reportType === 'sales') {
         const existing = (db.weeklyReports||[])
           .filter(s => s.distributor===snap.distributor && s.reportType==='sales' && s.periodEnd && typeof s.periodEnd === 'string')
           .sort((a,b) => b.periodEnd.localeCompare(a.periodEnd));
@@ -7323,10 +7327,15 @@ function resolveSnapshotPeriods(snapshots) {
       if(fromName.end) { snap.periodStart = snap.periodStart || fromName.start; snap.periodEnd = fromName.end; }
     }
     if(!snap.periodEnd) {
-      // Mejor suposición: la mayoría de los proveedores mandan el reporte el lunes,
-      // cubriendo la semana hábil (lunes a viernes) anterior.
-      snap.periodEnd = snap.periodEnd || getPreviousBusinessWeekEnd();
-      snap.periodStart = snap.periodStart || getPreviousBusinessWeekStart();
+      if(snap.reportType === 'stock') {
+        // Stock = foto del inventario actual: la fecha correcta es hoy (cuando se recibió el reporte).
+        const today = new Date().toISOString().split('T')[0];
+        snap.periodEnd = snap.periodStart = today;
+      } else {
+        // Ventas: la mayoría de los proveedores mandan el lunes cubriendo la semana anterior.
+        snap.periodEnd = snap.periodEnd || getPreviousBusinessWeekEnd();
+        snap.periodStart = snap.periodStart || getPreviousBusinessWeekStart();
+      }
       snap.periodGuessed = true;
     }
   });
@@ -7688,7 +7697,8 @@ function renderRotationTab() {
   wrap.innerHTML = html;
 }
 let selectedRotationSnapshotIds = new Set();
-function renderRotationHistory() {
+function renderRotationHistory(resetPaging) {
+  if(resetPaging) _rotHistoryShowAll = false;
   const wrap = document.getElementById('rotation-history');
   const snaps = [...db.weeklyReports].sort((a,b)=>(b.uploadedAt||'').localeCompare(a.uploadedAt||''));
   if(snaps.length === 0) { wrap.innerHTML = `<div class="empty-state"><i class="ti ti-history"></i><p>Sin cargas todavía.</p></div>`; selectedRotationSnapshotIds.clear(); return; }
@@ -7699,6 +7709,15 @@ function renderRotationHistory() {
   const anyMissing = snaps.some(missingClient);
   const selCount = selectedRotationSnapshotIds.size;
   const allChecked = selCount > 0 && selCount === snaps.length;
+  const visibleSnaps = _rotHistoryShowAll ? snaps : snaps.slice(0, ROT_HISTORY_PAGE);
+  const pagingBar = snaps.length > ROT_HISTORY_PAGE
+    ? `<div style="padding:10px 4px;font-size:13px;color:var(--text2)">
+        ${_rotHistoryShowAll
+          ? `Mostrando ${snaps.length} cargas · <a href="#" onclick="event.preventDefault();_rotHistoryShowAll=false;renderRotationHistory()" style="color:var(--brand-text);text-decoration:none">Ver últimas ${ROT_HISTORY_PAGE}</a>`
+          : `Mostrando ${ROT_HISTORY_PAGE} de ${snaps.length} cargas · <a href="#" onclick="event.preventDefault();_rotHistoryShowAll=true;renderRotationHistory()" style="color:var(--brand-text);text-decoration:none">Ver todas</a>`
+        }
+      </div>`
+    : '';
   wrap.innerHTML = `
   ${anyMissing ? `<div style="font-size:11.5px;color:var(--text3);margin-bottom:8px"><i class="ti ti-info-circle"></i> Las filas marcadas "sin cliente/CUIT" son de ventas que se subieron antes de que el sistema guardara ese dato — volvé a subir el mismo archivo y se va a actualizar solo.</div>` : ''}
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;min-height:28px">
@@ -7708,7 +7727,7 @@ function renderRotationHistory() {
   <table class="data-table"><thead><tr>
     <th style="width:28px"><input type="checkbox" ${allChecked?'checked':''} onchange="toggleAllRotationSnapshots(this.checked)" /></th>
     <th>Proveedor</th><th>Tipo</th><th>Período</th><th>SKUs</th><th>Archivo</th><th>Cargado</th><th></th></tr></thead>
-  <tbody>${snaps.map(s => `<tr>
+  <tbody>${visibleSnaps.map(s => `<tr>
     <td><input type="checkbox" ${selectedRotationSnapshotIds.has(s.id)?'checked':''} onchange="toggleRotationSnapshotSelection(${s.id}, this.checked)" /></td>
     <td>${DISTRIBUTORS[s.distributor]}</td>
     <td><span class="pill ${s.reportType==='sales'?'pill-blue':'pill-amber'}">${s.reportType==='sales'?'Ventas':'Stock'}</span>${missingClient(s)?' <span class="pill pill-red" style="font-size:9px">sin cliente/CUIT</span>':''}</td>
@@ -7720,7 +7739,7 @@ function renderRotationHistory() {
       <button class="btn" style="padding:3px 8px;font-size:11px" onclick="editSnapshotPeriod(${s.id})" title="Corregir fecha"><i class="ti ti-pencil" style="font-size:12px"></i></button>
       <button class="btn btn-danger" style="padding:3px 8px;font-size:11px" onclick="deleteRotationSnapshot(${s.id})" title="Eliminar"><i class="ti ti-trash" style="font-size:12px"></i></button>
     </td>
-  </tr>`).join('')}</tbody></table>`;
+  </tr>`).join('')}</tbody></table>${pagingBar}`;
 }
 function toggleRotationSnapshotSelection(id, checked) {
   if(checked) selectedRotationSnapshotIds.add(id);
@@ -8339,6 +8358,8 @@ function getClientRanking(distKey, monthKey) {
 }
 let selectedClientKey = null;
 let _clientsShowAll = false;
+let _rotHistoryShowAll = false;
+const ROT_HISTORY_PAGE = 20;
 const CLIENTS_PAGE_SIZE = 50;
 let currentClientsRankingList = [];
 function buildCategoryCompositionHTML(client) {
