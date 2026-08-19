@@ -894,11 +894,12 @@
         <div class="export-row" style="margin-bottom:0.5rem">
           <button class="filter-pill active" id="etailer-pill-compragamer" onclick="setEtailerFilter('compragamer',this)">COMPRAGAMER</button>
         </div>
-        <div class="upload-zone" id="drop-zone-etailers" onclick="document.getElementById('file-input-etailers').click()" style="margin:1rem 0">
-          <i class="ti ti-cloud-upload"></i>
-          <p><b>Hacé click o arrastrá el reporte semanal de COMPRAGAMER</b></p>
-          <div class="hint">Formato: PartnerName | StartPeriod | EndPeriodo | ProductNumber | ProductDescription | InventoryUnits | SalesUnits. El período se lee del propio archivo.</div>
-          <div id="etailers-upload-progress" style="font-size:11px;color:var(--brand-text);margin-top:6px;font-weight:600"></div>
+        <div class="upload-zone" id="drop-zone-etailers" onclick="document.getElementById('file-input-etailers').click()" style="margin:1rem 0;padding:2.5rem 1.5rem;border-width:2px;min-height:140px;justify-content:center;flex-direction:column;gap:10px">
+          <i class="ti ti-cloud-upload" style="font-size:2.5rem;color:var(--brand-text)"></i>
+          <p style="font-size:15px;margin:0"><b>Arrastrá acá el reporte semanal de COMPRAGAMER</b></p>
+          <p style="font-size:13px;color:var(--text2);margin:0">o hacé click para seleccionar el archivo</p>
+          <div class="hint" style="margin-top:4px">Detecta solo: PartnerName · StartPeriod · EndPeriodo · ProductNumber · InventoryUnits · SalesUnits — separa en stock y ventas automáticamente.</div>
+          <div id="etailers-upload-progress" style="font-size:12px;color:var(--brand-text);margin-top:4px;font-weight:600"></div>
         </div>
         <input type="file" id="file-input-etailers" accept=".xlsx,.xls" multiple style="display:none" />
         <div id="etailers-content"></div>
