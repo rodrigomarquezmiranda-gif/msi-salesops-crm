@@ -1298,7 +1298,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.26.4';
+const APP_VERSION = '1.19.08.26.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7579,45 +7579,99 @@ function renderEtailersTab() {
   const latestStock = stockSnaps[0];
   const latestSales = salesSnaps[0];
 
-  let html = '';
-
-  // Badge count
+  // Badge
   const nb = document.getElementById('nb-etailers');
   if(nb) nb.textContent = snaps.length || 0;
 
-  // Latest stock
-  if(latestStock) {
-    const totalUnits = latestStock.rows.reduce((s,r)=>s+(r.qty||0),0);
-    html += `<div class="alert-section" style="margin-bottom:1.5rem">
-      <div class="section-header"><div class="section-title">Stock actual · ${ETAILER_LABELS[_currentEtailerFilter]}</div><span style="font-size:12px;color:var(--text2)">${fmtRotDate(latestStock.periodStart)}${latestStock.periodStart!==latestStock.periodEnd?' al '+fmtRotDate(latestStock.periodEnd):''} · ${latestStock.rows.length} SKUs · ${totalUnits.toLocaleString('es-AR')} uds.</span></div>
-      <div class="table-scroll"><table class="data-table">
-        <thead><tr><th>Código</th><th>Descripción</th><th style="text-align:right">Stock</th></tr></thead>
-        <tbody>`;
-    latestStock.rows.slice().sort((a,b)=>b.qty-a.qty).forEach(r => {
-      html += `<tr><td><code style="font-size:12px">${esc(r.code)}</code></td><td style="font-size:12px">${esc(r.description)}</td><td style="text-align:right;font-weight:600">${r.qty.toLocaleString('es-AR')}</td></tr>`;
-    });
-    html += `</tbody></table></div></div>`;
-  }
-
-  // Latest sales
-  if(latestSales) {
-    const totalSold = latestSales.rows.reduce((s,r)=>s+(r.qty||0),0);
-    html += `<div class="alert-section" style="margin-bottom:1.5rem">
-      <div class="section-header"><div class="section-title">Ventas última semana · ${ETAILER_LABELS[_currentEtailerFilter]}</div><span style="font-size:12px;color:var(--text2)">${fmtRotDate(latestSales.periodStart)}${latestSales.periodStart!==latestSales.periodEnd?' al '+fmtRotDate(latestSales.periodEnd):''} · ${latestSales.rows.length} SKUs · ${totalSold.toLocaleString('es-AR')} uds.</span></div>
-      <div class="table-scroll"><table class="data-table">
-        <thead><tr><th>Código</th><th>Descripción</th><th style="text-align:right">Vendido</th></tr></thead>
-        <tbody>`;
-    latestSales.rows.slice().sort((a,b)=>b.qty-a.qty).forEach(r => {
-      html += `<tr><td><code style="font-size:12px">${esc(r.code)}</code></td><td style="font-size:12px">${esc(r.description)}</td><td style="text-align:right;font-weight:600">${r.qty.toLocaleString('es-AR')}</td></tr>`;
-    });
-    html += `</tbody></table></div></div>`;
-  }
+  const contentEl = document.getElementById('etailers-content');
 
   if(!latestStock && !latestSales) {
-    html = `<div style="text-align:center;padding:2rem;color:var(--text2);font-size:14px">Todavía no hay datos de ${ETAILER_LABELS[_currentEtailerFilter]}. Subí el reporte semanal arriba.</div>`;
-  }
+    contentEl.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text2);font-size:14px">Todavía no hay datos de ${ETAILER_LABELS[_currentEtailerFilter]}. Subí el reporte semanal arriba.</div>`;
+  } else {
+    // Build price lookup from pricelist
+    const plMap = new Map();
+    (priceList?.products||[]).filter(p=>!p.isSubSection&&p.code&&p.price!=null).forEach(p => plMap.set(p.code.toUpperCase().trim(), p.price));
 
-  document.getElementById('etailers-content').innerHTML = html;
+    // Merge stock + sales by code
+    const stockMap = new Map();
+    if(latestStock) latestStock.rows.forEach(r => stockMap.set(r.code.toUpperCase(), r));
+    const salesMap = new Map();
+    if(latestSales) latestSales.rows.forEach(r => salesMap.set(r.code.toUpperCase(), r));
+    const allCodes = new Set([...stockMap.keys(), ...salesMap.keys()]);
+
+    const merged = Array.from(allCodes).map(k => {
+      const s = stockMap.get(k);
+      const v = salesMap.get(k);
+      const code = (s||v).code;
+      const desc = (s||v).description;
+      const stockQty = s ? (s.qty||0) : null;
+      const soldQty  = v ? (v.qty||0) : null;
+      const listPrice = plMap.get(k) || null;
+      const weeksCover = (stockQty!=null && soldQty!=null && soldQty>0) ? stockQty/soldQty : null;
+      const revenue = (soldQty!=null && listPrice!=null) ? soldQty*listPrice : null;
+      return { code, desc, stockQty, soldQty, listPrice, weeksCover, revenue };
+    });
+
+    // Sort: best sellers first (soldQty desc), then stock-only by stock desc
+    merged.sort((a,b) => {
+      const av = a.soldQty ?? -1;
+      const bv = b.soldQty ?? -1;
+      return bv - av || (b.stockQty||0) - (a.stockQty||0);
+    });
+
+    const totalStock = merged.reduce((s,r)=>s+(r.stockQty||0),0);
+    const totalSold  = merged.reduce((s,r)=>s+(r.soldQty||0),0);
+    const totalRev   = merged.filter(r=>r.revenue!=null).reduce((s,r)=>s+r.revenue,0);
+    const hasPrices  = merged.some(r=>r.listPrice!=null);
+    const periodLabel = latestSales
+      ? `${fmtRotDate(latestSales.periodStart)}${latestSales.periodStart!==latestSales.periodEnd?' al '+fmtRotDate(latestSales.periodEnd):''}`
+      : latestStock ? `${fmtRotDate(latestStock.periodEnd)}` : '';
+
+    // KPI strip
+    let kpis = `<div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem">`;
+    kpis += `<div class="metric"><div class="metric-label">Stock total</div><div class="metric-value">${totalStock.toLocaleString('es-AR')}</div></div>`;
+    if(latestSales) kpis += `<div class="metric"><div class="metric-label">Vendido (semana)</div><div class="metric-value">${totalSold.toLocaleString('es-AR')}</div></div>`;
+    if(latestSales && totalSold>0) {
+      const avgCover = (totalStock/totalSold);
+      const cls = avgCover<2?'days-urgent':avgCover<5?'days-warn':'days-ok';
+      kpis += `<div class="metric"><div class="metric-label">Cobertura media</div><div class="metric-value"><span class="days-chip ${cls}">${avgCover.toFixed(1)} sem.</span></div></div>`;
+    }
+    if(hasPrices && totalRev>0) kpis += `<div class="metric"><div class="metric-label">Revenue estimado (semana)</div><div class="metric-value">USD ${totalRev.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0})}</div></div>`;
+    kpis += `</div>`;
+
+    // Table
+    let tbl = `<div class="alert-section">
+      <div class="section-header">
+        <div class="section-title">Rotación ${ETAILER_LABELS[_currentEtailerFilter]} · ${periodLabel}</div>
+        <span style="font-size:12px;color:var(--text2)">${merged.length} SKUs</span>
+      </div>
+      <div class="table-scroll"><table class="data-table">
+        <thead><tr>
+          <th>#</th><th>Código</th><th>Descripción</th>
+          <th style="text-align:right">Vendido</th>
+          <th style="text-align:right">Stock</th>
+          <th style="text-align:center">Cobertura</th>
+          ${hasPrices?'<th style="text-align:right">Precio lista</th><th style="text-align:right">Revenue est.</th>':''}
+        </tr></thead><tbody>`;
+
+    merged.forEach((r,i) => {
+      const coverCell = r.weeksCover!=null
+        ? `<span class="days-chip ${r.weeksCover<2?'days-urgent':r.weeksCover<5?'days-warn':'days-ok'}">${r.weeksCover.toFixed(1)} sem.</span>`
+        : (r.stockQty!=null && r.stockQty>0 && r.soldQty===0 ? '<span class="pill pill-gray" style="font-size:10px">sin ventas</span>' : '—');
+      tbl += `<tr>
+        <td style="color:var(--text3);font-size:11px">${i+1}</td>
+        <td><code style="font-size:12px">${esc(r.code)}</code></td>
+        <td style="font-size:12px">${esc(r.desc)}</td>
+        <td style="text-align:right;font-weight:${r.soldQty>0?'600':'400'};color:${r.soldQty>0?'var(--text)':'var(--text3)'}">${r.soldQty!=null?r.soldQty.toLocaleString('es-AR'):'—'}</td>
+        <td style="text-align:right">${r.stockQty!=null?r.stockQty.toLocaleString('es-AR'):'—'}</td>
+        <td style="text-align:center">${coverCell}</td>
+        ${hasPrices?`<td style="text-align:right;font-size:12px">${r.listPrice!=null?'USD '+r.listPrice.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td><td style="text-align:right;font-size:12px">${r.revenue!=null?'USD '+r.revenue.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:0}):'—'}</td>`:''}
+      </tr>`;
+    });
+    tbl += `</tbody></table></div></div>`;
+
+    contentEl.innerHTML = kpis + tbl;
+  }
 
   // History
   const histEl = document.getElementById('etailers-history');
