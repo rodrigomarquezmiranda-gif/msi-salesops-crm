@@ -1266,7 +1266,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.18.08.26.5';
+const APP_VERSION = '1.18.08.26.6';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5645,7 +5645,7 @@ async function exportSemaforoPDF() {
       const col = stockColor(qty);
       row.push({ content: lbl, styles: col ? {fillColor:col, textColor:[255,255,255], fontStyle:'bold', halign:'center'} : {halign:'center'} });
       const hasT = transitData[dk].keys.has(p.normModel);
-      row.push({ content: hasT ? '●' : '', styles: hasT ? {fillColor:[235,203,139], textColor:[31,42,68], halign:'center', fontSize:10} : {halign:'center'} });
+      row.push({ content: hasT ? 'SI' : '', styles: hasT ? {fillColor:[235,203,139], textColor:[31,42,68], halign:'center', fontStyle:'bold'} : {halign:'center'} });
     });
     body.push(row);
   });
