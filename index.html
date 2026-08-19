@@ -481,6 +481,10 @@
         <i class="ti ti-ship" style="color:#BF616A"></i> Análisis de Importaciones
         <span class="nav-count" id="nb-imports">0</span>
       </button>
+      <button class="nav-item" id="nav-etailers" onclick="gotoTab('etailers')">
+        <i class="ti ti-shopping-bag" style="color:#88C0D0"></i> Etailers
+        <span class="nav-count" id="nb-etailers">0</span>
+      </button>
     </nav>
     <nav class="nav-section">
       <div class="nav-label">Herramientas</div>
@@ -660,7 +664,7 @@
         <div class="upload-zone" id="drop-zone-rotation" onclick="document.getElementById('file-input-rotation').click()" style="margin-bottom:1.25rem">
           <i class="ti ti-cloud-upload"></i>
           <p><b>Hacé click o arrastrá el/los reportes semanales</b> de cualquier proveedor</p>
-          <div class="hint">Se detecta solo: AIR COMPUTERS, INVID, SOLUTION BOX, ASHIR o ELIT — y si es de ventas o de stock. Podés seleccionar varios archivos juntos.</div>
+          <div class="hint">Se detecta solo: AIR COMPUTERS, INVID, SOLUTION BOX, ASHIR o ELIT — y si es de ventas o de stock. Podés seleccionar varios archivos juntos. Para COMPRAGAMER usá el tab Etailers.</div>
           <div id="rotation-upload-progress" style="font-size:11px;color:var(--brand-text);margin-top:6px;font-weight:600"></div>
         </div>
         <input type="file" id="file-input-rotation" accept=".xlsx,.xls" multiple style="display:none" />
@@ -878,6 +882,32 @@
             <div class="section-title">Cargas de importaciones</div>
           </div>
           <div class="table-scroll" id="imports-history"></div>
+        </div>
+      </div>
+
+      <!-- ETAILERS -->
+      <div id="tab-etailers" class="tab-pane">
+        <div class="ai-box" style="margin-top:0">
+          <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-shopping-bag" style="color:#88C0D0"></i> Etailers</div>
+          <div style="font-size:13px;color:var(--text2)">Reportes semanales de etailers (grandes retailers que compran a los distribuidores y nos reportan sus ventas e inventario). El archivo combinado se divide automáticamente en stock y ventas.</div>
+        </div>
+        <div class="export-row" style="margin-bottom:0.5rem">
+          <button class="filter-pill active" id="etailer-pill-compragamer" onclick="setEtailerFilter('compragamer',this)">COMPRAGAMER</button>
+        </div>
+        <div class="upload-zone" id="drop-zone-etailers" onclick="document.getElementById('file-input-etailers').click()" style="margin:1rem 0">
+          <i class="ti ti-cloud-upload"></i>
+          <p><b>Hacé click o arrastrá el reporte semanal de COMPRAGAMER</b></p>
+          <div class="hint">Formato: PartnerName | StartPeriod | EndPeriodo | ProductNumber | ProductDescription | InventoryUnits | SalesUnits. El período se lee del propio archivo.</div>
+          <div id="etailers-upload-progress" style="font-size:11px;color:var(--brand-text);margin-top:6px;font-weight:600"></div>
+        </div>
+        <input type="file" id="file-input-etailers" accept=".xlsx,.xls" multiple style="display:none" />
+        <div id="etailers-content"></div>
+        <div class="alert-section" style="margin-top:1.5rem">
+          <div class="section-header">
+            <div class="section-title">Cargas recientes</div>
+            <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="resetEtailersData()"><i class="ti ti-trash" style="font-size:12px"></i> Reiniciar Etailers</button>
+          </div>
+          <div class="table-scroll" id="etailers-history"></div>
         </div>
       </div>
 
@@ -1268,7 +1298,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.26.3';
+const APP_VERSION = '1.19.08.26.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1909,10 +1939,17 @@ async function importBackup(input) {
 }
 async function resetRotationData() {
   if(!await _confirm('¿Borrar TODAS las cargas de Rotación de Stock? No se puede deshacer.\n\nSi no estás seguro, exportá un respaldo primero.', {title:'Borrar rotación', danger:true, okLabel:'Borrar todo'})) return;
-  db.weeklyReports = [];
+  db.weeklyReports = (db.weeklyReports||[]).filter(s => Object.keys(ETAILERS).includes(s.distributor));
   saveDB();
   renderAll();
   _alert('Rotación de Stock borrada correctamente. Ya podés volver a subir tus archivos.', {type:'success', title:'Listo'});
+}
+async function resetEtailersData() {
+  if(!await _confirm('¿Borrar TODAS las cargas de Etailers? No se puede deshacer.', {title:'Borrar etailers', danger:true, okLabel:'Borrar todo'})) return;
+  db.weeklyReports = (db.weeklyReports||[]).filter(s => !Object.keys(ETAILERS).includes(s.distributor));
+  saveDB();
+  renderAll();
+  _alert('Datos de Etailers borrados correctamente.', {type:'success', title:'Listo'});
 }
 
 // ─── EXPORTACIÓN GENÉRICA A EXCEL Y PDF ──────────────
@@ -2023,6 +2060,7 @@ function gotoTab(tab) {
   if(tab==='resellers-t3') renderResellerTab('t3');
   if(tab==='catranking') { renderCatrankMonthChips(); renderCategoryRankingTab(); }
   if(tab==='imports') { renderImportsHistory(); renderImportsMonthChips(); renderImportsTab(); }
+  if(tab==='etailers') renderEtailersTab();
   if(tab==='notificaciones') renderNotificacionesTab();
   if(tab==='usuarios') renderUsersTab();
   if(tab==='semaforo') renderSemaforoTab();
@@ -5013,7 +5051,7 @@ function renderAll() {
   renderPipeline('pi');
   document.getElementById('nb-pi').textContent = db.pi.length;
   document.getElementById('nb-rebates').textContent = db.ber.length + db.sor.length + db.sir.length + db.pp.length;
-  document.getElementById('nb-rotation').textContent = db.weeklyReports.length;
+  const _etKeys=Object.keys(ETAILERS);document.getElementById('nb-rotation').textContent=(db.weeklyReports||[]).filter(s=>!_etKeys.includes(s.distributor)).length;const _nbEt=document.getElementById('nb-etailers');if(_nbEt)_nbEt.textContent=(db.weeklyReports||[]).filter(s=>_etKeys.includes(s.distributor)).length;
   document.getElementById('nb-imports').textContent = db.imports.length;
   const rotAlerts = getRotationAlertCount();
   const nbRotAlert = document.getElementById('nb-rotation-alert');
@@ -5024,6 +5062,7 @@ function renderAll() {
   renderSalesPriceHistory();
   renderRotationTab();
   renderRotationHistory();
+  renderEtailersTab();
   renderImportsHistory();
   renderImportsMonthChips();
   renderImportsTab();
@@ -7037,6 +7076,9 @@ function exportSalesPricePDF() {
 
 // ─── ROTACIÓN DE STOCK (reportes semanales por proveedor) ───
 const DISTRIBUTORS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
+const ETAILERS     = { compragamer:'COMPRAGAMER' };
+const ETAILER_LABELS = { compragamer:'COMPRAGAMER' };
+const ETAILER_SHORT  = { compragamer:'CGAMER' };
 function normDesc(d) { return String(d||'').trim().toUpperCase().replace(/\s+/g, ' '); }
 function normClientKey(name) { return String(name||'').toUpperCase().replace(/[.,]/g, '').replace(/\s+/g, ' ').trim(); }
 
@@ -7175,6 +7217,10 @@ const REPORT_FORMATS = [
     requiredHeaders:['codigo_pro','detalle','stock','disponible'],
     map:{ code:'codigo_pro', description:'detalle', qty:'stock' },
     noDatePrompt: true },
+  { distributor:'compragamer', reportType:'combined',
+    requiredHeaders:['PartnerName','StartPeriod','EndPeriodo','ProductNumber','ProductDescription','InventoryUnits','SalesUnits'],
+    map:{ code:'ProductNumber', description:'ProductDescription', qtyStock:'InventoryUnits', qtySales:'SalesUnits', periodStart:'StartPeriod', periodEnd:'EndPeriodo' },
+    noDatePrompt: true },
 ];
 
 const PRELOADED_ELIT_SNAPSHOTS = [{"distributor":"elit","reportType":"stock","periodStart":"2026-06-22","periodEnd":"2026-06-26","rows":[{"code":"B450M PRO-VDH MAX","description":"Motherboard MSI B450M PRO-VDH MAX AM4 DDR4","qty":0,"avgPrice":null,"client":null,"cuit":null},{"code":"B550M PRO-VDH WIFI","description":"Motherboard MSI B550M PRO-VDH WIFI AM4 DDR4","qty":8,"avgPrice":null,"client":null,"cuit":null},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":3842,"avgPrice":null,"client":null,"cuit":null},{"code":"A320M-A PRO","description":"Motherboard MSI A320M-A PRO AM4 DDR4","qty":0,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO B760M-P DDR4","description":"Motherboard MSI PRO B760M-P LGA1700 DDR4","qty":3,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO H610M-G","description":"Motherboard MSI PRO H610M-G LGA1700 DDR5","qty":271,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO B760M-P","description":"Motherboard MSI PRO B760M-P LGA1700 DDR5","qty":85,"avgPrice":null,"client":null,"cuit":null},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":237,"avgPrice":null,"client":null,"cuit":null},{"code":"B760M GAMING PLUS WIFI","description":"Motherboard MSI B760M GAMING PLUS WIFI LGA1700","qty":2,"avgPrice":null,"client":null,"cuit":null},{"code":"B550M-A PRO","description":"Motherboard MSI B550M-A PRO (AM4)","qty":9,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO B760M-E DDR4","description":"Motherboard MSI PRO B760M-E DDR4 (LGA1700)","qty":3,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO X870-P WIFI","description":"Motherboard MSI PRO X870-P WIFI AM5 DD5","qty":7,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO Z890-S WIFI","description":"Motherboard MSI PRO Z890-S WIFI LGA1851 DDR5","qty":51,"avgPrice":null,"client":null,"cuit":null},{"code":"RTX 3050 LP 6G OC","description":"Placa MSI NVIDIA GeForceRTX 3050 LP 6G OC","qty":438,"avgPrice":null,"client":null,"cuit":null},{"code":"A520M PRO","description":"Motherboard MSI A520M PRO AM4 DDR4","qty":1,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO Z890-S WIFI WHITE","description":"Motherboard MSI PRO Z890-S WIFI  WHITE LGA1851 DDR5","qty":16,"avgPrice":null,"client":null,"cuit":null},{"code":"X870 GAMING PLUS WIFI","description":"Motherboard MSI X870 GAMING PLUS WIFI AM5 DDR5","qty":2,"avgPrice":null,"client":null,"cuit":null},{"code":"B860 GAMING PLUS WIFI","description":"Motherboard MSI B860 GAMING PLUS WIFI LGA 1851 DDR5","qty":6,"avgPrice":null,"client":null,"cuit":null},{"code":"MAG CORELIQUID A13 240 WHITE","description":"Water Cooler MSI MAG CORELIQUID A13 240 WHITE","qty":16,"avgPrice":null,"client":null,"cuit":null},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":35,"avgPrice":null,"client":null,"cuit":null},{"code":"9S7-15K111-1886","description":"Notebook MSI Cyborg 15 A13UDX Intel I5-13420H 15.6\" 16GB DDR5 (2 x8GB)  512GB NVMe RTX 3050 W11 Home","qty":36,"avgPrice":null,"client":null,"cuit":null},{"code":"9S7-16R831-3245","description":"Notebook MSI Thin 15 B13VE Intel I5-13420H 15.6\" 16GB DDR4 (2 x8GB) 512GB NVMe, RTX 4050 W11 Home","qty":22,"avgPrice":null,"client":null,"cuit":null},{"code":"9S7-14L112-438","description":"Notebook MSI Modern 14 H D2RMG Intel Core 7 240H 14\" 16GB DDR4 (2 x8GB) 512GB NVMe W11 Home","qty":23,"avgPrice":null,"client":null,"cuit":null},{"code":"9S7-15Q342-234","description":"Notebook MSI Cyborg 15 B2RWEK Intel Core 5 210H 15.6\" 16GB DDR5 (2 x8GB), 512GB NVMe RTX 5050 W11 Home","qty":27,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO B840M-B","description":"Motherboard MSI PRO B840M-B AM5 DDR5","qty":279,"avgPrice":null,"client":null,"cuit":null},{"code":"MAG CORELIQUID A13 240","description":"Water Cooler MSI MAG CORELIQUID A13 240 BLACK","qty":17,"avgPrice":null,"client":null,"cuit":null},{"code":"RTX 5050 8G GAMING OC","description":"Placa de Video MSI NVIDIA Geforce RTX 5050 8G GAMING OC","qty":18,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO H810M-B WIFI6E","description":"Motherboard MSI PRO H810M-B WIFI6E LGA 1851 DDR5","qty":8,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO H810M-B","description":"Motherboard MSI PRO H810M-B LGA 1851 DDR5","qty":248,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO H610M-B","description":"Motherboard MSI PRO H610M-B LGA 1700 DDR5","qty":67,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO H610M-A DDR4","description":"Motherboard MSI PRO H610M-A LGA 1700 DDR4","qty":96,"avgPrice":null,"client":null,"cuit":null},{"code":"B850M GAMING PRO WIFI6E","description":"Motherboard MSI B850M GAMING PRO WIFI6E AM5 DDR5","qty":5,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":624,"avgPrice":null,"client":null,"cuit":null},{"code":"MAG COREFROZR AA13 WHITE","description":"Air  Cooler MSI MAG COREFROZR AA13 ARGB WHITE","qty":1,"avgPrice":null,"client":null,"cuit":null},{"code":"PRO B860M-E","description":"Motherboard MSI PRO B860M-E  LGA 1851 DDR5","qty":57,"avgPrice":null,"client":null,"cuit":null}],"sourceFile":"REPORTE_INVENTORY_MSI.XLS"},{"distributor":"elit","reportType":"sales","periodStart":"2026-06-22","periodEnd":"2026-06-26","rows":[{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":42.82,"client":"GRANATO DANTE FRANCISCO","cuit":"20347138879"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":45.97,"client":"DI SPARTI ROMAN","cuit":"20336318646"},{"code":"RTX 3050 LP 6G OC","description":"Placa MSI NVIDIA GeForceRTX 3050 LP 6G OC","qty":2,"avgPrice":224.98,"client":"MOBE SRL","cuit":"30709274712"},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":1,"avgPrice":344.98,"client":"MOBE SRL","cuit":"30709274712"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":21,"avgPrice":44.04,"client":"PIÑERA CESAR ALBERTO","cuit":"20329070930"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":230.47,"client":"LABORATORIOS BIOFARMA SA","cuit":"30690280988"},{"code":"PRO B760M-P","description":"Motherboard MSI PRO B760M-P LGA1700 DDR5","qty":1,"avgPrice":89.6,"client":"AUAN SRL","cuit":"30710543433"},{"code":"PRO MP251 E14L","description":"Monitor MSI PRO MP251 E14L  24,5\" FullHD 144Hz IPS  Ficha USA","qty":1,"avgPrice":79.03,"client":"VALENTINI RODOLFO ADRIAN","cuit":"20263614195"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":42.82,"client":"MASCARO LEONARDO MARTIN","cuit":"20311138171"},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":1,"avgPrice":350.84,"client":"CORTASSA MATIAS PABLO","cuit":"20246192481"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":3,"avgPrice":63.43,"client":"SCARAFIA AGUSTIN","cuit":"20374907191"},{"code":"PRO H610M-A DDR4","description":"Motherboard MSI PRO H610M-A LGA 1700 DDR4","qty":1,"avgPrice":57.54,"client":"GRUPO SILP S.A.S.","cuit":"30719088933"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":1,"avgPrice":63.4,"client":"LOMBARDO MARTA BEATRIZ","cuit":"27054364755"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":7,"avgPrice":226.45666666666668,"client":"SEGAL GABRIEL ALEJANDRO","cuit":"20211408511"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":3,"avgPrice":65.71,"client":"SEGAL GABRIEL ALEJANDRO","cuit":"20211408511"},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":1,"avgPrice":356.77,"client":"AGUIRRE BOTTO JOAQUIN BAUTISTA","cuit":"20366400371"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":230.45,"client":"MUCCI LORENA MARIA","cuit":"27249605870"},{"code":"PAG PANO M110A","description":"Gabinete MSI PAG PANO M110A S/Fuente","qty":1,"avgPrice":35.2,"client":"MENDOZA IVAN ARIEL","cuit":"20267893730"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":42.82,"client":"TECNOLOGIA CATAMARCA SH","cuit":"30711146713"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":42.82,"client":"PIVETTA MARIA VIRGINIA","cuit":"27301194302"},{"code":"PRO B840M-B","description":"Motherboard MSI PRO B840M-B AM5 DDR5","qty":10,"avgPrice":72.99,"client":"CIUDAD DE.JUEGOS. SRL","cuit":"30717970787"},{"code":"B850M GAMING PRO WIFI6E","description":"Motherboard MSI B850M GAMING PRO WIFI6E AM5 DDR5","qty":2,"avgPrice":175.09,"client":"CIUDAD DE.JUEGOS. SRL","cuit":"30717970787"},{"code":"PRO B760M-E DDR4","description":"Motherboard MSI PRO B760M-E DDR4 (LGA1700)","qty":1,"avgPrice":74.98,"client":"ARRASCAETA JOSE MARIANO","cuit":"23928280349"},{"code":"MAG COREFROZR AA13 WHITE","description":"Air  Cooler MSI MAG COREFROZR AA13 ARGB WHITE","qty":1,"avgPrice":15.29,"client":"HONEKER LUCAS MANUEL","cuit":"20409674306"},{"code":"PRO B840M-B","description":"Motherboard MSI PRO B840M-B AM5 DDR5","qty":1,"avgPrice":72.97,"client":"PC CRAFTING S.R.L","cuit":"30719222664"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":230.47,"client":"GONZALEZ F. Y ESPERIDIONI L SH","cuit":"30682890610"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":228.17,"client":"AVINCETTO LEONARDO OSCAR","cuit":"23262278069"},{"code":"9S7-15K111-1886","description":"Notebook MSI Cyborg 15 A13UDX Intel I5-13420H 15.6\" 16GB DDR5 (2 x8GB)  512GB NVMe RTX 3050 W11 Home","qty":1,"avgPrice":1134.16,"client":"CHAVEZ NESTOR JOSE FONTECHA DI","cuit":"30707604448"},{"code":"PRO MP251 E14L","description":"Monitor MSI PRO MP251 E14L  24,5\" FullHD 144Hz IPS  Ficha USA","qty":1,"avgPrice":79.83,"client":"LOPEZ JEREMIAS Y ORSINI S.H","cuit":"30709707635"},{"code":"PRO H610M-G","description":"Motherboard MSI PRO H610M-G LGA1700 DDR5","qty":1,"avgPrice":55.29,"client":"ORTA JUAN SEBASTIAN","cuit":"20299649971"},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":1,"avgPrice":350.84,"client":"NEIRA GABRIEL EDGARDO","cuit":"20253699737"},{"code":"PRO H810M-B","description":"Motherboard MSI PRO H810M-B LGA 1851 DDR5","qty":1,"avgPrice":101.64,"client":"MEGABYTE COMPUTACION S.R.L","cuit":"30712218785"},{"code":"PRO MP251 E14L","description":"Monitor MSI PRO MP251 E14L  24,5\" FullHD 144Hz IPS  Ficha USA","qty":1,"avgPrice":79.83,"client":"MEGABYTE COMPUTACION S.R.L","cuit":"30712218785"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":3,"avgPrice":63.43,"client":"R.E.S INFORMATICA S.R.L","cuit":"30711849226"},{"code":"PRO MP251 E14L","description":"Monitor MSI PRO MP251 E14L  24,5\" FullHD 144Hz IPS  Ficha USA","qty":1,"avgPrice":80.62,"client":"ISAAC JORGE RAUL","cuit":"20062569175"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":3,"avgPrice":43.24,"client":"SABATTINI JULIAN","cuit":"20424311848"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":15,"avgPrice":42.8,"client":"FERRARIS LUCIANO HERNAN Y BERN","cuit":"30714988413"},{"code":"A520M PRO","description":"Motherboard MSI A520M PRO AM4 DDR4","qty":-1,"avgPrice":45.47,"client":"ALTAVISTA S.A.","cuit":"30710939523"},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":-1,"avgPrice":356.79,"client":"COMPULAB SRL","cuit":"30708542837"},{"code":"PRO X870-P WIFI","description":"Motherboard MSI PRO X870-P WIFI AM5 DD5","qty":3,"avgPrice":221.41,"client":"VENEX S.A.","cuit":"30715473204"},{"code":"B860M GAMING PLUS WIFI","description":"Motherboard MSI B860M GAMING PLUS WIFI LGA1851 DDR5","qty":7,"avgPrice":183.76,"client":"VENEX S.A.","cuit":"30715473204"},{"code":"PRO H610M-A DDR4","description":"Motherboard MSI PRO H610M-A LGA 1700 DDR4","qty":15,"avgPrice":57.14,"client":"VENEX S.A.","cuit":"30715473204"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":43.67,"client":"SILES MANUEL ALEJANDNRO","cuit":"20226327518"},{"code":"PRO B840M-B","description":"Motherboard MSI PRO B840M-B AM5 DDR5","qty":1,"avgPrice":72.99,"client":"MENDOZA IVAN ARIEL","cuit":"20267893730"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":1,"avgPrice":63.43,"client":"REGAZZI MAT Y REGAZZI CRI SH","cuit":"30714504483"},{"code":"PRO MP251 E14L","description":"Monitor MSI PRO MP251 E14L  24,5\" FullHD 144Hz IPS  Ficha USA","qty":1,"avgPrice":79.03,"client":"ORTIZ JOSE ANTONIO HUGO","cuit":"20225309451"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":2,"avgPrice":42.8,"client":"CORDOBA AGUSTIN","cuit":"20375698138"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":4,"avgPrice":44.6,"client":"PABLO COMPUTACION S. A. S.","cuit":"30717959449"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":44.62,"client":"CARUSO FRANCO ANGEL","cuit":"20349666783"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":43.67,"client":"FRANCEZON SEBASTIAN ENRIQUE","cuit":"23298488779"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":43.67,"client":"IMPULSAR GROUP S.A.S.","cuit":"30716528444"},{"code":"B550M-A PRO","description":"Motherboard MSI B550M-A PRO (AM4)","qty":10,"avgPrice":63.33,"client":"GRUPO MAXIMUS S.R.L.","cuit":"30715775014"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":225.63,"client":"VIDAL JUAN PABLO BENITO","cuit":"20331570444"},{"code":"PRO B760M-E DDR4","description":"Motherboard MSI PRO B760M-E DDR4 (LGA1700)","qty":2,"avgPrice":74.53,"client":"ALTAVISTA S.A.","cuit":"30710939523"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":6,"avgPrice":44.32,"client":"RETEC CONS.DE COOP.EMP Y EXP.","cuit":"30712057285"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":2,"avgPrice":42.8,"client":"ENGLER FERNANDO ARIEL","cuit":"20245719184"},{"code":"9S7-15Q342-234","description":"Notebook MSI Cyborg 15 B2RWEK Intel Core 5 210H 15.6\" 16GB DDR5 (2 x8GB), 512GB NVMe RTX 5050 W11 Home","qty":4,"avgPrice":1513.77,"client":"CUADRADO LUIS ANGEL","cuit":"20079145514"},{"code":"MAG CORELIQUID A13 360","description":"Water Cooler MSI MAG CORELIQUID A13 360 BLACK","qty":1,"avgPrice":69.97,"client":"SEGAL GABRIEL ALEJANDRO","cuit":"20211408511"},{"code":"PRO H810M-B WIFI6E","description":"Motherboard MSI PRO H810M-B WIFI6E LGA 1851 DDR5","qty":1,"avgPrice":122.99,"client":"DEL BURGO SEBASTIAN","cuit":"20307463521"},{"code":"PRO H610M-G","description":"Motherboard MSI PRO H610M-G LGA1700 DDR5","qty":1,"avgPrice":55.29,"client":"BARRIOS COMPUTACION S. R. L.","cuit":"30717305449"},{"code":"MAG CORELIQUID A12 240","description":"Water Cooler MSI MAG CORELIQUID A12 240 BLACK","qty":1,"avgPrice":56.48,"client":"COENDA ADRIAN MAXIMILIANO","cuit":"20320346275"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":42.82,"client":"RIERA JOSE ANDRES","cuit":"20260895347"},{"code":"PRO H610M-A DDR4","description":"Motherboard MSI PRO H610M-A LGA 1700 DDR4","qty":5,"avgPrice":57.52,"client":"AUDIO VIDEO SYSTEMS SRL","cuit":"30671905403"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":2,"avgPrice":42.6,"client":"GIMENEZ ERNESTO MATIAS","cuit":"20341608180"},{"code":"B850M GAMING PRO WIFI6E","description":"Motherboard MSI B850M GAMING PRO WIFI6E AM5 DDR5","qty":1,"avgPrice":175.09,"client":"MASTERS INFORMATICA SRL","cuit":"30707435565"},{"code":"9S7-16R831-3245","description":"Notebook MSI Thin 15 B13VE Intel I5-13420H 15.6\" 16GB DDR4 (2 x8GB) 512GB NVMe, RTX 4050 W11 Home","qty":2,"avgPrice":1260.23,"client":"VENEX S.A.","cuit":"30715473204"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":225.63,"client":"PARISI PABLO ANDRES","cuit":"20221378815"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":225.63,"client":"RETEC CONS.DE COOP.EMP Y EXP.","cuit":"30712057285"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":225.63,"client":"MIAPRIL SRL","cuit":"33716641959"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":225.63,"client":"RIONEGRO YESICA LUCIANA","cuit":"27280574630"},{"code":"PRO H610M-A DDR4","description":"Motherboard MSI PRO H610M-A LGA 1700 DDR4","qty":1,"avgPrice":57.54,"client":"SANI MARTIN GERONIMO","cuit":"20330318091"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":10,"avgPrice":42.79,"client":"VENTURINI CESAR HERNAN","cuit":"20242924216"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":2,"avgPrice":228.15,"client":"TORRES MIRIAN BEATRIZ","cuit":"27174164520"},{"code":"RTX 5050 8G GAMING OC","description":"Placa de Video MSI NVIDIA Geforce RTX 5050 8G GAMING OC","qty":1,"avgPrice":329.43,"client":"SEGAL GABRIEL ALEJANDRO","cuit":"20211408511"},{"code":"PRO H610M-G","description":"Motherboard MSI PRO H610M-G LGA1700 DDR5","qty":2,"avgPrice":55.29,"client":"MARSRO GAMING S.R.L","cuit":"30717112365"},{"code":"PRO B840M-B","description":"Motherboard MSI PRO B840M-B AM5 DDR5","qty":2,"avgPrice":72.97,"client":"TIENDA OP S.R.L.","cuit":"30717186113"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":1,"avgPrice":63.43,"client":"RIVERA GONZALO","cuit":"20221751206"},{"code":"PRO H610M-G","description":"Motherboard MSI PRO H610M-G LGA1700 DDR5","qty":1,"avgPrice":55.31,"client":"ARRICHETTA S.A","cuit":"30715205137"},{"code":"RTX 3050 LP 6G OC","description":"Placa MSI NVIDIA GeForceRTX 3050 LP 6G OC","qty":1,"avgPrice":227.89,"client":"DOCTOR PC S.A.S.","cuit":"30717087743"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":10,"avgPrice":225.61,"client":"NOXIESTORE S.A.","cuit":"30717170276"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":2,"avgPrice":225.39,"client":"AX SISTEMAS Y SERVICIOS S.A.","cuit":"30708673435"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":43.67,"client":"ABDALA RAMON DARGOLTZ CARLOS S","cuit":"30717395251"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":3,"avgPrice":63.4,"client":"CORANA HERNAN SILVIO","cuit":"20204428566"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":42.82,"client":"AGUDO CLAUDIO SEBASTIAN","cuit":"20260107152"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":5,"avgPrice":63.43,"client":"MARTINOLI EZEQUIEL MATIAS","cuit":"20312237408"},{"code":"9S7-15Q342-234","description":"Notebook MSI Cyborg 15 B2RWEK Intel Core 5 210H 15.6\" 16GB DDR5 (2 x8GB), 512GB NVMe RTX 5050 W11 Home","qty":2,"avgPrice":1513.77,"client":"VENEX S.A.","cuit":"30715473204"},{"code":"PRO H810M-B WIFI6E","description":"Motherboard MSI PRO H810M-B WIFI6E LGA 1851 DDR5","qty":1,"avgPrice":126.74,"client":"VISPE & GONZALEZ","cuit":"30715004212"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":6,"avgPrice":63.4,"client":"RISTOFF ALBERTO ANTONIO ELIAS","cuit":"20261632374"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":10,"avgPrice":224.48,"client":"GRUPO MAXIMUS S.R.L.","cuit":"30715775014"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":60,"avgPrice":42.8,"client":"HOME ATILIO AGUSTIN","cuit":"20411436854"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":225.61,"client":"LEIZAN CLAUDIA VALERIA","cuit":"27279722138"},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":3,"avgPrice":356.79,"client":"ENTERBYTE  SRL","cuit":"30714272736"},{"code":"PRO B760M-P","description":"Motherboard MSI PRO B760M-P LGA1700 DDR5","qty":1,"avgPrice":89.63,"client":"LEVELSTORE S. R. L.","cuit":"30718973542"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":44.6,"client":"NEUTRO INFORMATICA SRL","cuit":"30710644213"},{"code":"PRO H610M-G","description":"Motherboard MSI PRO H610M-G LGA1700 DDR5","qty":2,"avgPrice":55.303333333333335,"client":"MORELLI MARIANO PABLO","cuit":"20296949893"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":227.89,"client":"GAJATE MANUEL","cuit":"20334229980"},{"code":"MAG CORELIQUID A12 240","description":"Water Cooler MSI MAG CORELIQUID A12 240 BLACK","qty":1,"avgPrice":56.5,"client":"MATACH DANIEL ANTONIO","cuit":"20122984142"},{"code":"PRO H610M-G","description":"Motherboard MSI PRO H610M-G LGA1700 DDR5","qty":4,"avgPrice":55.31,"client":"ITERBIO SAS","cuit":"30717012336"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":14,"avgPrice":42.8,"client":"KUN CRISTIAN EDUARDO","cuit":"23350772839"},{"code":"MAG COREFROZR AA13 WHITE","description":"Air  Cooler MSI MAG COREFROZR AA13 ARGB WHITE","qty":1,"avgPrice":14.82,"client":"GROSSO JUNIORS S.A.S.","cuit":"30717245357"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":5,"avgPrice":43.67,"client":"AGUIRRE ALVAREZ JOSE MANUEL","cuit":"20292559330"},{"code":"MAG COREFROZR AA13 WHITE","description":"Air  Cooler MSI MAG COREFROZR AA13 ARGB WHITE","qty":3,"avgPrice":15.29,"client":"AGUIRRE ALVAREZ JOSE MANUEL","cuit":"20292559330"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":5,"avgPrice":42.82,"client":"REDBOT S. R. L.","cuit":"30717546500"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":45.97,"client":"FULGENZI MARIA STEFANIA","cuit":"27936834545"},{"code":"B550M-A PRO","description":"Motherboard MSI B550M-A PRO (AM4)","qty":1,"avgPrice":65.67,"client":"SANSONE OMAR","cuit":"20228615952"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":227.91,"client":"RUJANA MARTIN CESAR","cuit":"20305933490"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":2,"avgPrice":63.43,"client":"RUJANA MARTIN CESAR","cuit":"20305933490"},{"code":"MAG CORELIQUID A13 240 WHITE","description":"Water Cooler MSI MAG CORELIQUID A13 240 WHITE","qty":1,"avgPrice":67.81,"client":"SCANFERLA LUCAS JORDAN","cuit":"20349471273"},{"code":"PRO X870-P WIFI","description":"Motherboard MSI PRO X870-P WIFI AM5 DD5","qty":1,"avgPrice":221.4,"client":"SUBMULTIPLO S.A.","cuit":"30717617890"},{"code":"PRO B840M-B","description":"Motherboard MSI PRO B840M-B AM5 DDR5","qty":3,"avgPrice":72.97,"client":"ANCA SRL","cuit":"30674543960"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":42.82,"client":"ALONSO GABRIEL ANGEL","cuit":"20372826755"},{"code":"PRO B840M-B","description":"Motherboard MSI PRO B840M-B AM5 DDR5","qty":1,"avgPrice":72.99,"client":"ASNAGHI GONZALO ADRIAN","cuit":"20256963680"},{"code":"PRO H610M-A DDR4","description":"Motherboard MSI PRO H610M-A LGA 1700 DDR4","qty":4,"avgPrice":58.12,"client":"CHIAVASSA ROLANDO ANDRES","cuit":"20222214042"},{"code":"A520M PRO","description":"Motherboard MSI A520M PRO AM4 DDR4","qty":-1,"avgPrice":45.47,"client":"CIUDAD DE.JUEGOS. SRL","cuit":"30717970787"},{"code":"9S7-15K111-1886","description":"Notebook MSI Cyborg 15 A13UDX Intel I5-13420H 15.6\" 16GB DDR5 (2 x8GB)  512GB NVMe RTX 3050 W11 Home","qty":1,"avgPrice":1144.22,"client":"FREYTES CARLA SILVANA","cuit":"27250605876"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":3,"avgPrice":225.61,"client":"SALVUCCI NORBERTO ARIEL","cuit":"20305926001"},{"code":"RTX 5050 8G GAMING OC","description":"Placa de Video MSI NVIDIA Geforce RTX 5050 8G GAMING OC","qty":1,"avgPrice":329.43,"client":"SALVUCCI NORBERTO ARIEL","cuit":"20305926001"},{"code":"PRO H610M-G","description":"Motherboard MSI PRO H610M-G LGA1700 DDR5","qty":2,"avgPrice":55.29,"client":"ESCEVICH LUCAS GASTON","cuit":"20283591000"},{"code":"B550M PRO-VDH WIFI","description":"Motherboard MSI B550M PRO-VDH WIFI AM4 DDR4","qty":1,"avgPrice":85.59,"client":"VSAT MONITOREO SATELITAL SRL","cuit":"30714740411"},{"code":"9S7-15K111-1886","description":"Notebook MSI Cyborg 15 A13UDX Intel I5-13420H 15.6\" 16GB DDR5 (2 x8GB)  512GB NVMe RTX 3050 W11 Home","qty":3,"avgPrice":1108.26,"client":"NOVA INFORMATICA SA","cuit":"30621558982"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":1,"avgPrice":63.4,"client":"MAGURNO LUCAS SEBASTIAN","cuit":"20269035065"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":2,"avgPrice":227.89,"client":"GRUPO NOVATI SRL","cuit":"30714556475"},{"code":"MAG CORELIQUID A13 240 WHITE","description":"Water Cooler MSI MAG CORELIQUID A13 240 WHITE","qty":10,"avgPrice":62.88,"client":"VENEX S.A.","cuit":"30715473204"},{"code":"PRO MP251 E14L","description":"Monitor MSI PRO MP251 E14L  24,5\" FullHD 144Hz IPS  Ficha USA","qty":42,"avgPrice":75,"client":"VENEX S.A.","cuit":"30715473204"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":227.91,"client":"ALONSO GABRIEL ANGEL","cuit":"20372826755"},{"code":"PRO B840M-B","description":"Motherboard MSI PRO B840M-B AM5 DDR5","qty":1,"avgPrice":72.99,"client":"BOLCATTO LUCIANO","cuit":"20314194056"},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":1,"avgPrice":363.93,"client":"CORTIZO SEBASTIAN","cuit":"20281157672"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":225.63,"client":"ARRICHETTA ALEJANDRO HECTOR","cuit":"20231476718"},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":1,"avgPrice":356.79,"client":"LIDBERG GUSTAVO SIMEONE DIEGO","cuit":"30717720683"},{"code":"B550M-A PRO","description":"Motherboard MSI B550M-A PRO (AM4)","qty":1,"avgPrice":63.72,"client":"METODOS INFORMATICA SRL","cuit":"30710391498"},{"code":"CUBI  5 12M-015BUS","description":"Mini PC MSI CUBI 5 12M- Intel Core i5-1235U BAREBONE (S/RAM - S/SSD) FICHA USA","qty":3,"avgPrice":350.82,"client":"JAR COMPUTACION SRL","cuit":"30715126687"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":2,"avgPrice":44.6,"client":"GORILA GAMES S.A.S.","cuit":"30717508862"},{"code":"B550M-A PRO","description":"Motherboard MSI B550M-A PRO (AM4)","qty":1,"avgPrice":64.38,"client":"GRUPO NOVATI SRL","cuit":"30714556475"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":3,"avgPrice":42.82,"client":"ANCHOVERRI PONCE NICOLAS RODR","cuit":"20331854493"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":3,"avgPrice":42.79,"client":"MONFERRAN LUIS EDUARDO","cuit":"20352489884"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":3,"avgPrice":44.62,"client":"JBINSUMOS SOCIEDAD DE RESPONSA","cuit":"30716399075"},{"code":"PRO B760M-P","description":"Motherboard MSI PRO B760M-P LGA1700 DDR5","qty":1,"avgPrice":89.6,"client":"PERGAMINO TECNO S.R.L","cuit":"30715504517"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":1,"avgPrice":45.05,"client":"PERGAMINO TECNO S.R.L","cuit":"30715504517"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":2,"avgPrice":43.65,"client":"MEGAFAX S. A. S.","cuit":"33719078279"},{"code":"PRO B760M-P","description":"Motherboard MSI PRO B760M-P LGA1700 DDR5","qty":1,"avgPrice":89.63,"client":"FIORANI ALEJANDRO","cuit":"23171135729"},{"code":"RTX 3050 VENTUS 2X 6G OC","description":"Placa de Video MSI NVIDIA  RTX 3050 VENTUS 6G OC","qty":1,"avgPrice":225.61,"client":"RUIZ PABLO EXEQUIEL","cuit":"20351438682"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":3,"avgPrice":44.6,"client":"VIDABLE CASTRO FERNANDO","cuit":"20295577496"},{"code":"A520M-A PRO","description":"Motherboard MSI A520M-A PRO AM4 DDR4","qty":-1,"avgPrice":45.07,"client":"DAVID CRISTIAN ADRIAN","cuit":"20302570109"},{"code":"B550M-A PRO","description":"Motherboard MSI B550M-A PRO (AM4)","qty":29,"avgPrice":58.59,"client":"GRUPO MEXX S.R.L.","cuit":"30716932245"},{"code":"PRO A620AM-B EVO","description":"Motherboard MSI PRO A620AM-B EVO AM5 DDR5","qty":10,"avgPrice":58.17,"client":"GRUPO MEXX S.R.L.","cuit":"30716932245"},{"code":"MAG CORELIQUID A13 360","description":"Water Cooler MSI MAG CORELIQUID A13 360 BLACK","qty":8,"avgPrice":61.51,"client":"GRUPO MEXX S.R.L.","cuit":"30716932245"}],"sourceFile":"REPORTE_SALES_MSI.XLS"}];
@@ -7285,6 +7331,39 @@ async function parseOneDistributorFile(file) {
     const found = findDistributorHeaderRow(rows);
     if(!found) { unrecognizedSheets.push(sheetName); return; }
     const preambleText = rows.slice(0, found.headerIdx).map(r => (r||[]).map(c=>c==null?'':String(c)).join(' ')).join(' ');
+
+    if(found.fmt.reportType === 'combined') {
+      // Etailer combined format: one row = stock + sales for a product in a period
+      const cmap = buildColIndexMap(rows[found.headerIdx]);
+      const get = (row, key) => { const h = found.fmt.map[key]; if(!h) return null; const i = cmap[normHeaderTxt(h)]; return i!=null ? row[i] : null; };
+      const stockAgg = new Map(), salesAgg = new Map();
+      let periodStart = null, periodEnd = null;
+      for(let i=found.headerIdx+1; i<rows.length; i++) {
+        const row = rows[i]||[];
+        const code = String(get(row,'code')||'').trim(); if(!code) continue;
+        const desc = String(get(row,'description')||'').trim();
+        const qtyS = parseFloat(get(row,'qtyStock'));
+        const qtyV = parseFloat(get(row,'qtySales'));
+        const ps = excelDateToISO(get(row,'periodStart')) || String(get(row,'periodStart')||'').trim();
+        const pe = excelDateToISO(get(row,'periodEnd'))   || String(get(row,'periodEnd')||'').trim();
+        if(ps && (!periodStart || ps < periodStart)) periodStart = ps;
+        if(pe && (!periodEnd   || pe > periodEnd))   periodEnd   = pe;
+        const k = code.toUpperCase();
+        if(!isNaN(qtyS)) {
+          if(!stockAgg.has(k)) stockAgg.set(k,{code,description:desc,qty:0});
+          stockAgg.get(k).qty += qtyS;
+        }
+        if(!isNaN(qtyV)) {
+          if(!salesAgg.has(k)) salesAgg.set(k,{code,description:desc,qty:0});
+          salesAgg.get(k).qty += qtyV;
+        }
+      }
+      const now = new Date().toISOString();
+      if(stockAgg.size > 0) snapshots.push({ id:Date.now()+Math.random(), distributor:'compragamer', reportType:'stock', periodStart, periodEnd, rows:Array.from(stockAgg.values()).map(r=>({...r,avgPrice:null,client:null,cuit:null})), sourceFile:file.name, sheetName, noDatePrompt:true, uploadedAt:now });
+      if(salesAgg.size > 0) snapshots.push({ id:Date.now()+Math.random()+0.1, distributor:'compragamer', reportType:'sales', periodStart, periodEnd, rows:Array.from(salesAgg.values()).map(r=>({...r,avgPrice:null,client:null,cuit:null})), sourceFile:file.name, sheetName, noDatePrompt:true, uploadedAt:now });
+      return;
+    }
+
     const { rows:dataRows, period } = parseDistributorSheet(rows, found.fmt, found.headerIdx, preambleText);
     if(dataRows.length === 0) return;
     snapshots.push({
@@ -7453,6 +7532,111 @@ async function handleRotationFiles(fileList) {
   }
   _alert(summary + unrecognizedNote + guessedWarning + upgradeNote + failedNote, {type:'success', title:'Archivos importados'});
 }
+// ─── ETAILERS ─────────────────────────────────────────────
+async function handleEtailersFiles(fileList) {
+  const files = Array.from(fileList);
+  if(files.length === 0) return;
+  const progressEl = document.getElementById('etailers-upload-progress');
+  let allSnapshots = [], failedFiles = [];
+  for(let i=0; i<files.length; i++) {
+    const file = files[i];
+    if(progressEl) progressEl.textContent = `Procesando ${file.name}...`;
+    try {
+      const { snapshots } = await parseOneDistributorFile(file);
+      if(snapshots.length === 0) failedFiles.push(file.name);
+      else allSnapshots = allSnapshots.concat(snapshots);
+    } catch(err) { failedFiles.push(file.name + ': ' + err.message); }
+  }
+  if(progressEl) progressEl.textContent = '';
+  if(allSnapshots.length === 0) { _alert('No se reconoció ningún archivo. Verificá que sea el formato correcto de Compragamer.', {type:'error'}); return; }
+  resolveSnapshotPeriods(allSnapshots);
+  allSnapshots.forEach(snap => upsertSnapshot(snap));
+  saveDB();
+  renderAll();
+  gotoTab('etailers');
+  const summary = 'Importado:\n' + allSnapshots.map(s=>`• COMPRAGAMER — ${s.reportType==='sales'?'Ventas':'Stock'} (${s.rows.length} SKUs, ${fmtRotDate(s.periodStart)}${s.periodStart!==s.periodEnd?' al '+fmtRotDate(s.periodEnd):''})`).join('\n');
+  _alert(summary + (failedFiles.length ? '\n\n✗ No reconocí: '+failedFiles.join(', ') : ''), {type:'success', title:'Archivos importados'});
+}
+const fileInputEtailers = document.getElementById('file-input-etailers');
+const dropZoneEtailers  = document.getElementById('drop-zone-etailers');
+dropZoneEtailers.addEventListener('dragover', e => { e.preventDefault(); dropZoneEtailers.classList.add('dragover'); });
+dropZoneEtailers.addEventListener('dragleave', () => dropZoneEtailers.classList.remove('dragover'));
+dropZoneEtailers.addEventListener('drop', e => { e.preventDefault(); dropZoneEtailers.classList.remove('dragover'); if(e.dataTransfer.files.length) handleEtailersFiles(e.dataTransfer.files); });
+fileInputEtailers.addEventListener('change', e => { if(e.target.files.length) handleEtailersFiles(e.target.files); e.target.value=''; });
+
+let _currentEtailerFilter = 'compragamer';
+function setEtailerFilter(key, btn) {
+  _currentEtailerFilter = key;
+  btn.parentElement.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEtailersTab();
+}
+
+function renderEtailersTab() {
+  const snaps = (db.weeklyReports||[]).filter(s => s.distributor === _currentEtailerFilter);
+  const stockSnaps = snaps.filter(s=>s.reportType==='stock').sort((a,b)=>String(b.periodEnd||'').localeCompare(String(a.periodEnd||'')));
+  const salesSnaps = snaps.filter(s=>s.reportType==='sales').sort((a,b)=>String(b.periodEnd||'').localeCompare(String(a.periodEnd||'')));
+  const latestStock = stockSnaps[0];
+  const latestSales = salesSnaps[0];
+
+  let html = '';
+
+  // Badge count
+  const nb = document.getElementById('nb-etailers');
+  if(nb) nb.textContent = snaps.length || 0;
+
+  // Latest stock
+  if(latestStock) {
+    const totalUnits = latestStock.rows.reduce((s,r)=>s+(r.qty||0),0);
+    html += `<div class="alert-section" style="margin-bottom:1.5rem">
+      <div class="section-header"><div class="section-title">Stock actual · ${ETAILER_LABELS[_currentEtailerFilter]}</div><span style="font-size:12px;color:var(--text2)">${fmtRotDate(latestStock.periodStart)}${latestStock.periodStart!==latestStock.periodEnd?' al '+fmtRotDate(latestStock.periodEnd):''} · ${latestStock.rows.length} SKUs · ${totalUnits.toLocaleString('es-AR')} uds.</span></div>
+      <div class="table-scroll"><table class="data-table">
+        <thead><tr><th>Código</th><th>Descripción</th><th style="text-align:right">Stock</th></tr></thead>
+        <tbody>`;
+    latestStock.rows.slice().sort((a,b)=>b.qty-a.qty).forEach(r => {
+      html += `<tr><td><code style="font-size:12px">${esc(r.code)}</code></td><td style="font-size:12px">${esc(r.description)}</td><td style="text-align:right;font-weight:600">${r.qty.toLocaleString('es-AR')}</td></tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+  }
+
+  // Latest sales
+  if(latestSales) {
+    const totalSold = latestSales.rows.reduce((s,r)=>s+(r.qty||0),0);
+    html += `<div class="alert-section" style="margin-bottom:1.5rem">
+      <div class="section-header"><div class="section-title">Ventas última semana · ${ETAILER_LABELS[_currentEtailerFilter]}</div><span style="font-size:12px;color:var(--text2)">${fmtRotDate(latestSales.periodStart)}${latestSales.periodStart!==latestSales.periodEnd?' al '+fmtRotDate(latestSales.periodEnd):''} · ${latestSales.rows.length} SKUs · ${totalSold.toLocaleString('es-AR')} uds.</span></div>
+      <div class="table-scroll"><table class="data-table">
+        <thead><tr><th>Código</th><th>Descripción</th><th style="text-align:right">Vendido</th></tr></thead>
+        <tbody>`;
+    latestSales.rows.slice().sort((a,b)=>b.qty-a.qty).forEach(r => {
+      html += `<tr><td><code style="font-size:12px">${esc(r.code)}</code></td><td style="font-size:12px">${esc(r.description)}</td><td style="text-align:right;font-weight:600">${r.qty.toLocaleString('es-AR')}</td></tr>`;
+    });
+    html += `</tbody></table></div></div>`;
+  }
+
+  if(!latestStock && !latestSales) {
+    html = `<div style="text-align:center;padding:2rem;color:var(--text2);font-size:14px">Todavía no hay datos de ${ETAILER_LABELS[_currentEtailerFilter]}. Subí el reporte semanal arriba.</div>`;
+  }
+
+  document.getElementById('etailers-content').innerHTML = html;
+
+  // History
+  const histEl = document.getElementById('etailers-history');
+  if(histEl) {
+    if(snaps.length === 0) { histEl.innerHTML = '<div style="padding:1rem;color:var(--text2);font-size:13px">Sin cargas todavía.</div>'; return; }
+    const allSorted = snaps.slice().sort((a,b)=>String(b.uploadedAt||'').localeCompare(String(a.uploadedAt||'')));
+    histEl.innerHTML = `<table class="data-table"><thead><tr><th>Tipo</th><th>Período</th><th>SKUs</th><th>Archivo</th><th>Subido</th></tr></thead><tbody>${
+      allSorted.map(s=>`<tr>
+        <td><span class="pill ${s.reportType==='sales'?'pill-green':'pill-blue'}" style="font-size:11px">${s.reportType==='sales'?'Ventas':'Stock'}</span></td>
+        <td style="font-size:12px">${fmtRotDate(s.periodStart)}${s.periodStart!==s.periodEnd?' al '+fmtRotDate(s.periodEnd):''}</td>
+        <td>${s.rows.length}</td>
+        <td style="font-size:11px;color:var(--text2)">${esc(s.sourceFile||'')}</td>
+        <td style="font-size:11px;color:var(--text2)">${s.uploadedAt ? new Date(s.uploadedAt).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-'}</td>
+      </tr>`).join('')
+    }</tbody></table>`;
+  }
+}
+// ─────────────────────────────────────────────────────────
+
 const fileInputRotation = document.getElementById('file-input-rotation');
 const dropZoneRotation = document.getElementById('drop-zone-rotation');
 dropZoneRotation.addEventListener('dragover', e => { e.preventDefault(); dropZoneRotation.classList.add('dragover'); });
@@ -7760,7 +7944,7 @@ async function deleteSelectedRotationSnapshots() {
   db.weeklyReports = db.weeklyReports.filter(s => !selectedRotationSnapshotIds.has(s.id));
   selectedRotationSnapshotIds.clear();
   saveDB();
-  document.getElementById('nb-rotation').textContent = db.weeklyReports.length;
+  const _etKeys=Object.keys(ETAILERS);document.getElementById('nb-rotation').textContent=(db.weeklyReports||[]).filter(s=>!_etKeys.includes(s.distributor)).length;const _nbEt=document.getElementById('nb-etailers');if(_nbEt)_nbEt.textContent=(db.weeklyReports||[]).filter(s=>_etKeys.includes(s.distributor)).length;
   renderRotationTab();
   renderRotationHistory();
 }
@@ -7781,7 +7965,7 @@ async function deleteRotationSnapshot(id) {
   db.weeklyReports = db.weeklyReports.filter(s => s.id !== id);
   selectedRotationSnapshotIds.delete(id);
   saveDB();
-  document.getElementById('nb-rotation').textContent = db.weeklyReports.length;
+  const _etKeys=Object.keys(ETAILERS);document.getElementById('nb-rotation').textContent=(db.weeklyReports||[]).filter(s=>!_etKeys.includes(s.distributor)).length;const _nbEt=document.getElementById('nb-etailers');if(_nbEt)_nbEt.textContent=(db.weeklyReports||[]).filter(s=>_etKeys.includes(s.distributor)).length;
   renderRotationTab();
   renderRotationHistory();
 }
