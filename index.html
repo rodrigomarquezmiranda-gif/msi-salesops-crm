@@ -1299,7 +1299,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.26.8';
+const APP_VERSION = '1.19.08.26.9';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9599,6 +9599,7 @@ function isGlobalBrand(name) {
 
 let importsGlobalOnly = true;
 let importsSelectedBrand = 'MSI'; // marca seleccionada para ver detalle de importadores
+let importsViewMode = 'brand'; // 'brand' | 'importer'
 
 function normImportHeader(s) {
   return String(s||'').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -9930,18 +9931,68 @@ function renderImportsTab() {
     </div>`;
 
   const filterNote = importsGlobalOnly ? 'Solo marcas globales (las locales están excluidas del total). Usá "Todas las marcas" para verlas.' : 'Mostrando todas las marcas del archivo, incluyendo locales.';
-  wrap.innerHTML = `<div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-info-circle"></i> ${filterNote} <b style="color:var(--text2)">Hacé clic en una marca para ver sus importadores.</b></div>
-  <div class="table-scroll"><table class="data-table">
-    <thead><tr><th>#</th><th>Marca</th><th>Unidades</th><th>% del total</th></tr></thead>
-    <tbody>${ranking.map((r,i) => {
-      const isMsi = normDesc(r.brand)==='MSI';
-      const isSelected = normDesc(r.brand)===normDesc(importsSelectedBrand);
-      const baseBg = isMsi ? 'var(--brand-bg)' : '';
-      return `<tr style="cursor:pointer;background:${baseBg}${isSelected?';outline:2px solid var(--blue);outline-offset:-2px':''}" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='${baseBg}'" onclick="selectImportBrand('${r.brand.replace(/'/g,"\\'")}')" title="Ver importadores de ${esc(r.brand)}">
-        <td>${i+1}</td><td>${isMsi?`<span style="color:var(--brand-text)">${esc(r.brand)}</span>`:esc(r.brand)}${isSelected?' <i class="ti ti-chevron-down" style="font-size:10px;color:var(--blue)"></i>':''}</td><td>${r.units.toLocaleString('es-AR')}</td><td>${r.pct.toFixed(1)}%</td>
-      </tr>`;
-    }).join('')}</tbody>
-  </table></div>`;
+
+  // Toggle Por Marca / Por Importador
+  const toggleHtml = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <span style="font-size:12px;color:var(--text3)">Vista:</span>
+    <button onclick="setImportsViewMode('brand')" class="btn${importsViewMode==='brand'?' btn-primary':''}" style="padding:4px 12px;font-size:12px">Por Marca</button>
+    <button onclick="setImportsViewMode('importer')" class="btn${importsViewMode==='importer'?' btn-primary':''}" style="padding:4px 12px;font-size:12px">Por Importador</button>
+  </div>`;
+
+  if(importsViewMode === 'importer') {
+    const importerData = computeImporterBrandBreakdown(batch, importsSelectedMonths);
+    if(!importerData || !importerData.length) {
+      wrap.innerHTML = toggleHtml + `<div style="font-size:13px;color:var(--text3)">No hay transacciones detalladas — subí un archivo con detalle por línea.</div>`;
+    } else {
+      // Collect all unique brands across all importers for the header, limited to top ones
+      const brandTotals = new Map();
+      importerData.forEach(im => im.brands.forEach(b => { brandTotals.set(b.brand, (brandTotals.get(b.brand)||0) + b.qty); }));
+      const allBrands = Array.from(brandTotals.entries()).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+      // Show top 8 brands + "Otros" if more
+      const MAX_COLS = 8;
+      const topBrands = allBrands.slice(0, MAX_COLS);
+      const hasOthers = allBrands.length > MAX_COLS;
+
+      const headerCells = topBrands.map(b => {
+        const isMsi = normDesc(b) === 'MSI';
+        return `<th style="${isMsi?'color:var(--brand-text);font-weight:700':''}">${esc(b)}</th>`;
+      }).join('') + (hasOthers ? '<th>Otras</th>' : '') + '<th>Total u.</th>';
+
+      const rows = importerData.map(im => {
+        const brandMap = new Map(im.brands.map(b=>[b.brand, b]));
+        const othersQty = hasOthers ? allBrands.slice(MAX_COLS).reduce((s,b)=>s+(brandMap.get(b)?.qty||0),0) : 0;
+        const cells = topBrands.map(b => {
+          const entry = brandMap.get(b);
+          const isMsi = normDesc(b) === 'MSI';
+          if(!entry || entry.qty === 0) return `<td style="color:var(--text3)">—</td>`;
+          const style = isMsi ? 'color:var(--brand-text);font-weight:600;background:var(--brand-bg)' : '';
+          return `<td style="${style}">${entry.pct.toFixed(1)}%<br><span style="font-size:10px;color:var(--text3)">${entry.qty.toLocaleString('es-AR')} u.</span></td>`;
+        }).join('');
+        const othersCell = hasOthers ? (othersQty > 0 ? `<td><span style="font-size:11px">${(othersQty/im.totalQty*100).toFixed(1)}%</span><br><span style="font-size:10px;color:var(--text3)">${othersQty.toLocaleString('es-AR')} u.</span></td>` : '<td style="color:var(--text3)">—</td>') : '';
+        return `<tr><td style="font-weight:500;white-space:nowrap">${esc(im.importer)}</td>${cells}${othersCell}<td style="font-weight:600">${im.totalQty.toLocaleString('es-AR')}</td></tr>`;
+      }).join('');
+
+      wrap.innerHTML = toggleHtml + `
+        <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-info-circle"></i> ${filterNote} Ordenado por unidades MSI descendente. El % es la participación de la marca dentro de ese importador.</div>
+        <div class="table-scroll"><table class="data-table" style="font-size:12px">
+          <thead><tr><th>Importador</th>${headerCells}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+    }
+  } else {
+    wrap.innerHTML = toggleHtml + `<div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-info-circle"></i> ${filterNote} <b style="color:var(--text2)">Hacé clic en una marca para ver sus importadores.</b></div>
+    <div class="table-scroll"><table class="data-table">
+      <thead><tr><th>#</th><th>Marca</th><th>Unidades</th><th>% del total</th></tr></thead>
+      <tbody>${ranking.map((r,i) => {
+        const isMsi = normDesc(r.brand)==='MSI';
+        const isSelected = normDesc(r.brand)===normDesc(importsSelectedBrand);
+        const baseBg = isMsi ? 'var(--brand-bg)' : '';
+        return `<tr style="cursor:pointer;background:${baseBg}${isSelected?';outline:2px solid var(--blue);outline-offset:-2px':''}" onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background='${baseBg}'" onclick="selectImportBrand('${r.brand.replace(/'/g,"\\'")}')" title="Ver importadores de ${esc(r.brand)}">
+          <td>${i+1}</td><td>${isMsi?`<span style="color:var(--brand-text)">${esc(r.brand)}</span>`:esc(r.brand)}${isSelected?' <i class="ti ti-chevron-down" style="font-size:10px;color:var(--blue)"></i>':''}</td><td>${r.units.toLocaleString('es-AR')}</td><td>${r.pct.toFixed(1)}%</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+  }
 
   const { msi } = batch;
   const dynamicImporters = computeBrandImporterBreakdown(batch, importsSelectedBrand, importsSelectedMonths);
@@ -9982,6 +10033,10 @@ function selectImportBrand(brand) {
   renderImportsTab();
   setTimeout(() => document.getElementById('imports-supplement')?.scrollIntoView({ behavior:'smooth', block:'start' }), 50);
 }
+function setImportsViewMode(mode) {
+  importsViewMode = mode;
+  renderImportsTab();
+}
 function computeBrandImporterBreakdown(batch, brand, monthFilterSet) {
   if(!batch.transactions) return null;
   const filter = monthFilterSet.size ? monthFilterSet : 'all';
@@ -9997,6 +10052,34 @@ function computeBrandImporterBreakdown(batch, brand, monthFilterSet) {
   return Array.from(byImporter.values())
     .map(im => ({ importer:im.importer, qty:im.qty, fob:im.fob, modelCount:im.models.size, pct: total>0 ? im.qty/total*100 : 0 }))
     .sort((a,b) => b.qty-a.qty);
+}
+function computeImporterBrandBreakdown(batch, monthFilterSet) {
+  if(!batch.transactions) return null;
+  const filter = monthFilterSet && monthFilterSet.size ? monthFilterSet : 'all';
+  const txs = batch.transactions.filter(t => monthMatchesFilter(t.month, filter));
+  // Group by importer → by brand
+  const byImporter = new Map();
+  txs.forEach(t => {
+    if(!byImporter.has(t.importer)) byImporter.set(t.importer, { importer: t.importer, totalQty: 0, brands: new Map() });
+    const im = byImporter.get(t.importer);
+    im.totalQty += t.qty;
+    if(!im.brands.has(t.brand)) im.brands.set(t.brand, 0);
+    im.brands.set(t.brand, im.brands.get(t.brand) + t.qty);
+  });
+  return Array.from(byImporter.values())
+    .map(im => ({
+      importer: im.importer,
+      totalQty: im.totalQty,
+      brands: Array.from(im.brands.entries())
+        .map(([brand, qty]) => ({ brand, qty, pct: im.totalQty > 0 ? qty / im.totalQty * 100 : 0 }))
+        .sort((a, b) => b.qty - a.qty)
+    }))
+    .sort((a, b) => {
+      // Sort by MSI qty desc first, then total
+      const msiA = (a.brands.find(x => normDesc(x.brand) === 'MSI') || {}).qty || 0;
+      const msiB = (b.brands.find(x => normDesc(x.brand) === 'MSI') || {}).qty || 0;
+      return msiB - msiA;
+    });
 }
 let currentImportBatchForTooltip = null;
 function showImportImporterTooltip(evt, importer) {
