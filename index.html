@@ -1299,7 +1299,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.20.4';
+const APP_VERSION = '1.19.08.20.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9760,9 +9760,38 @@ function extractRawTransactions(wb) {
     const header = (rows[headerIdx] || []).map(h => h!=null ? String(h) : '');
     const idx = {};
     Object.keys(RAW_TX_FIELD_KEYWORDS).forEach(f => idx[f] = guessImportColIdx(header, RAW_TX_FIELD_KEYWORDS[f]));
-    // Need at least importer + qty; model is optional (fall back to description)
+
+    // ── WIDE FORMAT: Importador | MARCA: LG | MARCA: SAMSUNG | ... ──
+    // Detected when there's an importer col but no qty/brand col,
+    // and multiple headers look like brand names (MARCA: X or known brand)
+    const brandColIdxs = [];
+    if(idx.importer > -1 && idx.qty === -1) {
+      header.forEach((h, i) => {
+        if(i === idx.importer) return;
+        const clean = h.replace(/^MARCA\s*:\s*/i,'').trim();
+        if(clean && normImportHeader(h).includes('TOTAL') === false && clean.length > 0 && clean.length < 40)
+          brandColIdxs.push({ i, brand: clean });
+      });
+    }
+    if(brandColIdxs.length >= 2 && idx.importer > -1) {
+      // Wide format: expand each row into one transaction per brand column
+      const dataRows = rows.slice(headerIdx+1).filter(r => r && r[idx.importer] != null && String(r[idx.importer]).trim());
+      const txs = [];
+      dataRows.forEach(r => {
+        const importer = String(r[idx.importer]||'').trim();
+        if(!importer) return;
+        brandColIdxs.forEach(bc => {
+          const qty = importCellToNum(r[bc.i]);
+          if(isNaN(qty) || qty <= 0) return;
+          txs.push({ month: null, brand: bc.brand, importer, model: bc.brand, origin: '', qty, fob: null });
+        });
+      });
+      if(txs.length >= 3) return txs;
+    }
+
+    // ── LONG FORMAT: one row per transaction ──
     if(idx.importer===-1 || idx.qty===-1) continue;
-    if(idx.model===-1 && idx.brand===-1) continue; // need at least something to identify the product
+    if(idx.model===-1 && idx.brand===-1) continue;
     const dataRows = rows.slice(headerIdx+1).filter(r => r && r.some(c => c!=null && String(c).trim()));
     const txs = dataRows.map(r => ({
       month:    idx.month>-1  ? normalizeMonthKey(r[idx.month])  : (idx.date>-1 ? normalizeMonthKey(r[idx.date]) : null),
@@ -9773,7 +9802,7 @@ function extractRawTransactions(wb) {
       qty:      importCellToNum(r[idx.qty]),
       fob:      idx.fob>-1    ? importCellToNum(r[idx.fob])      : null,
     })).filter(t => t.importer && (t.model || t.brand) && !isNaN(t.qty) && t.qty > 0);
-    if(txs.length >= 5) return txs; // at least 5 rows to avoid false positives
+    if(txs.length >= 5) return txs;
   }
   return null;
 }
