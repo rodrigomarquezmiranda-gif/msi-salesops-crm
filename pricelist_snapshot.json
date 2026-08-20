@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-08-19T15:44:02.652043+00:00",
-  "lastCheck": "20/08/2026 13:19",
-  "changesFound": false,
+  "capturedAt": "2026-08-20T21:08:12.220209+00:00",
+  "lastCheck": "20/08/2026 21:08",
+  "changesFound": true,
   "priceLogic": "min(colQ, colR) — uses lower of Miami Price and Market Share price. Parser: dynamic section detection via header rows.",
   "source": "Google Sheet 1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw | Tab: LATAM",
   "notifEmails": [
@@ -2028,16 +2028,6 @@
       "bondedStock": 0,
       "bondedEta": ""
     },
-    "MAG275QF": {
-      "partNumber": "MAG275QF",
-      "name": "MAG 275QF",
-      "category": "Monitor",
-      "price": 128.0,
-      "miamiStock": 0,
-      "miamiEta": "",
-      "bondedStock": 0,
-      "bondedEta": ""
-    },
     "MAG32C6X": {
       "partNumber": "MAG32C6X",
       "name": "MAG 32C6X",
@@ -2098,16 +2088,6 @@
       "bondedStock": 0,
       "bondedEta": ""
     },
-    "MAG274F": {
-      "partNumber": "MAG274F",
-      "name": "MAG 274F",
-      "category": "Monitor",
-      "price": 112.0,
-      "miamiStock": 0,
-      "miamiEta": "",
-      "bondedStock": 0,
-      "bondedEta": ""
-    },
     "MAG272F": {
       "partNumber": "MAG272F",
       "name": "MAG 272F",
@@ -2158,32 +2138,12 @@
       "bondedStock": 0,
       "bondedEta": ""
     },
-    "MAG244F": {
-      "partNumber": "MAG244F",
-      "name": "MAG 244F",
-      "category": "Monitor",
-      "price": 102.0,
-      "miamiStock": 0,
-      "miamiEta": "",
-      "bondedStock": 0,
-      "bondedEta": ""
-    },
     "MAG245CX24": {
       "partNumber": "MAG245CX24",
       "name": "MAG 245C X24",
       "category": "Monitor",
       "price": 102.0,
       "miamiStock": 40,
-      "miamiEta": "",
-      "bondedStock": 0,
-      "bondedEta": ""
-    },
-    "MAG242C": {
-      "partNumber": "MAG242C",
-      "name": "MAG 242C",
-      "category": "Monitor",
-      "price": 90.0,
-      "miamiStock": 0,
       "miamiEta": "",
       "bondedStock": 0,
       "bondedEta": ""
