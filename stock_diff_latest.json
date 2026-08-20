@@ -1,34 +1,9 @@
 {
-  "checkedAt": "2026-08-20T21:31:57.786078+00:00",
+  "checkedAt": "2026-08-20T21:51:57.137274+00:00",
   "productCount": 323,
-  "hasChanges": true,
-  "changeCount": 4,
-  "changes": [
-    {
-      "type": "removed",
-      "partNo": "MAG242C",
-      "name": "MAG 242C",
-      "category": "Monitor"
-    },
-    {
-      "type": "removed",
-      "partNo": "MAG244F",
-      "name": "MAG 244F",
-      "category": "Monitor"
-    },
-    {
-      "type": "removed",
-      "partNo": "MAG274F",
-      "name": "MAG 274F",
-      "category": "Monitor"
-    },
-    {
-      "type": "removed",
-      "partNo": "MAG275QF",
-      "name": "MAG 275QF",
-      "category": "Monitor"
-    }
-  ],
+  "hasChanges": false,
+  "changeCount": 0,
+  "changes": [],
   "lastChanges": [
     {
       "type": "removed",
@@ -56,7 +31,7 @@
     }
   ],
   "lastChangesAt": "2026-08-20T21:31:57.786078+00:00",
-  "summary": "4 cambio(s) detectado(s)",
+  "summary": "Sin cambios",
   "triggeredBy": "sistema",
-  "triggerMode": "auto"
+  "triggerMode": "schedule"
 }
