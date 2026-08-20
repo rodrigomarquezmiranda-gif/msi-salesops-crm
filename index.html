@@ -1299,7 +1299,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.26.9';
+const APP_VERSION = '1.19.08.26.10';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5377,7 +5377,7 @@ ${_buildTransitAlertPanel(transitData)}
       // Transit-only rows: show "—" in stock cell instead of empty
       html += p.isTransitOnly
         ? `<td class="sf-td-center" style="color:var(--text3)">—</td>`
-        : (sc ? `<td class="sf-td-center ${sc}">${sl}</td>` : `<td class="sf-td-center"></td>`);
+        : (sc ? `<td class="sf-td-center ${sc}">${sl}<br><span style="font-size:10px;font-weight:400;opacity:0.85">${qty} u.</span></td>` : `<td class="sf-td-center"></td>`);
       const hasTransit = transitData[dk].keys.has(p.normModel);
       const isExpiring = transitData[dk].expiringKeys.has(p.normModel);
       if(hasTransit) {
