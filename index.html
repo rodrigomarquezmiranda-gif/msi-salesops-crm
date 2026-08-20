@@ -1299,7 +1299,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.20.1';
+const APP_VERSION = '1.19.08.20.3';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9727,9 +9727,15 @@ function guessImportCategoryName(fileName) {
 // presente, la usamos para poder filtrar importadores por mes y mostrar la composición real
 // (qué modelos exactos trajo cada importador) en vez de solo el total del período completo.
 const RAW_TX_FIELD_KEYWORDS = {
-  date: ['fecha'], month: ['mes'], brand: ['marca'], importer: ['importador'],
-  model: ['modelo'], origin: ['pais_origen','pais origen','origen'],
-  qty: ['cantidad'], fob: ['usd_fob','fob'], cif: ['usd_cif','cif'],
+  date:     ['fecha'],
+  month:    ['mes','month','periodo','período'],
+  brand:    ['marca','brand','fabricante'],
+  importer: ['importador','importadora','empresa importadora','empresa','razon social','razón social','importer'],
+  model:    ['modelo','descripcion','descripción','articulo','artículo','producto','product','model','partno','part no','part number'],
+  origin:   ['pais_origen','pais origen','origen','pais','país'],
+  qty:      ['cantidad','unidades','units','qty','volumen','importaciones','cant'],
+  fob:      ['usd_fob','fob','valor fob','u$s fob','usd fob'],
+  cif:      ['usd_cif','cif'],
 };
 function guessImportColIdx(header, keywords) {
   const normHeaders = header.map(h => normImportHeader(h||''));
@@ -9743,22 +9749,31 @@ function guessImportColIdx(header, keywords) {
 function extractRawTransactions(wb) {
   for(const name of wb.SheetNames) {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header:1, raw:true, defval:null });
-    const table = extractImportTable(rows, ['Importador','Modelo','Cantidad']);
-    if(!table) continue;
-    const header = table.header;
+    if(!rows || rows.length < 2) continue;
+    // Find the header row: first row with at least 3 non-empty cells
+    let headerIdx = -1;
+    for(let i=0; i<Math.min(10, rows.length); i++) {
+      const r = rows[i] || [];
+      if(r.filter(c => c!=null && String(c).trim()).length >= 3) { headerIdx = i; break; }
+    }
+    if(headerIdx < 0) continue;
+    const header = (rows[headerIdx] || []).map(h => h!=null ? String(h) : '');
     const idx = {};
     Object.keys(RAW_TX_FIELD_KEYWORDS).forEach(f => idx[f] = guessImportColIdx(header, RAW_TX_FIELD_KEYWORDS[f]));
-    if(idx.importer===-1 || idx.model===-1 || idx.qty===-1) continue;
-    const txs = table.dataRows.map(r => ({
-      month: idx.month>-1 ? normalizeMonthKey(r[idx.month]) : (idx.date>-1 ? normalizeMonthKey(r[idx.date]) : null),
-      brand: idx.brand>-1 ? String(r[idx.brand]||'').trim() : '',
+    // Need at least importer + qty; model is optional (fall back to description)
+    if(idx.importer===-1 || idx.qty===-1) continue;
+    if(idx.model===-1 && idx.brand===-1) continue; // need at least something to identify the product
+    const dataRows = rows.slice(headerIdx+1).filter(r => r && r.some(c => c!=null && String(c).trim()));
+    const txs = dataRows.map(r => ({
+      month:    idx.month>-1  ? normalizeMonthKey(r[idx.month])  : (idx.date>-1 ? normalizeMonthKey(r[idx.date]) : null),
+      brand:    idx.brand>-1  ? String(r[idx.brand]||'').trim().replace(/^MARCA\s*:\s*/i,'')  : '',
       importer: String(r[idx.importer]||'').trim(),
-      model: String(r[idx.model]||'').trim(),
-      origin: idx.origin>-1 ? String(r[idx.origin]||'').trim() : '',
-      qty: importCellToNum(r[idx.qty]),
-      fob: idx.fob>-1 ? importCellToNum(r[idx.fob]) : null,
-    })).filter(t => t.importer && t.model);
-    if(txs.length) return txs;
+      model:    idx.model>-1  ? String(r[idx.model]||'').trim()  : (idx.brand>-1 ? String(r[idx.brand]||'').trim() : ''),
+      origin:   idx.origin>-1 ? String(r[idx.origin]||'').trim() : '',
+      qty:      importCellToNum(r[idx.qty]),
+      fob:      idx.fob>-1    ? importCellToNum(r[idx.fob])      : null,
+    })).filter(t => t.importer && (t.model || t.brand) && !isNaN(t.qty) && t.qty > 0);
+    if(txs.length >= 5) return txs; // at least 5 rows to avoid false positives
   }
   return null;
 }
@@ -9947,7 +9962,9 @@ function renderImportsTab() {
       // Collect all unique brands across all importers for the header, limited to top ones
       const brandTotals = new Map();
       importerData.forEach(im => im.brands.forEach(b => { brandTotals.set(b.brand, (brandTotals.get(b.brand)||0) + b.qty); }));
-      const allBrands = Array.from(brandTotals.entries()).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+      let allBrands = Array.from(brandTotals.entries()).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+      // Apply global filter to columns too
+      if(importsGlobalOnly) allBrands = allBrands.filter(b => isGlobalBrand(b) || normDesc(b)==='MSI');
       // Show top 8 brands + "Otros" if more
       const MAX_COLS = 8;
       const topBrands = allBrands.slice(0, MAX_COLS);
@@ -10053,18 +10070,23 @@ function computeBrandImporterBreakdown(batch, brand, monthFilterSet) {
     .map(im => ({ importer:im.importer, qty:im.qty, fob:im.fob, modelCount:im.models.size, pct: total>0 ? im.qty/total*100 : 0 }))
     .sort((a,b) => b.qty-a.qty);
 }
+function normBrandName(b) {
+  // Strip "MARCA: " prefix that some export formats include as column headers
+  return String(b||'').replace(/^MARCA\s*:\s*/i,'').trim();
+}
 function computeImporterBrandBreakdown(batch, monthFilterSet) {
   if(!batch.transactions) return null;
   const filter = monthFilterSet && monthFilterSet.size ? monthFilterSet : 'all';
   const txs = batch.transactions.filter(t => monthMatchesFilter(t.month, filter));
-  // Group by importer → by brand
+  // Group by importer → by brand (normalize brand name)
   const byImporter = new Map();
   txs.forEach(t => {
+    const brand = normBrandName(t.brand) || normBrandName(t.model) || '—';
     if(!byImporter.has(t.importer)) byImporter.set(t.importer, { importer: t.importer, totalQty: 0, brands: new Map() });
     const im = byImporter.get(t.importer);
     im.totalQty += t.qty;
-    if(!im.brands.has(t.brand)) im.brands.set(t.brand, 0);
-    im.brands.set(t.brand, im.brands.get(t.brand) + t.qty);
+    if(!im.brands.has(brand)) im.brands.set(brand, 0);
+    im.brands.set(brand, im.brands.get(brand) + t.qty);
   });
   return Array.from(byImporter.values())
     .map(im => ({
@@ -10074,12 +10096,7 @@ function computeImporterBrandBreakdown(batch, monthFilterSet) {
         .map(([brand, qty]) => ({ brand, qty, pct: im.totalQty > 0 ? qty / im.totalQty * 100 : 0 }))
         .sort((a, b) => b.qty - a.qty)
     }))
-    .sort((a, b) => {
-      // Sort by MSI qty desc first, then total
-      const msiA = (a.brands.find(x => normDesc(x.brand) === 'MSI') || {}).qty || 0;
-      const msiB = (b.brands.find(x => normDesc(x.brand) === 'MSI') || {}).qty || 0;
-      return msiB - msiA;
-    });
+    .sort((a, b) => b.totalQty - a.totalQty); // sort by total units desc
 }
 let currentImportBatchForTooltip = null;
 function showImportImporterTooltip(evt, importer) {
