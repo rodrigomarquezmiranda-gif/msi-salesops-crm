@@ -1299,7 +1299,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.20.6';
+const APP_VERSION = '1.19.08.20.7';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9777,12 +9777,17 @@ function extractRawTransactions(wb) {
   const importerSheets = wb.SheetNames.filter(n =>
     n.replace(/[^\w\s]/g,'').toUpperCase().includes('IMPORTADOR')
   );
+  console.log('[extractRawTx] All sheets:', wb.SheetNames);
+  console.log('[extractRawTx] Importer sheets found:', importerSheets);
   let combined = [];
   for(const name of importerSheets) {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header:1, raw:true, defval:null });
+    console.log('[extractRawTx] Sheet:', name, 'rows:', rows.length, 'first non-empty:', rows.find(r=>r&&r.some(c=>c!=null)));
     const txs = parseSheetLong(rows);
+    console.log('[extractRawTx] parseSheetLong result:', txs ? txs.length + ' txs' : 'null');
     if(txs) combined = combined.concat(txs);
   }
+  console.log('[extractRawTx] Combined total:', combined.length);
   if(combined.length >= 3) return combined;
 
   // Priority 2: any other sheet with importer + brand/model + qty columns

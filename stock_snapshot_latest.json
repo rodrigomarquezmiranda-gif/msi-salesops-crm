@@ -1615,14 +1615,6 @@
     "miamiEta": "",
     "bondedStock": 0
   },
-  "MAG275QF": {
-    "name": "MAG 275QF",
-    "category": "Monitor",
-    "miamiStock": 0,
-    "miamiPrice": 128.0,
-    "miamiEta": "",
-    "bondedStock": 0
-  },
   "MAG32C6X": {
     "name": "MAG 32C6X",
     "category": "Monitor",
@@ -1671,14 +1663,6 @@
     "miamiEta": "",
     "bondedStock": 0
   },
-  "MAG274F": {
-    "name": "MAG 274F",
-    "category": "Monitor",
-    "miamiStock": 0,
-    "miamiPrice": 112.0,
-    "miamiEta": "",
-    "bondedStock": 0
-  },
   "MAG272F": {
     "name": "MAG 272F",
     "category": "Monitor",
@@ -1719,27 +1703,11 @@
     "miamiEta": "ETA 09/19 350pcs + ETA 09/26 1470pcs + ETA 09/27 350pcs",
     "bondedStock": 0
   },
-  "MAG244F": {
-    "name": "MAG 244F",
-    "category": "Monitor",
-    "miamiStock": 0,
-    "miamiPrice": 102.0,
-    "miamiEta": "",
-    "bondedStock": 0
-  },
   "MAG245CX24": {
     "name": "MAG 245C X24",
     "category": "Monitor",
     "miamiStock": 40,
     "miamiPrice": 102.0,
-    "miamiEta": "",
-    "bondedStock": 0
-  },
-  "MAG242C": {
-    "name": "MAG 242C",
-    "category": "Monitor",
-    "miamiStock": 0,
-    "miamiPrice": 90.0,
     "miamiEta": "",
     "bondedStock": 0
   },

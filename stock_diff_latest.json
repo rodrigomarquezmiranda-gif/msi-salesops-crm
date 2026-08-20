@@ -1,84 +1,62 @@
 {
-  "checkedAt": "2026-08-20T13:25:19.920561+00:00",
-  "productCount": 327,
-  "hasChanges": false,
-  "changeCount": 0,
-  "changes": [],
-  "lastChanges": [
+  "checkedAt": "2026-08-20T21:31:57.786078+00:00",
+  "productCount": 323,
+  "hasChanges": true,
+  "changeCount": 4,
+  "changes": [
     {
-      "type": "stock",
-      "partNo": "B550MB",
-      "name": "PRO B550M-B",
-      "category": "MB",
-      "oldStock": 10,
-      "newStock": 550
+      "type": "removed",
+      "partNo": "MAG242C",
+      "name": "MAG 242C",
+      "category": "Monitor"
     },
     {
-      "type": "stock",
-      "partNo": "CFAA13",
-      "name": "MAG COREFROZR AA13",
-      "category": "Cooling",
-      "oldStock": 352,
-      "newStock": 1368
+      "type": "removed",
+      "partNo": "MAG244F",
+      "name": "MAG 244F",
+      "category": "Monitor"
     },
     {
-      "type": "new",
-      "partNo": "CLE15360",
-      "name": "MEG CORELIQUID E15 360",
-      "category": "Cooling",
-      "newPrice": 330.0
+      "type": "removed",
+      "partNo": "MAG274F",
+      "name": "MAG 274F",
+      "category": "Monitor"
     },
     {
-      "type": "stock",
-      "partNo": "G506T-16S2CP",
-      "name": "Geforce RTX 5060 Ti 16G SHADOW 2X OC PLUS",
-      "category": "VGA",
-      "oldStock": 928,
-      "newStock": 1428
-    },
-    {
-      "type": "stock",
-      "partNo": "G7102D3P",
-      "name": "GT 710 2GD3 LP",
-      "category": "VGA",
-      "oldStock": 545,
-      "newStock": 345
-    },
-    {
-      "type": "stock",
-      "partNo": "MAG275UPDE14",
-      "name": "MAG 275UPD E14",
-      "category": "Monitor",
-      "oldStock": 36,
-      "newStock": 264
-    },
-    {
-      "type": "stock",
-      "partNo": "PROB760ED4",
-      "name": "PRO B760M-E DDR4",
-      "category": "MB",
-      "oldStock": 300,
-      "newStock": 860
-    },
-    {
-      "type": "stock",
-      "partNo": "PROH610MSD4",
-      "name": "PRO H610M-S DDR4",
-      "category": "MB",
-      "oldStock": 0,
-      "newStock": 570
-    },
-    {
-      "type": "stock",
-      "partNo": "PROMP271E14A",
-      "name": "PRO MP271 E14A",
-      "category": "Monitor",
-      "oldStock": 1368,
-      "newStock": 868
+      "type": "removed",
+      "partNo": "MAG275QF",
+      "name": "MAG 275QF",
+      "category": "Monitor"
     }
   ],
-  "lastChangesAt": "2026-08-19T21:48:49.911763+00:00",
-  "summary": "Sin cambios",
+  "lastChanges": [
+    {
+      "type": "removed",
+      "partNo": "MAG242C",
+      "name": "MAG 242C",
+      "category": "Monitor"
+    },
+    {
+      "type": "removed",
+      "partNo": "MAG244F",
+      "name": "MAG 244F",
+      "category": "Monitor"
+    },
+    {
+      "type": "removed",
+      "partNo": "MAG274F",
+      "name": "MAG 274F",
+      "category": "Monitor"
+    },
+    {
+      "type": "removed",
+      "partNo": "MAG275QF",
+      "name": "MAG 275QF",
+      "category": "Monitor"
+    }
+  ],
+  "lastChangesAt": "2026-08-20T21:31:57.786078+00:00",
+  "summary": "4 cambio(s) detectado(s)",
   "triggeredBy": "sistema",
-  "triggerMode": "schedule"
+  "triggerMode": "auto"
 }
