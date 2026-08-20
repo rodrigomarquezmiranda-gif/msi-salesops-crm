@@ -115,5 +115,14 @@
     "summary": "9 cambio(s) detectado(s)",
     "triggerMode": "schedule",
     "triggeredBy": "sistema"
+  },
+  {
+    "checkedAt": "2026-08-20T13:25:19.920561+00:00",
+    "productCount": 327,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "schedule",
+    "triggeredBy": "sistema"
   }
 ]
