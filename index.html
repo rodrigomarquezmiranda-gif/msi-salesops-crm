@@ -1299,7 +1299,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.26.10';
+const APP_VERSION = '1.19.08.20.1';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9942,7 +9942,7 @@ function renderImportsTab() {
   if(importsViewMode === 'importer') {
     const importerData = computeImporterBrandBreakdown(batch, importsSelectedMonths);
     if(!importerData || !importerData.length) {
-      wrap.innerHTML = toggleHtml + `<div style="font-size:13px;color:var(--text3)">No hay transacciones detalladas — subí un archivo con detalle por línea.</div>`;
+      wrap.innerHTML = toggleHtml + `<div style="font-size:13px;color:var(--text3)"><i class="ti ti-info-circle" style="margin-right:6px"></i>Este archivo no tiene hoja de detalle por operación (necesita columnas Importador · Marca · Modelo · Cantidad). El archivo de <b>${esc(getCurrentImportBatch()?.category||'esta categoría')}</b> solo tiene el resumen mensual — la vista Por Importador no está disponible para este archivo.</div>`;
     } else {
       // Collect all unique brands across all importers for the header, limited to top ones
       const brandTotals = new Map();
