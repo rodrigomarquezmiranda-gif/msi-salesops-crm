@@ -1299,7 +1299,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.26.7';
+const APP_VERSION = '1.19.08.26.8';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7156,12 +7156,23 @@ function classifyProductCategory(description) {
 // siempre conserva el código de modelo real (ej. "A520M-A", "H610M-S", "M100A")
 // dentro de la descripción. Lo extraemos y lo usamos como clave para agrupar el
 // mismo producto entre proveedores, aunque el resto del texto no coincida.
+const _SPEC_UNITS = new Set(['HZ','MHZ','GHZ','MS','G','GB','T','TB','W','MM','V','A','RPM','KB','MB']);
 function extractModelTokens(description) {
-  const norm = String(description||'').toUpperCase();
+  let norm = String(description||'').toUpperCase();
+  // Strip connectivity specs before tokenising (2xHDMI, 1xDP, 3xUSB, etc.)
+  norm = norm.replace(/\b\d+\s*[Xx]\s*(?:HDMI|DP|USB|VGA|DVI|DISPLAYPORT|THUNDERBOLT|TYPE[-\s]?C)\b/g, ' ');
+  // Strip response time + refresh rate specs (1ms, 144hz)
+  norm = norm.replace(/\b\d+(?:[.,]\d+)?\s*(?:MS|HZ|MHZ|GHZ)\b/g, ' ');
   const raw = norm.match(/[A-Z0-9][A-Z0-9-]{3,}/g) || [];
   return raw.filter(t => /\d/.test(t) && /[A-Z]/.test(t));
 }
-function isPureSpecToken(t) { return /^\d+[A-Z]{1,4}$/.test(t); }
+function isPureSpecToken(t) {
+  // Only treat as spec if the letter suffix is a known unit — so model codes like
+  // 275UPD, 490CQP, 272URX are NOT classified as specs and survive as model tokens.
+  const m = t.match(/^(\d+)([A-Z]{1,4})$/);
+  if(!m) return false;
+  return _SPEC_UNITS.has(m[2]);
+}
 const _modelKeyCache = new Map();
 function extractProductModelKey(description) {
   const d = String(description||'');
