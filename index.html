@@ -1167,15 +1167,22 @@
     </div>
     <div class="field-row" style="margin-bottom:10px">
       <div class="field" style="flex:1.5">
-        <label>Cliente</label>
-        <input type="text" id="ob-client" placeholder="Nombre del cliente..." />
+        <label>Distribuidor</label>
+        <select id="ob-client">
+          <option value="">— Seleccioná el distribuidor —</option>
+          <option value="AIR Computers">AIR Computers</option>
+          <option value="INVID">INVID</option>
+          <option value="SOLUTION BOX">SOLUTION BOX</option>
+          <option value="ELIT">ELIT</option>
+          <option value="ASHIR">ASHIR</option>
+        </select>
       </div>
       <div class="field" style="flex:1">
         <label>N° de Orden / PI</label>
         <input type="text" id="ob-pi-number" placeholder="PI-2026-XXXX" />
       </div>
     </div>
-    <div style="overflow-x:auto;margin:4px 0 10px">
+    <div style="overflow-x:auto;margin:4px 0 10px;position:relative">
       <table class="data-table" id="ob-table" style="min-width:620px">
         <thead>
           <tr>
@@ -1192,6 +1199,8 @@
         <tfoot id="ob-footer"></tfoot>
       </table>
     </div>
+    <!-- Floating model suggestion dropdown -->
+    <div id="ob-suggest-drop" style="position:fixed;z-index:9999;display:none;background:var(--bg);border:1px solid var(--border2);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-height:220px;overflow-y:auto;min-width:240px"></div>
     <button onclick="addOrderRow()" class="btn" style="font-size:12px;padding:5px 12px;margin-bottom:4px">
       <i class="ti ti-plus" style="font-size:12px"></i> Agregar línea
     </button>
@@ -1352,7 +1361,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.20.10';
+const APP_VERSION = '1.19.08.20.11';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5130,6 +5139,7 @@ function openOrderBuilder() {
   _obRows = [{ qty: '', desc: '', code: '', price: '', qtyCtn: null, qtyPlt: null }];
   document.getElementById('ob-client').value = '';
   document.getElementById('ob-pi-number').value = '';
+  _obHideSuggest();
   _renderObRows();
   openOverlay('modal-order-builder');
 }
@@ -5138,17 +5148,23 @@ function _obGetProducts() {
   return (priceList.products || []).filter(p => !p.isSubSection && p.desc);
 }
 
+// Lazily-built price history map for fast lookups
+let _obPriceHistCache = null;
+function _obPriceHistMap() {
+  if(_obPriceHistCache) return _obPriceHistCache;
+  const m = new Map();
+  getSalesPriceRows().forEach(r => {
+    const k = (r.marketingName || '').toUpperCase().trim();
+    if(!k || !r.unitPrice || r.unitPrice <= 0) return;
+    if(!m.has(k) || r.unitPrice < m.get(k)) m.set(k, r.unitPrice);
+  });
+  _obPriceHistCache = m;
+  return m;
+}
+
 function _obGetLowestPrice(desc) {
   if(!desc) return null;
-  const key = desc.toUpperCase().trim();
-  let lowest = null;
-  getSalesPriceRows().forEach(r => {
-    const rKey = (r.marketingName || '').toUpperCase().trim();
-    if(rKey === key && r.unitPrice != null && r.unitPrice > 0) {
-      if(lowest === null || r.unitPrice < lowest) lowest = r.unitPrice;
-    }
-  });
-  return lowest;
+  return _obPriceHistMap().get(desc.toUpperCase().trim()) ?? null;
 }
 
 function _obFindProduct(desc) {
@@ -5167,36 +5183,96 @@ function _obCtn(qty, qtyCtn) {
   return Math.ceil(qty / qtyCtn);
 }
 
-function _renderObRows() {
-  const products = _obGetProducts();
-  // Build / update datalist
-  const dlId = 'ob-model-datalist';
-  let dlEl = document.getElementById(dlId);
-  if(!dlEl) { dlEl = document.createElement('datalist'); dlEl.id = dlId; document.body.appendChild(dlEl); }
-  dlEl.innerHTML = products.map(p => `<option value="${esc(p.desc)}">`).join('');
+// ── Custom model suggestion dropdown (PBM-style, respects theme) ──────────────
+let _obActiveSuggestIdx = -1;
+let _obHideSuggestTimer = null;
 
+function _obShowSuggest(i, inputEl) {
+  _obActiveSuggestIdx = i;
+  clearTimeout(_obHideSuggestTimer);
+  const val = (inputEl.value || '').toLowerCase().trim();
+  const drop = document.getElementById('ob-suggest-drop');
+  if(!drop) return;
+  if(val.length < 1) { drop.style.display = 'none'; return; }
+
+  const matches = _obGetProducts()
+    .filter(p => (p.desc || '').toLowerCase().includes(val))
+    .slice(0, 14);
+
+  if(!matches.length) { drop.style.display = 'none'; return; }
+
+  const rect = inputEl.getBoundingClientRect();
+  drop.style.left  = rect.left + 'px';
+  drop.style.top   = (rect.bottom + 3) + 'px';
+  drop.style.width = Math.max(rect.width, 260) + 'px';
+  drop.style.display = 'block';
+
+  drop.innerHTML = matches.map(p => {
+    const hist = _obGetLowestPrice(p.desc);
+    const ph = hist != null ? `<span style="margin-left:8px;color:var(--text3);font-size:11px">$${hist.toFixed(2)}</span>` : '';
+    const safe = p.desc.replace(/'/g, "\\'");
+    return `<div onclick="_obPickModel(${i},'${safe}')"
+      style="padding:8px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)"
+      onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+      onmouseout="this.style.background=''">
+      <span style="font-weight:600">${esc(p.desc)}</span>${ph}
+    </div>`;
+  }).join('');
+}
+
+function _obHideSuggest() {
+  _obHideSuggestTimer = setTimeout(() => {
+    const drop = document.getElementById('ob-suggest-drop');
+    if(drop) drop.style.display = 'none';
+  }, 160);
+}
+
+function _obPickModel(i, desc) {
+  _obRows[i].desc = desc;
+  const prod = _obFindProduct(desc);
+  if(prod) {
+    _obRows[i].code   = prod.code    || '';
+    _obRows[i].qtyCtn = prod.qtyCtn  || null;
+    _obRows[i].qtyPlt = prod.qtyPlt  || null;
+    const hist      = _obGetLowestPrice(desc);
+    const listPrice = (prod.price != null && prod.price > 0) ? prod.price : null;
+    if(!_obRows[i].price) {
+      _obRows[i].price = hist !== null ? hist : (listPrice !== null ? listPrice : '');
+    }
+  }
+  const drop = document.getElementById('ob-suggest-drop');
+  if(drop) drop.style.display = 'none';
+  _renderObRows();
+  // Restore focus to the qty input in this row for quick keyboard entry
+  setTimeout(() => {
+    const qtyInput = document.querySelector(`#ob-rows tr:nth-child(${i+1}) input[type=number]`);
+    if(qtyInput) qtyInput.focus();
+  }, 50);
+}
+
+function _renderObRows() {
   const tbody = document.getElementById('ob-rows');
   let total = 0;
   tbody.innerHTML = _obRows.map((row, i) => {
-    const pallets = _obPallets(row.qty, row.qtyPlt);
-    const ctn = _obCtn(row.qty, row.qtyCtn);
+    const pallets  = _obPallets(row.qty, row.qtyPlt);
+    const ctn      = _obCtn(row.qty, row.qtyCtn);
     const subtotal = (row.qty && row.price) ? row.qty * row.price : 0;
     total += subtotal;
-    const fmtCell = v => v !== '' ? v : '—';
+    const fmtCell  = v => v !== '' ? v : '—';
     return `<tr>
       <td style="padding:5px 6px">
         <input type="number" min="1" value="${row.qty||''}" placeholder="0"
-          oninput="_obUpdateQty(${i},this.value)"
+          onchange="_obUpdateQty(${i},this.value)"
           style="width:62px;padding:5px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;text-align:center" />
       </td>
       <td style="padding:5px 6px">
-        <input type="text" value="${esc(row.desc||'')}" placeholder="Buscar modelo..." list="${dlId}"
-          oninput="_obUpdateDesc(${i},this.value)" onchange="_obUpdateDesc(${i},this.value)"
+        <input type="text" value="${esc(row.desc||'')}" placeholder="Buscar modelo..." autocomplete="off"
+          oninput="_obShowSuggest(${i},this)" onblur="_obHideSuggest()"
           style="width:100%;min-width:190px;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px" />
       </td>
       <td style="padding:5px 6px">
         <input type="number" min="0" step="0.01" value="${row.price||''}" placeholder="0.00"
-          oninput="_obUpdatePrice(${i},this.value)"
+          onchange="_obUpdatePrice(${i},this.value)"
           style="width:100px;padding:5px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;text-align:right" />
       </td>
       <td style="text-align:center;font-size:13px;color:var(--text2);padding:5px 4px">${fmtCell(ctn)}</td>
@@ -5217,8 +5293,15 @@ function _renderObRows() {
 }
 
 function addOrderRow() {
+  _obPriceHistCache = null; // refresh cache when adding a row
   _obRows.push({ qty: '', desc: '', code: '', price: '', qtyCtn: null, qtyPlt: null });
   _renderObRows();
+  // Focus the model input of the new row
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#ob-rows tr');
+    const last = rows[rows.length - 1];
+    if(last) { const inp = last.querySelector('input[type=text]'); if(inp) inp.focus(); }
+  }, 50);
 }
 
 function _obRemoveRow(i) {
@@ -5234,23 +5317,6 @@ function _obUpdateQty(i, val) {
 
 function _obUpdatePrice(i, val) {
   _obRows[i].price = parseFloat(val) || '';
-  _renderObRows();
-}
-
-function _obUpdateDesc(i, val) {
-  _obRows[i].desc = val;
-  const prod = _obFindProduct(val);
-  if(prod) {
-    _obRows[i].code = prod.code || '';
-    _obRows[i].qtyCtn = prod.qtyCtn || null;
-    _obRows[i].qtyPlt = prod.qtyPlt || null;
-    // Lowest historical sale price first, fall back to price list
-    const hist = _obGetLowestPrice(val);
-    const listPrice = (prod.price != null && prod.price > 0) ? prod.price : null;
-    if(_obRows[i].price === '' || _obRows[i].price == null) {
-      _obRows[i].price = hist !== null ? hist : (listPrice !== null ? listPrice : '');
-    }
-  }
   _renderObRows();
 }
 
