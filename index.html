@@ -582,6 +582,10 @@
             style="display:flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text2);font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0">
             <i class="ti ti-refresh" style="font-size:13px"></i> Sincronizar
           </button>
+          <button onclick="openOrderBuilder()" title="Armar una orden manualmente"
+            style="display:flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--brand,#FF6600);border-radius:8px;background:var(--bg2);color:var(--brand,#FF6600);font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-weight:600">
+            <i class="ti ti-clipboard-list" style="font-size:13px"></i> Armar Orden
+          </button>
         </div>
         <div class="upload-zone" id="drop-zone-pi" onclick="document.getElementById('file-input-pi').click()" style="margin-bottom:1.25rem">
           <i class="ti ti-cloud-upload"></i>
@@ -1154,6 +1158,55 @@
   </div>
 </div>
 
+<!-- MODAL: ORDER BUILDER -->
+<div class="overlay" id="modal-order-builder">
+  <div class="modal" style="max-width:820px;width:96%">
+    <div class="modal-header">
+      <span class="modal-title"><i class="ti ti-clipboard-list" style="margin-right:6px;color:var(--brand,#FF6600)"></i>Armar Orden</span>
+      <button class="modal-close" onclick="closeOverlay('modal-order-builder')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="field-row" style="margin-bottom:10px">
+      <div class="field" style="flex:1.5">
+        <label>Cliente</label>
+        <input type="text" id="ob-client" placeholder="Nombre del cliente..." />
+      </div>
+      <div class="field" style="flex:1">
+        <label>N° de Orden / PI</label>
+        <input type="text" id="ob-pi-number" placeholder="PI-2026-XXXX" />
+      </div>
+    </div>
+    <div style="overflow-x:auto;margin:4px 0 10px">
+      <table class="data-table" id="ob-table" style="min-width:620px">
+        <thead>
+          <tr>
+            <th style="width:72px;text-align:center">Cant.</th>
+            <th>Modelo</th>
+            <th style="width:112px;text-align:right">Precio USD</th>
+            <th style="width:64px;text-align:center">CTN</th>
+            <th style="width:72px;text-align:center">Pallets</th>
+            <th style="width:96px;text-align:right">Subtotal</th>
+            <th style="width:36px"></th>
+          </tr>
+        </thead>
+        <tbody id="ob-rows"></tbody>
+        <tfoot id="ob-footer"></tfoot>
+      </table>
+    </div>
+    <button onclick="addOrderRow()" class="btn" style="font-size:12px;padding:5px 12px;margin-bottom:4px">
+      <i class="ti ti-plus" style="font-size:12px"></i> Agregar línea
+    </button>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeOverlay('modal-order-builder')">Cancelar</button>
+      <button class="btn" onclick="exportOrderToExcel()" style="color:var(--green-text,#4ade80);border-color:var(--green-text,#4ade80)">
+        <i class="ti ti-table-export" style="font-size:13px"></i> Exportar Excel
+      </button>
+      <button class="btn btn-primary" onclick="sendOrderByEmail()">
+        <i class="ti ti-mail" style="font-size:13px"></i> Enviar por Mail
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: FIRMA DIGITAL DE PI -->
 <div class="overlay" id="modal-digital-sign">
   <div class="modal" style="max-width:440px">
@@ -1299,7 +1352,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.20.9';
+const APP_VERSION = '1.19.08.20.10';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5068,6 +5121,186 @@ function renderAll() {
   renderImportsMonthChips();
   renderImportsTab();
   renderDashboard();
+}
+
+// ─── ORDER BUILDER ─────────────────────────────────────────────────────────────
+let _obRows = [];
+
+function openOrderBuilder() {
+  _obRows = [{ qty: '', desc: '', code: '', price: '', qtyCtn: null, qtyPlt: null }];
+  document.getElementById('ob-client').value = '';
+  document.getElementById('ob-pi-number').value = '';
+  _renderObRows();
+  openOverlay('modal-order-builder');
+}
+
+function _obGetProducts() {
+  return (priceList.products || []).filter(p => !p.isSubSection && p.desc);
+}
+
+function _obGetLowestPrice(desc) {
+  if(!desc) return null;
+  const key = desc.toUpperCase().trim();
+  let lowest = null;
+  getSalesPriceRows().forEach(r => {
+    const rKey = (r.marketingName || '').toUpperCase().trim();
+    if(rKey === key && r.unitPrice != null && r.unitPrice > 0) {
+      if(lowest === null || r.unitPrice < lowest) lowest = r.unitPrice;
+    }
+  });
+  return lowest;
+}
+
+function _obFindProduct(desc) {
+  const dLow = (desc || '').toLowerCase().trim();
+  if(!dLow) return null;
+  return _obGetProducts().find(p => (p.desc || '').toLowerCase() === dLow);
+}
+
+function _obPallets(qty, qtyPlt) {
+  if(!qty || !qtyPlt || qtyPlt <= 0) return '';
+  return Math.ceil(qty / qtyPlt);
+}
+
+function _obCtn(qty, qtyCtn) {
+  if(!qty || !qtyCtn || qtyCtn <= 0) return '';
+  return Math.ceil(qty / qtyCtn);
+}
+
+function _renderObRows() {
+  const products = _obGetProducts();
+  // Build / update datalist
+  const dlId = 'ob-model-datalist';
+  let dlEl = document.getElementById(dlId);
+  if(!dlEl) { dlEl = document.createElement('datalist'); dlEl.id = dlId; document.body.appendChild(dlEl); }
+  dlEl.innerHTML = products.map(p => `<option value="${esc(p.desc)}">`).join('');
+
+  const tbody = document.getElementById('ob-rows');
+  let total = 0;
+  tbody.innerHTML = _obRows.map((row, i) => {
+    const pallets = _obPallets(row.qty, row.qtyPlt);
+    const ctn = _obCtn(row.qty, row.qtyCtn);
+    const subtotal = (row.qty && row.price) ? row.qty * row.price : 0;
+    total += subtotal;
+    const fmtCell = v => v !== '' ? v : '—';
+    return `<tr>
+      <td style="padding:5px 6px">
+        <input type="number" min="1" value="${row.qty||''}" placeholder="0"
+          oninput="_obUpdateQty(${i},this.value)"
+          style="width:62px;padding:5px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;text-align:center" />
+      </td>
+      <td style="padding:5px 6px">
+        <input type="text" value="${esc(row.desc||'')}" placeholder="Buscar modelo..." list="${dlId}"
+          oninput="_obUpdateDesc(${i},this.value)" onchange="_obUpdateDesc(${i},this.value)"
+          style="width:100%;min-width:190px;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px" />
+      </td>
+      <td style="padding:5px 6px">
+        <input type="number" min="0" step="0.01" value="${row.price||''}" placeholder="0.00"
+          oninput="_obUpdatePrice(${i},this.value)"
+          style="width:100px;padding:5px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;text-align:right" />
+      </td>
+      <td style="text-align:center;font-size:13px;color:var(--text2);padding:5px 4px">${fmtCell(ctn)}</td>
+      <td style="text-align:center;font-size:13px;color:var(--text2);padding:5px 4px">${fmtCell(pallets)}</td>
+      <td style="text-align:right;font-size:13px;font-weight:500;color:var(--text);padding:5px 8px">${subtotal > 0 ? fmtUSD(subtotal) : '—'}</td>
+      <td style="padding:5px 4px;text-align:center">
+        <button onclick="_obRemoveRow(${i})" style="background:none;border:none;color:var(--red-text,#ef4444);cursor:pointer;padding:3px 5px;font-size:14px" title="Eliminar"><i class="ti ti-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const tfoot = document.getElementById('ob-footer');
+  tfoot.innerHTML = total > 0 ? `<tr>
+    <td colspan="5" style="text-align:right;font-size:12px;font-weight:600;letter-spacing:.5px;padding:8px 10px 4px;border-top:1px solid var(--border2);color:var(--text3)">TOTAL</td>
+    <td style="text-align:right;font-size:14px;font-weight:700;color:var(--brand,#FF6600);padding:8px 10px 4px;border-top:1px solid var(--border2)">${fmtUSD(total)}</td>
+    <td style="border-top:1px solid var(--border2)"></td>
+  </tr>` : '';
+}
+
+function addOrderRow() {
+  _obRows.push({ qty: '', desc: '', code: '', price: '', qtyCtn: null, qtyPlt: null });
+  _renderObRows();
+}
+
+function _obRemoveRow(i) {
+  _obRows.splice(i, 1);
+  if(!_obRows.length) _obRows.push({ qty: '', desc: '', code: '', price: '', qtyCtn: null, qtyPlt: null });
+  _renderObRows();
+}
+
+function _obUpdateQty(i, val) {
+  _obRows[i].qty = parseFloat(val) || '';
+  _renderObRows();
+}
+
+function _obUpdatePrice(i, val) {
+  _obRows[i].price = parseFloat(val) || '';
+  _renderObRows();
+}
+
+function _obUpdateDesc(i, val) {
+  _obRows[i].desc = val;
+  const prod = _obFindProduct(val);
+  if(prod) {
+    _obRows[i].code = prod.code || '';
+    _obRows[i].qtyCtn = prod.qtyCtn || null;
+    _obRows[i].qtyPlt = prod.qtyPlt || null;
+    // Lowest historical sale price first, fall back to price list
+    const hist = _obGetLowestPrice(val);
+    const listPrice = (prod.price != null && prod.price > 0) ? prod.price : null;
+    if(_obRows[i].price === '' || _obRows[i].price == null) {
+      _obRows[i].price = hist !== null ? hist : (listPrice !== null ? listPrice : '');
+    }
+  }
+  _renderObRows();
+}
+
+function exportOrderToExcel() {
+  const client = document.getElementById('ob-client').value.trim() || 'Cliente';
+  const piNum  = document.getElementById('ob-pi-number').value.trim() || '';
+  const rows = _obRows.filter(r => r.desc || r.qty);
+
+  const header = ['Cantidad', 'Código', 'Modelo', 'Precio Unit. USD', 'CTN', 'Pallets', 'Subtotal USD'];
+  const data = [header, ...rows.map(r => {
+    const pallets = _obPallets(r.qty, r.qtyPlt);
+    const ctn     = _obCtn(r.qty, r.qtyCtn);
+    const sub     = (r.qty && r.price) ? +(r.qty * r.price).toFixed(2) : '';
+    return [r.qty||'', r.code||'', r.desc||'', r.price||'', ctn!==''?ctn:'', pallets!==''?pallets:'', sub];
+  })];
+
+  const total = rows.reduce((s,r) => s + ((r.qty && r.price) ? r.qty * r.price : 0), 0);
+  if(total > 0) data.push(['','','','','','TOTAL', +total.toFixed(2)]);
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [{wch:10},{wch:14},{wch:36},{wch:18},{wch:8},{wch:10},{wch:14}];
+  const wb2 = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb2, ws, 'Orden');
+  const fname = `Orden_${(piNum||client).replace(/[^a-zA-Z0-9_-]/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb2, fname);
+}
+
+function sendOrderByEmail() {
+  const client = document.getElementById('ob-client').value.trim() || '';
+  const piNum  = document.getElementById('ob-pi-number').value.trim() || '';
+  const rows = _obRows.filter(r => r.desc && r.qty);
+  if(!rows.length) { toast('Agregá al menos una línea con modelo y cantidad.'); return; }
+
+  const lines = rows.map(r => {
+    const pallets = _obPallets(r.qty, r.qtyPlt);
+    const ctn     = _obCtn(r.qty, r.qtyCtn);
+    const price   = r.price ? `USD ${Number(r.price).toFixed(2)}/u.` : '';
+    const sub     = (r.qty && r.price) ? `= USD ${(r.qty * r.price).toFixed(2)}` : '';
+    const pack    = [ctn!==''?`${ctn} CTN`:'', pallets!==''?`${pallets} Pallet(s)`:''].filter(Boolean).join(' | ');
+    return `  • ${r.qty} u.  ${r.desc}${r.code?` (${r.code})`:''}  ${price}  ${pack}  ${sub}`;
+  }).join('\n');
+
+  const total = rows.reduce((s,r) => s + ((r.qty && r.price) ? r.qty * r.price : 0), 0);
+  const totalLine = total > 0 ? `\n\nTOTAL: USD ${total.toFixed(2)}` : '';
+
+  const subject = encodeURIComponent(`Orden MSI${piNum?' – '+piNum:''}${client?' – '+client:''}`);
+  const body    = encodeURIComponent(
+    `Hola,\n\nDetalle de la orden${piNum?' '+piNum:''}${client?' para '+client:''}:\n\n${lines}${totalLine}\n\nSaludos,`
+  );
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
 }
 
 // ─── OVERLAY ──────────────────────────────────────────
