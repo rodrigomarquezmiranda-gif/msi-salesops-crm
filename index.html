@@ -1382,7 +1382,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.20.13';
+const APP_VERSION = '1.19.08.21.01';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -8832,6 +8832,33 @@ function getModelGroupComparison(modelKey, monthKey) {
 }
 let currentRotCompareRows = [];
 let currentCatProductRows = [];
+let _rotExpandedDist = null;
+let _rotExpandedSort = 'price_asc';
+let _rotExpandSeeAll = false;
+let _currentRotModelKey = null;
+
+function _getRotDistSales(distKey, modelKey, monthKey) {
+  const _grp = (_compGroupsCache||[]).find(g=>g.key===modelKey);
+  const validCodes = _grp ? _grp.codes : new Set();
+  const salesSnaps = db.weeklyReports.filter(s => s.distributor===distKey && s.reportType==='sales' && periodMatchesMk(getMonthKey(s.periodEnd), monthKey));
+  const sales = [];
+  salesSnaps.forEach(snap => {
+    snap.rows.filter(r => extractProductModelKey(r.description)===modelKey || (r.code && validCodes.has(r.code.toUpperCase().trim()))).forEach(r => {
+      const priceAbs = r.avgPrice ? Math.abs(r.avgPrice) : null;
+      sales.push({ client: r.client||null, date: snap.periodEnd, qty: r.qty, price: priceAbs });
+    });
+  });
+  return sales;
+}
+
+function toggleRotDistExpand(distKey) {
+  _rotExpandedDist = (_rotExpandedDist === distKey) ? null : distKey;
+  _rotExpandedSort = 'price_asc';
+  _rotExpandSeeAll = false;
+  renderRotCompareTab();
+}
+function setRotExpandSort(s) { _rotExpandedSort = s; renderRotCompareTab(); }
+function setRotExpandSeeAll(v) { _rotExpandSeeAll = v; renderRotCompareTab(); }
 function showCatProductTooltip(evt, modelKey) {
   clearTooltipHideTimer();
   const p = currentCatProductRows.find(x => x.modelKey === modelKey);
@@ -8849,13 +8876,21 @@ function showCatProductTooltip(evt, modelKey) {
 }
 function showMinPriceClientTooltip(evt, distKey) {
   clearTooltipHideTimer();
-  const row = currentRotCompareRows.find(r => r.distributor === distKey);
   const tip = document.getElementById('client-composition-tooltip');
-  if(!row || row.minPrice == null) return;
-  tip.innerHTML = `<div style="font-size:11.5px;color:var(--text2);margin-bottom:6px;font-weight:600">${esc(DISTRIBUTORS[distKey])} — Precio mínimo</div>
-    <div style="font-size:14px;color:var(--green-text);font-weight:700;margin-bottom:6px">USD ${row.minPrice.toLocaleString('es-AR',{maximumFractionDigits:2})}</div>
-    <div style="font-size:12px;color:var(--text)"><i class="ti ti-user"></i> ${row.minPriceClient ? esc(row.minPriceClient) : 'Cliente no identificado en el reporte'}</div>
-    ${row.minPriceDate ? `<div style="font-size:11px;color:var(--text3);margin-top:3px">Semana del ${fmtRotDate(row.minPriceDate)}</div>` : ''}`;
+  if(!_currentRotModelKey) return;
+  const sales = _getRotDistSales(distKey, _currentRotModelKey, rotcomparePeriod || 'all')
+    .filter(s => s.price != null && s.price > 0)
+    .sort((a,b) => a.price - b.price)
+    .slice(0,5);
+  if(!sales.length) return;
+  tip.innerHTML = `<div style="font-size:11.5px;color:var(--text2);margin-bottom:6px;font-weight:600">${esc(DISTRIBUTORS[distKey])} — Últimas 5 ventas más baratas</div>` +
+    sales.map((s,i) => `<div style="padding:4px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;gap:12px;font-size:12px">
+        <span style="color:var(--text)">${s.client ? esc(s.client) : '<span style="color:var(--text3)">—</span>'}</span>
+        <span style="font-weight:700;color:${i===0?'var(--green-text)':'var(--text)'};white-space:nowrap">USD ${s.price.toLocaleString('es-AR',{maximumFractionDigits:2})}</span>
+      </div>
+      <div style="font-size:10px;color:var(--text3)">${s.date ? fmtRotDate(s.date) : ''}${s.qty ? ' · '+Math.abs(s.qty)+' uds' : ''}</div>
+    </div>`).join('');
   tip.style.display = 'block';
   positionTooltipNearElement(evt.currentTarget);
 }
@@ -8921,6 +8956,7 @@ function renderRotCompareTab() {
   if(selProduct && selProduct.dRows.length > 0) {
     const rows = selProduct.dRows;
     currentRotCompareRows = rows;
+    _currentRotModelKey = modelKey;
     const hasAnyPrice    = rows.some(r=>r.avgPrice);
     const hasAnyMinPrice = rows.some(r=>r.minPrice!=null);
     const hasAnyMaxPrice = rows.some(r=>r.maxPrice!=null);
@@ -8954,18 +8990,53 @@ function renderRotCompareTab() {
           <th>Proveedor</th><th>Stock actual</th><th>Vendido</th><th>Semanas</th><th>Uds/semana</th><th>Cobertura</th>
           ${hasAnyPrice?'<th>Precio prom.</th>':''}${hasAnyMinPrice?'<th>Precio mín.</th>':''}${hasAnyMaxPrice?'<th>Precio máx.</th>':''}
         </tr></thead>
-        <tbody>${rows.map(r => `<tr>
-          <td>${esc(DISTRIBUTORS[r.distributor])}</td>
+        <tbody>${rows.map(r => {
+          const isExpanded = _rotExpandedDist === r.distributor;
+          return `<tr onclick="toggleRotDistExpand('${r.distributor}')" style="cursor:pointer;${isExpanded?'background:var(--bg3,rgba(255,255,255,0.05));outline:1px solid var(--brand);outline-offset:-1px':''}">
+          <td><span style="display:inline-flex;align-items:center;gap:5px"><i class="ti ti-chevron-${isExpanded?'down':'right'}" style="font-size:11px;color:var(--text3)"></i>${esc(DISTRIBUTORS[r.distributor])}</span></td>
           <td>${r.stockQty??'-'}${r.stockDate?` <span style="color:var(--text3);font-size:10px">(${fmtRotDate(r.stockDate)})</span>`:''}</td>
           <td>${r.totalSold||'-'}</td>
           <td>${r.weeksWithSales||'-'}</td>
           <td>${r.weeklyAvg||'-'}</td>
           <td>${r.weeksCover!=null ? rotationCoverChip(r.weeksCover) : '-'}</td>
           ${hasAnyPrice?`<td>${r.avgPrice?'USD '+r.avgPrice.toLocaleString('es-AR',{maximumFractionDigits:2}):'-'}</td>`:''}
-          ${hasAnyMinPrice?`<td>${r.minPrice!=null?`<span class="client-name-hover" onmouseenter="showMinPriceClientTooltip(event,'${r.distributor}')" onmouseleave="hideClientCompositionTooltip()"><b${overallMin&&r.distributor===overallMin.distributor?' style="color:var(--green-text)"':''}>USD ${r.minPrice.toLocaleString('es-AR',{maximumFractionDigits:2})}</b></span>`:'-'}</td>`:''}
+          ${hasAnyMinPrice?`<td>${r.minPrice!=null?`<span class="client-name-hover" onmouseenter="showMinPriceClientTooltip(event,'${r.distributor}')" onmouseleave="hideClientCompositionTooltip()" onclick="event.stopPropagation()"><b${overallMin&&r.distributor===overallMin.distributor?' style="color:var(--green-text)"':''}>USD ${r.minPrice.toLocaleString('es-AR',{maximumFractionDigits:2})}</b></span>`:'-'}</td>`:''}
           ${hasAnyMaxPrice?`<td>${r.maxPrice!=null?'USD '+r.maxPrice.toLocaleString('es-AR',{maximumFractionDigits:2}):'-'}</td>`:''}
-        </tr>`).join('')}</tbody>
+        </tr>`;}).join('')}</tbody>
       </table></div>
+      ${(() => {
+        if(!_rotExpandedDist) return '';
+        const expSales = _getRotDistSales(_rotExpandedDist, selProduct.modelKey, monthKey);
+        const withPrice = expSales.filter(s => s.price != null && s.price > 0);
+        let sorted = [...withPrice];
+        if(_rotExpandedSort === 'price_asc') sorted.sort((a,b) => a.price - b.price);
+        else if(_rotExpandedSort === 'price_desc') sorted.sort((a,b) => b.price - a.price);
+        else sorted.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+        const displayed = _rotExpandSeeAll ? sorted : sorted.slice(0,20);
+        const distName = esc(DISTRIBUTORS[_rotExpandedDist]);
+        return `<div style="margin-top:1rem;border:1px solid var(--border2);border-radius:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border)">
+            <span style="font-size:13px;font-weight:600;color:var(--text)"><i class="ti ti-list-details" style="color:var(--brand-text);margin-right:6px"></i>${distName} — todas las ventas</span>
+            <span style="display:flex;gap:6px">
+              <button type="button" onclick="setRotExpandSort('price_asc')" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:${_rotExpandedSort==='price_asc'?'var(--brand)':'var(--bg)'};color:${_rotExpandedSort==='price_asc'?'#fff':'var(--text2)'};cursor:pointer">Precio ↑</button>
+              <button type="button" onclick="setRotExpandSort('price_desc')" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:${_rotExpandedSort==='price_desc'?'var(--brand)':'var(--bg)'};color:${_rotExpandedSort==='price_desc'?'#fff':'var(--text2)'};cursor:pointer">Precio ↓</button>
+              <button type="button" onclick="setRotExpandSort('date')" style="padding:4px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border2);background:${_rotExpandedSort==='date'?'var(--brand)':'var(--bg)'};color:${_rotExpandedSort==='date'?'#fff':'var(--text2)'};cursor:pointer">Fecha</button>
+            </span>
+          </div>
+          ${!sorted.length ? `<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Sin ventas registradas en este período</div>` :
+          `<div class="table-scroll"><table class="data-table" style="margin:0">
+            <thead><tr><th>Cliente</th><th style="text-align:right">Precio unit.</th><th style="text-align:right">Cantidad</th><th>Semana</th></tr></thead>
+            <tbody>${displayed.map(s => `<tr>
+              <td>${s.client ? esc(s.client) : '<span style="color:var(--text3)">—</span>'}</td>
+              <td style="text-align:right;font-weight:600;color:var(--text)">USD ${s.price.toLocaleString('es-AR',{maximumFractionDigits:2})}</td>
+              <td style="text-align:right">${s.qty!=null ? Math.abs(s.qty) : '-'}</td>
+              <td style="color:var(--text3);font-size:11px">${s.date ? fmtRotDate(s.date) : '-'}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>
+          ${!_rotExpandSeeAll && sorted.length > 20 ? `<div style="text-align:center;padding:10px"><button type="button" onclick="setRotExpandSeeAll(true)" style="padding:6px 18px;font-size:12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--brand-text);cursor:pointer">Ver todos (${sorted.length})</button></div>` : ''}
+          `}
+        </div>`;
+      })()}
       <div style="font-size:11px;color:var(--text3);line-height:1.7;margin-top:.5rem">
         ${rows.map(r=>`<div><b>${esc(DISTRIBUTORS[r.distributor])}:</b> ${esc(r.description)}</div>`).join('')}
       </div>`;
