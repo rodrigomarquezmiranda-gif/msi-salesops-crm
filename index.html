@@ -1382,7 +1382,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.21.01';
+const APP_VERSION = '1.19.08.21.02';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9942,23 +9942,56 @@ function selectRankingClient(clientKey) {
   renderClientsTab();
 }
 let _clientDetailSearch = '';
+let _cdDistKey = '', _cdMonthKey = '', _cdClientKey = '';
+
+function _filterClientDetailTable() {
+  // Fast path: only update tbody + count, no full re-render
+  const ranking = getClientRanking(_cdDistKey, _cdMonthKey);
+  const client = ranking.find(c => c.key === _cdClientKey);
+  if(!client) return;
+  const showDistCol = _cdDistKey === 'all';
+  const qFilter = _clientDetailSearch.toLowerCase().trim();
+  const safeClientKey = _cdClientKey.replace(/'/g, "\\'");
+  const safeDistKey = esc(_cdDistKey);
+  const visibleProducts = qFilter
+    ? client.products.filter(p => (p.description||'').toLowerCase().includes(qFilter))
+    : client.products;
+  const tbody = document.getElementById('client-detail-tbody');
+  const countEl = document.getElementById('client-detail-count');
+  if(tbody) tbody.innerHTML = visibleProducts.length === 0
+    ? `<tr><td colspan="${4+(showDistCol?1:0)}" style="text-align:center;color:var(--text3);padding:16px">Sin resultados para "${esc(qFilter)}"</td></tr>`
+    : visibleProducts.map(p => {
+        const descNorm = (p.description||'').toUpperCase().trim();
+        const safeDesc = descNorm.replace(/'/g, "\\'");
+        return `<tr>
+          <td><span class="client-name-hover" onmouseenter="showClientProductTooltip(event,'${safeClientKey}','${safeDesc}','${safeDistKey}')" onmouseleave="hideClientCompositionTooltip()" style="cursor:default">${esc(p.description)}</span></td>
+          <td><span style="color:${CATEGORY_COLOR[p.category]||CATEGORY_COLOR.other}">${esc(CATEGORY_LABELS[p.category]||p.category)}</span></td>
+          ${showDistCol?`<td><span class="pill pill-gray">${esc(DISTRIBUTORS[p.distributor])}</span></td>`:''}
+          <td style="color:var(--text3);font-size:12px;white-space:nowrap">${esc(p.dateLabel||'-')}</td>
+          <td>${p.qty}</td>
+          <td>${p.amount ? 'USD '+p.amount.toLocaleString('es-AR') : '-'}</td>
+        </tr>`;
+      }).join('');
+  if(countEl) countEl.textContent = qFilter
+    ? `${visibleProducts.length} de ${client.products.length} productos`
+    : `${client.products.length} productos`;
+}
 
 function renderClientDetail(distKey, monthKey, clientKey) {
   const ranking = getClientRanking(distKey, monthKey);
   const client = ranking.find(c => c.key === clientKey);
   const wrap = document.getElementById('clients-detail-wrap');
   if(!client) { wrap.innerHTML = ''; return; }
+  _cdDistKey = distKey; _cdMonthKey = monthKey; _cdClientKey = clientKey;
   const showDistCol = distKey === 'all';
   const totalQty = client.qty || 1;
-
   const qFilter = _clientDetailSearch.toLowerCase().trim();
   const visibleProducts = qFilter
     ? client.products.filter(p => (p.description||'').toLowerCase().includes(qFilter))
     : client.products;
-
+  const safeClientKey = clientKey.replace(/'/g, "\\'");
   const safeDistKey = esc(distKey);
   const safeMonthKey = esc(monthKey);
-  const safeClientKey = clientKey.replace(/'/g, "\\'");
 
   wrap.innerHTML = `<div class="section-header"><div class="section-title">Composición de compras — ${esc(client.name)} ${client.cuit?'(CUIT '+formatCuit(client.cuit)+')':''} — ${getMonthLabel(monthKey)}</div></div>
   ${client.aliases.length>1 ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Este cliente aparece con estos nombres en los reportes: ${client.aliases.map(esc).join(' · ')}</div>` : ''}
@@ -9982,14 +10015,14 @@ function renderClientDetail(distKey, monthKey, clientKey) {
     <div style="position:relative;flex:1;max-width:360px">
       <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none"></i>
       <input type="text" id="client-detail-search" placeholder="Buscar por descripción..." value="${esc(qFilter)}"
-        oninput="_clientDetailSearch=this.value;renderClientDetail('${safeDistKey}','${safeMonthKey}','${safeClientKey}')"
+        oninput="_clientDetailSearch=this.value;_filterClientDetailTable()"
         style="width:100%;padding:7px 10px 7px 30px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;box-sizing:border-box" />
     </div>
-    ${qFilter ? `<span style="font-size:12px;color:var(--text3)">${visibleProducts.length} de ${client.products.length} productos</span>` : `<span style="font-size:12px;color:var(--text3)">${client.products.length} productos</span>`}
+    <span id="client-detail-count" style="font-size:12px;color:var(--text3)">${qFilter ? visibleProducts.length+' de '+client.products.length+' productos' : client.products.length+' productos'}</span>
   </div>
   <div class="table-scroll"><table class="data-table">
     <thead><tr><th>Descripción</th><th>Categoría</th>${showDistCol?'<th>Proveedor</th>':''}<th>Fecha</th><th>Cantidad</th><th>Monto USD</th></tr></thead>
-    <tbody>${visibleProducts.length === 0
+    <tbody id="client-detail-tbody">${visibleProducts.length === 0
       ? `<tr><td colspan="${4+(showDistCol?1:0)}" style="text-align:center;color:var(--text3);padding:16px">Sin resultados para "${esc(qFilter)}"</td></tr>`
       : visibleProducts.map(p => {
         const descNorm = (p.description||'').toUpperCase().trim();
