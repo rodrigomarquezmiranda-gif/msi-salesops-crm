@@ -1201,6 +1201,7 @@
     </div>
     <!-- Floating model suggestion dropdown -->
     <div id="ob-suggest-drop" style="position:fixed;z-index:9999;display:none;background:var(--bg);border:1px solid var(--border2);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.4);max-height:220px;overflow-y:auto;min-width:240px"></div>
+    <!-- Email preview modal (nested inside order builder overlay for stacking) -->
     <button onclick="addOrderRow()" class="btn" style="font-size:12px;padding:5px 12px;margin-bottom:4px">
       <i class="ti ti-plus" style="font-size:12px"></i> Agregar línea
     </button>
@@ -1211,6 +1212,26 @@
       </button>
       <button class="btn btn-primary" onclick="sendOrderByEmail()">
         <i class="ti ti-mail" style="font-size:13px"></i> Enviar por Mail
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ORDER EMAIL PREVIEW -->
+<div class="overlay" id="modal-order-email">
+  <div class="modal" style="max-width:680px;width:95%">
+    <div class="modal-header">
+      <span class="modal-title"><i class="ti ti-mail" style="margin-right:6px;color:var(--brand,#FF6600)"></i>Preview del Mail</span>
+      <button class="modal-close" onclick="closeOverlay('modal-order-email')"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="ob-email-preview" style="border:1px solid var(--border2);border-radius:8px;padding:0;overflow:hidden;margin-bottom:4px;background:#fff"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeOverlay('modal-order-email')">Cerrar</button>
+      <button class="btn" onclick="_obCopyEmailHtml()" id="ob-copy-btn" style="color:var(--brand,#FF6600);border-color:var(--brand,#FF6600)">
+        <i class="ti ti-clipboard" style="font-size:13px"></i> Copiar para pegar en mail
+      </button>
+      <button class="btn btn-primary" onclick="_obSendMailto()">
+        <i class="ti ti-mail-forward" style="font-size:13px"></i> Abrir en cliente de correo
       </button>
     </div>
   </div>
@@ -1361,7 +1382,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '1.19.08.20.11';
+const APP_VERSION = '1.19.08.20.12';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5269,6 +5290,7 @@ function _renderObRows() {
         <input type="text" value="${esc(row.desc||'')}" placeholder="Buscar modelo..." autocomplete="off"
           oninput="_obShowSuggest(${i},this)" onblur="_obHideSuggest()"
           style="width:100%;min-width:190px;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px" />
+        ${(row.qtyCtn || row.qtyPlt) ? `<div style="font-size:10px;font-style:italic;color:var(--text3);margin-top:2px;padding-left:2px">${[row.qtyCtn?row.qtyCtn+' u./CTN':'',row.qtyPlt?row.qtyPlt+' u./Pallet':''].filter(Boolean).join(' &nbsp;·&nbsp; ')}</div>` : ''}
       </td>
       <td style="padding:5px 6px">
         <input type="number" min="0" step="0.01" value="${row.price||''}" placeholder="0.00"
@@ -5320,53 +5342,237 @@ function _obUpdatePrice(i, val) {
   _renderObRows();
 }
 
-function exportOrderToExcel() {
+async function exportOrderToExcel() {
+  if(!window.ExcelJS) { _alert('ExcelJS no cargó. Revisá la conexión a internet.', {type:'error'}); return; }
   const client = document.getElementById('ob-client').value.trim() || 'Cliente';
   const piNum  = document.getElementById('ob-pi-number').value.trim() || '';
-  const rows = _obRows.filter(r => r.desc || r.qty);
+  const rows   = _obRows.filter(r => r.desc || r.qty);
+  if(!rows.length) { toast('Agregá al menos una línea primero.'); return; }
 
-  const header = ['Cantidad', 'Código', 'Modelo', 'Precio Unit. USD', 'CTN', 'Pallets', 'Subtotal USD'];
-  const data = [header, ...rows.map(r => {
+  const today  = new Date();
+  const dateStr = today.toLocaleDateString('es-AR');
+  const NAVY    = 'FF1F2A44';
+  const ORANGE  = 'FFFF6600';
+  const WHITE   = 'FFFFFFFF';
+  const LIGHT   = 'FFFFF5EE'; // very light orange tint for alternating rows
+  const GRAY    = 'FFF5F5F5';
+  const BORDER  = { top:{style:'thin',color:{argb:'FFCCCCCC'}}, left:{style:'thin',color:{argb:'FFCCCCCC'}}, bottom:{style:'thin',color:{argb:'FFCCCCCC'}}, right:{style:'thin',color:{argb:'FFCCCCCC'}} };
+  const sf      = (argb) => ({ type:'pattern', pattern:'solid', fgColor:{argb} });
+  const NC      = 7; // columns
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Orden MSI');
+  ws.columns = [{width:10},{width:16},{width:38},{width:16},{width:9},{width:11},{width:14}];
+
+  // ── Row 1: Title banner ──────────────────────────────────────
+  ws.addRow([]);
+  ws.mergeCells(1,1,1,NC);
+  const t1 = ws.getCell('A1');
+  t1.value = 'MSI — Orden de Compra';
+  t1.fill  = sf(NAVY);
+  t1.font  = {bold:true, size:16, color:{argb:WHITE}, name:'Calibri'};
+  t1.alignment = {horizontal:'left', vertical:'middle'};
+  ws.getRow(1).height = 30;
+
+  // ── Row 2: Sub-header ───────────────────────────────────────
+  ws.addRow([]);
+  ws.mergeCells(2,1,2,NC);
+  const t2 = ws.getCell('A2');
+  const subTitle = [client?`Distribuidor: ${client}`:'', piNum?`Orden: ${piNum}`:'', `Fecha: ${dateStr}`].filter(Boolean).join('   ·   ');
+  t2.value = subTitle;
+  t2.fill  = sf('FF2C3E6B');
+  t2.font  = {size:11, color:{argb:WHITE}, name:'Calibri'};
+  t2.alignment = {horizontal:'left', vertical:'middle'};
+  ws.getRow(2).height = 18;
+
+  // ── Row 3: Spacer ───────────────────────────────────────────
+  ws.addRow([]);
+  ws.mergeCells(3,1,3,NC);
+  ws.getCell('A3').fill = sf(NAVY);
+  ws.getRow(3).height = 5;
+
+  // ── Row 4: Spacer ───────────────────────────────────────────
+  ws.addRow([]); ws.getRow(4).height = 6;
+
+  // ── Row 5: Column headers ────────────────────────────────────
+  const headers = ['Cantidad','Código','Producto / Modelo','Precio Unit. USD','CTN','Pallets','Subtotal USD'];
+  ws.addRow(headers);
+  const hr = ws.lastRow.number;
+  headers.forEach((_,i) => {
+    const c = ws.getCell(hr, i+1);
+    c.fill = sf(ORANGE);
+    c.font = {bold:true, size:10, color:{argb:WHITE}, name:'Calibri'};
+    c.alignment = {horizontal:'center', vertical:'middle', wrapText:true};
+    c.border = BORDER;
+  });
+  ws.getRow(hr).height = 22;
+
+  // ── Data rows ────────────────────────────────────────────────
+  let total = 0;
+  rows.forEach((r, idx) => {
     const pallets = _obPallets(r.qty, r.qtyPlt);
     const ctn     = _obCtn(r.qty, r.qtyCtn);
-    const sub     = (r.qty && r.price) ? +(r.qty * r.price).toFixed(2) : '';
-    return [r.qty||'', r.code||'', r.desc||'', r.price||'', ctn!==''?ctn:'', pallets!==''?pallets:'', sub];
-  })];
+    const sub     = (r.qty && r.price) ? +(r.qty * r.price).toFixed(2) : null;
+    if(sub) total += sub;
+    const rowData = [r.qty||null, r.code||null, r.desc||null, r.price||null, ctn!==''?ctn:null, pallets!==''?pallets:null, sub];
+    ws.addRow(rowData);
+    const rn  = ws.lastRow.number;
+    const fill = sf(idx % 2 === 0 ? GRAY : 'FFFFFFFF');
+    rowData.forEach((_,i) => {
+      const c = ws.getCell(rn, i+1);
+      c.fill   = fill;
+      c.border = BORDER;
+      c.font   = {size:10, name:'Calibri'};
+      // alignment
+      if(i === 0 || i === 4 || i === 5) c.alignment = {horizontal:'center', vertical:'middle'};
+      else if(i === 3 || i === 6)       c.alignment = {horizontal:'right',  vertical:'middle'};
+      else                               c.alignment = {horizontal:'left',   vertical:'middle'};
+      // USD format for price + subtotal
+      if((i === 3 || i === 6) && c.value != null) c.numFmt = '"$"#,##0.00';
+    });
+    ws.getRow(rn).height = 18;
+  });
 
-  const total = rows.reduce((s,r) => s + ((r.qty && r.price) ? r.qty * r.price : 0), 0);
-  if(total > 0) data.push(['','','','','','TOTAL', +total.toFixed(2)]);
+  // ── Total row ────────────────────────────────────────────────
+  if(total > 0) {
+    ws.addRow([]);
+    const tn = ws.lastRow.number;
+    ws.mergeCells(tn, 1, tn, 5);
+    const lc = ws.getCell(`A${tn}`);
+    lc.value = 'TOTAL';
+    lc.fill  = sf(ORANGE);
+    lc.font  = {bold:true, size:11, color:{argb:WHITE}, name:'Calibri'};
+    lc.alignment = {horizontal:'right', vertical:'middle'};
+    lc.border = BORDER;
+    const pc = ws.getCell(tn, 6);
+    pc.fill  = sf(ORANGE);
+    pc.font  = {bold:true, size:11, color:{argb:WHITE}, name:'Calibri'};
+    pc.border = BORDER;
+    const tc = ws.getCell(tn, 7);
+    tc.value  = total;
+    tc.numFmt = '"$"#,##0.00';
+    tc.fill   = sf(ORANGE);
+    tc.font   = {bold:true, size:12, color:{argb:WHITE}, name:'Calibri'};
+    tc.alignment = {horizontal:'right', vertical:'middle'};
+    tc.border = BORDER;
+    ws.getRow(tn).height = 22;
+  }
 
-  const ws = XLSX.utils.aoa_to_sheet(data);
-  ws['!cols'] = [{wch:10},{wch:14},{wch:36},{wch:18},{wch:8},{wch:10},{wch:14}];
-  const wb2 = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb2, ws, 'Orden');
-  const fname = `Orden_${(piNum||client).replace(/[^a-zA-Z0-9_-]/g,'_')}_${new Date().toISOString().slice(0,10)}.xlsx`;
-  XLSX.writeFile(wb2, fname);
+  // ── Footer note ─────────────────────────────────────────────
+  ws.addRow([]);
+  ws.addRow([]);
+  const fn = ws.lastRow.number;
+  ws.mergeCells(fn, 1, fn, NC);
+  const fc = ws.getCell(`A${fn}`);
+  fc.value = `Generado por SalesOps CRM · ${dateStr}`;
+  fc.font  = {italic:true, size:9, color:{argb:'FF888888'}, name:'Calibri'};
+
+  const fname = `Orden_${(piNum||client).replace(/[^a-zA-Z0-9_-]/g,'_')}_${today.toISOString().slice(0,10)}.xlsx`;
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob   = new Blob([buffer], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Email preview (HTML, copyable to Gmail/Outlook) ──────────────────────────
+let _obEmailHtmlCache = '';
+
+function _obBuildEmailHtml() {
+  const client = document.getElementById('ob-client').value.trim() || '';
+  const piNum  = document.getElementById('ob-pi-number').value.trim() || '';
+  const rows   = _obRows.filter(r => r.desc && r.qty);
+  const today  = new Date().toLocaleDateString('es-AR');
+  const total  = rows.reduce((s,r) => s + ((r.qty && r.price) ? r.qty * r.price : 0), 0);
+
+  const headerInfo = [client?`<b>Distribuidor:</b> ${esc(client)}`:'', piNum?`<b>Orden:</b> ${esc(piNum)}`:'', `<b>Fecha:</b> ${today}`].filter(Boolean).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
+
+  const rowsHtml = rows.map((r, i) => {
+    const pallets = _obPallets(r.qty, r.qtyPlt);
+    const ctn     = _obCtn(r.qty, r.qtyCtn);
+    const sub     = (r.qty && r.price) ? r.qty * r.price : 0;
+    const bg      = i % 2 === 0 ? '#f9f9f9' : '#ffffff';
+    return `<tr style="background:${bg}">
+      <td style="padding:8px 10px;text-align:center;border:1px solid #ddd;font-weight:600">${r.qty}</td>
+      <td style="padding:8px 10px;border:1px solid #ddd;font-size:12px;color:#666">${esc(r.code||'—')}</td>
+      <td style="padding:8px 10px;border:1px solid #ddd;font-weight:500">${esc(r.desc)}</td>
+      <td style="padding:8px 10px;text-align:right;border:1px solid #ddd">${r.price?'$'+Number(r.price).toFixed(2):'—'}</td>
+      <td style="padding:8px 10px;text-align:center;border:1px solid #ddd;color:#666">${ctn!==''?ctn:'—'}</td>
+      <td style="padding:8px 10px;text-align:center;border:1px solid #ddd;color:#666">${pallets!==''?pallets:'—'}</td>
+      <td style="padding:8px 10px;text-align:right;border:1px solid #ddd;font-weight:600">${sub>0?'$'+sub.toFixed(2):'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const totalRow = total > 0 ? `<tr style="background:#FF6600">
+    <td colspan="6" style="padding:10px 14px;text-align:right;font-weight:700;color:#fff;border:1px solid #e55a00;font-size:13px">TOTAL</td>
+    <td style="padding:10px 14px;text-align:right;font-weight:700;color:#fff;border:1px solid #e55a00;font-size:14px">$${total.toFixed(2)}</td>
+  </tr>` : '';
+
+  return `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto">
+    <div style="background:#1F2A44;padding:18px 24px;border-radius:6px 6px 0 0">
+      <div style="color:#fff;font-size:18px;font-weight:700;letter-spacing:0.5px">MSI — Orden de Compra</div>
+      <div style="color:rgba(255,255,255,0.75);font-size:12px;margin-top:4px">${headerInfo}</div>
+    </div>
+    <div style="background:#FF6600;height:4px"></div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif">
+      <thead>
+        <tr style="background:#FF6600">
+          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:center;font-size:11px">CANT.</th>
+          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:left;font-size:11px">CÓDIGO</th>
+          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:left;font-size:11px">PRODUCTO / MODELO</th>
+          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:right;font-size:11px">PRECIO</th>
+          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:center;font-size:11px">CTN</th>
+          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:center;font-size:11px">PALLETS</th>
+          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:right;font-size:11px">SUBTOTAL</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+      <tfoot>${totalRow}</tfoot>
+    </table>
+    <div style="background:#f5f5f5;padding:10px 16px;border-radius:0 0 6px 6px;font-size:11px;color:#999;text-align:right;border-top:1px solid #ddd">
+      Generado por SalesOps CRM · ${today}
+    </div>
+  </div>`;
 }
 
 function sendOrderByEmail() {
-  const client = document.getElementById('ob-client').value.trim() || '';
-  const piNum  = document.getElementById('ob-pi-number').value.trim() || '';
   const rows = _obRows.filter(r => r.desc && r.qty);
   if(!rows.length) { toast('Agregá al menos una línea con modelo y cantidad.'); return; }
+  _obEmailHtmlCache = _obBuildEmailHtml();
+  document.getElementById('ob-email-preview').innerHTML = _obEmailHtmlCache;
+  openOverlay('modal-order-email');
+}
 
-  const lines = rows.map(r => {
+function _obSendMailto() {
+  const client = document.getElementById('ob-client').value.trim() || '';
+  const piNum  = document.getElementById('ob-pi-number').value.trim() || '';
+  const rows   = _obRows.filter(r => r.desc && r.qty);
+  const total  = rows.reduce((s,r) => s + ((r.qty && r.price) ? r.qty * r.price : 0), 0);
+  const lines  = rows.map(r => {
     const pallets = _obPallets(r.qty, r.qtyPlt);
     const ctn     = _obCtn(r.qty, r.qtyCtn);
-    const price   = r.price ? `USD ${Number(r.price).toFixed(2)}/u.` : '';
-    const sub     = (r.qty && r.price) ? `= USD ${(r.qty * r.price).toFixed(2)}` : '';
-    const pack    = [ctn!==''?`${ctn} CTN`:'', pallets!==''?`${pallets} Pallet(s)`:''].filter(Boolean).join(' | ');
-    return `  • ${r.qty} u.  ${r.desc}${r.code?` (${r.code})`:''}  ${price}  ${pack}  ${sub}`;
+    return `• ${r.qty} u.  ${r.desc}${r.code?' ('+r.code+')':''}  ${r.price?'$'+Number(r.price).toFixed(2)+'/u.':''}  ${[ctn!==''?ctn+' CTN':'',pallets!==''?pallets+' Pallet(s)':''].filter(Boolean).join(' | ')}`;
   }).join('\n');
-
-  const total = rows.reduce((s,r) => s + ((r.qty && r.price) ? r.qty * r.price : 0), 0);
-  const totalLine = total > 0 ? `\n\nTOTAL: USD ${total.toFixed(2)}` : '';
-
   const subject = encodeURIComponent(`Orden MSI${piNum?' – '+piNum:''}${client?' – '+client:''}`);
-  const body    = encodeURIComponent(
-    `Hola,\n\nDetalle de la orden${piNum?' '+piNum:''}${client?' para '+client:''}:\n\n${lines}${totalLine}\n\nSaludos,`
-  );
+  const body    = encodeURIComponent(`Hola,\n\nDetalle de la orden${piNum?' '+piNum:''}${client?' para '+client:''}:\n\n${lines}${total>0?'\n\nTOTAL: $'+total.toFixed(2):''}\n\nSaludos,`);
   window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+
+async function _obCopyEmailHtml() {
+  const html = _obEmailHtmlCache || _obBuildEmailHtml();
+  try {
+    await navigator.clipboard.write([new ClipboardItem({'text/html': new Blob([html], {type:'text/html'}), 'text/plain': new Blob([html.replace(/<[^>]+>/g,' ')], {type:'text/plain'})})]);
+    const btn = document.getElementById('ob-copy-btn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="ti ti-check" style="font-size:13px"></i> ¡Copiado!';
+    btn.style.background = 'var(--green-text,#4ade80)';
+    btn.style.color = '#000';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.style.color = ''; }, 2500);
+  } catch(e) {
+    toast('No se pudo copiar. Usá Ctrl+A y Ctrl+C sobre el preview.');
+  }
 }
 
 // ─── OVERLAY ──────────────────────────────────────────
