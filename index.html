@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '24.08.26.5';
+const APP_VERSION = '24.08.26.6';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -6648,6 +6648,8 @@ function _pbmMB(desc) {
     [/H810|H610|H510/,2],
   ];
   for (const [re, val] of knownMB) if (re.test(desc)) return val;
+  // Solo puntuar si hay un keyword de mother en la descripción (evita que ASUS/Gigabyte sumen $5)
+  if (!/MOTHER|MB MSI|PLACA MADRE/.test(desc)) return 0;
   return (/PRO B/.test(desc)) ? 4 : 5;
 }
 
