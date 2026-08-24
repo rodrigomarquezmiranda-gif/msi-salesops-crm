@@ -1189,8 +1189,7 @@
             <th style="width:72px;text-align:center">Cant.</th>
             <th>Modelo</th>
             <th style="width:112px;text-align:right">Precio USD</th>
-            <th style="width:64px;text-align:center">CTN</th>
-            <th style="width:72px;text-align:center">Pallets</th>
+            <th>Remark</th>
             <th style="width:96px;text-align:right">Subtotal</th>
             <th style="width:36px"></th>
           </tr>
@@ -1382,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '21.08.26.2';
+const APP_VERSION = '21.08.26.3';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -5157,7 +5156,7 @@ function renderAll() {
 let _obRows = [];
 
 function openOrderBuilder() {
-  _obRows = [{ qty: '', desc: '', code: '', price: '', qtyCtn: null, qtyPlt: null }];
+  _obRows = [{ qty: '', desc: '', code: '', price: '', remark: '' }];
   document.getElementById('ob-client').value = '';
   document.getElementById('ob-pi-number').value = '';
   _obHideSuggest();
@@ -5275,11 +5274,8 @@ function _renderObRows() {
   const tbody = document.getElementById('ob-rows');
   let total = 0;
   tbody.innerHTML = _obRows.map((row, i) => {
-    const pallets  = _obPallets(row.qty, row.qtyPlt);
-    const ctn      = _obCtn(row.qty, row.qtyCtn);
     const subtotal = (row.qty && row.price) ? row.qty * row.price : 0;
     total += subtotal;
-    const fmtCell  = v => v !== '' ? v : '—';
     return `<tr>
       <td style="padding:5px 6px">
         <input type="number" min="1" value="${row.qty||''}" placeholder="0"
@@ -5290,15 +5286,17 @@ function _renderObRows() {
         <input type="text" value="${esc(row.desc||'')}" placeholder="Buscar modelo..." autocomplete="off"
           oninput="_obShowSuggest(${i},this)" onblur="_obHideSuggest()"
           style="width:100%;min-width:190px;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px" />
-        ${(row.qtyCtn || row.qtyPlt) ? `<div style="font-size:10px;font-style:italic;color:var(--text3);margin-top:2px;padding-left:2px">${[row.qtyCtn?row.qtyCtn+' u./CTN':'',row.qtyPlt?row.qtyPlt+' u./Pallet':''].filter(Boolean).join(' &nbsp;·&nbsp; ')}</div>` : ''}
       </td>
       <td style="padding:5px 6px">
         <input type="number" min="0" step="0.01" value="${row.price||''}" placeholder="0.00"
           onchange="_obUpdatePrice(${i},this.value)"
           style="width:100px;padding:5px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;text-align:right" />
       </td>
-      <td style="text-align:center;font-size:13px;color:var(--text2);padding:5px 4px">${fmtCell(ctn)}</td>
-      <td style="text-align:center;font-size:13px;color:var(--text2);padding:5px 4px">${fmtCell(pallets)}</td>
+      <td style="padding:5px 6px">
+        <input type="text" value="${esc(row.remark||'')}" placeholder="Ej: -2 CN posterior"
+          oninput="_obUpdateRemark(${i},this.value)"
+          style="width:100%;padding:5px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;font-style:italic" />
+      </td>
       <td style="text-align:right;font-size:13px;font-weight:500;color:var(--text);padding:5px 8px">${subtotal > 0 ? fmtUSD(subtotal) : '—'}</td>
       <td style="padding:5px 4px;text-align:center">
         <button onclick="_obRemoveRow(${i})" style="background:none;border:none;color:var(--red-text,#ef4444);cursor:pointer;padding:3px 5px;font-size:14px" title="Eliminar"><i class="ti ti-trash"></i></button>
@@ -5308,7 +5306,7 @@ function _renderObRows() {
 
   const tfoot = document.getElementById('ob-footer');
   tfoot.innerHTML = total > 0 ? `<tr>
-    <td colspan="5" style="text-align:right;font-size:12px;font-weight:600;letter-spacing:.5px;padding:8px 10px 4px;border-top:1px solid var(--border2);color:var(--text3)">TOTAL</td>
+    <td colspan="4" style="text-align:right;font-size:12px;font-weight:600;letter-spacing:.5px;padding:8px 10px 4px;border-top:1px solid var(--border2);color:var(--text3)">TOTAL</td>
     <td style="text-align:right;font-size:14px;font-weight:700;color:var(--brand,#FF6600);padding:8px 10px 4px;border-top:1px solid var(--border2)">${fmtUSD(total)}</td>
     <td style="border-top:1px solid var(--border2)"></td>
   </tr>` : '';
@@ -5316,7 +5314,7 @@ function _renderObRows() {
 
 function addOrderRow() {
   _obPriceHistCache = null; // refresh cache when adding a row
-  _obRows.push({ qty: '', desc: '', code: '', price: '', qtyCtn: null, qtyPlt: null });
+  _obRows.push({ qty: '', desc: '', code: '', price: '', remark: '' });
   _renderObRows();
   // Focus the model input of the new row
   setTimeout(() => {
@@ -5328,7 +5326,7 @@ function addOrderRow() {
 
 function _obRemoveRow(i) {
   _obRows.splice(i, 1);
-  if(!_obRows.length) _obRows.push({ qty: '', desc: '', code: '', price: '', qtyCtn: null, qtyPlt: null });
+  if(!_obRows.length) _obRows.push({ qty: '', desc: '', code: '', price: '', remark: '' });
   _renderObRows();
 }
 
@@ -5340,6 +5338,10 @@ function _obUpdateQty(i, val) {
 function _obUpdatePrice(i, val) {
   _obRows[i].price = parseFloat(val) || '';
   _renderObRows();
+}
+function _obUpdateRemark(i, val) {
+  _obRows[i].remark = val;
+  // no re-render needed — input keeps its own state
 }
 
 async function exportOrderToExcel() {
@@ -5395,7 +5397,7 @@ async function exportOrderToExcel() {
   ws.addRow([]); ws.getRow(4).height = 6;
 
   // ── Row 5: Column headers ────────────────────────────────────
-  const headers = ['Cantidad','Código','Producto / Modelo','Precio Unit. USD','CTN','Pallets','Subtotal USD'];
+  const headers = ['Cantidad','Código','Producto / Modelo','Precio Unit. USD','Remark','Subtotal USD'];
   ws.addRow(headers);
   const hr = ws.lastRow.number;
   headers.forEach((_,i) => {
@@ -5410,11 +5412,9 @@ async function exportOrderToExcel() {
   // ── Data rows ────────────────────────────────────────────────
   let total = 0;
   rows.forEach((r, idx) => {
-    const pallets = _obPallets(r.qty, r.qtyPlt);
-    const ctn     = _obCtn(r.qty, r.qtyCtn);
-    const sub     = (r.qty && r.price) ? +(r.qty * r.price).toFixed(2) : null;
+    const sub = (r.qty && r.price) ? +(r.qty * r.price).toFixed(2) : null;
     if(sub) total += sub;
-    const rowData = [r.qty||null, r.code||null, r.desc||null, r.price||null, ctn!==''?ctn:null, pallets!==''?pallets:null, sub];
+    const rowData = [r.qty||null, r.code||null, r.desc||null, r.price||null, r.remark||null, sub];
     ws.addRow(rowData);
     const rn  = ws.lastRow.number;
     const fill = sf(idx % 2 === 0 ? GRAY : 'FFFFFFFF');
@@ -5422,13 +5422,11 @@ async function exportOrderToExcel() {
       const c = ws.getCell(rn, i+1);
       c.fill   = fill;
       c.border = BORDER;
-      c.font   = {size:10, name:'Calibri'};
-      // alignment
-      if(i === 0 || i === 4 || i === 5) c.alignment = {horizontal:'center', vertical:'middle'};
-      else if(i === 3 || i === 6)       c.alignment = {horizontal:'right',  vertical:'middle'};
-      else                               c.alignment = {horizontal:'left',   vertical:'middle'};
-      // USD format for price + subtotal
-      if((i === 3 || i === 6) && c.value != null) c.numFmt = '"$"#,##0.00';
+      c.font   = {size:10, name:'Calibri', italic: i===4};
+      if(i === 0)        c.alignment = {horizontal:'center', vertical:'middle'};
+      else if(i === 3 || i === 5) c.alignment = {horizontal:'right',  vertical:'middle'};
+      else               c.alignment = {horizontal:'left',   vertical:'middle'};
+      if((i === 3 || i === 5) && c.value != null) c.numFmt = '"$"#,##0.00';
     });
     ws.getRow(rn).height = 18;
   });
@@ -5437,18 +5435,18 @@ async function exportOrderToExcel() {
   if(total > 0) {
     ws.addRow([]);
     const tn = ws.lastRow.number;
-    ws.mergeCells(tn, 1, tn, 5);
+    ws.mergeCells(tn, 1, tn, 4);
     const lc = ws.getCell(`A${tn}`);
     lc.value = 'TOTAL';
     lc.fill  = sf(ORANGE);
     lc.font  = {bold:true, size:11, color:{argb:WHITE}, name:'Calibri'};
     lc.alignment = {horizontal:'right', vertical:'middle'};
     lc.border = BORDER;
-    const pc = ws.getCell(tn, 6);
+    const pc = ws.getCell(tn, 5);
     pc.fill  = sf(ORANGE);
     pc.font  = {bold:true, size:11, color:{argb:WHITE}, name:'Calibri'};
     pc.border = BORDER;
-    const tc = ws.getCell(tn, 7);
+    const tc = ws.getCell(tn, 6);
     tc.value  = total;
     tc.numFmt = '"$"#,##0.00';
     tc.fill   = sf(ORANGE);
@@ -5490,23 +5488,20 @@ function _obBuildEmailHtml() {
   const headerInfo = [client?`<b>Distribuidor:</b> ${esc(client)}`:'', piNum?`<b>Orden:</b> ${esc(piNum)}`:'', `<b>Fecha:</b> ${today}`].filter(Boolean).join('&nbsp;&nbsp;·&nbsp;&nbsp;');
 
   const rowsHtml = rows.map((r, i) => {
-    const pallets = _obPallets(r.qty, r.qtyPlt);
-    const ctn     = _obCtn(r.qty, r.qtyCtn);
-    const sub     = (r.qty && r.price) ? r.qty * r.price : 0;
-    const bg      = i % 2 === 0 ? '#f9f9f9' : '#ffffff';
+    const sub = (r.qty && r.price) ? r.qty * r.price : 0;
+    const bg  = i % 2 === 0 ? '#f9f9f9' : '#ffffff';
     return `<tr style="background:${bg}">
       <td style="padding:8px 10px;text-align:center;border:1px solid #ddd;font-weight:600">${r.qty}</td>
       <td style="padding:8px 10px;border:1px solid #ddd;font-size:12px;color:#666">${esc(r.code||'—')}</td>
       <td style="padding:8px 10px;border:1px solid #ddd;font-weight:500">${esc(r.desc)}</td>
       <td style="padding:8px 10px;text-align:right;border:1px solid #ddd">${r.price?'$'+Number(r.price).toFixed(2):'—'}</td>
-      <td style="padding:8px 10px;text-align:center;border:1px solid #ddd;color:#666">${ctn!==''?ctn:'—'}</td>
-      <td style="padding:8px 10px;text-align:center;border:1px solid #ddd;color:#666">${pallets!==''?pallets:'—'}</td>
+      <td style="padding:8px 10px;border:1px solid #ddd;color:#666;font-style:italic">${esc(r.remark||'')}</td>
       <td style="padding:8px 10px;text-align:right;border:1px solid #ddd;font-weight:600">${sub>0?'$'+sub.toFixed(2):'—'}</td>
     </tr>`;
   }).join('');
 
   const totalRow = total > 0 ? `<tr style="background:#FF6600">
-    <td colspan="6" style="padding:10px 14px;text-align:right;font-weight:700;color:#fff;border:1px solid #e55a00;font-size:13px">TOTAL</td>
+    <td colspan="5" style="padding:10px 14px;text-align:right;font-weight:700;color:#fff;border:1px solid #e55a00;font-size:13px">TOTAL</td>
     <td style="padding:10px 14px;text-align:right;font-weight:700;color:#fff;border:1px solid #e55a00;font-size:14px">$${total.toFixed(2)}</td>
   </tr>` : '';
 
@@ -5523,8 +5518,7 @@ function _obBuildEmailHtml() {
           <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:left;font-size:11px">CÓDIGO</th>
           <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:left;font-size:11px">PRODUCTO / MODELO</th>
           <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:right;font-size:11px">PRECIO</th>
-          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:center;font-size:11px">CTN</th>
-          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:center;font-size:11px">PALLETS</th>
+          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:left;font-size:11px">REMARK</th>
           <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:right;font-size:11px">SUBTOTAL</th>
         </tr>
       </thead>
@@ -5551,9 +5545,9 @@ function _obSendMailto() {
   const rows   = _obRows.filter(r => r.desc && r.qty);
   const total  = rows.reduce((s,r) => s + ((r.qty && r.price) ? r.qty * r.price : 0), 0);
   const lines  = rows.map(r => {
-    const pallets = _obPallets(r.qty, r.qtyPlt);
-    const ctn     = _obCtn(r.qty, r.qtyCtn);
-    return `• ${r.qty} u.  ${r.desc}${r.code?' ('+r.code+')':''}  ${r.price?'$'+Number(r.price).toFixed(2)+'/u.':''}  ${[ctn!==''?ctn+' CTN':'',pallets!==''?pallets+' Pallet(s)':''].filter(Boolean).join(' | ')}`;
+    const parts = [`• ${r.qty} u.  ${r.desc}${r.code?' ('+r.code+')':''}`, r.price?'$'+Number(r.price).toFixed(2)+'/u.':''];
+    if(r.remark) parts.push('['+r.remark+']');
+    return parts.filter(Boolean).join('  ');
   }).join('\n');
   const subject = encodeURIComponent(`Orden MSI${piNum?' – '+piNum:''}${client?' – '+client:''}`);
   const body    = encodeURIComponent(`Hola,\n\nDetalle de la orden${piNum?' '+piNum:''}${client?' para '+client:''}:\n\n${lines}${total>0?'\n\nTOTAL: $'+total.toFixed(2):''}\n\nSaludos,`);
@@ -7793,6 +7787,12 @@ function parseDistributorSheet(rows, fmt, headerIdx, preambleText) {
     const idx = cmap[normHeaderTxt(headerName)];
     return idx!=null ? row[idx] : null;
   };
+  // Auto-detect email column — works across all distributors regardless of exact header name
+  const emailColIdx = (() => {
+    const emailHeaders = ['email','e-mail','mail','correo','emailcliente','emailreseller','e mail'];
+    for(const h of emailHeaders) { if(cmap[h] !== undefined) return cmap[h]; }
+    return null;
+  })();
   const items = [];
   let blankStreak = 0;
   for(let i=headerIdx+1; i<rows.length; i++) {
@@ -7809,14 +7809,16 @@ function parseDistributorSheet(rows, fmt, headerIdx, preambleText) {
       date: excelDateToISO(get(row,'date')),
       unitPrice: parseFloat(get(row,'unitPrice')) || null,
       client: String(get(row,'client')||'').trim(),
-      cuit: String(get(row,'cuit')||'').trim()
+      cuit: String(get(row,'cuit')||'').trim(),
+      email: emailColIdx != null ? String(row[emailColIdx]||'').trim().toLowerCase() : ''
     });
   }
   const agg = new Map();
   items.forEach(it => {
     const k = it.code.toUpperCase() + '|' + it.client.toUpperCase() + '|' + it.cuit;
-    if(!agg.has(k)) agg.set(k, { code:it.code, description:it.description, qty:0, priceSum:0, priceCount:0, client:it.client, cuit:it.cuit });
+    if(!agg.has(k)) agg.set(k, { code:it.code, description:it.description, qty:0, priceSum:0, priceCount:0, client:it.client, cuit:it.cuit, email:it.email||'' });
     const a = agg.get(k);
+    if(!a.email && it.email) a.email = it.email;
     a.qty += it.qty;
     // El precio se guarda siempre como magnitud (valor absoluto). Algunos proveedores
     // registran notas de crédito/devoluciones como una línea con cantidad Y precio en
@@ -7826,7 +7828,7 @@ function parseDistributorSheet(rows, fmt, headerIdx, preambleText) {
     if(it.unitPrice) { a.priceSum += Math.abs(it.unitPrice); a.priceCount++; }
     if(!a.description && it.description) a.description = it.description;
   });
-  const aggRows = Array.from(agg.values()).map(a => ({ code:a.code, description:a.description, qty:Math.round(a.qty*100)/100, avgPrice: a.priceCount ? a.priceSum/a.priceCount : null, client:a.client || null, cuit:a.cuit || null }));
+  const aggRows = Array.from(agg.values()).map(a => ({ code:a.code, description:a.description, qty:Math.round(a.qty*100)/100, avgPrice: a.priceCount ? a.priceSum/a.priceCount : null, client:a.client || null, cuit:a.cuit || null, email:a.email||null }));
   let period;
   if(fmt.reportType === 'sales') {
     const allDates = items.map(it=>it.date).filter(Boolean).sort();
@@ -9160,11 +9162,12 @@ function getClientRanking(distKey, monthKey) {
       const clientName = clientNameRaw.toUpperCase();
       const cuit = normCuit(r.cuit);
       const ck = cuit ? 'CUIT:'+cuit : 'NAME:'+normClientKey(clientName);
-      if(!clients.has(ck)) clients.set(ck, { name:clientName, cuit:'', aliases:new Set(), qty:0, amount:0, products:new Map(), distributors:new Set(), categories:new Map() });
+      if(!clients.has(ck)) clients.set(ck, { name:clientName, cuit:'', email:'', aliases:new Set(), qty:0, amount:0, products:new Map(), distributors:new Set(), categories:new Map() });
       const c = clients.get(ck);
       if(clientName.length > c.name.length) c.name = clientName;
       c.aliases.add(clientName);
       if(!c.cuit && cuit) c.cuit = cuit;
+      if(!c.email && r.email && r.email.includes('@')) c.email = r.email;
       c.qty += r.qty;
       const amt = r.avgPrice ? r.qty*Math.abs(r.avgPrice) : 0;
       c.amount += amt;
@@ -9183,7 +9186,7 @@ function getClientRanking(distKey, monthKey) {
     });
   });
   return Array.from(clients.entries()).map(([key,c]) => ({
-    key, name:c.name, cuit:c.cuit, aliases:Array.from(c.aliases), qty:Math.round(c.qty*100)/100, amount:Math.round(c.amount), distinctProducts:c.products.size,
+    key, name:c.name, cuit:c.cuit, email:c.email||'', aliases:Array.from(c.aliases), qty:Math.round(c.qty*100)/100, amount:Math.round(c.amount), distinctProducts:c.products.size,
     distributors: Array.from(c.distributors),
     categories: Array.from(c.categories.entries()).map(([catKey,v]) => ({ key:catKey, label:CATEGORY_LABELS[catKey]||catKey, qty:Math.round(v.qty*100)/100, amount:Math.round(v.amount) })).sort((a,b)=>b.qty-a.qty),
     products: Array.from(c.products.values()).map(p => {
@@ -9993,7 +9996,7 @@ function renderClientDetail(distKey, monthKey, clientKey) {
   const safeDistKey = esc(distKey);
   const safeMonthKey = esc(monthKey);
 
-  wrap.innerHTML = `<div class="section-header"><div class="section-title">Composición de compras — ${esc(client.name)} ${client.cuit?'(CUIT '+formatCuit(client.cuit)+')':''} — ${getMonthLabel(monthKey)}</div></div>
+  wrap.innerHTML = `<div class="section-header"><div class="section-title">Composición de compras — ${esc(client.name)} ${client.cuit?'(CUIT '+formatCuit(client.cuit)+')':''}${client.email?` · <a href="mailto:${esc(client.email)}" style="color:var(--brand-text);text-decoration:none;font-size:13px" title="Enviar mail"><i class="ti ti-mail" style="font-size:12px;margin-right:2px"></i>${esc(client.email)}</a>`:''} — ${getMonthLabel(monthKey)}</div></div>
   ${client.aliases.length>1 ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Este cliente aparece con estos nombres en los reportes: ${client.aliases.map(esc).join(' · ')}</div>` : ''}
   <div class="ai-box" style="margin-top:0">
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${client.qty} unidades compradas en total${client.amount ? ' · USD '+client.amount.toLocaleString('es-AR') : ''}</div>
