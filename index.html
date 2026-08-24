@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '24.08.26.4';
+const APP_VERSION = '24.08.26.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -6669,11 +6669,13 @@ function _pbmVGA(desc, chassisTier, prog) {
 }
 
 function _pbmLC(desc, gpuTier) {
+  if (/COREFROZR/.test(desc)) return 2;                          // air cooler — always $2
   if (!/CORELIQUID|WATER COOLER CPU MSI/.test(desc)) return null;
   if (/MEG.+CORELIQUID|CORELIQUID.+MEG/.test(desc)) return 10;
   if (/MPG.+CORELIQUID|CORELIQUID.+MPG/.test(desc)) return 10;
   if (/CORELIQUID [CEI]\d|[CEI]360|[CEI]240/.test(desc)) return 5;
-  // A series: tier depends on GPU
+  if (/CORELIQUID\s+A\d/.test(desc)) return 2;                   // A13 etc — always $2
+  // Other CORELIQUID series: depends on GPU tier
   return gpuTier <= 3 ? 5 : 2;
 }
 
@@ -6691,11 +6693,79 @@ function _pbmClassifyRow(desc) {
   return { chassisTier:ch.tier, gab:ch.val, psu, mb, vga, lc, correct, prog };
 }
 
+// ── FullHard multi-line format detector & parser ─────────────
+// Format: FECHA | FACTURA | DESCRIPCION (no header) | CANTIDAD | IMPORTE
+// One row per component; multiple rows share the same FACTURA = one PC bundle.
+function _pbmIsFullHardFormat(rows) {
+  // Header row has FECHA, FACTURA, CANTIDAD, IMPORTE (no VENDEDOR, no config/description header)
+  const h = (rows[0] || []).map(c => String(c||'').toLowerCase().trim());
+  return h.includes('fecha') && h.includes('factura') && h.includes('cantidad') && h.includes('importe') && !h.includes('vendedor');
+}
+
+function _pbmParseFullHard(rows) {
+  // Col indices: A=0 fecha, B=1 factura, C=2 desc (no header), D=3 cantidad, E=4 importe
+  const iDate = 0, iInv = 1, iDesc = 2, iQty = 3;
+  // Group rows by invoice
+  const invoices = new Map();
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    const factura = String(r[iInv]||'').trim();
+    const desc    = String(r[iDesc]||'').trim();
+    const qty     = parseInt(r[iQty]) || 0;
+    if (!factura || !desc || desc.toLowerCase() === 'total') continue;
+    if (!invoices.has(factura)) invoices.set(factura, { fecha: r[iDate], lines: [] });
+    invoices.get(factura).lines.push({ desc, qty });
+  }
+
+  const parsed = [];
+  let num = 1;
+  for (const [factura, inv] of invoices) {
+    const msiLines = inv.lines.filter(l => l.desc.toUpperCase().includes('MSI'));
+    if (!msiLines.length) continue;
+
+    // Base qty = qty of chassis or PSU line (most reliable 1:1 with PC count)
+    let baseQty = null;
+    for (const l of msiLines) {
+      const d = l.desc.toUpperCase();
+      if (/GABINETE\s+MSI|MAG FORGE|MAG PANO|PRO SHIELD|PAG PANO/.test(d)) { baseQty = l.qty; break; }
+    }
+    if (baseQty === null) {
+      for (const l of msiLines) {
+        const d = l.desc.toUpperCase();
+        if (/FUENTE.*MSI|MSI.*MAG A\d{3}/.test(d)) { baseQty = l.qty; break; }
+      }
+    }
+    if (baseQty === null) baseQty = Math.min(...msiLines.map(l => l.qty));
+
+    // Concatenate all MSI descriptions → single string for _pbmClassifyRow
+    const combinedDesc = msiLines.map(l => l.desc.toUpperCase()).join(' | ');
+
+    // Format date
+    let dateStr = '';
+    const dr = inv.fecha;
+    if (dr instanceof Date) dateStr = dr.toLocaleDateString('es-AR');
+    else if (typeof dr === 'number') {
+      const d = XLSX.SSF.parse_date_code(dr);
+      dateStr = `${String(d.d).padStart(2,'0')}/${String(d.m).padStart(2,'0')}/${d.y}`;
+    } else dateStr = String(dr||'').slice(0,10);
+
+    const cls = _pbmClassifyRow(combinedDesc);
+    // Each bundle row = baseQty units; store qty so exports can show it
+    for (let u = 0; u < baseQty; u++) {
+      parsed.push({ num: num++, date: dateStr, invoice: factura, desc: combinedDesc,
+        vendedor: '', claimed: 0, ...cls });
+    }
+  }
+  return parsed;
+}
+
 function _pbmParseXLSX(arrayBuffer) {
   // Use SheetJS (loaded via CDN in the existing app)
-  const data = XLSX.read(arrayBuffer, { type:'array' });
+  const data = XLSX.read(arrayBuffer, { type:'array', cellDates:true });
   const ws   = data.Sheets[data.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+  const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:true });
+  // Auto-detect FullHard multi-line format
+  if (_pbmIsFullHardFormat(rows)) return _pbmParseFullHard(rows);
   // Find header row
   let headerRow = -1;
   for (let i = 0; i < Math.min(rows.length,10); i++) {
@@ -6945,7 +7015,8 @@ function renderPBMTab() {
   const rep = _pbmActiveReport();
   if (!rep) { renderPBMTab(); return; }
 
-  const rows = rep.rows;
+  // Re-classify from desc at render time so rule changes apply without re-uploading
+  const rows = rep.rows.map(r => r.desc ? { ...r, ..._pbmClassifyRow(r.desc) } : r);
   const totalClaimed = rows.reduce((s,r) => s + r.claimed, 0);
   const totalCorrect = rows.reduce((s,r) => s + r.correct, 0);
   const diff = totalCorrect - totalClaimed;
@@ -7036,7 +7107,7 @@ function renderPBMTab() {
       <th class="pbm-th" style="text-align:left;min-width:180px">Configuración</th>
       <th class="pbm-th" style="text-align:left">Vendedor</th>
       <th class="pbm-th">Prog</th><th class="pbm-th">Gab</th><th class="pbm-th">PSU</th>
-      <th class="pbm-th">MB</th><th class="pbm-th">VGA</th><th class="pbm-th">LC</th>
+      <th class="pbm-th">MB</th><th class="pbm-th">VGA</th><th class="pbm-th">LC/AC</th>
       <th class="pbm-th">TOTAL</th><th class="pbm-th">Reclamado</th><th class="pbm-th">Dif</th>
     </tr></thead>
     <tbody>${detailRows}</tbody>
@@ -7548,7 +7619,7 @@ async function _pbmExport() {
   const rep = _pbmActiveReport();
   if (!rep) return;
   const res = _pbmResellerByCuit(rep.cuit);
-  const rows = rep.rows;
+  const rows = rep.rows.map(r => r.desc ? { ...r, ..._pbmClassifyRow(r.desc) } : r);
   const resellerName = res ? res.name : _pbmFmtCuit(rep.cuit);
   const totalCorrect = rows.reduce((s,r) => s + r.correct, 0);
   const totalClaimed = rows.reduce((s,r) => s + r.claimed, 0);
@@ -7596,7 +7667,7 @@ async function _pbmExport() {
   ws.getRow(2).height = 20;
 
   // Column headers
-  const headers = ['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC','Total Correcto','Reclamado','Diferencia'];
+  const headers = ['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC/AC','Total Correcto','Reclamado','Diferencia'];
   const hRow = ws.addRow(headers);
   hRow.eachCell(cell => {
     cell.font = { bold:true, color:{argb:WHITE}, size:10 };
@@ -7651,7 +7722,7 @@ function _pbmExportPDF() {
   if (!rep) return;
   const res = _pbmResellerByCuit(rep.cuit);
   const resellerName = res ? res.name : _pbmFmtCuit(rep.cuit);
-  const rows = rep.rows;
+  const rows = rep.rows.map(r => r.desc ? { ...r, ..._pbmClassifyRow(r.desc) } : r);
   const totalCorrect = rows.reduce((s,r) => s + r.correct, 0);
   const totalClaimed = rows.reduce((s,r) => s + r.claimed, 0);
   const diff = totalCorrect - totalClaimed;
@@ -7670,7 +7741,7 @@ function _pbmExportPDF() {
 
   doc.autoTable({
     startY: 56,
-    head: [['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC','Correcto','Reclamado','Dif']],
+    head: [['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC/AC','Correcto','Reclamado','Dif']],
     body: rows.map(r => {
       const d = r.correct - (r.claimed||0);
       return [r.num,r.date,r.invoice,r.desc,r.vendedor,'#'+r.prog,r.gab,r.psu,r.mb,r.vga,r.lc!==null?r.lc:'—',r.correct,r.claimed||'—',(d>=0?'+':'')+d];
@@ -7820,7 +7891,7 @@ async function _pbmExportMulti(selections) {
     if (!rep) continue;
     const res = _pbmResellerByCuit(sel.cuit);
     const resellerName = res ? res.name : _pbmFmtCuit(sel.cuit);
-    const rows = rep.rows;
+    const rows = rep.rows.map(r => r.desc ? { ...r, ..._pbmClassifyRow(r.desc) } : r);
     const totalCorrect = rows.reduce((s,r) => s + r.correct, 0);
     const totalClaimed = rows.reduce((s,r) => s + r.claimed, 0);
     const sheetName = `${resellerName} ${sel.month||''}`.slice(0,31).replace(/[*?:/\\[\]]/g,'');
@@ -7849,7 +7920,7 @@ async function _pbmExportMulti(selections) {
     ws.getRow(2).height = 18;
 
     // Header
-    const hRow = ws.addRow(['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC','Total Correcto','Reclamado','Diferencia']);
+    const hRow = ws.addRow(['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC/AC','Total Correcto','Reclamado','Diferencia']);
     hRow.eachCell(cell => {
       cell.font = {bold:true,color:{argb:WHITE},size:10};
       cell.fill = {type:'pattern',pattern:'solid',fgColor:{argb:NAVY}};
@@ -7904,7 +7975,7 @@ function _pbmExportMultiPDF(selections) {
     if (!rep) return;
     const res = _pbmResellerByCuit(sel.cuit);
     const resellerName = res ? res.name : _pbmFmtCuit(sel.cuit);
-    const rows = rep.rows;
+    const rows = rep.rows.map(r => r.desc ? { ...r, ..._pbmClassifyRow(r.desc) } : r);
     const totalCorrect = rows.reduce((s,r)=>s+r.correct,0);
     const totalClaimed = rows.reduce((s,r)=>s+r.claimed,0);
     const diff = totalCorrect - totalClaimed;
@@ -7922,7 +7993,7 @@ function _pbmExportMultiPDF(selections) {
 
     doc.autoTable({
       startY:56,
-      head:[['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC','Correcto','Reclamado','Dif']],
+      head:[['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC/AC','Correcto','Reclamado','Dif']],
       body:rows.map(r=>{const d=r.correct-(r.claimed||0);return[r.num,r.date,r.invoice,r.desc,r.vendedor,'#'+r.prog,r.gab,r.psu,r.mb,r.vga,r.lc!==null?r.lc:'—',r.correct,r.claimed||'—',(d>=0?'+':'')+d];}),
       foot:[['','','','TOTAL','','','','','','','',totalCorrect,totalClaimed,(diff>=0?'+':'')+diff]],
       styles:{fontSize:7,cellPadding:3},
