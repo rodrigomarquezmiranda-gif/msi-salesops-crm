@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '24.08.26.3';
+const APP_VERSION = '24.08.26.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9061,6 +9061,9 @@ function renderTrendChart() {
 }
 
 // ─── COMPARADOR DE ROTACIÓN ENTRE DISTRIBUIDORES ──────
+// NB = Non-Box / Bulk: excluir del comparador para no mezclar con retail
+function _isNBVariant(desc) { return /\bNB\s*$/i.test(String(desc||'').trim()); }
+
 let _compGroupsCache = null;
 function invalidateGroupsCache() { _compGroupsCache = null; }
 function getProductComparisonGroups() {
@@ -9068,6 +9071,7 @@ function getProductComparisonGroups() {
   const groups = new Map();
   db.weeklyReports.forEach(snap => {
     snap.rows.forEach(r => {
+      if(_isNBVariant(r.description)) return; // excluir variantes Bulk/NB
       // Group by model key extracted from description (collapses RETAIL/BULK variants of same model)
       // Fall back to normalized code only when no alphanumeric model token found
       const mk = extractProductModelKey(r.description) || (r.code ? r.code.toUpperCase().trim() : null);
@@ -9166,13 +9170,13 @@ function getModelGroupComparison(modelKey, monthKey) {
     const validCodes = _grp ? _grp.codes : new Set();
     let stockQty = null, stockDesc = null, stockDate = null;
     for(const snap of stockSnaps) {
-      const match = snap.rows.find(r => extractProductModelKey(r.description)===modelKey || (r.code && validCodes.has(r.code.toUpperCase().trim())));
+      const match = snap.rows.find(r => !_isNBVariant(r.description) && (extractProductModelKey(r.description)===modelKey || (r.code && validCodes.has(r.code.toUpperCase().trim()))));
       if(match) { stockQty = match.qty; stockDesc = match.description; stockDate = snap.periodEnd; break; }
     }
     const salesSnaps = salesSnapsAll.filter(s => periodMatchesMk(getMonthKey(s.periodEnd), monthKey));
     let totalSold = 0, weeksWithSales = 0, priceSum = 0, priceQty = 0, minPrice = null, minPriceClient = null, minPriceDate = null, maxPrice = null, salesDesc = null;
     salesSnaps.forEach(snap => {
-      const matches = snap.rows.filter(r => extractProductModelKey(r.description)===modelKey || (r.code && validCodes.has(r.code.toUpperCase().trim())));
+      const matches = snap.rows.filter(r => !_isNBVariant(r.description) && (extractProductModelKey(r.description)===modelKey || (r.code && validCodes.has(r.code.toUpperCase().trim()))));
       if(matches.length) {
         weeksWithSales++;
         matches.forEach(m => {
@@ -9196,7 +9200,7 @@ function getModelGroupComparison(modelKey, monthKey) {
         });
       }
     });
-    const hasAnyDataEver = stockQty!=null || salesSnapsAll.some(s => s.rows.some(r => extractProductModelKey(r.description)===modelKey || (r.code && validCodes.has(r.code.toUpperCase().trim()))));
+    const hasAnyDataEver = stockQty!=null || salesSnapsAll.some(s => s.rows.some(r => !_isNBVariant(r.description) && (extractProductModelKey(r.description)===modelKey || (r.code && validCodes.has(r.code.toUpperCase().trim())))));
     if(!hasAnyDataEver) return;
     const weeklyAvg = weeksWithSales>0 ? totalSold/weeksWithSales : 0;
     const weeksCover = (weeklyAvg>0 && stockQty!=null) ? stockQty/weeklyAvg : null;
@@ -9222,7 +9226,7 @@ function _getRotDistSales(distKey, modelKey, monthKey) {
   const salesSnaps = db.weeklyReports.filter(s => s.distributor===distKey && s.reportType==='sales' && periodMatchesMk(getMonthKey(s.periodEnd), monthKey));
   const sales = [];
   salesSnaps.forEach(snap => {
-    snap.rows.filter(r => extractProductModelKey(r.description)===modelKey || (r.code && validCodes.has(r.code.toUpperCase().trim()))).forEach(r => {
+    snap.rows.filter(r => !_isNBVariant(r.description) && (extractProductModelKey(r.description)===modelKey || (r.code && validCodes.has(r.code.toUpperCase().trim())))).forEach(r => {
       const priceAbs = r.avgPrice ? Math.abs(r.avgPrice) : null;
       sales.push({ client: r.client||null, date: snap.periodEnd, qty: r.qty, price: priceAbs });
     });
