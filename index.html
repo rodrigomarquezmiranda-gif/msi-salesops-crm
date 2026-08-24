@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '21.08.26.3';
+const APP_VERSION = '24.08.26.1';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7789,7 +7789,7 @@ function parseDistributorSheet(rows, fmt, headerIdx, preambleText) {
   };
   // Auto-detect email column — works across all distributors regardless of exact header name
   const emailColIdx = (() => {
-    const emailHeaders = ['email','e-mail','mail','correo','emailcliente','emailreseller','e mail'];
+    const emailHeaders = ['email','e-mail','e_mail','mail','correo','correo electrónico','correo electronico','emailcliente','emailreseller','e mail'];
     for(const h of emailHeaders) { if(cmap[h] !== undefined) return cmap[h]; }
     return null;
   })();
