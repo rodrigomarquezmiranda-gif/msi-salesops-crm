@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '24.08.26.7';
+const APP_VERSION = '24.08.26.9';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -6645,7 +6645,7 @@ function _pbmMB(desc) {
     [/PRO B550M/,4],
     [/MAG B760|MAG B860|MAG B850|MAG B840|MAG B650/,5],
     [/Z890|Z790|Z690/,10],   [/X870/,5],
-    [/H810|H610|H510/,2],
+    [/H810|H610|H510/,2],    [/A520M/,2],
   ];
   for (const [re, val] of knownMB) if (re.test(desc)) return val;
   // Solo puntuar si hay un keyword de mother en la descripción (evita que ASUS/Gigabyte sumen $5)
@@ -6667,6 +6667,8 @@ function _pbmVGA(desc, chassisTier, prog) {
   if (/5060 TI|5060TI/.test(desc)) return { tier:3, val:v[3] };
   if (/5060/.test(desc)) return { tier:4, val:v[4] };
   if (/5050|4090|4080|4070|4060|3060|3050|1650/.test(desc)) return { tier:4, val:v[4] };
+  // Sin VGA MSI reconocida en la descripción → no puntuar
+  if (!/PLACA DE VIDEO|GEFORCE|RADEON|RTX|GTX|RX \d{4}/.test(desc)) return { tier:5, val:0 };
   return { tier:5, val:v[5] };
 }
 
