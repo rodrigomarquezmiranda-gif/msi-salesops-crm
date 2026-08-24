@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '24.08.26.6';
+const APP_VERSION = '24.08.26.7';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -6676,7 +6676,7 @@ function _pbmLC(desc, gpuTier) {
   if (/MEG.+CORELIQUID|CORELIQUID.+MEG/.test(desc)) return 10;
   if (/MPG.+CORELIQUID|CORELIQUID.+MPG/.test(desc)) return 10;
   if (/CORELIQUID [CEI]\d|[CEI]360|[CEI]240/.test(desc)) return 5;
-  if (/CORELIQUID\s+A\d/.test(desc)) return 2;                   // A13 etc — always $2
+  if (/CORELIQUID\s+A\d/.test(desc)) return 5;                   // A12/A13 liquid cooler — $5
   // Other CORELIQUID series: depends on GPU tier
   return gpuTier <= 3 ? 5 : 2;
 }
@@ -6979,15 +6979,15 @@ function renderPBMTab() {
 
   // ── Month sub-bar (if multiple months loaded) ─────────────
   const months = reportsForActive.map(r => r.month);
-  const monthBar = months.length <= 1 ? '' : `
+  const monthBar = months.length === 0 ? '' : `
   <div style="display:flex;align-items:center;gap:5px;margin-bottom:14px;flex-wrap:wrap">
-    <span style="font-size:11px;color:#888;margin-right:4px">Mes:</span>
+    ${months.length > 1 ? `<span style="font-size:11px;color:#888;margin-right:4px">Mes:</span>
     ${months.map(m => {
       const a = m === _pbmActiveMon;
       return `<button onclick="_pbmActiveMon='${m}';renderPBMTab()" style="background:${a?'rgba(192,57,43,0.18)':'none'};border:1px solid ${a?'#C0392B':'var(--border)'};border-radius:14px;padding:3px 12px;font-size:12px;color:${a?'#C0392B':'var(--text)'};cursor:pointer;font-weight:${a?700:400}">${m||'Sin mes'}</button>`;
-    }).join('')}
-    <button onclick="_pbmRemoveReport('${_pbmActiveCuit}','${_pbmActiveMon}')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#666;padding:3px 6px" title="Eliminar este mes">
-      <i class="ti ti-trash" style="font-size:12px"></i>
+    }).join('')}` : ''}
+    <button onclick="if(confirm('¿Eliminar el reporte de ${_pbmActiveMon} para este reseller?'))_pbmRemoveReport('${_pbmActiveCuit}','${_pbmActiveMon}')" style="background:none;border:1px solid var(--border);border-radius:14px;cursor:pointer;font-size:11px;color:#888;padding:3px 10px;display:flex;align-items:center;gap:4px" title="Eliminar reporte activo">
+      <i class="ti ti-trash" style="font-size:12px"></i>${months.length === 1 ? ' Eliminar reporte' : ''}
     </button>
   </div>`;
 
