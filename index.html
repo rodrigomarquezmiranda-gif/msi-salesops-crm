@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '24.08.26.2';
+const APP_VERSION = '24.08.26.3';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -7007,11 +7007,8 @@ function renderPBMTab() {
       <button class="btn" onclick="_pbmShowEvolution()" style="font-size:12px">
         <i class="ti ti-chart-line"></i> Evolución
       </button>
-      <button class="btn" onclick="_pbmExport()" style="font-size:12px;background:#C0392B;border-color:#C0392B;color:#fff">
-        <i class="ti ti-file-spreadsheet"></i> Excel
-      </button>
-      <button class="btn" onclick="_pbmExportPDF()" style="font-size:12px;background:#7B2D8B;border-color:#7B2D8B;color:#fff">
-        <i class="ti ti-file-type-pdf"></i> PDF
+      <button class="btn" onclick="_pbmShowExportModal()" style="font-size:12px;background:#C0392B;border-color:#C0392B;color:#fff">
+        <i class="ti ti-file-export"></i> Exportar
       </button>
     </div>
   </div>
@@ -7698,6 +7695,246 @@ function _pbmExportPDF() {
   });
 
   doc.save(`PBM_${resellerName}_${rep.month||''}_${new Date().toISOString().slice(0,10)}.pdf`.replace(/\s+/g,'_'));
+}
+
+// ── Export selector modal ─────────────────────────────────────
+function _pbmShowExportModal() {
+  // Build list of all resellers × months available
+  const allCuits = [...new Set(_pbmReports.map(r => _pbmNormCuit(r.cuit)))].filter(Boolean);
+  if (!allCuits.length) { toast('No hay reportes cargados para exportar'); return; }
+
+  const items = []; // [{cuit, name, month}]
+  allCuits.forEach(cuit => {
+    const res = _pbmResellerByCuit(cuit);
+    const name = res ? res.name : _pbmFmtCuit(cuit);
+    _pbmReportsFor(cuit).forEach(rep => items.push({ cuit, name, month: rep.month||'' }));
+  });
+
+  // State: selected items (key = cuit+'|'+month)
+  const selected = new Set(items.map(it => it.cuit+'|'+it.month)); // all selected by default
+  let fmt = 'excel';
+
+  const buildBody = () => {
+    // Group by reseller
+    const byCuit = {};
+    items.forEach(it => {
+      if (!byCuit[it.cuit]) byCuit[it.cuit] = { name:it.name, months:[] };
+      byCuit[it.cuit].months.push(it.month);
+    });
+
+    return Object.entries(byCuit).map(([cuit, data]) => {
+      const allResSelected = data.months.every(m => selected.has(cuit+'|'+m));
+      return `<div style="margin-bottom:14px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg2);cursor:pointer"
+             onclick="_pbmExportToggleReseller('${cuit}','${data.months.join(',')}')">
+          <input type="checkbox" ${allResSelected?'checked':''} onclick="event.stopPropagation();_pbmExportToggleReseller('${cuit}','${data.months.join(',')}')"
+            style="width:16px;height:16px;accent-color:#C0392B">
+          <span style="font-weight:600;font-size:13px">${esc(data.name)}</span>
+          <span style="font-size:11px;color:#888;margin-left:auto">${data.months.length} mes${data.months.length!==1?'es':''}</span>
+        </div>
+        <div style="padding:8px 14px 10px 38px;display:flex;flex-wrap:wrap;gap:8px">
+          ${data.months.map(m => {
+            const k = cuit+'|'+m;
+            const chk = selected.has(k);
+            return `<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;background:${chk?'rgba(192,57,43,0.12)':'var(--bg3)'};border:1px solid ${chk?'rgba(192,57,43,0.5)':'var(--border)'};border-radius:14px;padding:4px 12px">
+              <input type="checkbox" ${chk?'checked':''} onclick="_pbmExportToggleMes('${cuit}','${m}')"
+                style="width:13px;height:13px;accent-color:#C0392B">
+              ${m||'Sin mes'}
+            </label>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  };
+
+  const modal = document.createElement('div');
+  modal.id = 'pbm-export-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const renderModal = () => {
+    const selCount = selected.size;
+    modal.innerHTML = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:28px;width:min(560px,95vw);max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div style="font-weight:700;font-size:15px"><i class="ti ti-file-export" style="color:#C0392B"></i> Exportar PBM</div>
+        <button onclick="document.getElementById('pbm-export-modal').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#888">×</button>
+      </div>
+
+      <div style="font-size:12px;color:#888;margin-bottom:14px">Elegí qué resellers y meses incluir en el export:</div>
+
+      <div id="pbm-exp-body">${buildBody()}</div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+        <span style="font-size:12px;color:#888">${selCount} mes${selCount!==1?'es':''}${selCount===0?' seleccionados':' seleccionado'+''}</span>
+        <button onclick="_pbmExportSelAll(true)" style="background:none;border:1px solid var(--border);border-radius:12px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--text)">Todos</button>
+        <button onclick="_pbmExportSelAll(false)" style="background:none;border:1px solid var(--border);border-radius:12px;padding:3px 10px;font-size:11px;cursor:pointer;color:var(--text)">Ninguno</button>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button onclick="_pbmExportRun('excel')" ${selCount===0?'disabled':''} style="background:#C0392B;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;opacity:${selCount===0?0.5:1}">
+            <i class="ti ti-file-spreadsheet"></i> Excel
+          </button>
+          <button onclick="_pbmExportRun('pdf')" ${selCount===0?'disabled':''} style="background:#7B2D8B;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;opacity:${selCount===0?0.5:1}">
+            <i class="ti ti-file-type-pdf"></i> PDF
+          </button>
+        </div>
+      </div>
+    </div>`;
+  };
+
+  // Expose helpers to global scope temporarily
+  window._pbmExportToggleReseller = (cuit, monthsStr) => {
+    const months = monthsStr.split(',');
+    const allSel = months.every(m => selected.has(cuit+'|'+m));
+    months.forEach(m => allSel ? selected.delete(cuit+'|'+m) : selected.add(cuit+'|'+m));
+    renderModal();
+  };
+  window._pbmExportToggleMes = (cuit, month) => {
+    const k = cuit+'|'+month;
+    selected.has(k) ? selected.delete(k) : selected.add(k);
+    renderModal();
+  };
+  window._pbmExportSelAll = (val) => {
+    items.forEach(it => val ? selected.add(it.cuit+'|'+it.month) : selected.delete(it.cuit+'|'+it.month));
+    renderModal();
+  };
+  window._pbmExportRun = (format) => {
+    const sel = items.filter(it => selected.has(it.cuit+'|'+it.month));
+    if (!sel.length) return;
+    modal.remove();
+    if (format === 'excel') _pbmExportMulti(sel);
+    else _pbmExportMultiPDF(sel);
+  };
+
+  renderModal();
+  document.getElementById('pbm-export-modal')?.remove();
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function _pbmExportMulti(selections) {
+  const NAVY = 'FF1F2A44', ORANGE = 'FFFF6600', WHITE = 'FFFFFFFF', GRAY = 'FFF5F5F5', RED = 'FFC0392B';
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'MSI SalesOps CRM';
+
+  for (const sel of selections) {
+    const rep = _pbmReports.find(r => _pbmNormCuit(r.cuit) === sel.cuit && r.month === sel.month);
+    if (!rep) continue;
+    const res = _pbmResellerByCuit(sel.cuit);
+    const resellerName = res ? res.name : _pbmFmtCuit(sel.cuit);
+    const rows = rep.rows;
+    const totalCorrect = rows.reduce((s,r) => s + r.correct, 0);
+    const totalClaimed = rows.reduce((s,r) => s + r.claimed, 0);
+    const sheetName = `${resellerName} ${sel.month||''}`.slice(0,31).replace(/[*?:/\\[\]]/g,'');
+
+    const ws = wb.addWorksheet(sheetName);
+    ws.columns = [{width:5},{width:12},{width:16},{width:50},{width:20},{width:8},{width:8},{width:8},{width:8},{width:8},{width:8},{width:14},{width:12},{width:12}];
+
+    // Banner
+    ws.mergeCells('A1:N1');
+    const t1 = ws.getCell('A1');
+    t1.value = `POWERED BY MSI — PBM · ${resellerName} · ${sel.month||''}`;
+    t1.font = {bold:true,color:{argb:WHITE},size:12};
+    t1.fill = {type:'pattern',pattern:'solid',fgColor:{argb:NAVY}};
+    t1.alignment = {horizontal:'center',vertical:'middle'};
+    ws.getRow(1).height = 24;
+
+    // Totals row
+    ws.mergeCells('A2:G2');
+    const diff2 = totalCorrect - totalClaimed;
+    ws.getCell('A2').value = `Bundles: ${rows.length}  ·  A pagar: $${totalCorrect}  ·  Reclamado: $${totalClaimed}  ·  Dif: ${diff2>=0?'+':''}$${diff2}`;
+    ws.getCell('A2').font = {bold:true,color:{argb:WHITE},size:10};
+    ws.getCell('A2').fill = {type:'pattern',pattern:'solid',fgColor:{argb:RED}};
+    ws.getCell('A2').alignment = {horizontal:'left',vertical:'middle',indent:1};
+    ws.mergeCells('H2:N2');
+    ws.getCell('H2').fill = {type:'pattern',pattern:'solid',fgColor:{argb:RED}};
+    ws.getRow(2).height = 18;
+
+    // Header
+    const hRow = ws.addRow(['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC','Total Correcto','Reclamado','Diferencia']);
+    hRow.eachCell(cell => {
+      cell.font = {bold:true,color:{argb:WHITE},size:10};
+      cell.fill = {type:'pattern',pattern:'solid',fgColor:{argb:NAVY}};
+      cell.alignment = {horizontal:'center',vertical:'middle'};
+      cell.border = {bottom:{style:'thin',color:{argb:ORANGE}}};
+    });
+    ws.getRow(3).height = 18;
+
+    // Data
+    rows.forEach((r,idx) => {
+      const diff = r.correct - (r.claimed||0);
+      const dr = ws.addRow([r.num,r.date,r.invoice,r.desc,r.vendedor,'#'+r.prog,r.gab,r.psu,r.mb,r.vga,r.lc!==null?r.lc:'',r.correct,r.claimed||'',diff]);
+      const bg = idx%2===0?'FFFFFFFF':GRAY;
+      dr.eachCell((cell,c) => {
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:bg}};
+        cell.font={size:10};
+        if(c>=7&&c<=12) cell.alignment={horizontal:'center'};
+      });
+      dr.getCell(12).font = {bold:true,color:{argb:'FF2D6A2D'},size:10};
+      const dc = dr.getCell(14);
+      dc.font = {bold:true,color:{argb:diff>=0?'FF2D6A2D':'FFC0392B'},size:10};
+      dc.value = (diff>=0?'+':'')+diff;
+    });
+
+    // Total
+    const td = totalCorrect - totalClaimed;
+    const tr = ws.addRow(['','','','TOTAL','','','','','','','',totalCorrect,totalClaimed,(td>=0?'+':'')+td]);
+    tr.eachCell((cell,c) => {
+      cell.font={bold:true,color:{argb:WHITE},size:11};
+      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:NAVY}};
+      if(c===12) cell.font={bold:true,color:{argb:'FFFFA500'},size:11};
+      if(c===14) cell.font={bold:true,color:{argb:td>=0?'FF90EE90':'FFFF6B6B'},size:11};
+    });
+  }
+
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `PBM_Export_${new Date().toISOString().slice(0,10)}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function _pbmExportMultiPDF(selections) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation:'landscape',unit:'pt',format:'a4'});
+  const W = doc.internal.pageSize.width;
+
+  selections.forEach((sel, idx) => {
+    const rep = _pbmReports.find(r => _pbmNormCuit(r.cuit)===sel.cuit && r.month===sel.month);
+    if (!rep) return;
+    const res = _pbmResellerByCuit(sel.cuit);
+    const resellerName = res ? res.name : _pbmFmtCuit(sel.cuit);
+    const rows = rep.rows;
+    const totalCorrect = rows.reduce((s,r)=>s+r.correct,0);
+    const totalClaimed = rows.reduce((s,r)=>s+r.claimed,0);
+    const diff = totalCorrect - totalClaimed;
+
+    if (idx > 0) doc.addPage();
+
+    doc.setFillColor(31,42,68);
+    doc.rect(0,0,W,48,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(14); doc.setFont(undefined,'bold');
+    doc.text('POWERED BY MSI — PBM',30,22);
+    doc.setFontSize(10); doc.setFont(undefined,'normal');
+    doc.text(`${resellerName}  ·  ${sel.month||''}  ·  ${rows.length} bundles`,30,38);
+    doc.text(`Correcto: $${totalCorrect}   Reclamado: $${totalClaimed}   Dif: ${diff>=0?'+':''}$${diff}`,W-30,38,{align:'right'});
+
+    doc.autoTable({
+      startY:56,
+      head:[['#','Fecha','Factura','Configuración','Vendedor','Prog','Gab','PSU','MB','VGA','LC','Correcto','Reclamado','Dif']],
+      body:rows.map(r=>{const d=r.correct-(r.claimed||0);return[r.num,r.date,r.invoice,r.desc,r.vendedor,'#'+r.prog,r.gab,r.psu,r.mb,r.vga,r.lc!==null?r.lc:'—',r.correct,r.claimed||'—',(d>=0?'+':'')+d];}),
+      foot:[['','','','TOTAL','','','','','','','',totalCorrect,totalClaimed,(diff>=0?'+':'')+diff]],
+      styles:{fontSize:7,cellPadding:3},
+      headStyles:{fillColor:[31,42,68],textColor:[255,255,255],fontStyle:'bold'},
+      footStyles:{fillColor:[31,42,68],textColor:[255,102,0],fontStyle:'bold'},
+      columnStyles:{3:{cellWidth:110},4:{cellWidth:70},11:{textColor:[45,106,45],fontStyle:'bold'},13:{fontStyle:'bold'}},
+      alternateRowStyles:{fillColor:[245,245,245]},
+      didParseCell:(data)=>{if(data.section==='body'&&data.column.index===13){const v=parseFloat(String(data.cell.raw).replace('+',''));data.cell.styles.textColor=v>=0?[45,106,45]:[192,57,43];}},
+    });
+  });
+
+  doc.save(`PBM_Export_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
 function getSalesPriceExportData() {
