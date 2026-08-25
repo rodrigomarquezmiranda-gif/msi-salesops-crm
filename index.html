@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.5';
+const APP_VERSION = '25.08.26.6';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -8442,6 +8442,12 @@ function upsertSnapshot(snap) {
     const hasClientData = s => s.rows.some(r => r.client || r.cuit);
     const olderVersion = db.weeklyReports.find(s => s.distributor===snap.distributor && s.reportType===snap.reportType && s.sourceFile===snap.sourceFile && !hasClientData(s));
     if(olderVersion && hasClientData(snap)) { existing = olderVersion; upgraded = true; }
+  }
+  if(!existing) {
+    // Si es el mismo archivo (mismo nombre + distribuidor + tipo) con rows distintas
+    // (ej: re-subido luego de un fix de parsing), reemplazar la carga anterior.
+    existing = db.weeklyReports.find(s => s.distributor===snap.distributor && s.reportType===snap.reportType && s.sourceFile===snap.sourceFile);
+    if(existing) upgraded = true;
   }
   if(existing) db.weeklyReports = db.weeklyReports.filter(s => s.id !== existing.id);
   db.weeklyReports.push(snap);
