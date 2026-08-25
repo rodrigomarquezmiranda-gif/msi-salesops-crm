@@ -1424,7 +1424,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.14';
+const APP_VERSION = '25.08.26.15';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1660,9 +1660,12 @@ function saveDB() {
   // Esto evita que el saveDB() de un usuario borre los PI que otro acaba de subir.
   const piSave = _piMergeTransaction();
 
+  // salesops_resellers: cualquier rol puede modificarlo (resellers, targets, manual)
+  const resellersSave = IDB.set('salesops_resellers', JSON.stringify({ resellers: db.resellers||{t1:[],t2:[],t3:[]}, resellerTargets: db.resellerTargets||{}, resellerManual: db.resellerManual||{} }));
+
   // Resto de arrays: solo admin/roles completos los escriben
   const otherSaves = _currentRole === 'reader-pi'
-    ? []   // reader-pi solo tiene acceso a salesops_pi (Firebase rules)
+    ? []   // reader-pi solo tiene acceso a salesops_pi y salesops_resellers (Firebase rules)
     : [
         IDB.set('salesops_ber',     JSON.stringify(db.ber          ||[])),
         IDB.set('salesops_sor',     JSON.stringify(db.sor          ||[])),
@@ -1671,10 +1674,9 @@ function saveDB() {
         IDB.set('salesops_weekly',  JSON.stringify(db.weeklyReports||[])),
         IDB.set('salesops_imports', JSON.stringify(db.imports      ||[])),
         IDB.set('salesops_meta',    JSON.stringify({_migrations: db._migrations||{}})),
-        IDB.set('salesops_resellers', JSON.stringify({ resellers: db.resellers||{t1:[],t2:[],t3:[]}, resellerTargets: db.resellerTargets||{}, resellerManual: db.resellerManual||{} })),
       ];
 
-  Promise.all([piSave, ...otherSaves])
+  Promise.all([piSave, resellersSave, ...otherSaves])
     .then(() => { setTimeout(() => { _isSavingLocally = false; }, 800); })
     .catch(e => {
       _isSavingLocally = false;
@@ -1764,6 +1766,22 @@ function _startRealtimeSync() {
         const nb = document.getElementById('nb-imports');
         if(nb) nb.textContent = db.imports.length;
         if(currentTab === 'imports') { renderImportsHistory(); renderImportsMonthChips(); renderImportsTab(); }
+      }
+    },
+    {
+      key: 'salesops_resellers',
+      apply: raw => {
+        try {
+          const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          if(parsed.resellers)      db.resellers      = parsed.resellers;
+          if(parsed.resellerTargets) db.resellerTargets = parsed.resellerTargets;
+          if(parsed.resellerManual) db.resellerManual = parsed.resellerManual;
+        } catch(e) {}
+      },
+      render: () => {
+        if(currentTab === 'resellers-t1') renderResellerTab('t1');
+        if(currentTab === 'resellers-t2') renderResellerTab('t2');
+        if(currentTab === 'resellers-t3') renderResellerTab('t3');
       }
     },
   ];
