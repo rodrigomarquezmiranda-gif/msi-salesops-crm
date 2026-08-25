@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.7';
+const APP_VERSION = '25.08.26.8';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9603,8 +9603,16 @@ function getAvailableMonths(distKey) {
   const scope = distScopeList(distKey);
   const months = new Set();
   db.weeklyReports.filter(s=>scope.includes(s.distributor) && s.reportType==='sales').forEach(s => {
-    const mk = getMonthKey(s.periodEnd);
-    if(mk) months.add(mk);
+    const snapIsMultiMonth = s.periodStart && s.periodEnd && getMonthKey(s.periodStart) !== getMonthKey(s.periodEnd);
+    if(snapIsMultiMonth) {
+      s.rows.forEach(r => { const mk = getMonthKey(r.date); if(mk) months.add(mk); });
+      // fallback si las rows no tienen fecha
+      const endMk = getMonthKey(s.periodEnd);
+      if(endMk) months.add(endMk);
+    } else {
+      const mk = getMonthKey(s.periodEnd);
+      if(mk) months.add(mk);
+    }
   });
   return Array.from(months).sort().reverse();
 }
