@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.4';
+const APP_VERSION = '25.08.26.5';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9626,11 +9626,16 @@ function getMonthlySalesTotals(distKey) {
   const scope = distScopeList(distKey);
   const totals = new Map();
   db.weeklyReports.filter(s=>scope.includes(s.distributor) && s.reportType==='sales').forEach(s => {
-    const mk = getMonthKey(s.periodEnd);
-    if(!mk) return;
-    if(!totals.has(mk)) totals.set(mk, { qty:0, amount:0 });
-    const t = totals.get(mk);
-    s.rows.forEach(r => { t.qty += r.qty; if(r.avgPrice) t.amount += r.qty*Math.abs(r.avgPrice); });
+    const snapIsMultiMonth = s.periodStart && s.periodEnd && getMonthKey(s.periodStart) !== getMonthKey(s.periodEnd);
+    s.rows.forEach(r => {
+      // For multi-month snapshots use the row's own date; otherwise use periodEnd
+      const mk = snapIsMultiMonth ? getMonthKey(r.date) || getMonthKey(s.periodEnd) : getMonthKey(s.periodEnd);
+      if(!mk) return;
+      if(!totals.has(mk)) totals.set(mk, { qty:0, amount:0 });
+      const t = totals.get(mk);
+      t.qty += r.qty;
+      if(r.avgPrice) t.amount += r.qty*Math.abs(r.avgPrice);
+    });
   });
   return Array.from(totals.entries()).sort((a,b)=>a[0].localeCompare(b[0])).map(([mk,t]) => ({ monthKey:mk, label:getMonthLabel(mk), qty:Math.round(t.qty), amount:Math.round(t.amount) }));
 }
@@ -10363,11 +10368,15 @@ function renderClientsTab(resetPaging) {
     chartWrap.innerHTML = `<div class="empty-state"><i class="ti ti-users"></i><p>Todavía no hay reportes de ventas cargados para ${esc(distLabel)}.</p></div>`;
   } else {
     const hasAmount = monthly.some(m=>m.amount>0);
-    chartWrap.innerHTML = `<div class="ai-box" style="margin-top:0">
-      <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-chart-bar" style="color:var(--brand-text)"></i> Total vendido por mes — ${esc(distLabel)}</div>
-      ${buildBarChartSVG(monthly.map(m=>({label:m.label, value: hasAmount ? m.amount : m.qty})), 'var(--brand)')}
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">${hasAmount ? 'Valores en USD' : 'Valores en unidades (los reportes cargados no traían precio unitario)'}</div>
-    </div>`;
+    chartWrap.innerHTML = `
+      <div class="ai-box" style="margin-top:0">
+        <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-chart-bar" style="color:var(--brand-text)"></i> Unidades vendidas por mes — ${esc(distLabel)}</div>
+        ${buildBarChartSVG(monthly.map(m=>({label:m.label, value:m.qty})), 'var(--brand)')}
+      </div>
+      ${hasAmount ? `<div class="ai-box">
+        <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-chart-bar" style="color:var(--blue-text)"></i> Monto vendido por mes (USD) — ${esc(distLabel)}</div>
+        ${buildBarChartSVG(monthly.map(m=>({label:m.label, value:m.amount})), 'var(--blue)')}
+      </div>` : ''}`;
   }
 
   let ranking = getClientRanking(dist, monthKey);
