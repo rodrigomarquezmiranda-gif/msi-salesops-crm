@@ -1424,7 +1424,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.12';
+const APP_VERSION = '25.08.26.13';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -10494,16 +10494,17 @@ function renderClientsTab(resetPaging) {
   }
   const hasAnyAmount = ranking.some(c=>c.amount>0);
 
-  // ── YTD (acumulado del año) — solo cuando hay un mes específico seleccionado ──
+  // ── YTD — solo cuando hay exactamente 1 mes seleccionado ──
   let ytdMap = new Map();
-  const hasYTD = monthKey && monthKey !== 'all';
+  const singleMonth = (monthKey instanceof Set && monthKey.size === 1) ? Array.from(monthKey)[0] : null;
+  const hasYTD = !!singleMonth;
   if(hasYTD) {
-    const year = monthKey.slice(0,4);
+    const year = singleMonth.slice(0,4);
     const ytdMonths = new Set();
     for(let m=1; m<=12; m++) {
       const mk = year + '-' + String(m).padStart(2,'0');
       ytdMonths.add(mk);
-      if(mk === monthKey) break;
+      if(mk === singleMonth) break;
     }
     getClientRanking(dist, ytdMonths).forEach(c => ytdMap.set(c.key, { qty: c.qty, amount: c.amount }));
   }
@@ -10557,9 +10558,10 @@ function selectRankingClient(clientKey) {
   renderClientsTab();
 }
 let _clientDetailSearch = '';
-let _cdDistKey = '', _cdMonthKey = '', _cdClientKey = '';
+let _cdDistKey = '', _cdMonthKey = null, _cdClientKey = '';
 let _cdCatSort = 'qty_desc';
 let _cdProdSort = 'date_desc';
+function _reRenderClientDetail() { renderClientDetail(_cdDistKey, _cdMonthKey, _cdClientKey); }
 
 function _filterClientDetailTable() {
   // Fast path: only update tbody + count, no full re-render
@@ -10636,16 +10638,19 @@ function renderClientDetail(distKey, monthKey, clientKey) {
   else visibleProducts.sort((a,b)=>(b.dateLabel||'').localeCompare(a.dateLabel||'')); // date_desc default
   const safeClientKey = clientKey.replace(/'/g, "\\'");
   const safeDistKey = esc(distKey);
-  const safeMonthKey = esc(monthKey);
+  // monthLabel: si hay exactamente 1 mes seleccionado, mostrarlo; sino "Todos los meses"
+  const monthLabel = (monthKey instanceof Set)
+    ? (monthKey.size === 1 ? getMonthLabel(Array.from(monthKey)[0]) : monthKey.size > 1 ? Array.from(monthKey).map(getMonthLabel).join(', ') : 'Todos los meses')
+    : (monthKey && monthKey !== 'all' ? getMonthLabel(monthKey) : 'Todos los meses');
 
-  wrap.innerHTML = `<div class="section-header"><div class="section-title">Composición de compras — ${esc(client.name)} ${client.cuit?'(CUIT '+formatCuit(client.cuit)+')':''}${client.email?` · <a href="mailto:${esc(client.email)}" style="color:var(--brand-text);text-decoration:none;font-size:13px" title="Enviar mail"><i class="ti ti-mail" style="font-size:12px;margin-right:2px"></i>${esc(client.email)}</a>`:''} — ${getMonthLabel(monthKey)}</div></div>
+  wrap.innerHTML = `<div class="section-header"><div class="section-title">Composición de compras — ${esc(client.name)} ${client.cuit?'(CUIT '+formatCuit(client.cuit)+')':''}${client.email?` · <a href="mailto:${esc(client.email)}" style="color:var(--brand-text);text-decoration:none;font-size:13px" title="Enviar mail"><i class="ti ti-mail" style="font-size:12px;margin-right:2px"></i>${esc(client.email)}</a>`:''} — ${monthLabel}</div></div>
   ${client.aliases.length>1 ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Este cliente aparece con estos nombres en los reportes: ${client.aliases.map(esc).join(' · ')}</div>` : ''}
   <div class="ai-box" style="margin-top:0">
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${client.qty} unidades compradas en total${client.amount ? ' · USD '+client.amount.toLocaleString('es-AR') : ''}</div>
     <table class="data-table" style="margin-top:0">
       <thead><tr>
         ${(()=>{
-          const thC=(lbl,asc,desc)=>{const arrow=_cdCatSort===desc?' <i class="ti ti-arrow-down" style="font-size:10px"></i>':_cdCatSort===asc?' <i class="ti ti-arrow-up" style="font-size:10px"></i>':' <i class="ti ti-arrows-sort" style="font-size:10px;opacity:0.4"></i>';const next=_cdCatSort===desc?asc:desc;return `<th style="cursor:pointer;user-select:none" onclick="_cdCatSort='${next}';renderClientDetail('${safeDistKey}','${safeMonthKey}','${safeClientKey}')">${lbl}${arrow}</th>`;};
+          const thC=(lbl,asc,desc)=>{const arrow=_cdCatSort===desc?' <i class="ti ti-arrow-down" style="font-size:10px"></i>':_cdCatSort===asc?' <i class="ti ti-arrow-up" style="font-size:10px"></i>':' <i class="ti ti-arrows-sort" style="font-size:10px;opacity:0.4"></i>';const next=_cdCatSort===desc?asc:desc;return `<th style="cursor:pointer;user-select:none" onclick="_cdCatSort='${next}';_reRenderClientDetail()">${lbl}${arrow}</th>`;};
           return thC('Categoría','name_asc','name_desc')+thC('Cantidad','qty_asc','qty_desc')+thC('Monto USD','amount_asc','amount_desc')+'<th></th>';
         })()}
       </tr></thead>
@@ -10672,7 +10677,7 @@ function renderClientDetail(distKey, monthKey, clientKey) {
   </div>
   <div class="table-scroll"><table class="data-table">
     <thead><tr>${(()=>{
-      const thP=(lbl,asc,desc)=>{const arrow=_cdProdSort===desc?' <i class="ti ti-arrow-down" style="font-size:10px"></i>':_cdProdSort===asc?' <i class="ti ti-arrow-up" style="font-size:10px"></i>':' <i class="ti ti-arrows-sort" style="font-size:10px;opacity:0.4"></i>';const next=_cdProdSort===desc?asc:desc;return `<th style="cursor:pointer;user-select:none" onclick="_cdProdSort='${next}';renderClientDetail('${safeDistKey}','${safeMonthKey}','${safeClientKey}')">${lbl}${arrow}</th>`;};
+      const thP=(lbl,asc,desc)=>{const arrow=_cdProdSort===desc?' <i class="ti ti-arrow-down" style="font-size:10px"></i>':_cdProdSort===asc?' <i class="ti ti-arrow-up" style="font-size:10px"></i>':' <i class="ti ti-arrows-sort" style="font-size:10px;opacity:0.4"></i>';const next=_cdProdSort===desc?asc:desc;return `<th style="cursor:pointer;user-select:none" onclick="_cdProdSort='${next}';_reRenderClientDetail()">${lbl}${arrow}</th>`;};
       return thP('Descripción','desc_asc','desc_desc')+thP('Categoría','cat_asc','cat_desc')+(showDistCol?'<th>Proveedor</th>':'')+thP('Fecha','date_asc','date_desc')+thP('Cantidad','qty_asc','qty_desc')+thP('Monto USD','amt_asc','amt_desc');
     })()}</tr></thead>
     <tbody id="client-detail-tbody">${visibleProducts.length === 0
