@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.8';
+const APP_VERSION = '25.08.26.9';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -10387,16 +10387,16 @@ function renderClientsTab(resetPaging) {
     const hasAmount = monthly.some(m=>m.amount>0);
     const totalQty    = monthly.reduce((s,m)=>s+m.qty,0);
     const totalAmount = monthly.reduce((s,m)=>s+m.amount,0);
-    const qtyPoints    = [...monthly.map(m=>({label:m.label, value:m.qty})),    {label:'Total', value:totalQty,    accent:true}];
-    const amountPoints = [...monthly.map(m=>({label:m.label, value:m.amount})), {label:'Total', value:totalAmount, accent:true}];
     chartWrap.innerHTML = `
       <div class="ai-box" style="margin-top:0">
         <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-chart-bar" style="color:var(--brand-text)"></i> Unidades vendidas por mes — ${esc(distLabel)}</div>
-        ${buildBarChartSVG(qtyPoints, 'var(--brand)')}
+        ${buildBarChartSVG(monthly.map(m=>({label:m.label, value:m.qty})), 'var(--brand)')}
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">Unidades acumuladas en el año: <strong>${Math.round(totalQty).toLocaleString('es-AR')} u</strong></div>
       </div>
       ${hasAmount ? `<div class="ai-box">
         <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-chart-bar" style="color:var(--blue-text)"></i> Monto vendido por mes (USD) — ${esc(distLabel)}</div>
-        ${buildBarChartSVG(amountPoints, 'var(--blue)')}
+        ${buildBarChartSVG(monthly.map(m=>({label:m.label, value:m.amount})), 'var(--blue)')}
+        <div style="font-size:12px;color:var(--text2);margin-top:6px">Monto acumulado en el año: <strong>$ ${Math.round(totalAmount).toLocaleString('es-AR')}</strong></div>
       </div>` : ''}`;
   }
 
