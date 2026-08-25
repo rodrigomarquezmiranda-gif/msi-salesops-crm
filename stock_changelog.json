@@ -171,21 +171,21 @@
     "triggeredBy": "sistema"
   },
   {
-    "checkedAt": "2026-08-24T21:37:25.907138+00:00",
+    "checkedAt": "2026-08-24T21:52:05.639055+00:00",
     "productCount": 323,
     "hasChanges": false,
     "changeCount": 0,
     "summary": "Sin cambios",
-    "triggerMode": "auto",
+    "triggerMode": "schedule",
     "triggeredBy": "sistema"
   },
   {
-    "checkedAt": "2026-08-25T12:36:21.273864+00:00",
+    "checkedAt": "2026-08-25T13:26:36.496052+00:00",
     "productCount": 323,
     "hasChanges": false,
     "changeCount": 0,
     "summary": "Sin cambios",
-    "triggerMode": "auto",
+    "triggerMode": "schedule",
     "triggeredBy": "sistema"
   }
 ]
