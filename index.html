@@ -1424,7 +1424,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.10';
+const APP_VERSION = '25.08.26.11';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -10743,6 +10743,181 @@ function exportClientsPDF() {
 
 // ─── RANKING POR CATEGORÍA (quién compra más de cada rubro) ───
 let catrankSelectedMonths = new Set(); // vacío = todos los meses
+
+// ─── COMPARADOR DE CLIENTES ───────────────────────────────────────────────────
+const CC_COLORS = ['#FF6600','#88C0D0','#A3BE8C','#EBCB8B','#BF616A','#B48EAD','#D08770','#5E81AC','#81A1C1','#4EAACC'];
+let ccSelectedMonths = new Set(); // vacío = todos
+let ccMetric = 'amount'; // 'amount' | 'qty'
+let ccClients = []; // [{key, name, color}]
+let _ccAllClients = []; // cache del ranking completo para búsqueda
+
+function ccOnDistChange() { ccClients = []; _ccAllClients = []; ccRenderSelectedPills(); ccRenderMonthChips(); ccRender(); }
+
+function ccSetMetric(m) {
+  ccMetric = m;
+  document.getElementById('cc-toggle-amount').classList.toggle('active', m==='amount');
+  document.getElementById('cc-toggle-qty').classList.toggle('active', m==='qty');
+  ccRender();
+}
+
+function ccRenderMonthChips() {
+  const dist = document.getElementById('cc-distributor')?.value || 'all';
+  const months = getAvailableMonths(dist);
+  const wrap = document.getElementById('cc-month-chips');
+  if(!wrap) return;
+  const allActive = ccSelectedMonths.size === 0;
+  wrap.innerHTML = `<button type="button" class="filter-pill ${allActive?'active':''}" onclick="ccToggleAllMonths()">Todos</button>`
+    + months.map(mk => `<button type="button" class="filter-pill ${ccSelectedMonths.has(mk)?'active':''}" onclick="ccToggleMonth('${mk}')">${getMonthLabel(mk)}</button>`).join('');
+}
+function ccToggleAllMonths() { ccSelectedMonths.clear(); ccRenderMonthChips(); ccRender(); }
+function ccToggleMonth(mk) {
+  if(ccSelectedMonths.has(mk)) ccSelectedMonths.delete(mk); else ccSelectedMonths.add(mk);
+  ccRenderMonthChips(); ccRender();
+}
+
+function ccSearchClients() {
+  const q = (document.getElementById('cc-search')?.value || '').toLowerCase().trim();
+  const drop = document.getElementById('cc-search-drop');
+  if(!q || q.length < 2) { drop.style.display='none'; return; }
+  const dist = document.getElementById('cc-distributor')?.value || 'all';
+  if(!_ccAllClients.length) _ccAllClients = getClientRanking(dist, 'all');
+  const qDigits = q.replace(/\D/g,'');
+  const results = _ccAllClients
+    .filter(c => c.name.toLowerCase().includes(q) || (qDigits.length>=4 && c.cuit.includes(qDigits)))
+    .filter(c => !ccClients.find(s=>s.key===c.key))
+    .slice(0, 8);
+  if(!results.length) { drop.style.display='none'; return; }
+  drop.innerHTML = results.map(c =>
+    `<div style="padding:8px 12px;cursor:pointer;border-bottom:0.5px solid var(--border2);font-size:13px;color:var(--text)"
+      onmousedown="event.preventDefault();ccAddClient('${c.key.replace(/'/g,"\\'")}','${c.name.replace(/'/g,"\\'")}')"
+      onmouseenter="this.style.background='var(--bg3)'" onmouseleave="this.style.background=''">
+      ${esc(c.name)}${c.cuit?` <span style="color:var(--text3);font-size:11px">${formatCuit(c.cuit)}</span>`:''}
+    </div>`
+  ).join('');
+  drop.style.display = 'block';
+}
+
+function ccAddClient(key, name) {
+  if(ccClients.length >= 10) { toast('Máximo 10 clientes'); return; }
+  if(ccClients.find(c=>c.key===key)) return;
+  const color = CC_COLORS[ccClients.length % CC_COLORS.length];
+  ccClients.push({ key, name, color });
+  document.getElementById('cc-search').value = '';
+  document.getElementById('cc-search-drop').style.display = 'none';
+  ccRenderSelectedPills();
+  ccRender();
+}
+
+function ccRemoveClient(key) {
+  ccClients = ccClients.filter(c=>c.key!==key);
+  ccClients.forEach((c,i) => c.color = CC_COLORS[i % CC_COLORS.length]);
+  ccRenderSelectedPills();
+  ccRender();
+}
+
+function ccRenderSelectedPills() {
+  const wrap = document.getElementById('cc-selected-pills');
+  if(!wrap) return;
+  wrap.innerHTML = ccClients.map(c =>
+    `<span class="pill" style="background:${c.color}22;border:1px solid ${c.color};color:${c.color};display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600">
+      ${esc(c.name)}
+      <span style="cursor:pointer;font-weight:700;color:${c.color}" onclick="ccRemoveClient('${c.key.replace(/'/g,"\\'")}')">×</span>
+    </span>`
+  ).join('');
+  const inp = document.getElementById('cc-search');
+  if(inp) inp.placeholder = ccClients.length >= 10 ? 'Máximo de clientes alcanzado' : 'Buscar por nombre o CUIT...';
+}
+
+function ccRender() {
+  const chartWrap = document.getElementById('cc-chart-wrap');
+  const tableWrap = document.getElementById('cc-table-wrap');
+  if(!chartWrap || !tableWrap) return;
+  if(!ccClients.length) {
+    chartWrap.innerHTML = `<div class="empty-state"><i class="ti ti-users-group"></i><p>Agregá al menos un cliente para ver la comparación.</p></div>`;
+    tableWrap.innerHTML = '';
+    return;
+  }
+  const dist = document.getElementById('cc-distributor')?.value || 'all';
+  // Determine months to show
+  const allMonths = getAvailableMonths(dist).reverse(); // asc order
+  const months = ccSelectedMonths.size > 0 ? allMonths.filter(mk=>ccSelectedMonths.has(mk)) : allMonths;
+  if(!months.length) {
+    chartWrap.innerHTML = `<div class="empty-state"><i class="ti ti-calendar"></i><p>No hay meses disponibles para el proveedor seleccionado.</p></div>`;
+    tableWrap.innerHTML = '';
+    return;
+  }
+  // Build data: for each client, get ranking per month
+  const clientData = ccClients.map(cl => {
+    const byMonth = {};
+    months.forEach(mk => {
+      const ranking = getClientRanking(dist, mk);
+      const found = ranking.find(c=>c.key===cl.key);
+      byMonth[mk] = found ? { amount: found.amount, qty: found.qty } : { amount:0, qty:0 };
+    });
+    return { ...cl, byMonth };
+  });
+  const metric = ccMetric;
+  const metricLabel = metric === 'amount' ? 'USD' : 'Unidades';
+
+  // ── Chart ──
+  const W = 760, H = 260, padL = 40, padR = 16, padT = 30, padB = 52;
+  const innerW = W-padL-padR, innerH = H-padT-padB;
+  const nMonths = months.length, nClients = ccClients.length;
+  const groupW = innerW / nMonths;
+  const barW = Math.min(28, groupW / (nClients+1));
+  const groupPad = (groupW - barW * nClients) / 2;
+  const maxVal = Math.max(1, ...clientData.flatMap(cl => months.map(mk => cl.byMonth[mk][metric])));
+
+  const bars = months.flatMap((mk, mi) => {
+    const gx = padL + mi * groupW;
+    const labelX = gx + groupW/2;
+    const label = `<text x="${labelX.toFixed(1)}" y="${H-padB+16}" text-anchor="middle" font-size="10" style="fill:var(--text3)">${esc(getMonthLabel(mk))}</text>`;
+    const rects = clientData.map((cl, ci) => {
+      const v = cl.byMonth[mk][metric];
+      const barH = maxVal > 0 ? (v/maxVal)*innerH : 0;
+      const x = gx + groupPad + ci*barW;
+      const y = padT + innerH - barH;
+      return v > 0
+        ? `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(barW-1).toFixed(1)}" height="${Math.max(barH,0).toFixed(1)}" rx="3" style="fill:${cl.color}" title="${esc(cl.name)}: ${v.toLocaleString('es-AR')}"/>`
+        : '';
+    }).join('');
+    return [label, rects];
+  });
+
+  // Legend
+  const legendItems = ccClients.map((cl,i) =>
+    `<text x="${padL + i*140}" y="${H-8}" font-size="10" style="fill:${cl.color};font-weight:600">■ ${esc(cl.name.length>18?cl.name.slice(0,16)+'…':cl.name)}</text>`
+  ).join('');
+
+  chartWrap.innerHTML = `<div class="ai-box" style="margin-top:0">
+    <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-chart-bar" style="color:var(--brand-text)"></i> Comparador — ${metricLabel} por mes</div>
+    <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">
+      <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${H-padB}" style="stroke:var(--border2)"/>
+      <line x1="${padL}" y1="${H-padB}" x2="${W-padR}" y2="${H-padB}" style="stroke:var(--border2)"/>
+      ${bars.join('')}
+      ${legendItems}
+    </svg>
+  </div>`;
+
+  // ── Table ──
+  const hasAmount = metric === 'amount';
+  const fmt = v => metric==='amount' ? (v ? 'USD '+Math.round(v).toLocaleString('es-AR') : '-') : (v ? Math.round(v).toLocaleString('es-AR')+' u' : '-');
+  const totals = clientData.map(cl => months.reduce((s,mk)=>s+cl.byMonth[mk][metric],0));
+  tableWrap.innerHTML = `<div class="table-scroll"><table class="data-table">
+    <thead><tr>
+      <th>Cliente</th>
+      ${months.map(mk=>`<th style="text-align:right">${esc(getMonthLabel(mk))}</th>`).join('')}
+      <th style="text-align:right;color:var(--green-text)">Total</th>
+    </tr></thead>
+    <tbody>${clientData.map((cl,ci)=>`<tr>
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cl.color};margin-right:6px;vertical-align:middle"></span><strong>${esc(cl.name)}</strong></td>
+      ${months.map(mk=>`<td style="text-align:right">${fmt(cl.byMonth[mk][metric])}</td>`).join('')}
+      <td style="text-align:right;color:var(--green-text);font-weight:600">${fmt(totals[ci])}</td>
+    </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+// ─── END COMPARADOR DE CLIENTES ──────────────────────────────────────────────
 let catrankSortKey = 'qty_desc';
 function onCatRankDistributorChange() {
   catrankSelectedMonths.clear();
