@@ -1424,7 +1424,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.15';
+const APP_VERSION = '25.08.26.16';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -6750,37 +6750,25 @@ function _pbmClassifyRow(desc) {
   const hasVGA = vt !== null;
   const hasLC  = lt !== null;
   const hasMB  = mt !== null;
-  const prog   = hasLC ? 4 : 3;
 
-  // Cascada secuencial izq→der con RESET después de chassis+PSU:
-  //
-  // 1. base_et = max(chassis_idx, PSU_idx) → chassis y PSU scorean aquí.
-  //    El PSU puede "bajar" al chassis (MAG PANO+PSU650 → chassis=$4).
-  //
-  // 2. RESET: después de scorear chassis+PSU, et vuelve a chassis_idx.
-  //    El PSU NO propaga a MB/VGA/LC. Solo afecta los scores de chassis y PSU.
-  //
-  // 3. MB, VGA, LC continúan la cascada desde chassis_idx en adelante.
-  //
-  // Verificado: MAG PANO(t3)+MAG650(t4)+MAG B840(t3)+5070(P4)+COREFROZR=4+2+5+30+2=$43
+  // Programa según componentes presentes
+  const prog = hasLC ? (hasVGA ? 4 : 2) : (hasVGA ? 3 : 1);
 
-  const base_et = Math.max(ct - 1, pt - 1);               // chassis+PSU joint base
-  const gab = S.chassis[base_et];
-  const psu = S.psu[base_et];
+  // Cada componente puntúa en su PROPIO tier de forma independiente.
+  // Excepción VGA: si la MB es tier 5 (A520/H610 etc.), la VGA se capea
+  // a tier 5 (14pts P4 / 8pts P3) independientemente del modelo de GPU.
+  const gab = S.chassis[ct - 1];
+  const psu = S.psu[pt - 1];
+  const mb  = hasMB ? S.mb[mt - 1] : 0;
 
-  let et = ct - 1;                                          // RESET: et vuelve a chassis_idx
+  const effVgaTier = hasVGA ? (hasMB && mt === 5 ? 5 : vt) : null;
+  const vga = hasVGA ? (hasLC ? S.vgaP4[effVgaTier - 1] : S.vgaP3[effVgaTier - 1]) : 0;
 
-  if (hasMB)  et = Math.max(et, mt - 1);                  // MB
-  const mb  = hasMB  ? S.mb[et]  : 0;
+  const lc  = hasLC ? S.lc[lt - 1] : null;
 
-  if (hasVGA) et = Math.max(et, vt - 1);                  // VGA
-  const vga = hasVGA ? (hasLC ? S.vgaP4[et] : S.vgaP3[et]) : 0;
-
-  if (hasLC)  et = Math.max(et, lt - 1);                  // LC/AC
-  const lc  = hasLC  ? S.lc[et]  : null;
-
-  const correct = gab + psu + mb + vga + (lc||0);
-  return { chassisTier: ct, effectiveTier: et + 1, prog, gab, psu, mb, vga, lc, correct, claimed: 0 };
+  const correct = gab + psu + mb + vga + (lc || 0);
+  const effectiveTier = Math.max(ct, pt, mt || 0, effVgaTier || 0, lt || 0);
+  return { chassisTier: ct, effectiveTier, prog, gab, psu, mb, vga, lc, correct, claimed: 0 };
 }
 
 // ── FullHard multi-line format detector & parser ─────────────
