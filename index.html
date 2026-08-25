@@ -1424,7 +1424,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.13';
+const APP_VERSION = '25.08.26.14';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -10788,7 +10788,7 @@ let ccMetric = 'amount'; // 'amount' | 'qty'
 let ccClients = []; // [{key, name, color}]
 let _ccAllClients = []; // cache del ranking completo para búsqueda
 
-function ccOnDistChange() { ccClients = []; _ccAllClients = []; ccRenderSelectedPills(); ccRenderMonthChips(); ccRender(); }
+function ccOnDistChange() { _ccAllClients = []; ccRenderSelectedPills(); ccRenderMonthChips(); ccRender(); }
 
 function ccSetMetric(m) {
   ccMetric = m;
@@ -10816,8 +10816,7 @@ function ccSearchClients() {
   const q = (document.getElementById('cc-search')?.value || '').toLowerCase().trim();
   const drop = document.getElementById('cc-search-drop');
   if(!q || q.length < 2) { drop.style.display='none'; return; }
-  const dist = document.getElementById('cc-distributor')?.value || 'all';
-  if(!_ccAllClients.length) _ccAllClients = getClientRanking(dist, 'all');
+  if(!_ccAllClients.length) _ccAllClients = getClientRanking('all', 'all'); // siempre busca en todos los distribuidores
   const qDigits = q.replace(/\D/g,'');
   const results = _ccAllClients
     .filter(c => c.name.toLowerCase().includes(q) || (qDigits.length>=4 && c.cuit.includes(qDigits)))
