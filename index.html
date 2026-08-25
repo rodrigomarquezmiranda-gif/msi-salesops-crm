@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.6';
+const APP_VERSION = '25.08.26.7';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9103,9 +9103,12 @@ function buildBarChartSVG(points, color) {
     const cx = padL + i*step + step/2;
     const barH = maxV>0 ? (p.value/maxV)*innerH : 0;
     const x = cx - barW/2, y = padT + (innerH-barH);
-    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH,0).toFixed(1)}" rx="4" style="fill:${color}" />
-      <text x="${cx.toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="middle" font-size="11" style="fill:var(--text2)">${p.value.toLocaleString('es-AR',{maximumFractionDigits:1})}</text>
-      <text x="${cx.toFixed(1)}" y="${h-padB+16}" text-anchor="middle" font-size="10" style="fill:var(--text3)">${esc(p.label)}</text>`;
+    const fill = p.accent ? 'var(--green-text)' : color;
+    const labelFill = p.accent ? 'var(--green-text)' : 'var(--text2)';
+    const separator = p.accent ? `<line x1="${(x-4).toFixed(1)}" y1="${padT}" x2="${(x-4).toFixed(1)}" y2="${h-padB}" style="stroke:var(--border2);stroke-dasharray:4,3" />` : '';
+    return `${separator}<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH,0).toFixed(1)}" rx="4" style="fill:${fill}" />
+      <text x="${cx.toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="middle" font-size="11" style="fill:${labelFill};font-weight:${p.accent?'600':'400'}">${p.value.toLocaleString('es-AR',{maximumFractionDigits:1})}</text>
+      <text x="${cx.toFixed(1)}" y="${h-padB+16}" text-anchor="middle" font-size="10" style="fill:${p.accent?'var(--green-text)':'var(--text3)'};font-weight:${p.accent?'600':'400'}">${esc(p.label)}</text>`;
   }).join('');
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">
     <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${h-padB}" style="stroke:var(--border2)" />
@@ -10374,14 +10377,18 @@ function renderClientsTab(resetPaging) {
     chartWrap.innerHTML = `<div class="empty-state"><i class="ti ti-users"></i><p>Todavía no hay reportes de ventas cargados para ${esc(distLabel)}.</p></div>`;
   } else {
     const hasAmount = monthly.some(m=>m.amount>0);
+    const totalQty    = monthly.reduce((s,m)=>s+m.qty,0);
+    const totalAmount = monthly.reduce((s,m)=>s+m.amount,0);
+    const qtyPoints    = [...monthly.map(m=>({label:m.label, value:m.qty})),    {label:'Total', value:totalQty,    accent:true}];
+    const amountPoints = [...monthly.map(m=>({label:m.label, value:m.amount})), {label:'Total', value:totalAmount, accent:true}];
     chartWrap.innerHTML = `
       <div class="ai-box" style="margin-top:0">
         <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-chart-bar" style="color:var(--brand-text)"></i> Unidades vendidas por mes — ${esc(distLabel)}</div>
-        ${buildBarChartSVG(monthly.map(m=>({label:m.label, value:m.qty})), 'var(--brand)')}
+        ${buildBarChartSVG(qtyPoints, 'var(--brand)')}
       </div>
       ${hasAmount ? `<div class="ai-box">
         <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-chart-bar" style="color:var(--blue-text)"></i> Monto vendido por mes (USD) — ${esc(distLabel)}</div>
-        ${buildBarChartSVG(monthly.map(m=>({label:m.label, value:m.amount})), 'var(--blue)')}
+        ${buildBarChartSVG(amountPoints, 'var(--blue)')}
       </div>` : ''}`;
   }
 
