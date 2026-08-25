@@ -1424,7 +1424,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.11';
+const APP_VERSION = '25.08.26.12';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -9674,11 +9674,12 @@ function getMonthFilterLabel(filter) {
   if(arr.length === 1) return getMonthLabel(arr[0]);
   return arr.map(getMonthLabel).join(' + ');
 }
-let _clientsSelectedMonth = 'all';
+let _clientsSelectedMonths = new Set(); // empty = todos
 function updateClientsMonthOptions() {
   const dist = document.getElementById('clients-distributor').value;
   const months = getAvailableMonths(dist);
-  if(!months.includes(_clientsSelectedMonth)) _clientsSelectedMonth = 'all';
+  // remove months no longer available
+  for(const mk of _clientsSelectedMonths) { if(!months.includes(mk)) _clientsSelectedMonths.delete(mk); }
   renderClientsMonthChips(months);
   renderClientsTab(true);
 }
@@ -9689,11 +9690,17 @@ function renderClientsMonthChips(months) {
   }
   const wrap = document.getElementById('clients-month-chips');
   if(!wrap) return;
-  wrap.innerHTML = `<button type="button" class="filter-pill ${_clientsSelectedMonth==='all'?'active':''}" onclick="setClientsMonth('all')">Todos</button>`
-    + months.map(mk => `<button type="button" class="filter-pill ${_clientsSelectedMonth===mk?'active':''}" onclick="setClientsMonth('${mk}')">${getMonthLabel(mk)}</button>`).join('');
+  const allActive = _clientsSelectedMonths.size === 0;
+  wrap.innerHTML = `<button type="button" class="filter-pill ${allActive?'active':''}" onclick="toggleClientsAllMonths()">Todos</button>`
+    + months.map(mk => `<button type="button" class="filter-pill ${_clientsSelectedMonths.has(mk)?'active':''}" onclick="toggleClientsMonth('${mk}')">${getMonthLabel(mk)}</button>`).join('');
 }
-function setClientsMonth(mk) {
-  _clientsSelectedMonth = mk;
+function toggleClientsAllMonths() {
+  _clientsSelectedMonths.clear();
+  renderClientsMonthChips();
+  renderClientsTab(true);
+}
+function toggleClientsMonth(mk) {
+  if(_clientsSelectedMonths.has(mk)) _clientsSelectedMonths.delete(mk); else _clientsSelectedMonths.add(mk);
   renderClientsMonthChips();
   renderClientsTab(true);
 }
@@ -10433,7 +10440,7 @@ function renderClientsTab(resetPaging) {
   if(resetPaging) _clientsShowAll = false;
   const dist = document.getElementById('clients-distributor').value;
   const distLabel = dist === 'all' ? 'todos los proveedores' : DISTRIBUTORS[dist];
-  const monthKey = _clientsSelectedMonth || 'all';
+  const monthKey = _clientsSelectedMonths; // Set — empty means all
   const q = (document.getElementById('clients-search')?.value || '').toLowerCase();
   const sortKey = document.getElementById('clients-sort')?.value || 'amount_desc';
 
@@ -10552,6 +10559,7 @@ function selectRankingClient(clientKey) {
 let _clientDetailSearch = '';
 let _cdDistKey = '', _cdMonthKey = '', _cdClientKey = '';
 let _cdCatSort = 'qty_desc';
+let _cdProdSort = 'date_desc';
 
 function _filterClientDetailTable() {
   // Fast path: only update tbody + count, no full re-render
@@ -10722,7 +10730,7 @@ function showClientProductTooltip(evt, clientKey, descNorm, distKey) {
 
 function getClientsExportData() {
   const dist = document.getElementById('clients-distributor').value;
-  const monthKey = _clientsSelectedMonth || 'all';
+  const monthKey = _clientsSelectedMonths; // Set — empty means all
   const ranking = getClientRanking(dist, monthKey).sort((a,b)=>b.amount-a.amount);
   const headers = ['Cliente','CUIT','Unidades','Monto USD','Modelos distintos','Proveedores','Periodo','Composición por categoría (unidades)'];
   const rows = ranking.map(c => {
