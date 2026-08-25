@@ -10570,9 +10570,19 @@ function _filterClientDetailTable() {
   const qFilter = _clientDetailSearch.toLowerCase().trim();
   const safeClientKey = _cdClientKey.replace(/'/g, "\\'");
   const safeDistKey = esc(_cdDistKey);
-  const visibleProducts = qFilter
+  let visibleProducts = qFilter
     ? client.products.filter(p => (p.description||'').toLowerCase().includes(qFilter))
-    : client.products;
+    : [...client.products];
+  if(_cdProdSort==='desc_asc')    visibleProducts.sort((a,b)=>(a.description||'').localeCompare(b.description||''));
+  else if(_cdProdSort==='desc_desc') visibleProducts.sort((a,b)=>(b.description||'').localeCompare(a.description||''));
+  else if(_cdProdSort==='cat_asc')  visibleProducts.sort((a,b)=>(a.category||'').localeCompare(b.category||''));
+  else if(_cdProdSort==='cat_desc') visibleProducts.sort((a,b)=>(b.category||'').localeCompare(a.category||''));
+  else if(_cdProdSort==='date_asc') visibleProducts.sort((a,b)=>(a.dateLabel||'').localeCompare(b.dateLabel||''));
+  else if(_cdProdSort==='qty_asc')  visibleProducts.sort((a,b)=>a.qty-b.qty);
+  else if(_cdProdSort==='qty_desc') visibleProducts.sort((a,b)=>b.qty-a.qty);
+  else if(_cdProdSort==='amt_asc')  visibleProducts.sort((a,b)=>(a.amount||0)-(b.amount||0));
+  else if(_cdProdSort==='amt_desc') visibleProducts.sort((a,b)=>(b.amount||0)-(a.amount||0));
+  else visibleProducts.sort((a,b)=>(b.dateLabel||'').localeCompare(a.dateLabel||''));
   const tbody = document.getElementById('client-detail-tbody');
   const countEl = document.getElementById('client-detail-count');
   if(tbody) tbody.innerHTML = visibleProducts.length === 0
@@ -10610,9 +10620,20 @@ function renderClientDetail(distKey, monthKey, clientKey) {
   else if(_cdCatSort==='amount_desc') sortedCats.sort((a,b)=>b.amount-a.amount);
   else sortedCats.sort((a,b)=>b.qty-a.qty); // qty_desc default
   const qFilter = _clientDetailSearch.toLowerCase().trim();
-  const visibleProducts = qFilter
+  let visibleProducts = qFilter
     ? client.products.filter(p => (p.description||'').toLowerCase().includes(qFilter))
-    : client.products;
+    : [...client.products];
+  // sort product table
+  if(_cdProdSort==='desc_asc')    visibleProducts.sort((a,b)=>(a.description||'').localeCompare(b.description||''));
+  else if(_cdProdSort==='desc_desc') visibleProducts.sort((a,b)=>(b.description||'').localeCompare(a.description||''));
+  else if(_cdProdSort==='cat_asc')  visibleProducts.sort((a,b)=>(a.category||'').localeCompare(b.category||''));
+  else if(_cdProdSort==='cat_desc') visibleProducts.sort((a,b)=>(b.category||'').localeCompare(a.category||''));
+  else if(_cdProdSort==='date_asc') visibleProducts.sort((a,b)=>(a.dateLabel||'').localeCompare(b.dateLabel||''));
+  else if(_cdProdSort==='qty_asc')  visibleProducts.sort((a,b)=>a.qty-b.qty);
+  else if(_cdProdSort==='qty_desc') visibleProducts.sort((a,b)=>b.qty-a.qty);
+  else if(_cdProdSort==='amt_asc')  visibleProducts.sort((a,b)=>(a.amount||0)-(b.amount||0));
+  else if(_cdProdSort==='amt_desc') visibleProducts.sort((a,b)=>(b.amount||0)-(a.amount||0));
+  else visibleProducts.sort((a,b)=>(b.dateLabel||'').localeCompare(a.dateLabel||'')); // date_desc default
   const safeClientKey = clientKey.replace(/'/g, "\\'");
   const safeDistKey = esc(distKey);
   const safeMonthKey = esc(monthKey);
@@ -10650,7 +10671,10 @@ function renderClientDetail(distKey, monthKey, clientKey) {
     <span id="client-detail-count" style="font-size:12px;color:var(--text3)">${qFilter ? visibleProducts.length+' de '+client.products.length+' productos' : client.products.length+' productos'}</span>
   </div>
   <div class="table-scroll"><table class="data-table">
-    <thead><tr><th>Descripción</th><th>Categoría</th>${showDistCol?'<th>Proveedor</th>':''}<th>Fecha</th><th>Cantidad</th><th>Monto USD</th></tr></thead>
+    <thead><tr>${(()=>{
+      const thP=(lbl,asc,desc)=>{const arrow=_cdProdSort===desc?' <i class="ti ti-arrow-down" style="font-size:10px"></i>':_cdProdSort===asc?' <i class="ti ti-arrow-up" style="font-size:10px"></i>':' <i class="ti ti-arrows-sort" style="font-size:10px;opacity:0.4"></i>';const next=_cdProdSort===desc?asc:desc;return `<th style="cursor:pointer;user-select:none" onclick="_cdProdSort='${next}';renderClientDetail('${safeDistKey}','${safeMonthKey}','${safeClientKey}')">${lbl}${arrow}</th>`;};
+      return thP('Descripción','desc_asc','desc_desc')+thP('Categoría','cat_asc','cat_desc')+(showDistCol?'<th>Proveedor</th>':'')+thP('Fecha','date_asc','date_desc')+thP('Cantidad','qty_asc','qty_desc')+thP('Monto USD','amt_asc','amt_desc');
+    })()}</tr></thead>
     <tbody id="client-detail-tbody">${visibleProducts.length === 0
       ? `<tr><td colspan="${4+(showDistCol?1:0)}" style="text-align:center;color:var(--text3);padding:16px">Sin resultados para "${esc(qFilter)}"</td></tr>`
       : visibleProducts.map(p => {
