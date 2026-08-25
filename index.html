@@ -477,6 +477,9 @@
       <button class="nav-item" id="nav-catranking" onclick="gotoTab('catranking')">
         <i class="ti ti-category" style="color:#4EAACC"></i> Ranking por Categoría
       </button>
+      <button class="nav-item" id="nav-clientcompare" onclick="gotoTab('clientcompare')">
+        <i class="ti ti-users-group" style="color:#A3BE8C"></i> Comparador de Clientes
+      </button>
       <button class="nav-item" id="nav-imports" onclick="gotoTab('imports')">
         <i class="ti ti-ship" style="color:#BF616A"></i> Análisis de Importaciones
         <span class="nav-count" id="nb-imports">0</span>
@@ -769,7 +772,7 @@
           </div>
           <div class="field" style="margin-bottom:0">
             <label>Mes</label>
-            <select id="clients-month" onchange="renderClientsTab(true)"></select>
+            <div id="clients-month-chips" style="display:flex;flex-wrap:wrap;gap:6px;padding-top:2px"></div>
           </div>
         </div>
         <div id="clients-overview-chart"></div>
@@ -843,6 +846,46 @@
         </div>
         <div class="export-row"><button class="btn" onclick="exportCategoryRankingExcel()"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</button> <button class="btn" onclick="exportCategoryRankingPDF()"><i class="ti ti-file-type-pdf" style="font-size:14px"></i> PDF</button></div>
         <div id="catrank-wrap"></div>
+      </div>
+
+      <!-- COMPARADOR DE CLIENTES -->
+      <div id="tab-clientcompare" class="tab-pane">
+        <div class="field-row" style="grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.25rem;align-items:end">
+          <div class="field" style="margin-bottom:0">
+            <label>Proveedor</label>
+            <select id="cc-distributor" onchange="ccOnDistChange()" style="font-size:14px;padding:10px 12px">
+              <option value="all">Todos los proveedores</option>
+              <option value="air">AIR COMPUTERS</option>
+              <option value="invid">INVID</option>
+              <option value="solutionbox">SOLUTION BOX</option>
+              <option value="ashir">ASHIR</option>
+              <option value="elit">ELIT</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label>Métrica</label>
+            <div style="display:flex;gap:8px;padding-top:4px">
+              <button type="button" id="cc-toggle-amount" class="filter-pill active" onclick="ccSetMetric('amount')">Monto USD</button>
+              <button type="button" id="cc-toggle-qty" class="filter-pill" onclick="ccSetMetric('qty')">Unidades</button>
+            </div>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:1rem">
+          <label>Meses a comparar</label>
+          <div id="cc-month-chips" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+        <div class="field" style="margin-bottom:1.25rem">
+          <label>Agregar cliente (hasta 10)</label>
+          <div style="position:relative;max-width:420px">
+            <i class="ti ti-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none"></i>
+            <input type="text" id="cc-search" placeholder="Buscar por nombre o CUIT..." oninput="ccSearchClients()"
+              style="width:100%;padding:8px 10px 8px 32px;border:0.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;box-sizing:border-box" autocomplete="off"/>
+            <div id="cc-search-drop" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;z-index:200;max-height:220px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.3)"></div>
+          </div>
+          <div id="cc-selected-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px"></div>
+        </div>
+        <div id="cc-chart-wrap"></div>
+        <div id="cc-table-wrap" style="margin-top:1.25rem"></div>
       </div>
 
       <!-- ANÁLISIS DE IMPORTACIONES -->
@@ -1381,7 +1424,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.9';
+const APP_VERSION = '25.08.26.10';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -2112,8 +2155,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','imports','etailers','ia','notificaciones','usuarios','semaforo','sugeridos','share','pbm'];
-const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', imports:'Análisis de Importaciones', etailers:'Etailers', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra', share:'Mi Participación', pbm:'Powered by MSI' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','clientcompare','imports','etailers','ia','notificaciones','usuarios','semaforo','sugeridos','share','pbm'];
+const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', clientcompare:'Comparador de Clientes', imports:'Análisis de Importaciones', etailers:'Etailers', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra', share:'Mi Participación', pbm:'Powered by MSI' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -2142,6 +2185,7 @@ function gotoTab(tab) {
   if(tab==='resellers-t2') renderResellerTab('t2');
   if(tab==='resellers-t3') renderResellerTab('t3');
   if(tab==='catranking') { renderCatrankMonthChips(); renderCategoryRankingTab(); }
+  if(tab==='clientcompare') { ccRenderMonthChips(); ccRender(); }
   if(tab==='imports') { renderImportsHistory(); renderImportsMonthChips(); renderImportsTab(); }
   if(tab==='etailers') renderEtailersTab();
   if(tab==='notificaciones') renderNotificacionesTab();
@@ -9630,13 +9674,27 @@ function getMonthFilterLabel(filter) {
   if(arr.length === 1) return getMonthLabel(arr[0]);
   return arr.map(getMonthLabel).join(' + ');
 }
+let _clientsSelectedMonth = 'all';
 function updateClientsMonthOptions() {
   const dist = document.getElementById('clients-distributor').value;
   const months = getAvailableMonths(dist);
-  const sel = document.getElementById('clients-month');
-  const prevVal = sel.value;
-  sel.innerHTML = '<option value="all">Todos los meses</option>' + months.map(mk => `<option value="${mk}">${getMonthLabel(mk)}</option>`).join('');
-  sel.value = (months.includes(prevVal) || prevVal === 'all') ? prevVal : (months[0] || 'all');
+  if(!months.includes(_clientsSelectedMonth)) _clientsSelectedMonth = 'all';
+  renderClientsMonthChips(months);
+  renderClientsTab(true);
+}
+function renderClientsMonthChips(months) {
+  if(!months) {
+    const dist = document.getElementById('clients-distributor').value;
+    months = getAvailableMonths(dist);
+  }
+  const wrap = document.getElementById('clients-month-chips');
+  if(!wrap) return;
+  wrap.innerHTML = `<button type="button" class="filter-pill ${_clientsSelectedMonth==='all'?'active':''}" onclick="setClientsMonth('all')">Todos</button>`
+    + months.map(mk => `<button type="button" class="filter-pill ${_clientsSelectedMonth===mk?'active':''}" onclick="setClientsMonth('${mk}')">${getMonthLabel(mk)}</button>`).join('');
+}
+function setClientsMonth(mk) {
+  _clientsSelectedMonth = mk;
+  renderClientsMonthChips();
   renderClientsTab(true);
 }
 function getMonthlySalesTotals(distKey) {
@@ -9660,7 +9718,7 @@ function getClientRanking(distKey, monthKey) {
   const scope = distScopeList(distKey);
   const snaps = db.weeklyReports.filter(s => {
     if(!scope.includes(s.distributor) || s.reportType !== 'sales') return false;
-    if(!monthKey || monthKey === 'all') return true;
+    if(!monthKey || monthKey === 'all' || (monthKey instanceof Set && monthKey.size === 0)) return true;
     const endMk = getMonthKey(s.periodEnd);
     const startMk = getMonthKey(s.periodStart);
     if(monthKey instanceof Set) return Array.from(monthKey).some(mk => mk >= (startMk||endMk||mk) && mk <= (endMk||mk));
@@ -10375,7 +10433,7 @@ function renderClientsTab(resetPaging) {
   if(resetPaging) _clientsShowAll = false;
   const dist = document.getElementById('clients-distributor').value;
   const distLabel = dist === 'all' ? 'todos los proveedores' : DISTRIBUTORS[dist];
-  const monthKey = document.getElementById('clients-month')?.value || 'all';
+  const monthKey = _clientsSelectedMonth || 'all';
   const q = (document.getElementById('clients-search')?.value || '').toLowerCase();
   const sortKey = document.getElementById('clients-sort')?.value || 'amount_desc';
 
@@ -10493,6 +10551,7 @@ function selectRankingClient(clientKey) {
 }
 let _clientDetailSearch = '';
 let _cdDistKey = '', _cdMonthKey = '', _cdClientKey = '';
+let _cdCatSort = 'qty_desc';
 
 function _filterClientDetailTable() {
   // Fast path: only update tbody + count, no full re-render
@@ -10535,6 +10594,13 @@ function renderClientDetail(distKey, monthKey, clientKey) {
   _cdDistKey = distKey; _cdMonthKey = monthKey; _cdClientKey = clientKey;
   const showDistCol = distKey === 'all';
   const totalQty = client.qty || 1;
+  let sortedCats = [...client.categories];
+  if(_cdCatSort==='name_asc')    sortedCats.sort((a,b)=>a.label.localeCompare(b.label));
+  else if(_cdCatSort==='name_desc')   sortedCats.sort((a,b)=>b.label.localeCompare(a.label));
+  else if(_cdCatSort==='qty_asc')     sortedCats.sort((a,b)=>a.qty-b.qty);
+  else if(_cdCatSort==='amount_asc')  sortedCats.sort((a,b)=>a.amount-b.amount);
+  else if(_cdCatSort==='amount_desc') sortedCats.sort((a,b)=>b.amount-a.amount);
+  else sortedCats.sort((a,b)=>b.qty-a.qty); // qty_desc default
   const qFilter = _clientDetailSearch.toLowerCase().trim();
   const visibleProducts = qFilter
     ? client.products.filter(p => (p.description||'').toLowerCase().includes(qFilter))
@@ -10547,19 +10613,24 @@ function renderClientDetail(distKey, monthKey, clientKey) {
   ${client.aliases.length>1 ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Este cliente aparece con estos nombres en los reportes: ${client.aliases.map(esc).join(' · ')}</div>` : ''}
   <div class="ai-box" style="margin-top:0">
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${client.qty} unidades compradas en total${client.amount ? ' · USD '+client.amount.toLocaleString('es-AR') : ''}</div>
-    <div style="display:flex;flex-direction:column;gap:10px">
-      ${client.categories.map(c => {
+    <table class="data-table" style="margin-top:0">
+      <thead><tr>
+        ${(()=>{
+          const thC=(lbl,asc,desc)=>{const arrow=_cdCatSort===desc?' <i class="ti ti-arrow-down" style="font-size:10px"></i>':_cdCatSort===asc?' <i class="ti ti-arrow-up" style="font-size:10px"></i>':' <i class="ti ti-arrows-sort" style="font-size:10px;opacity:0.4"></i>';const next=_cdCatSort===desc?asc:desc;return `<th style="cursor:pointer;user-select:none" onclick="_cdCatSort='${next}';renderClientDetail('${safeDistKey}','${safeMonthKey}','${safeClientKey}')">${lbl}${arrow}</th>`;};
+          return thC('Categoría','name_asc','name_desc')+thC('Cantidad','qty_asc','qty_desc')+thC('Monto USD','amount_asc','amount_desc')+'<th></th>';
+        })()}
+      </tr></thead>
+      <tbody>${sortedCats.map(c => {
         const pct = Math.round((c.qty/totalQty)*1000)/10;
         const color = CATEGORY_COLOR[c.key] || CATEGORY_COLOR.other;
-        return `<div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-            <span style="font-weight:600;color:var(--text)">${pct}% ${esc(c.label)}</span>
-            <span style="color:var(--text2)">${c.qty} unidades${c.amount ? ' · USD '+c.amount.toLocaleString('es-AR') : ''}</span>
-          </div>
-          <div style="background:var(--bg2);border-radius:4px;height:9px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color}"></div></div>
-        </div>`;
-      }).join('')}
-    </div>
+        return `<tr>
+          <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;vertical-align:middle"></span><span style="font-weight:600">${esc(c.label)}</span> <span style="color:var(--text3);font-size:11px">${pct}%</span></td>
+          <td>${c.qty} u</td>
+          <td>${c.amount ? 'USD '+c.amount.toLocaleString('es-AR') : '-'}</td>
+          <td style="min-width:80px"><div style="background:var(--bg2);border-radius:4px;height:7px;overflow:hidden;width:80px"><div style="width:${pct}%;height:100%;background:${color}"></div></div></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
   </div>
   <div style="display:flex;align-items:center;gap:10px;margin:1rem 0 0.5rem">
     <div style="position:relative;flex:1;max-width:360px">
@@ -10651,7 +10722,7 @@ function showClientProductTooltip(evt, clientKey, descNorm, distKey) {
 
 function getClientsExportData() {
   const dist = document.getElementById('clients-distributor').value;
-  const monthKey = document.getElementById('clients-month')?.value || 'all';
+  const monthKey = _clientsSelectedMonth || 'all';
   const ranking = getClientRanking(dist, monthKey).sort((a,b)=>b.amount-a.amount);
   const headers = ['Cliente','CUIT','Unidades','Monto USD','Modelos distintos','Proveedores','Periodo','Composición por categoría (unidades)'];
   const rows = ranking.map(c => {
