@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '24.08.26.9';
+const APP_VERSION = '25.08.26.2';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -6610,91 +6610,115 @@ let _pbmActiveCuit = null;  // CUIT activo en tab bar
 let _pbmActiveMon  = null;  // Mes activo dentro del reseller
 let _pbmPendingFile= null;  // File en espera de asignación
 
-// ── Classification engine ────────────────────────────────────
-function _pbmChassis(desc) {
-  // Returns { tier, val }
-  if (/GABINETE\s+MSI\s+MEG/.test(desc)) return { tier:1, val:15 };
-  if (/GABINETE\s+MSI\s+MPG/.test(desc)) return { tier:2, val:10 };
-  if (desc.includes('MAG PANO 120R PZ'))  return { tier:2, val:10 };
-  if (desc.includes('MAG PANO M100R PZ')) return { tier:3, val:5 };
-  if (desc.includes('MAG PANO'))          return { tier:3, val:5 };
-  if (/MAG FORGE|MAG VAMPIRIC|MAG SHIELD|PRO SHIELD|PAG PANO|PRO FORGE/.test(desc)) return { tier:4, val:2 };
-  return { tier:4, val:2 };
+// ── Classification engine — TIER WATERFALL MODEL ─────────────
+// Regla cascada: cada componente se puntúa al effectiveTier acumulado hasta ÉL.
+// effectiveTier (et) = max(et_anterior, tier_del_componente) — secuencial, izq→der.
+// El chassis SIEMPRE paga su tier propio. Un Z890 paga 10 con MEG y 5 con MAG PANO.
+// Tablas 0-indexed: índice 0 = tier 1 (mejor) … índice 4 = tier 5 (peor).
+const _PBM_S = {
+  // Índice 0 = tier 1 (mejor) … índice 4 = tier 5 (peor)
+  chassis: [15, 10,  5, 4, 2],  // tier1=MEG, tier2=MPG/PANO120R, tier3=PANO, tier5=FORGE
+  psu:     [15,  5,  5, 2, 2],  // tier1=MEG/MPG Titanium ($15), tier2-3=Gold750+/Plat ($5), tier4-5=Bronze/650G ($2)
+  mb:      [10,  5,  5, 4, 2],  // tier1=Z890/X870, tier2=MAG B850, tier3=MAG B8xx, tier4=PRO B-series
+  vgaP3:   [30, 25, 20,10, 8],  // prog 3 — sin LC/AC
+  vgaP4:   [40, 35, 30,18,14],  // prog 4 — con LC/AC
+  lc:      [10,  5,  5, 2, 2],  // tier1=MEG/MPG CORELIQUID, tier2=C/I, tier3=E/A, tier4=COREFROZR
+};
+
+function _pbmChassisNaturalTier(d) {
+  if (/GABINETE.*\bMEG\b|MEG\s+(?:MAESTRO|PROSPECT|G\d)/.test(d)) return 1;
+  if (/GABINETE.*\bMPG\b|MPG\s+(?:GUNGNIR|VELOCE|SEKIRA)|MAG\s+PANO\s+120R\s+PZ/.test(d)) return 2;
+  if (/MAG\s+PANO/.test(d)) return 3;
+  return 5; // FORGE, VAMPIRIC, SHIELD, PAG PANO, PRO FORGE, PRO SHIELD — todos tier 5
 }
 
-function _pbmPSU(desc) {
-  const w = (desc.match(/(\d{3,4})W/) || [0,0]);
-  const watts = parseInt(w[1]) || 0;
-  if (!/FUENTE|A650|A750|A850|A1000/.test(desc)) return 2;
-  if (/BRONZE|BN\b|A650BN|A750BN/.test(desc))    return 2;
-  if (watts === 650 && /GOLD|GN\b/.test(desc))    return 2;
-  if (watts >= 750  && /GOLD|GN\b|GL\b/.test(desc)) return 5;
-  if (watts >= 850)  return 5;
-  if (/PLAT/.test(desc)) return 5;
-  return 2;
+function _pbmPSUNaturalTier(d) {
+  // Tier 1: MEG PSU / MPG 1600+1300 Titanium
+  if (/MPG.*(?:1600|1300).*TI|MEG.*PSU|MEG.*A\d{4}/.test(d)) return 1;
+  // Tier 2: MPG/MAG 1000+ Plat, PRO 1000 Plat
+  if (/(?:MPG|MAG).*(?:1000|1200).*PLAT|PRO.*1000.*PLAT/.test(d)) return 2;
+  // Tier 3: MAG 750/850 GOLD (GL/GN), PRO 850/1000 Plat
+  if (/MAG.*A(?:750|850)G[LN]|MAG.*(?:750|850).*GOLD|PRO.*(?:850|1000).*PLAT/.test(d)) return 3;
+  // Tier 4: Bronze / BN / White / MAG 650 GOLD
+  if (/BRONZE|BN\b|WHITE\b|WH\b|MAG.*650.*GOLD|MAG.*A650G[LN]/.test(d)) return 4;
+  return 5; // cualquier otra fuente
 }
 
-function _pbmMB(desc) {
-  // Hardcoded known models first
-  const knownMB = [
-    [/PRO B760M-E DDR4/,5],  [/PRO B760M-P DDR5/,5],
-    [/PRO B650M-B DDR5/,5],  [/PRO B760M-A WIFI DDR5/,5],
-    [/B550M-A PRO/,4],       [/PRO B840M/,4],
-    [/PRO B760M-P DDR4/,4],  [/PRO B850M/,4],
-    [/B850M GAMING/,4],      [/B860M GAMING/,4],
-    [/PRO B550M/,4],
-    [/MAG B760|MAG B860|MAG B850|MAG B840|MAG B650/,5],
-    [/Z890|Z790|Z690/,10],   [/X870/,5],
-    [/H810|H610|H510/,2],    [/A520M/,2],
-  ];
-  for (const [re, val] of knownMB) if (re.test(desc)) return val;
-  // Solo puntuar si hay un keyword de mother en la descripción (evita que ASUS/Gigabyte sumen $5)
-  if (!/MOTHER|MB MSI|PLACA MADRE/.test(desc)) return 0;
-  return (/PRO B/.test(desc)) ? 4 : 5;
+function _pbmMBNaturalTier(d) {
+  // Sin keyword de placa madre → no hay MB MSI (null excluye del cálculo de tier)
+  if (!/MOTHER|MB MSI|PLACA MADRE|B\d{3}M|A\d{3}M|H\d{3}|Z\d{3}|X8\d{2}/.test(d)) return null;
+  if (/Z890|Z790|Z690|X870/.test(d)) return 1;
+  if (/MAG\s+B850|MPG\s+B850/.test(d)) return 2;            // MAG/MPG B850 específico
+  if (/MAG\s+B(?:860|760|850|840|650)/.test(d)) return 3;   // MAG B-series
+  if (/B(?:860|760)M(?:-\w+)?\s/.test(d) && !/PRO\s+B/.test(d)) return 3; // B860M/B760M genérico
+  if (/PRO\s+B(?:860|760|850|840|650|550)|B550M-A\s+PRO|B\d{3}M-A\s+PRO/.test(d)) return 4;
+  if (/H\d{3}|A520M|A620M/.test(d)) return 5;
+  if (/PRO\s+B/.test(d)) return 4;   // PRO B-series genérico
+  if (/B\d{3}M/.test(d)) return 3;   // B-series sin prefijo MAG/PRO
+  return 3;
 }
 
-function _pbmVGA(desc, chassisTier, prog) {
-  const p3 = {1:30,2:20,3:15,4:10,5:8};
-  const p4 = {1:40,2:35,3:30,4:18,5:14};
-  const v = prog===4 ? p4 : p3;
-  if (/5090/.test(desc)) return { tier:1, val:v[1] };
-  if (/5080/.test(desc)) return { tier:1, val:v[1] };
-  if (/5070 TI|5070TI/.test(desc)) return { tier:2, val:v[2] };
-  if (/5070/.test(desc)) {
-    const t = chassisTier <= 2 ? 2 : 3;
-    return { tier:t, val:v[t] };
-  }
-  if (/5060 TI|5060TI/.test(desc)) return { tier:3, val:v[3] };
-  if (/5060/.test(desc)) return { tier:4, val:v[4] };
-  if (/5050|4090|4080|4070|4060|3060|3050|1650/.test(desc)) return { tier:4, val:v[4] };
-  // Sin VGA MSI reconocida en la descripción → no puntuar
-  if (!/PLACA DE VIDEO|GEFORCE|RADEON|RTX|GTX|RX \d{4}/.test(desc)) return { tier:5, val:0 };
-  return { tier:5, val:v[5] };
+function _pbmVGANaturalTier(d) {
+  if (!/PLACA DE VIDEO|GEFORCE|RADEON|RTX|GTX|RX\s+\d{4}/.test(d)) return null;
+  if (/5090|5080/.test(d)) return 1;  // 5090 y 5080 → tier 1 ($30 P3 / $40 P4 en builds top)
+  if (/5070/.test(d)) return 2;        // 5070TI y 5070 → tier 2
+  if (/5060\s*TI/.test(d)) return 3;  // 5060TI → tier 3
+  if (/5060|5050|4060|3060|3050/.test(d)) return 4;
+  return 5;
 }
 
-function _pbmLC(desc, gpuTier) {
-  if (/COREFROZR/.test(desc)) return 2;                          // air cooler — always $2
-  if (!/CORELIQUID|WATER COOLER CPU MSI/.test(desc)) return null;
-  if (/MEG.+CORELIQUID|CORELIQUID.+MEG/.test(desc)) return 10;
-  if (/MPG.+CORELIQUID|CORELIQUID.+MPG/.test(desc)) return 10;
-  if (/CORELIQUID [CEI]\d|[CEI]360|[CEI]240/.test(desc)) return 5;
-  if (/CORELIQUID\s+A\d/.test(desc)) return 5;                   // A12/A13 liquid cooler — $5
-  // Other CORELIQUID series: depends on GPU tier
-  return gpuTier <= 3 ? 5 : 2;
+function _pbmLCNaturalTier(d) {
+  if (!/CORELIQUID|WATER.?COOL|COREFROZR/.test(d)) return null;
+  if (/COREFROZR/.test(d)) return 4;                              // air cooler AA13 — tier 4
+  if (!/CORELIQUID/.test(d)) return null;
+  if (/MEG.+CORELIQUID|CORELIQUID.+MEG|MPG.+CORELIQUID|CORELIQUID.+MPG/.test(d)) return 1;
+  if (/CORELIQUID\s+[CI]\d|[CI]360|[CI]240|CORELIQUID\s+E\d|E360|E240|E120/.test(d)) return 2;  // C/I/E series → tier 2
+  if (/CORELIQUID\s+A\d/.test(d)) return 3;  // A series (A12/A13/A15) → tier 3
+  return 3; // cualquier otro CORELIQUID
 }
 
 function _pbmClassifyRow(desc) {
   desc = (desc||'').toUpperCase();
-  const ch = _pbmChassis(desc);
-  const psu = _pbmPSU(desc);
-  const mb  = _pbmMB(desc);
-  // detect program first (LC present?)
-  const hasLC = /CORELIQUID|WATER COOLER CPU MSI/.test(desc);
-  const prog = hasLC ? 4 : 3;
-  const { tier: gpuTier, val: vga } = _pbmVGA(desc, ch.tier, prog);
-  const lc = _pbmLC(desc, gpuTier);
-  const correct = ch.val + psu + mb + vga + (lc||0);
-  return { chassisTier:ch.tier, gab:ch.val, psu, mb, vga, lc, correct, prog };
+  const ct = _pbmChassisNaturalTier(desc);
+  const pt = _pbmPSUNaturalTier(desc);
+  const mt = _pbmMBNaturalTier(desc);
+  const vt = _pbmVGANaturalTier(desc);
+  const lt = _pbmLCNaturalTier(desc);
+  const S = _PBM_S;
+  const hasVGA = vt !== null;
+  const hasLC  = lt !== null;
+  const hasMB  = mt !== null;
+  const prog   = hasLC ? 4 : 3;
+
+  // Cascada secuencial izq→der con RESET después de chassis+PSU:
+  //
+  // 1. base_et = max(chassis_idx, PSU_idx) → chassis y PSU scorean aquí.
+  //    El PSU puede "bajar" al chassis (MAG PANO+PSU650 → chassis=$4).
+  //
+  // 2. RESET: después de scorear chassis+PSU, et vuelve a chassis_idx.
+  //    El PSU NO propaga a MB/VGA/LC. Solo afecta los scores de chassis y PSU.
+  //
+  // 3. MB, VGA, LC continúan la cascada desde chassis_idx en adelante.
+  //
+  // Verificado: MAG PANO(t3)+MAG650(t4)+MAG B840(t3)+5070(P4)+COREFROZR=4+2+5+30+2=$43
+
+  const base_et = Math.max(ct - 1, pt - 1);               // chassis+PSU joint base
+  const gab = S.chassis[base_et];
+  const psu = S.psu[base_et];
+
+  let et = ct - 1;                                          // RESET: et vuelve a chassis_idx
+
+  if (hasMB)  et = Math.max(et, mt - 1);                  // MB
+  const mb  = hasMB  ? S.mb[et]  : 0;
+
+  if (hasVGA) et = Math.max(et, vt - 1);                  // VGA
+  const vga = hasVGA ? (hasLC ? S.vgaP4[et] : S.vgaP3[et]) : 0;
+
+  if (hasLC)  et = Math.max(et, lt - 1);                  // LC/AC
+  const lc  = hasLC  ? S.lc[et]  : null;
+
+  const correct = gab + psu + mb + vga + (lc||0);
+  return { chassisTier: ct, effectiveTier: et + 1, prog, gab, psu, mb, vga, lc, correct, claimed: 0 };
 }
 
 // ── FullHard multi-line format detector & parser ─────────────
