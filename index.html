@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.3';
+const APP_VERSION = '25.08.26.4';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -10398,6 +10398,23 @@ function renderClientsTab(resetPaging) {
     return;
   }
   const hasAnyAmount = ranking.some(c=>c.amount>0);
+
+  // ── YTD (acumulado del año) — solo cuando hay un mes específico seleccionado ──
+  let ytdMap = new Map();
+  const hasYTD = monthKey && monthKey !== 'all';
+  if(hasYTD) {
+    const year = monthKey.slice(0,4);
+    const ytdMonths = new Set();
+    for(let m=1; m<=12; m++) {
+      const mk = year + '-' + String(m).padStart(2,'0');
+      ytdMonths.add(mk);
+      if(mk === monthKey) break;
+    }
+    getClientRanking(dist, ytdMonths).forEach(c => ytdMap.set(c.key, { qty: c.qty, amount: c.amount }));
+  }
+  const fmtU   = n => Math.round(n).toLocaleString('es-AR') + ' u';
+  const fmtAmt = n => '$ ' + Math.round(n).toLocaleString('es-AR');
+
   currentClientsRankingList = ranking;
   const thSort = (label, asc, desc) => {
     const arrow = sortKey===desc ? ' <i class="ti ti-arrow-down" style="font-size:10px"></i>' : sortKey===asc ? ' <i class="ti ti-arrow-up" style="font-size:10px"></i>' : ' <i class="ti ti-arrows-sort" style="font-size:10px;opacity:0.4"></i>';
@@ -10415,17 +10432,21 @@ function renderClientsTab(resetPaging) {
       </div>`
     : '';
   wrap.innerHTML = `<div class="table-scroll"><table class="data-table">
-    <thead><tr><th>#</th><th>Cliente</th><th style="display:none">CUIT</th>${thSort('Unidades','qty_asc','qty_desc')}${thSort('Monto USD','amount_asc','amount_desc')}${hasAnyAmount ? thSort('ASP','asp_asc','asp_desc') : ''}<th>Modelos distintos</th><th>Proveedores</th></tr></thead>
-    <tbody>${visibleRanking.map((c,i) => `<tr class="row-clickable${selectedClientKey===c.key?' row-new':''}" onclick="selectRankingClient('${c.key.replace(/'/g,"\\'")}')">
+    <thead><tr><th>#</th><th>Cliente</th><th style="display:none">CUIT</th>${thSort('Unidades','qty_asc','qty_desc')}${thSort('Monto USD','amount_asc','amount_desc')}${hasAnyAmount ? thSort('ASP','asp_asc','asp_desc') : ''}${hasYTD ? '<th style="color:var(--text3)">Acum. año (u)</th>' : ''}${hasYTD && hasAnyAmount ? '<th style="color:var(--text3)">Acum. año ($)</th>' : ''}<th>Modelos distintos</th><th>Proveedores</th></tr></thead>
+    <tbody>${visibleRanking.map((c,i) => {
+      const ytd = ytdMap.get(c.key);
+      return `<tr class="row-clickable${selectedClientKey===c.key?' row-new':''}" onclick="selectRankingClient('${c.key.replace(/'/g,"\\'")}')">
       <td>${i+1}</td>
       <td><span class="client-name-hover" onmouseenter="showClientCompositionTooltip(event,'${c.key.replace(/'/g,"\\'")}')" onmouseleave="hideClientCompositionTooltip()">${esc(c.name)}</span>${c.aliases.length>1?` <span style="color:var(--text3);font-size:10px" title="${esc(c.aliases.join(' / '))}">(${c.aliases.length} variantes de nombre)</span>`:''}</td>
       <td style="display:none">${c.cuit ? formatCuit(c.cuit) : ''}</td>
-      <td>${c.qty}</td>
-      <td>${hasAnyAmount ? (c.amount ? 'USD '+c.amount.toLocaleString('es-AR') : '-') : '-'}</td>
+      <td>${c.qty > 0 ? fmtU(c.qty) : '-'}</td>
+      <td>${hasAnyAmount ? (c.amount ? fmtAmt(c.amount) : '-') : '-'}</td>
       ${hasAnyAmount ? `<td>${c.asp > 0 ? 'USD '+c.asp.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '-'}</td>` : ''}
+      ${hasYTD ? `<td style="color:var(--text2)">${ytd && ytd.qty > 0 ? fmtU(ytd.qty) : '-'}</td>` : ''}
+      ${hasYTD && hasAnyAmount ? `<td style="color:var(--text2)">${ytd && ytd.amount > 0 ? fmtAmt(ytd.amount) : '-'}</td>` : ''}
       <td>${c.distinctProducts}</td>
       <td>${c.distributors.map(d=>`<span class="pill pill-gray" style="margin-right:3px">${esc(DISTRIBUTORS[d])}</span>`).join('')}</td>
-    </tr>`).join('')}</tbody>
+    </tr>`;}).join('')}</tbody>
   </table></div>${pagingBar}`;
 
   if(selectedClientKey && ranking.some(c=>c.key===selectedClientKey)) {
