@@ -1381,7 +1381,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.2';
+const APP_VERSION = '25.08.26.3';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -8291,8 +8291,10 @@ function parseDistributorSheet(rows, fmt, headerIdx, preambleText) {
   }
   const agg = new Map();
   items.forEach(it => {
-    const k = it.code.toUpperCase() + '|' + it.client.toUpperCase() + '|' + it.cuit;
-    if(!agg.has(k)) agg.set(k, { code:it.code, description:it.description, qty:0, priceSum:0, priceCount:0, client:it.client, cuit:it.cuit, email:it.email||'' });
+    // Include month in key so multi-month reports keep each month's rows separate
+    const month = it.date ? it.date.slice(0,7) : 'nodate';
+    const k = it.code.toUpperCase() + '|' + it.client.toUpperCase() + '|' + it.cuit + '|' + month;
+    if(!agg.has(k)) agg.set(k, { code:it.code, description:it.description, qty:0, priceSum:0, priceCount:0, client:it.client, cuit:it.cuit, email:it.email||'', date:it.date||null });
     const a = agg.get(k);
     if(!a.email && it.email) a.email = it.email;
     a.qty += it.qty;
@@ -8303,8 +8305,9 @@ function parseDistributorSheet(rows, fmt, headerIdx, preambleText) {
     // (o incluso en negativo). La cantidad neta sí conserva el signo más abajo.
     if(it.unitPrice) { a.priceSum += Math.abs(it.unitPrice); a.priceCount++; }
     if(!a.description && it.description) a.description = it.description;
+    if(!a.date && it.date) a.date = it.date;
   });
-  const aggRows = Array.from(agg.values()).map(a => ({ code:a.code, description:a.description, qty:Math.round(a.qty*100)/100, avgPrice: a.priceCount ? a.priceSum/a.priceCount : null, client:a.client || null, cuit:a.cuit || null, email:a.email||null }));
+  const aggRows = Array.from(agg.values()).map(a => ({ code:a.code, description:a.description, qty:Math.round(a.qty*100)/100, avgPrice: a.priceCount ? a.priceSum/a.priceCount : null, client:a.client || null, cuit:a.cuit || null, email:a.email||null, date:a.date||null }));
   let period;
   if(fmt.reportType === 'sales') {
     const allDates = items.map(it=>it.date).filter(Boolean).sort();
@@ -9633,12 +9636,25 @@ function getMonthlySalesTotals(distKey) {
 }
 function getClientRanking(distKey, monthKey) {
   const scope = distScopeList(distKey);
-  const snaps = db.weeklyReports.filter(s=>scope.includes(s.distributor) && s.reportType==='sales' && monthMatchesFilter(getMonthKey(s.periodEnd), monthKey));
+  const snaps = db.weeklyReports.filter(s => {
+    if(!scope.includes(s.distributor) || s.reportType !== 'sales') return false;
+    if(!monthKey || monthKey === 'all') return true;
+    const endMk = getMonthKey(s.periodEnd);
+    const startMk = getMonthKey(s.periodStart);
+    if(monthKey instanceof Set) return Array.from(monthKey).some(mk => mk >= (startMk||endMk||mk) && mk <= (endMk||mk));
+    return endMk === monthKey || (startMk && endMk && startMk <= monthKey && monthKey <= endMk);
+  });
   const clients = new Map();
   snaps.forEach(s => {
+    // Multi-month: filter each row by its own date instead of snapshot periodEnd
+    const snapIsMultiMonth = s.periodStart && s.periodEnd && getMonthKey(s.periodStart) !== getMonthKey(s.periodEnd);
     s.rows.forEach(r => {
       const clientNameRaw = (r.client||'').trim();
       if(!clientNameRaw) return;
+      if(monthKey && monthKey !== 'all' && snapIsMultiMonth) {
+        const rowMk = getMonthKey(r.date);
+        if(rowMk && !monthMatchesFilter(rowMk, monthKey)) return;
+      }
       const clientName = clientNameRaw.toUpperCase();
       const cuit = normCuit(r.cuit);
       const ck = cuit ? 'CUIT:'+cuit : 'NAME:'+normClientKey(clientName);
