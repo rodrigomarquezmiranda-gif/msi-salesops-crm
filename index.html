@@ -488,6 +488,10 @@
         <i class="ti ti-shopping-bag" style="color:#88C0D0"></i> Etailers
         <span class="nav-count" id="nb-etailers">0</span>
       </button>
+      <button class="nav-item" id="nav-ar" onclick="gotoTab('ar')">
+        <i class="ti ti-credit-card" style="color:#A3BE8C"></i> Cuentas
+        <span class="nav-count" id="nb-ar">0</span>
+      </button>
     </nav>
     <nav class="nav-section">
       <div class="nav-label">Herramientas</div>
@@ -960,6 +964,23 @@
         </div>
       </div>
 
+      <!-- CUENTAS / AR -->
+      <div id="tab-ar" class="tab-pane">
+        <div class="ai-box" style="margin-top:0;margin-bottom:1rem">
+          <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-credit-card" style="color:#A3BE8C"></i> Estado de Cuentas</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">Estado de cuenta semanal por distribuidor. Subí el archivo .msg que te manda Ramiro.</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="document.getElementById('file-input-ar').click()">
+              <i class="ti ti-upload"></i> Subir Estado de Cuenta (.msg)
+            </button>
+            <span id="ar-last-upload" style="font-size:12px;color:var(--text3)"></span>
+          </div>
+          <div id="ar-upload-progress" style="font-size:12px;color:var(--brand-text);margin-top:6px;font-weight:600"></div>
+          <input type="file" id="file-input-ar" accept=".msg" style="display:none" onchange="handleArFile(this.files[0]);this.value=''" />
+        </div>
+        <div id="ar-content"></div>
+      </div>
+
       <!-- IA -->
       <div id="tab-ia" class="tab-pane">
         <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
@@ -1425,7 +1446,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '26.08.26.3';
+const APP_VERSION = '26.08.26.4';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -1440,7 +1461,7 @@ const DAY_MS = 86400000; // milisegundos en un día
 const fmtUSD = v => 'USD ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2 });
 const fmtAmt = v => 'USD ' + Number(v).toLocaleString('es-AR', { maximumFractionDigits: 2 });
 
-let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
+let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], ar:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
 let currentFilter = { pi:'all' };
@@ -1623,6 +1644,7 @@ async function loadDB() {
       }
     }
   } catch(e) { console.warn('Error cargando resellers:', e); }
+  try { const arRaw = await _idbGetYear('salesops_ar').catch(()=>null); if(arRaw) db.ar = JSON.parse(arRaw); } catch(e) {}
   try { const p = await IDB.get('salesops_pricelist'); if(p) priceList = JSON.parse(p); } catch(e) {}
   if (!priceList.lastDiff) priceList.lastDiff = null;
   if (!priceList.prevSourceFile) priceList.prevSourceFile = null;
@@ -1684,6 +1706,7 @@ function saveDB() {
   const otherSaves = _currentRole === 'reader-pi'
     ? []   // reader-pi solo tiene acceso a salesops_pi y salesops_resellers (Firebase rules)
     : [
+        IDB.set(_yk('salesops_ar'),      JSON.stringify(db.ar           ||[])),
         IDB.set(_yk('salesops_ber'),     JSON.stringify(db.ber          ||[])),
         IDB.set(_yk('salesops_sor'),     JSON.stringify(db.sor          ||[])),
         IDB.set(_yk('salesops_sir'),     JSON.stringify(db.sir          ||[])),
@@ -1775,6 +1798,11 @@ function _startRealtimeSync() {
         if(currentTab === 'semaforo')  renderSemaforoTab();
         if(currentTab === 'rotation')  { renderRotationTab(); renderRotationHistory(); }
       }
+    },
+    {
+      key: _yk('salesops_ar'),
+      apply: raw => { try { db.ar = JSON.parse(raw); } catch(e) {} },
+      render: () => { if(currentTab === 'ar') renderArTab(); }
     },
     {
       key: _yk('salesops_imports'),
@@ -2190,8 +2218,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','clientcompare','imports','etailers','ia','notificaciones','usuarios','semaforo','sugeridos','share','pbm'];
-const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', clientcompare:'Comparador de Clientes', imports:'Análisis de Importaciones', etailers:'Etailers', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra', share:'Mi Participación', pbm:'Powered by MSI' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','clientcompare','imports','etailers','ar','ia','notificaciones','usuarios','semaforo','sugeridos','share','pbm'];
+const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', clientcompare:'Comparador de Clientes', imports:'Análisis de Importaciones', etailers:'Etailers', ar:'Estado de Cuentas', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra', share:'Mi Participación', pbm:'Powered by MSI' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -2223,6 +2251,7 @@ function gotoTab(tab) {
   if(tab==='clientcompare') { ccRenderMonthChips(); ccRender(); }
   if(tab==='imports') { renderImportsHistory(); renderImportsMonthChips(); renderImportsTab(); }
   if(tab==='etailers') renderEtailersTab();
+  if(tab==='ar')       renderArTab();
   if(tab==='notificaciones') renderNotificacionesTab();
   if(tab==='usuarios') renderUsersTab();
   if(tab==='semaforo') renderSemaforoTab();
@@ -8120,6 +8149,24 @@ function exportSalesPricePDF() {
 // ─── ROTACIÓN DE STOCK (reportes semanales por proveedor) ───
 const DISTRIBUTORS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
 const ETAILERS     = { compragamer:'COMPRAGAMER' };
+
+// Mapeo de códigos de cliente MSI → distribuidor del CRM
+const AR_CUSTOMER_DIST = {
+  '102A2MGT':    'invid',
+  '102JUKEBOX':  'invid',
+  '102AIRCOM':   'air',
+  '102SMACEN':   'air',
+  '102ASHIR':    'ashir',
+  '102EMUCOR':   'elit',
+  '102ELIT':     'elit',
+  '102SOLBOX':   'solutionbox',
+  '102SOLBOXHK': 'solutionbox',
+  '102AURORA':   '_aurora',   // Paraguay
+  '102LASET':    '_laset',    // LATAM
+  '102MICINF':   '_micinf',  // Miami
+  // 102GELIROX: ignorado
+};
+const AR_OTHER_LABELS = { _aurora:'AURORA (Paraguay)', _laset:'LASET (LATAM)', _micinf:'MICRO INFORMATICA (Miami)' };
 const ETAILER_LABELS = { compragamer:'COMPRAGAMER' };
 const ETAILER_SHORT  = { compragamer:'CGAMER' };
 function normDesc(d) { return String(d||'').trim().toUpperCase().replace(/\s+/g, ' '); }
@@ -8603,6 +8650,252 @@ async function handleRotationFiles(fileList) {
   }
   _alert(summary + unrecognizedNote + guessedWarning + upgradeNote + failedNote, {type:'success', title:'Archivos importados'});
 }
+// ─── ESTADO DE CUENTAS (AR) ───────────────────────────────
+let _arExpandedDist = null;
+
+// Lee el HTML del cuerpo de un archivo .msg usando XLSX.CFB (ya cargado en la app)
+// Fallback: busca <html> en el buffer decodificado como UTF-16LE
+async function _arReadMsgHtml(file) {
+  const ab = await file.arrayBuffer();
+  // Intento 1: XLSX.CFB — stream PR_BODY_HTML (0x1013)
+  try {
+    const cfb = XLSX.CFB.read(new Uint8Array(ab), {type:'array'});
+    for (const path of ['/__substg1.0_10130102','__substg1.0_10130102','/__substg1.0_1013001E','__substg1.0_1013001E']) {
+      try {
+        const node = XLSX.CFB.find(cfb, path);
+        if (node && node.content && node.content.length > 200) {
+          const enc = path.includes('0102') ? 'utf-16le' : 'windows-1252';
+          const decoded = new TextDecoder(enc).decode(new Uint8Array(node.content));
+          if (decoded.toLowerCase().includes('<html')) return decoded;
+        }
+      } catch(e) {}
+    }
+  } catch(e) { console.warn('[AR] CFB parse failed:', e.message); }
+  // Intento 2: fuerza bruta — decodificar todo el archivo como UTF-16LE y buscar <html>
+  try {
+    const decoded = new TextDecoder('utf-16le').decode(ab);
+    const si = decoded.toLowerCase().indexOf('<html');
+    const ei = decoded.toLowerCase().lastIndexOf('</html>');
+    if (si !== -1 && ei !== -1) return decoded.slice(si, ei + 7);
+  } catch(e) {}
+  return null;
+}
+
+// Parsea el HTML del estado de cuenta y devuelve array de cuentas con facturas
+function _arParseHtml(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const tables = Array.from(doc.querySelectorAll('table'));
+  if (!tables.length) return null;
+  const parseAmt = s => { if(!s) return 0; return parseFloat(s.replace(/,/g,'').trim()) || 0; };
+
+  // Tabla 0: todas las facturas
+  const accounts = {};
+  const accountOrder = [];
+  for (const row of Array.from(tables[0].querySelectorAll('tr')).slice(1)) {
+    const cells = Array.from(row.querySelectorAll('td')).map(td => td.textContent.trim());
+    if (cells.length < 12) continue;
+    const code = cells[0];
+    if (!code || !code.match(/^\d{3}\w/)) continue;
+    if (!accounts[code]) { accounts[code] = { code, name:cells[1], creditLimit:0, openAR:0, outstandingOrders:0, remaining:0, invoices:[] }; accountOrder.push(code); }
+    accounts[code].invoices.push({
+      type: cells[2], number: cells[3], invoiceDate: cells[4], dueDate: cells[6],
+      daysLate: parseInt(cells[7]) || 0,
+      originalAmount: parseAmt(cells[9]), currency: cells[10] || 'USD',
+      appliedAmount: parseAmt(cells[11]), remainUSD: parseAmt(cells[12]),
+      po: (cells[15] || cells[14] || '').slice(0, 80)
+    });
+  }
+
+  // Tablas 1-N: resumen por cuenta (Credit Limit / Open AR / Remaining)
+  let si = 0;
+  for (let i = 1; i < tables.length && si < accountOrder.length; i++) {
+    const trows = Array.from(tables[i].querySelectorAll('tr'));
+    const r0 = Array.from(trows[0]?.querySelectorAll('td')||[]).map(td => td.textContent.trim());
+    if (!r0[0]?.includes('Credit Limit')) continue;
+    const acc = accounts[accountOrder[si]];
+    acc.creditLimit = parseAmt(r0[1]);
+    const r1 = Array.from(trows[1]?.querySelectorAll('td')||[]).map(td => td.textContent.trim());
+    if (r1.length >= 6) { acc.openAR = parseAmt(r1[1]); acc.outstandingOrders = parseAmt(r1[5]); }
+    const r2 = Array.from(trows[2]?.querySelectorAll('td')||[]).map(td => td.textContent.trim());
+    if (r2.length >= 3) acc.remaining = parseAmt(r2[2]);
+    si++;
+  }
+
+  return accountOrder.map(code => ({
+    ...accounts[code],
+    distKey: AR_CUSTOMER_DIST[accounts[code].code] || null,
+    overdueUSD: accounts[code].invoices
+      .filter(inv => inv.type !== 'Credit Memo' && inv.daysLate > 0 && inv.remainUSD > 0)
+      .reduce((s, inv) => s + inv.remainUSD, 0)
+  }));
+}
+
+async function handleArFile(file) {
+  if (!file || !file.name.toLowerCase().endsWith('.msg')) {
+    _alert('Por favor subí un archivo .msg (el email que te envía Ramiro).', {type:'error', title:'Formato incorrecto'}); return;
+  }
+  const prog = document.getElementById('ar-upload-progress');
+  if (prog) prog.textContent = 'Leyendo archivo .msg...';
+  try {
+    const html = await _arReadMsgHtml(file);
+    if (!html) throw new Error('No se pudo extraer el contenido HTML del archivo .msg');
+    const accounts = _arParseHtml(html);
+    if (!accounts?.length) throw new Error('No se encontraron datos de cuentas');
+    const snapshot = {
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      uploadedAt: new Date().toISOString(),
+      fileName: file.name,
+      accounts
+    };
+    db.ar = [snapshot, ...(db.ar||[])].slice(0, 8);
+    saveDB();
+    if (prog) prog.textContent = `✓ ${accounts.length} cuentas importadas`;
+    setTimeout(() => { if(prog) prog.textContent = ''; }, 3000);
+    renderArTab();
+    toast(`${accounts.length} cuentas cargadas correctamente`);
+  } catch(e) {
+    if (prog) prog.textContent = '';
+    _alert('Error procesando el archivo: ' + e.message, {type:'error', title:'Error'});
+  }
+}
+
+function renderArTab() {
+  const snap = (db.ar||[])[0];
+  const lastEl = document.getElementById('ar-last-upload');
+  if (lastEl) lastEl.textContent = snap ? `Última carga: ${snap.fileName} (${fmtRotDate(snap.uploadedAt?.slice(0,10))})` : '';
+  const nb = document.getElementById('nb-ar');
+  if (nb) nb.textContent = db.ar?.length || 0;
+  const content = document.getElementById('ar-content');
+  if (!content) return;
+
+  if (!snap) {
+    content.innerHTML = `<div style="text-align:center;padding:3rem 1rem;color:var(--text3)"><i class="ti ti-credit-card" style="font-size:2.5rem;opacity:0.3;display:block;margin-bottom:1rem"></i><div>Todavía no hay estados de cuenta cargados.<br>Subí el archivo .msg que te envía Ramiro.</div></div>`;
+    return;
+  }
+
+  // Agregar por distribuidor
+  const byDist = {};
+  for (const acc of snap.accounts) {
+    const dk = acc.distKey; if (!dk) continue;
+    if (!byDist[dk]) byDist[dk] = { accounts:[], totalAR:0, totalLimit:0, totalOrders:0, totalOverdue:0, totalRemaining:0 };
+    byDist[dk].accounts.push(acc);
+    byDist[dk].totalAR += acc.openAR || 0;
+    byDist[dk].totalLimit += acc.creditLimit || 0;
+    byDist[dk].totalOrders += acc.outstandingOrders || 0;
+    byDist[dk].totalOverdue += acc.overdueUSD || 0;
+    byDist[dk].totalRemaining += acc.remaining || 0;
+  }
+
+  const fmtShort = v => { const a = Math.abs(v); const s = v < 0 ? '-' : '';
+    if (a >= 1000000) return s + (a/1000000).toFixed(2) + 'M';
+    if (a >= 1000)    return s + (a/1000).toFixed(1) + 'K';
+    return s + a.toFixed(0); };
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:1.5rem">`;
+  for (const dk of Object.keys(DISTRIBUTORS)) {
+    const d = byDist[dk]; if (!d) continue;
+    const ar = d.totalAR, limit = d.totalLimit, overdue = d.totalOverdue, remaining = d.totalRemaining;
+    const utilPct = limit > 0 ? Math.min(100, Math.round(Math.abs(ar) / limit * 100)) : null;
+    const isExp = _arExpandedDist === dk;
+    const barColor = utilPct >= 90 ? '#BF616A' : utilPct >= 70 ? '#EBCB8B' : '#A3BE8C';
+    html += `<div class="ai-box" style="margin:0;cursor:pointer" onclick="toggleArExpand('${dk}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div style="font-weight:700;font-size:14px;color:var(--text)">${esc(DISTRIBUTORS[dk])}</div>
+        ${overdue > 0 ? `<span style="background:#BF616A22;color:#BF616A;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px">⚠ Vencido</span>` : `<span style="background:#A3BE8C22;color:#A3BE8C;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px">✓ Al día</span>`}
+      </div>
+      <div style="font-size:26px;font-weight:700;color:var(--brand);margin-bottom:2px">$${fmtShort(ar)}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Open AR</div>
+      ${limit > 0 ? `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px"><span>Límite: $${fmtShort(limit)}</span><span style="font-weight:700;color:${barColor}">${utilPct}%</span></div><div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden"><div style="height:100%;width:${utilPct}%;background:${barColor};transition:width 0.3s"></div></div></div>` : ''}
+      ${overdue > 0 ? `<div style="font-size:12px;color:#BF616A;margin-bottom:6px"><i class="ti ti-alert-triangle"></i> Vencido: <b>$${fmtShort(overdue)}</b></div>` : ''}
+      ${d.totalOrders > 0 ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px"><i class="ti ti-package"></i> Pedidos: $${fmtShort(d.totalOrders)}</div>` : ''}
+      <div style="margin-top:10px;font-size:11.5px;color:var(--text3);border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between">
+        <span>Disponible: <b style="color:${remaining < 0 ? '#BF616A' : '#A3BE8C'}">$${fmtShort(remaining)}</b></span>
+        <span style="color:var(--brand-text)">${isExp ? '▲ Ocultar' : '▼ Facturas'}</span>
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Panel expandido de facturas
+  if (_arExpandedDist && byDist[_arExpandedDist]) {
+    const d = byDist[_arExpandedDist];
+    const allInv = d.accounts.flatMap(acc => acc.invoices.map(inv => ({...inv, accountName: acc.name})))
+      .filter(inv => Math.abs(inv.remainUSD) >= 0.01)
+      .sort((a,b) => { if(a.daysLate>0&&b.daysLate<=0) return -1; if(a.daysLate<=0&&b.daysLate>0) return 1; return b.daysLate-a.daysLate; });
+    html += `<div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Facturas — ${esc(DISTRIBUTORS[_arExpandedDist])}</div></div>
+    <div class="table-scroll" style="margin-bottom:1.5rem"><table class="data-table"><thead><tr>
+      <th>Cuenta</th><th>Tipo</th><th>Factura #</th><th>Fecha</th><th>Vencimiento</th>
+      <th style="text-align:right">Días</th><th style="text-align:right">Original</th><th style="text-align:right">Saldo</th><th>Referencia</th>
+    </tr></thead><tbody>`;
+    for (const inv of allInv) {
+      const isCM = inv.type === 'Credit Memo', isOv = !isCM && inv.daysLate > 0;
+      const daysCss = isOv ? 'color:#BF616A;font-weight:700' : inv.daysLate < 0 ? 'color:#A3BE8C' : '';
+      html += `<tr style="${isOv ? 'background:#BF616A08' : ''}">
+        <td style="font-size:11px;color:var(--text3)">${esc(inv.accountName)}</td>
+        <td><span style="font-size:11px;padding:2px 6px;border-radius:3px;background:${isCM?'#A3BE8C22':'var(--bg3)'}">${isCM?'Nota Créd.':'Factura'}</span></td>
+        <td style="font-family:monospace;font-size:12px">${esc(inv.number)}</td>
+        <td style="font-size:12px;white-space:nowrap">${esc(inv.invoiceDate)}</td>
+        <td style="font-size:12px;white-space:nowrap">${esc(inv.dueDate)}</td>
+        <td style="text-align:right;${daysCss}">${inv.daysLate > 0 ? '+'+inv.daysLate : inv.daysLate}</td>
+        <td style="text-align:right;font-size:12px">${fmtAmt(Math.abs(inv.originalAmount))}</td>
+        <td style="text-align:right;font-size:12px;font-weight:600;color:${inv.remainUSD<0?'#A3BE8C':'var(--text)'}">${fmtAmt(Math.abs(inv.remainUSD))}</td>
+        <td style="font-size:11px;color:var(--text3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(inv.po)}">${esc(inv.po)}</td>
+      </tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+
+  // Sección "Otros" (Paraguay, LATAM, Miami)
+  const otherKeys = Object.keys(AR_OTHER_LABELS).filter(dk => byDist[dk]);
+  if (otherKeys.length) {
+    html += `<div class="section-header"><div class="section-title">Otras Cuentas (LATAM / Miami)</div></div>
+    <div class="table-scroll"><table class="data-table"><thead><tr>
+      <th>Cliente</th><th style="text-align:right">Open AR</th><th style="text-align:right">Límite</th>
+      <th style="text-align:right">Disponible</th><th style="text-align:right">Vencido</th>
+    </tr></thead><tbody>`;
+    for (const dk of otherKeys) {
+      const d = byDist[dk];
+      html += `<tr><td>${esc(AR_OTHER_LABELS[dk])}</td>
+        <td style="text-align:right">${fmtAmt(d.totalAR)}</td>
+        <td style="text-align:right">${d.totalLimit > 0 ? fmtAmt(d.totalLimit) : '—'}</td>
+        <td style="text-align:right;color:${d.totalRemaining<0?'#BF616A':'#A3BE8C'}">${fmtAmt(d.totalRemaining)}</td>
+        <td style="text-align:right;color:${d.totalOverdue>0?'#BF616A':'var(--text3)'}">${d.totalOverdue > 0 ? fmtAmt(d.totalOverdue) : '—'}</td>
+      </tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+
+  // Historial de cargas
+  if ((db.ar||[]).length > 1) {
+    html += `<div class="section-header" style="margin-top:1.5rem">
+      <div class="section-title">Historial de cargas</div>
+    </div><div class="table-scroll"><table class="data-table"><thead><tr>
+      <th>Archivo</th><th>Fecha de carga</th><th>Cuentas</th><th></th>
+    </tr></thead><tbody>`;
+    for (const s of db.ar) {
+      html += `<tr>
+        <td>${esc(s.fileName||'estado de cuenta.msg')}</td>
+        <td>${fmtRotDate(s.uploadedAt?.slice(0,10))}</td>
+        <td>${s.accounts?.length||0}</td>
+        <td><button class="btn btn-danger" style="font-size:11px;padding:2px 8px" onclick="deleteArSnapshot('${s.id}')"><i class="ti ti-trash"></i></button></td>
+      </tr>`;
+    }
+    html += `</tbody></table></div>`;
+  }
+  content.innerHTML = html;
+}
+
+function toggleArExpand(dk) {
+  _arExpandedDist = _arExpandedDist === dk ? null : dk;
+  renderArTab();
+}
+
+function deleteArSnapshot(id) {
+  db.ar = (db.ar||[]).filter(s => s.id !== id);
+  saveDB();
+  renderArTab();
+}
+
 // ─── ETAILERS ─────────────────────────────────────────────
 async function handleEtailersFiles(fileList) {
   const files = Array.from(fileList);
