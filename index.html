@@ -1424,7 +1424,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.17';
+const APP_VERSION = '26.08.26.1';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -8890,7 +8890,14 @@ function renderRotationStatusBoard() {
         else { status = `Falta esta semana (${daysSince}d)`; cls = 'pill-red'; }
       }
       const missingInfo = getMissingWeeksForDistributor(distKey, reportType);
-      rows.push({ distKey, reportType, latest, daysSince, status, cls, count: snaps.length, missingCount: missingInfo.weeks.length });
+      // Contar semanas reales (multi-mes cuenta por filas, no por snapshot)
+      const _wks = new Set();
+      snaps.forEach(s => {
+        const _mm = s.periodStart && s.periodEnd && getMonthKey(s.periodStart) !== getMonthKey(s.periodEnd);
+        if(_mm) { s.rows.forEach(r => { if(r.date) _wks.add(mondayOf(r.date)); }); }
+        else { _wks.add(mondayOf(s.periodEnd)); }
+      });
+      rows.push({ distKey, reportType, latest, daysSince, status, cls, count: Math.max(snaps.length ? 1 : 0, _wks.size), missingCount: missingInfo.weeks.length });
     });
   });
   wrap.innerHTML = `<table class="data-table">
