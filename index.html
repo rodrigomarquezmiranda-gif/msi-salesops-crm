@@ -1425,7 +1425,14 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '26.08.26.2';
+const APP_VERSION = '26.08.26.3';
+
+// ─── PARTICIÓN POR AÑO ───────────────────────────────
+// Cada año calendario usa sus propias claves en Firebase.
+// Al cambiar de año (ej: 2026 → 2027) la app arranca limpia automáticamente.
+// Los datos del año anterior quedan en Firebase pero no se cargan.
+const DATA_YEAR = new Date().getFullYear();
+const _yk = k => k + '_' + DATA_YEAR; // 'salesops_weekly' → 'salesops_weekly_2026'
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -1554,16 +1561,16 @@ async function loadDB() {
   // ── Load db: try split storage first (new), fall back to monolith (legacy) ──
   // Split storage: each pipeline in its own Firebase key to stay under 10MB limit.
   try {
-    const piRaw = await IDB.get('salesops_pi').catch(()=>null);
+    const piRaw = await _idbGetYear('salesops_pi');
     if (piRaw !== null) {
-      // New split format — load all keys in parallel
+      // New split format — load all keys in parallel (year-keyed, con fallback legacy en 2026)
       const [berR,sorR,sirR,ppR,wkR,impR] = await Promise.all([
-        IDB.get('salesops_ber').catch(()=>null),
-        IDB.get('salesops_sor').catch(()=>null),
-        IDB.get('salesops_sir').catch(()=>null),
-        IDB.get('salesops_pp').catch(()=>null),
-        IDB.get('salesops_weekly').catch(()=>null),
-        IDB.get('salesops_imports').catch(()=>null),
+        _idbGetYear('salesops_ber'),
+        _idbGetYear('salesops_sor'),
+        _idbGetYear('salesops_sir'),
+        _idbGetYear('salesops_pp'),
+        _idbGetYear('salesops_weekly'),
+        _idbGetYear('salesops_imports'),
       ]);
       db.pi            = piRaw  ? JSON.parse(piRaw)  : [];
       db.ber           = berR   ? JSON.parse(berR)   : [];
@@ -1585,7 +1592,7 @@ async function loadDB() {
             if(legacyDb.weeklyReports && legacyDb.weeklyReports.length > db.weeklyReports.length) {
               db.weeklyReports = legacyDb.weeklyReports;
               // Persist the recovered data immediately
-              IDB.set('salesops_weekly', JSON.stringify(db.weeklyReports)).catch(()=>{});
+              IDB.set(_yk('salesops_weekly'), JSON.stringify(db.weeklyReports)).catch(()=>{});
               console.info(`[Recovery] Restaurados ${db.weeklyReports.length} reportes de inventario desde el backup.`);
             }
           }
@@ -1620,6 +1627,15 @@ async function loadDB() {
   if (!priceList.lastDiff) priceList.lastDiff = null;
   if (!priceList.prevSourceFile) priceList.prevSourceFile = null;
 }
+// Carga una clave con fallback a la clave legacy (sin año) para migración 2026→año-keyed.
+// En 2027+ no hace fallback: arranca limpio sin datos del año anterior.
+async function _idbGetYear(base) {
+  const r = await IDB.get(_yk(base)).catch(() => null);
+  if (r !== null) return r;
+  if (DATA_YEAR === 2026) return IDB.get(base).catch(() => null);
+  return null;
+}
+
 // Flag para que los listeners de sync no muestren toast cuando YO mismo guardo
 let _isSavingLocally = false;
 
@@ -1629,7 +1645,7 @@ let _isSavingLocally = false;
 // Así, si el usuario A sube un PI mientras el usuario B ya tiene la app abierta,
 // el saveDB() de B no borra el PI de A.
 function _piMergeTransaction() {
-  return _fbDB.ref('salesops_pi').transaction(currentVal => {
+  return _fbDB.ref(_yk('salesops_pi')).transaction(currentVal => {
     // currentVal: lo que hay actualmente en Firebase (puede ser string JSON, null, o un objeto si ya migrado)
     let remote = [];
     if(currentVal !== null) {
@@ -1668,13 +1684,13 @@ function saveDB() {
   const otherSaves = _currentRole === 'reader-pi'
     ? []   // reader-pi solo tiene acceso a salesops_pi y salesops_resellers (Firebase rules)
     : [
-        IDB.set('salesops_ber',     JSON.stringify(db.ber          ||[])),
-        IDB.set('salesops_sor',     JSON.stringify(db.sor          ||[])),
-        IDB.set('salesops_sir',     JSON.stringify(db.sir          ||[])),
-        IDB.set('salesops_pp',      JSON.stringify(db.pp           ||[])),
-        IDB.set('salesops_weekly',  JSON.stringify(db.weeklyReports||[])),
-        IDB.set('salesops_imports', JSON.stringify(db.imports      ||[])),
-        IDB.set('salesops_meta',    JSON.stringify({_migrations: db._migrations||{}})),
+        IDB.set(_yk('salesops_ber'),     JSON.stringify(db.ber          ||[])),
+        IDB.set(_yk('salesops_sor'),     JSON.stringify(db.sor          ||[])),
+        IDB.set(_yk('salesops_sir'),     JSON.stringify(db.sir          ||[])),
+        IDB.set(_yk('salesops_pp'),      JSON.stringify(db.pp           ||[])),
+        IDB.set(_yk('salesops_weekly'),  JSON.stringify(db.weeklyReports||[])),
+        IDB.set(_yk('salesops_imports'), JSON.stringify(db.imports      ||[])),
+        IDB.set(_yk('salesops_meta'),    JSON.stringify({_migrations: db._migrations||{}})),
       ];
 
   Promise.all([piSave, resellersSave, ...otherSaves])
@@ -1701,7 +1717,7 @@ function _startRealtimeSync() {
 
   const syncConfig = [
     {
-      key: 'salesops_pi',
+      key: _yk('salesops_pi'),
       apply: raw => {
         // raw puede ser string JSON (formato viejo) o ya un JS object/array (post-transacción)
         try {
@@ -1722,7 +1738,7 @@ function _startRealtimeSync() {
       }
     },
     {
-      key: 'salesops_ber',
+      key: _yk('salesops_ber'),
       apply: raw => { db.ber = JSON.parse(raw); },
       render: () => {
         const nb = document.getElementById('nb-rebates');
@@ -1731,7 +1747,7 @@ function _startRealtimeSync() {
       }
     },
     {
-      key: 'salesops_sor',
+      key: _yk('salesops_sor'),
       apply: raw => { db.sor = JSON.parse(raw); },
       render: () => {
         const nb = document.getElementById('nb-rebates');
@@ -1740,17 +1756,17 @@ function _startRealtimeSync() {
       }
     },
     {
-      key: 'salesops_sir',
+      key: _yk('salesops_sir'),
       apply: raw => { db.sir = JSON.parse(raw); },
       render: () => { if(currentTab === 'rebates') renderRebatesTable(); }
     },
     {
-      key: 'salesops_pp',
+      key: _yk('salesops_pp'),
       apply: raw => { db.pp = JSON.parse(raw); },
       render: () => { if(currentTab === 'rebates') renderRebatesTable(); }
     },
     {
-      key: 'salesops_weekly',
+      key: _yk('salesops_weekly'),
       apply: raw => { db.weeklyReports = JSON.parse(raw); },
       render: () => {
         const nb = document.getElementById('nb-rotation');
@@ -1761,7 +1777,7 @@ function _startRealtimeSync() {
       }
     },
     {
-      key: 'salesops_imports',
+      key: _yk('salesops_imports'),
       apply: raw => { db.imports = JSON.parse(raw); },
       render: () => {
         const nb = document.getElementById('nb-imports');
@@ -1808,7 +1824,7 @@ async function _manualSyncPI() {
   const btn = document.getElementById('pi-sync-btn');
   if(btn) { btn.disabled = true; btn.querySelector('i').style.animation = 'spin 0.8s linear infinite'; }
   try {
-    const snap = await _fbDB.ref('salesops_pi').get();
+    const snap = await _fbDB.ref(_yk('salesops_pi')).get();
     const piRaw = snap.exists() ? snap.val() : null;
     let piList = [];
     if(piRaw) {
@@ -4347,8 +4363,8 @@ function renderPriceListView() {
 }
 // ─── STOCK UPDATE PANEL (Google Drive automático) ───────────────────────────
 const STOCK_GDRIVE_FILE_ID = '1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw';
-const STOCK_DIFF_FB_KEY      = 'salesops_stock_diff';
-const STOCK_CHANGELOG_FB_KEY = 'salesops_stock_changelog';
+const STOCK_DIFF_FB_KEY      = _yk('salesops_stock_diff');
+const STOCK_CHANGELOG_FB_KEY = _yk('salesops_stock_changelog');
 
 // Lee stock_diff_latest.json desde el directorio local (mismo que index.html).
 // El scheduled task lo escribe aunque el sandbox no pueda llegar a Firebase.
@@ -4546,7 +4562,7 @@ async function handleLatamStockDiff(products, sourceFile) {
     // Get old snapshot from Firebase
     let oldSnap = null;
     try {
-      const snapRef = await _fbDB.ref('salesops_stock_snapshot').get();
+      const snapRef = await _fbDB.ref(_yk('salesops_stock_snapshot')).get();
       if(snapRef.exists()) {
         const raw = snapRef.val();
         oldSnap = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -4602,7 +4618,7 @@ async function handleLatamStockDiff(products, sourceFile) {
 
     // Write to Firebase
     await _fbDB.ref(STOCK_DIFF_FB_KEY).set(JSON.stringify(diff));
-    await _fbDB.ref('salesops_stock_snapshot').set(JSON.stringify(newSnap));
+    await _fbDB.ref(_yk('salesops_stock_snapshot')).set(JSON.stringify(newSnap));
     await _fbDB.ref(STOCK_CHANGELOG_FB_KEY).push({
       checkedAt:   now,
       productCount: diff.productCount,
