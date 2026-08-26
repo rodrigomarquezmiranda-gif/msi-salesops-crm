@@ -968,15 +968,15 @@
       <div id="tab-ar" class="tab-pane">
         <div class="ai-box" style="margin-top:0;margin-bottom:1rem">
           <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-credit-card" style="color:#A3BE8C"></i> Estado de Cuentas</div>
-          <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">Estado de cuenta semanal por distribuidor. Subí el archivo .msg que te manda Ramiro.</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">Estado de cuenta semanal por distribuidor. En Outlook: <b>Archivo → Guardar como → Página Web (*.htm)</b> y subí ese archivo acá.</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-primary" onclick="document.getElementById('file-input-ar').click()">
-              <i class="ti ti-upload"></i> Subir Estado de Cuenta (.msg)
+              <i class="ti ti-upload"></i> Subir Estado de Cuenta (.htm)
             </button>
             <span id="ar-last-upload" style="font-size:12px;color:var(--text3)"></span>
           </div>
           <div id="ar-upload-progress" style="font-size:12px;color:var(--brand-text);margin-top:6px;font-weight:600"></div>
-          <input type="file" id="file-input-ar" accept=".msg" style="display:none" onchange="handleArFile(this.files[0]);this.value=''" />
+          <input type="file" id="file-input-ar" accept=".htm,.html,.mhtml,.mht" style="display:none" onchange="handleArFile(this.files[0]);this.value=''" />
         </div>
         <div id="ar-content"></div>
       </div>
@@ -1446,7 +1446,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '26.08.26.4';
+const APP_VERSION = '26.08.26.5';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -8653,31 +8653,16 @@ async function handleRotationFiles(fileList) {
 // ─── ESTADO DE CUENTAS (AR) ───────────────────────────────
 let _arExpandedDist = null;
 
-// Lee el HTML del cuerpo de un archivo .msg usando XLSX.CFB (ya cargado en la app)
-// Fallback: busca <html> en el buffer decodificado como UTF-16LE
+// Lee el HTML de un archivo .htm / .html / .mhtml exportado desde Outlook
 async function _arReadMsgHtml(file) {
+  // Intentar decodificar como UTF-8 primero, luego windows-1252
   const ab = await file.arrayBuffer();
-  // Intento 1: XLSX.CFB — stream PR_BODY_HTML (0x1013)
-  try {
-    const cfb = XLSX.CFB.read(new Uint8Array(ab), {type:'array'});
-    for (const path of ['/__substg1.0_10130102','__substg1.0_10130102','/__substg1.0_1013001E','__substg1.0_1013001E']) {
-      try {
-        const node = XLSX.CFB.find(cfb, path);
-        if (node && node.content && node.content.length > 200) {
-          const enc = path.includes('0102') ? 'utf-16le' : 'windows-1252';
-          const decoded = new TextDecoder(enc).decode(new Uint8Array(node.content));
-          if (decoded.toLowerCase().includes('<html')) return decoded;
-        }
-      } catch(e) {}
-    }
-  } catch(e) { console.warn('[AR] CFB parse failed:', e.message); }
-  // Intento 2: fuerza bruta — decodificar todo el archivo como UTF-16LE y buscar <html>
-  try {
-    const decoded = new TextDecoder('utf-16le').decode(ab);
-    const si = decoded.toLowerCase().indexOf('<html');
-    const ei = decoded.toLowerCase().lastIndexOf('</html>');
-    if (si !== -1 && ei !== -1) return decoded.slice(si, ei + 7);
-  } catch(e) {}
+  for (const enc of ['utf-8', 'windows-1252', 'utf-16le']) {
+    try {
+      const decoded = new TextDecoder(enc).decode(ab);
+      if (decoded.toLowerCase().includes('<table') && decoded.toLowerCase().includes('credit limit')) return decoded;
+    } catch(e) {}
+  }
   return null;
 }
 
@@ -8731,8 +8716,8 @@ function _arParseHtml(html) {
 }
 
 async function handleArFile(file) {
-  if (!file || !file.name.toLowerCase().endsWith('.msg')) {
-    _alert('Por favor subí un archivo .msg (el email que te envía Ramiro).', {type:'error', title:'Formato incorrecto'}); return;
+  if (!file || !file.name.toLowerCase().match(/\.(htm|html|mhtml|mht)$/)) {
+    _alert('Por favor subí el archivo HTML del email.\n\nEn Outlook: Archivo → Guardar como → "Página Web (*.htm)" y subí ese archivo.', {type:'error', title:'Formato incorrecto'}); return;
   }
   const prog = document.getElementById('ar-upload-progress');
   if (prog) prog.textContent = 'Leyendo archivo .msg...';
