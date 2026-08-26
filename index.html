@@ -1446,7 +1446,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '26.08.26.6';
+const APP_VERSION = '26.08.26.7';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -8652,6 +8652,32 @@ async function handleRotationFiles(fileList) {
 }
 // ─── ESTADO DE CUENTAS (AR) ───────────────────────────────
 let _arExpandedDist = null;
+let _arDragSrc = null;
+
+function _arDragStart(e, code) {
+  _arDragSrc = code;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => { const el = document.querySelector(`[data-ar-code="${CSS.escape(code)}"]`); if(el) el.style.opacity='0.4'; }, 0);
+}
+function _arDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function _arDragDrop(e, code) {
+  e.stopPropagation(); e.preventDefault();
+  if (!_arDragSrc || _arDragSrc === code) return;
+  const snap = (db.ar||[])[0]; if (!snap) return;
+  const accs = [...snap.accounts];
+  const si = accs.findIndex(a => a.code === _arDragSrc);
+  const di = accs.findIndex(a => a.code === code);
+  if (si < 0 || di < 0) return;
+  const [moved] = accs.splice(si, 1);
+  accs.splice(di, 0, moved);
+  snap.accounts = accs;
+  localStorage.setItem('salesops_ar_order', JSON.stringify(accs.map(a => a.code)));
+  renderArTab();
+}
+function _arDragEnd(e) {
+  document.querySelectorAll('[data-ar-code]').forEach(el => el.style.opacity = '');
+  _arDragSrc = null;
+}
 
 // Lee el HTML de un archivo .htm / .html / .mhtml exportado desde Outlook
 async function _arReadMsgHtml(file) {
@@ -8763,9 +8789,17 @@ function renderArTab() {
     if (a >= 1000)    return s + (a/1000).toFixed(1) + 'K';
     return s + a.toFixed(0); };
 
+  // Aplicar orden guardado (drag & drop)
+  const _arSavedOrder = JSON.parse(localStorage.getItem('salesops_ar_order') || 'null');
+  const _arAccounts = [...snap.accounts].sort((a, b) => {
+    if (!_arSavedOrder) return 0;
+    const ia = _arSavedOrder.indexOf(a.code), ib = _arSavedOrder.indexOf(b.code);
+    if (ia < 0) return 1; if (ib < 0) return -1; return ia - ib;
+  });
+
   // Una card por cuenta MSI individual
   let html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:1.5rem">`;
-  for (const acc of snap.accounts) {
+  for (const acc of _arAccounts) {
     const ar = acc.openAR || 0, limit = acc.creditLimit || 0;
     const overdue = acc.overdueUSD || 0, remaining = acc.remaining || 0;
     const orders = acc.outstandingOrders || 0;
@@ -8775,9 +8809,18 @@ function renderArTab() {
     // Remark: nombre del distribuidor CRM (si está mapeado)
     const distLabel = acc.distKey && DISTRIBUTORS[acc.distKey] ? DISTRIBUTORS[acc.distKey]
       : acc.distKey && AR_OTHER_LABELS[acc.distKey] ? AR_OTHER_LABELS[acc.distKey] : null;
-    html += `<div class="ai-box" style="margin:0;cursor:pointer" onclick="toggleArExpand('${esc(acc.code)}')">
+    html += `<div class="ai-box" data-ar-code="${esc(acc.code)}" style="margin:0;cursor:grab;transition:opacity 0.2s"
+      draggable="true"
+      ondragstart="_arDragStart(event,'${esc(acc.code)}')"
+      ondragover="_arDragOver(event)"
+      ondrop="_arDragDrop(event,'${esc(acc.code)}')"
+      ondragend="_arDragEnd(event)"
+      onclick="toggleArExpand('${esc(acc.code)}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-        <div style="font-weight:700;font-size:14px;color:var(--text)">${esc(acc.name)}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <i class="ti ti-grip-vertical" style="color:var(--border2);font-size:14px;cursor:grab" title="Arrastrá para reordenar"></i>
+          <div style="font-weight:700;font-size:14px;color:var(--text)">${esc(acc.name)}</div>
+        </div>
         ${overdue > 0 ? `<span style="background:#BF616A22;color:#BF616A;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px">⚠ Vencido</span>` : `<span style="background:#A3BE8C22;color:#A3BE8C;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px">✓ Al día</span>`}
       </div>
       ${distLabel ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px">${esc(distLabel)}</div>` : '<div style="margin-bottom:10px"></div>'}
