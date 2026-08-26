@@ -941,6 +941,7 @@
         <div class="export-row" style="margin-bottom:0.5rem">
           <button class="filter-pill active" id="etailer-pill-compragamer" onclick="setEtailerFilter('compragamer',this)">COMPRAGAMER</button>
         </div>
+        <div id="etailers-month-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0.75rem"></div>
         <div class="upload-zone" id="drop-zone-etailers" onclick="document.getElementById('file-input-etailers').click()" style="margin:1rem 0;padding:2.5rem 1.5rem;border-width:2px;min-height:140px;justify-content:center;flex-direction:column;gap:10px">
           <i class="ti ti-cloud-upload" style="font-size:2.5rem;color:var(--brand-text)"></i>
           <p style="font-size:15px;margin:0"><b>Arrastrá acá el reporte semanal de COMPRAGAMER</b></p>
@@ -1424,7 +1425,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '26.08.26.1';
+const APP_VERSION = '26.08.26.2';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -8619,17 +8620,36 @@ dropZoneEtailers.addEventListener('drop', e => { e.preventDefault(); dropZoneEta
 fileInputEtailers.addEventListener('change', e => { if(e.target.files.length) handleEtailersFiles(e.target.files); e.target.value=''; });
 
 let _currentEtailerFilter = 'compragamer';
+let _etailersSelectedMonths = new Set(); // vacío = todos
 function setEtailerFilter(key, btn) {
   _currentEtailerFilter = key;
+  _etailersSelectedMonths.clear();
   btn.parentElement.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderEtailersTab();
 }
+function renderEtailersMonthChips() {
+  const wrap = document.getElementById('etailers-month-chips');
+  if(!wrap) return;
+  const months = getAvailableMonths(_currentEtailerFilter);
+  const allActive = _etailersSelectedMonths.size === 0;
+  wrap.innerHTML = `<button type="button" class="filter-pill ${allActive?'active':''}" onclick="toggleEtailersAllMonths()">Todos</button>`
+    + months.map(mk => `<button type="button" class="filter-pill ${_etailersSelectedMonths.has(mk)?'active':''}" onclick="toggleEtailersMonth('${mk}')">${getMonthLabel(mk)}</button>`).join('');
+}
+function toggleEtailersAllMonths() { _etailersSelectedMonths.clear(); renderEtailersMonthChips(); renderEtailersTab(); }
+function toggleEtailersMonth(mk) {
+  if(_etailersSelectedMonths.has(mk)) _etailersSelectedMonths.delete(mk); else _etailersSelectedMonths.add(mk);
+  renderEtailersMonthChips(); renderEtailersTab();
+}
 
 function renderEtailersTab() {
+  renderEtailersMonthChips();
   const snaps = (db.weeklyReports||[]).filter(s => s.distributor === _currentEtailerFilter);
   const stockSnaps = snaps.filter(s=>s.reportType==='stock').sort((a,b)=>String(b.periodEnd||'').localeCompare(String(a.periodEnd||'')));
-  const salesSnaps = snaps.filter(s=>s.reportType==='sales').sort((a,b)=>String(b.periodEnd||'').localeCompare(String(a.periodEnd||'')));
+  const allSalesSnaps = snaps.filter(s=>s.reportType==='sales').sort((a,b)=>String(b.periodEnd||'').localeCompare(String(a.periodEnd||'')));
+  // Filtrar por meses seleccionados (vacío = todos)
+  const salesSnaps = _etailersSelectedMonths.size === 0 ? allSalesSnaps
+    : allSalesSnaps.filter(s => _etailersSelectedMonths.has(getMonthKey(s.periodEnd)));
   const latestStock = stockSnaps[0];
 
   // Badge
