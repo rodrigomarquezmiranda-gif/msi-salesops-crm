@@ -1424,7 +1424,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '25.08.26.16';
+const APP_VERSION = '25.08.26.17';
 
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
@@ -8936,7 +8936,29 @@ function renderRotationTab() {
         if(!a.description && r.description) a.description = r.description;
       });
     });
-    const numSalesWeeks = salesSnaps.length;
+    // Contar semanas reales: para snapshots multi-mes (ELIT semestre) usar fechas de fila,
+    // no el periodStart/periodEnd del snapshot (que puede estar mal o ser solo 1 "semana").
+    const _coveredWeeks = new Set();
+    let _minSalesDate = null, _maxSalesDate = null;
+    salesSnaps.forEach(s => {
+      const _isMultiMonth = s.periodStart && s.periodEnd && getMonthKey(s.periodStart) !== getMonthKey(s.periodEnd);
+      if(_isMultiMonth) {
+        s.rows.forEach(r => {
+          if(r.date) {
+            _coveredWeeks.add(mondayOf(r.date));
+            if(!_minSalesDate || r.date < _minSalesDate) _minSalesDate = r.date;
+            if(!_maxSalesDate || r.date > _maxSalesDate) _maxSalesDate = r.date;
+          }
+        });
+      } else {
+        _coveredWeeks.add(mondayOf(s.periodEnd));
+        const sd = s.periodStart || s.periodEnd;
+        if(sd && (!_minSalesDate || sd < _minSalesDate)) _minSalesDate = sd;
+        if(s.periodEnd && (!_maxSalesDate || s.periodEnd > _maxSalesDate)) _maxSalesDate = s.periodEnd;
+      }
+    });
+    const numSalesWeeks = Math.max(1, _coveredWeeks.size);
+    const _salesDateRange = salesSnaps.length ? fmtRotDate(_minSalesDate)+' a '+fmtRotDate(_maxSalesDate) : '-';
     const codes = new Set();
     (latestStock?.rows||[]).forEach(r=>{ if(r.code) codes.add(r.code.toUpperCase()); });
     salesAgg.forEach((v,k)=>codes.add(k));
@@ -8977,7 +8999,7 @@ function renderRotationTab() {
       <div class="section-header"><div class="section-title">${DISTRIBUTORS[distKey]}</div></div>
       <div class="metrics" style="margin-bottom:12px">
         <div class="metric"><div class="metric-value">${filteredStockCount??'-'}</div><div class="metric-label">SKUs en stock${q?' (filtrado)':''}</div><div class="metric-sub">${latestStock ? 'al '+fmtRotDate(latestStock.periodEnd) : 'sin datos'}</div></div>
-        <div class="metric"><div class="metric-value">${numSalesWeeks}</div><div class="metric-label">Semanas de venta cargadas</div><div class="metric-sub">${salesSnaps.length ? fmtRotDate(salesSnaps[salesSnaps.length-1].periodStart)+' a '+fmtRotDate(salesSnaps[0].periodEnd) : '-'}</div></div>
+        <div class="metric"><div class="metric-value">${numSalesWeeks}</div><div class="metric-label">Semanas de venta cargadas</div><div class="metric-sub">${_salesDateRange}</div></div>
         <div class="metric"><div class="metric-value">${filteredTotalSold}</div><div class="metric-label">Unidades vendidas (acum.)${q?' (filtrado)':''}</div><div class="metric-sub">todas las semanas cargadas</div></div>
       </div>
       ${stockSnaps.length<=1 ? `<div style="font-size:11.5px;color:var(--text3);margin-bottom:8px"><i class="ti ti-info-circle"></i> Todavía hay una sola carga de stock para ${DISTRIBUTORS[distKey]} — en cuanto subas la próxima semana, "Stock sem. anterior" va a mostrar la diferencia.</div>` : ''}
