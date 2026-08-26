@@ -1446,7 +1446,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '26.08.26.5';
+const APP_VERSION = '26.08.26.6';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -8758,41 +8758,34 @@ function renderArTab() {
     return;
   }
 
-  // Agregar por distribuidor
-  const byDist = {};
-  for (const acc of snap.accounts) {
-    const dk = acc.distKey; if (!dk) continue;
-    if (!byDist[dk]) byDist[dk] = { accounts:[], totalAR:0, totalLimit:0, totalOrders:0, totalOverdue:0, totalRemaining:0 };
-    byDist[dk].accounts.push(acc);
-    byDist[dk].totalAR += acc.openAR || 0;
-    byDist[dk].totalLimit += acc.creditLimit || 0;
-    byDist[dk].totalOrders += acc.outstandingOrders || 0;
-    byDist[dk].totalOverdue += acc.overdueUSD || 0;
-    byDist[dk].totalRemaining += acc.remaining || 0;
-  }
-
   const fmtShort = v => { const a = Math.abs(v); const s = v < 0 ? '-' : '';
     if (a >= 1000000) return s + (a/1000000).toFixed(2) + 'M';
     if (a >= 1000)    return s + (a/1000).toFixed(1) + 'K';
     return s + a.toFixed(0); };
 
+  // Una card por cuenta MSI individual
   let html = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;margin-bottom:1.5rem">`;
-  for (const dk of Object.keys(DISTRIBUTORS)) {
-    const d = byDist[dk]; if (!d) continue;
-    const ar = d.totalAR, limit = d.totalLimit, overdue = d.totalOverdue, remaining = d.totalRemaining;
+  for (const acc of snap.accounts) {
+    const ar = acc.openAR || 0, limit = acc.creditLimit || 0;
+    const overdue = acc.overdueUSD || 0, remaining = acc.remaining || 0;
+    const orders = acc.outstandingOrders || 0;
     const utilPct = limit > 0 ? Math.min(100, Math.round(Math.abs(ar) / limit * 100)) : null;
-    const isExp = _arExpandedDist === dk;
     const barColor = utilPct >= 90 ? '#BF616A' : utilPct >= 70 ? '#EBCB8B' : '#A3BE8C';
-    html += `<div class="ai-box" style="margin:0;cursor:pointer" onclick="toggleArExpand('${dk}')">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-        <div style="font-weight:700;font-size:14px;color:var(--text)">${esc(DISTRIBUTORS[dk])}</div>
+    const isExp = _arExpandedDist === acc.code;
+    // Remark: nombre del distribuidor CRM (si está mapeado)
+    const distLabel = acc.distKey && DISTRIBUTORS[acc.distKey] ? DISTRIBUTORS[acc.distKey]
+      : acc.distKey && AR_OTHER_LABELS[acc.distKey] ? AR_OTHER_LABELS[acc.distKey] : null;
+    html += `<div class="ai-box" style="margin:0;cursor:pointer" onclick="toggleArExpand('${esc(acc.code)}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div style="font-weight:700;font-size:14px;color:var(--text)">${esc(acc.name)}</div>
         ${overdue > 0 ? `<span style="background:#BF616A22;color:#BF616A;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px">⚠ Vencido</span>` : `<span style="background:#A3BE8C22;color:#A3BE8C;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px">✓ Al día</span>`}
       </div>
+      ${distLabel ? `<div style="font-size:11px;color:var(--text3);margin-bottom:10px">${esc(distLabel)}</div>` : '<div style="margin-bottom:10px"></div>'}
       <div style="font-size:26px;font-weight:700;color:var(--brand);margin-bottom:2px">$${fmtShort(ar)}</div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Open AR</div>
       ${limit > 0 ? `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px"><span>Límite: $${fmtShort(limit)}</span><span style="font-weight:700;color:${barColor}">${utilPct}%</span></div><div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden"><div style="height:100%;width:${utilPct}%;background:${barColor};transition:width 0.3s"></div></div></div>` : ''}
       ${overdue > 0 ? `<div style="font-size:12px;color:#BF616A;margin-bottom:6px"><i class="ti ti-alert-triangle"></i> Vencido: <b>$${fmtShort(overdue)}</b></div>` : ''}
-      ${d.totalOrders > 0 ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px"><i class="ti ti-package"></i> Pedidos: $${fmtShort(d.totalOrders)}</div>` : ''}
+      ${orders > 0 ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px"><i class="ti ti-package"></i> Pedidos: $${fmtShort(orders)}</div>` : ''}
       <div style="margin-top:10px;font-size:11.5px;color:var(--text3);border-top:1px solid var(--border);padding-top:8px;display:flex;justify-content:space-between">
         <span>Disponible: <b style="color:${remaining < 0 ? '#BF616A' : '#A3BE8C'}">$${fmtShort(remaining)}</b></span>
         <span style="color:var(--brand-text)">${isExp ? '▲ Ocultar' : '▼ Facturas'}</span>
@@ -8801,22 +8794,21 @@ function renderArTab() {
   }
   html += `</div>`;
 
-  // Panel expandido de facturas
-  if (_arExpandedDist && byDist[_arExpandedDist]) {
-    const d = byDist[_arExpandedDist];
-    const allInv = d.accounts.flatMap(acc => acc.invoices.map(inv => ({...inv, accountName: acc.name})))
+  // Panel expandido de facturas — por cuenta individual
+  const expandedAcc = snap.accounts.find(a => a.code === _arExpandedDist);
+  if (expandedAcc) {
+    const allInv = (expandedAcc.invoices || [])
       .filter(inv => Math.abs(inv.remainUSD) >= 0.01)
       .sort((a,b) => { if(a.daysLate>0&&b.daysLate<=0) return -1; if(a.daysLate<=0&&b.daysLate>0) return 1; return b.daysLate-a.daysLate; });
-    html += `<div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Facturas — ${esc(DISTRIBUTORS[_arExpandedDist])}</div></div>
+    html += `<div class="section-header" style="margin-bottom:0.5rem"><div class="section-title">Facturas — ${esc(expandedAcc.name)}</div></div>
     <div class="table-scroll" style="margin-bottom:1.5rem"><table class="data-table"><thead><tr>
-      <th>Cuenta</th><th>Tipo</th><th>Factura #</th><th>Fecha</th><th>Vencimiento</th>
+      <th>Tipo</th><th>Factura #</th><th>Fecha</th><th>Vencimiento</th>
       <th style="text-align:right">Días</th><th style="text-align:right">Original</th><th style="text-align:right">Saldo</th><th>Referencia</th>
     </tr></thead><tbody>`;
     for (const inv of allInv) {
       const isCM = inv.type === 'Credit Memo', isOv = !isCM && inv.daysLate > 0;
       const daysCss = isOv ? 'color:#BF616A;font-weight:700' : inv.daysLate < 0 ? 'color:#A3BE8C' : '';
       html += `<tr style="${isOv ? 'background:#BF616A08' : ''}">
-        <td style="font-size:11px;color:var(--text3)">${esc(inv.accountName)}</td>
         <td><span style="font-size:11px;padding:2px 6px;border-radius:3px;background:${isCM?'#A3BE8C22':'var(--bg3)'}">${isCM?'Nota Créd.':'Factura'}</span></td>
         <td style="font-family:monospace;font-size:12px">${esc(inv.number)}</td>
         <td style="font-size:12px;white-space:nowrap">${esc(inv.invoiceDate)}</td>
@@ -8825,26 +8817,6 @@ function renderArTab() {
         <td style="text-align:right;font-size:12px">${fmtAmt(Math.abs(inv.originalAmount))}</td>
         <td style="text-align:right;font-size:12px;font-weight:600;color:${inv.remainUSD<0?'#A3BE8C':'var(--text)'}">${fmtAmt(Math.abs(inv.remainUSD))}</td>
         <td style="font-size:11px;color:var(--text3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(inv.po)}">${esc(inv.po)}</td>
-      </tr>`;
-    }
-    html += `</tbody></table></div>`;
-  }
-
-  // Sección "Otros" (Paraguay, LATAM, Miami)
-  const otherKeys = Object.keys(AR_OTHER_LABELS).filter(dk => byDist[dk]);
-  if (otherKeys.length) {
-    html += `<div class="section-header"><div class="section-title">Otras Cuentas (LATAM / Miami)</div></div>
-    <div class="table-scroll"><table class="data-table"><thead><tr>
-      <th>Cliente</th><th style="text-align:right">Open AR</th><th style="text-align:right">Límite</th>
-      <th style="text-align:right">Disponible</th><th style="text-align:right">Vencido</th>
-    </tr></thead><tbody>`;
-    for (const dk of otherKeys) {
-      const d = byDist[dk];
-      html += `<tr><td>${esc(AR_OTHER_LABELS[dk])}</td>
-        <td style="text-align:right">${fmtAmt(d.totalAR)}</td>
-        <td style="text-align:right">${d.totalLimit > 0 ? fmtAmt(d.totalLimit) : '—'}</td>
-        <td style="text-align:right;color:${d.totalRemaining<0?'#BF616A':'#A3BE8C'}">${fmtAmt(d.totalRemaining)}</td>
-        <td style="text-align:right;color:${d.totalOverdue>0?'#BF616A':'var(--text3)'}">${d.totalOverdue > 0 ? fmtAmt(d.totalOverdue) : '—'}</td>
       </tr>`;
     }
     html += `</tbody></table></div>`;
