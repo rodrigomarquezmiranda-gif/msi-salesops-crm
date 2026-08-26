@@ -189,21 +189,12 @@
     "triggeredBy": "sistema"
   },
   {
-    "checkedAt": "2026-08-26T13:00:38.200292+00:00",
+    "checkedAt": "2026-08-25T21:51:04.671113+00:00",
     "productCount": 323,
     "hasChanges": false,
     "changeCount": 0,
     "summary": "Sin cambios",
-    "triggerMode": "auto",
-    "triggeredBy": "sistema"
-  },
-  {
-    "checkedAt": "2026-08-26T13:00:43.984503+00:00",
-    "productCount": 323,
-    "hasChanges": false,
-    "changeCount": 0,
-    "summary": "Sin cambios",
-    "triggerMode": "auto",
+    "triggerMode": "schedule",
     "triggeredBy": "sistema"
   }
 ]
