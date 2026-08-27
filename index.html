@@ -997,7 +997,13 @@
             <span id="mkt-last-upload" style="font-size:11px;color:var(--text3)"></span>
           </div>
         </div>
-        <div id="mkt-q-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem"></div>
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:1.25rem">
+          <div id="mkt-q-pills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button type="button" class="filter-pill active" id="mkt-btn-charts" onclick="setMktViewMode('charts')"><i class="ti ti-chart-pie-2"></i> Por Categoría</button>
+            <button type="button" class="filter-pill" id="mkt-btn-compare" onclick="setMktViewMode('compare')"><i class="ti ti-arrows-diff"></i> Comparativa Q vs Q</button>
+          </div>
+        </div>
         <div id="mkt-content"></div>
       </div>
 
@@ -1466,7 +1472,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '27.08.26.5';
+const APP_VERSION = '27.08.26.6';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -8687,6 +8693,7 @@ const MKT_SLICE_COLORS = [
 
 let mktSelectedQs = new Set([1, 2, 3]);
 let mktExpandedTerm = null;
+let mktViewMode = 'charts'; // 'charts' | 'compare'
 
 function _mktClean(raw) {
   if(raw == null) return '';
@@ -8805,6 +8812,20 @@ function _mktBuildDonut(slices) {
   </svg>`;
 }
 
+function setMktViewMode(mode) {
+  mktViewMode = mode;
+  document.getElementById('mkt-btn-charts')?.classList.toggle('active', mode === 'charts');
+  document.getElementById('mkt-btn-compare')?.classList.toggle('active', mode === 'compare');
+  renderMktTab();
+}
+
+function deleteMktData() {
+  if(!confirm('¿Eliminar el archivo de Marketing Budget cargado?')) return;
+  db.mkt = [];
+  saveDB();
+  renderMktTab();
+}
+
 function renderMktTab() {
   const wrap = document.getElementById('mkt-content');
   const pillsWrap = document.getElementById('mkt-q-pills');
@@ -8812,7 +8833,16 @@ function renderMktTab() {
 
   const data = (db.mkt || [])[0];
   const lastEl = document.getElementById('mkt-last-upload');
-  if(lastEl) lastEl.textContent = data ? `${data.sourceFile} · ${fmtRotDate(data.uploadedAt?.slice(0,10))}` : '';
+  if(lastEl) {
+    lastEl.innerHTML = data
+      ? `${esc(data.sourceFile)} · ${fmtRotDate(data.uploadedAt?.slice(0,10))}
+         <button onclick="deleteMktData()" style="margin-left:8px;padding:1px 8px;font-size:11px;background:none;border:1px solid var(--border2);border-radius:4px;color:var(--text3);cursor:pointer" title="Eliminar archivo cargado"><i class="ti ti-trash"></i></button>`
+      : '';
+  }
+
+  // View mode toggle sync
+  document.getElementById('mkt-btn-charts')?.classList.toggle('active', mktViewMode === 'charts');
+  document.getElementById('mkt-btn-compare')?.classList.toggle('active', mktViewMode === 'compare');
 
   if(!data) {
     if(pillsWrap) pillsWrap.innerHTML = '';
@@ -8820,40 +8850,26 @@ function renderMktTab() {
     return;
   }
 
-  // Build pills
+  const availableQs = data.quarters.map(q => q.q).sort();
+
+  // Pills — in compare mode show all; in charts mode filter active
   if(pillsWrap) {
-    const availableQs = data.quarters.map(q => q.q).sort();
     pillsWrap.innerHTML = availableQs.map(q =>
       `<button type="button" class="filter-pill ${mktSelectedQs.has(q)?'active':''}" onclick="toggleMktQ(${q})">Q${q}</button>`
     ).join('');
   }
 
-  const rows = _mktGetActiveRows();
-  if(!rows.length) {
-    wrap.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:2rem;text-align:center">Sin datos para los trimestres seleccionados.</div>`;
-    return;
-  }
-
-  // Group by term
-  const termMap = new Map();
-  for(const r of rows) {
-    if(!termMap.has(r.term)) termMap.set(r.term, []);
-    termMap.get(r.term).push(r);
-  }
-  const terms = Array.from(termMap.entries())
-    .map(([term, trows]) => ({ term, rows: trows, total: trows.reduce((s,r)=>s+r.total,0) }))
-    .sort((a,b) => b.total - a.total);
-  const grandTotal = terms.reduce((s,t)=>s+t.total,0);
-
-  // Budget KPIs
+  // ── Budget KPIs (always visible) ─────────────────────────
   const budgetProvided = data.quarters
     .filter(q => mktSelectedQs.has(q.q))
     .reduce((s, q) => s + (q.budgetProvided || 0), 0);
+  const activeRows = _mktGetActiveRows();
+  const grandTotal = activeRows.reduce((s, r) => s + r.total, 0);
   const remaining = budgetProvided - grandTotal;
-  const remainingColor = remaining >= 0 ? 'var(--green-text)' : 'var(--red-text, #BF616A)';
+  const remainingColor = remaining >= 0 ? 'var(--green-text)' : '#BF616A';
   const usedPct = budgetProvided > 0 ? (grandTotal / budgetProvided * 100) : 0;
-
   const qLabel = 'Q' + Array.from(mktSelectedQs).sort().join('+Q');
+
   const summaryHtml = `<div class="metrics" style="margin-bottom:1.5rem">
     <div class="metric">
       <div class="metric-value" style="color:var(--blue-text)">${fmtAmt(budgetProvided)}</div>
@@ -8861,25 +8877,104 @@ function renderMktTab() {
     </div>
     <div class="metric">
       <div class="metric-value" style="color:var(--brand-text)">${fmtAmt(grandTotal)}</div>
-      <div class="metric-label">Expense Planned · ${usedPct.toFixed(1)}% usado</div>
+      <div class="metric-label">Expense Planned · ${usedPct.toFixed(1)}%</div>
     </div>
     <div class="metric">
       <div class="metric-value" style="color:${remainingColor}">${fmtAmt(Math.abs(remaining))}${remaining<0?' ⚠':''}</div>
-      <div class="metric-label">${remaining>=0?'Remaining Budget':'Excedido por'}</div>
-    </div>
-    <div class="metric">
-      <div class="metric-value">${terms.length}</div>
-      <div class="metric-label">Categorías</div>
+      <div class="metric-label">${remaining>=0?'Remaining Budget':'Excedido'}</div>
     </div>
   </div>`;
 
-  // One card per term
+  if(!activeRows.length) {
+    wrap.innerHTML = summaryHtml + `<div style="font-size:13px;color:var(--text3);padding:2rem;text-align:center">Sin datos para los trimestres seleccionados.</div>`;
+    return;
+  }
+
+  // ── COMPARE MODE ──────────────────────────────────────────
+  if(mktViewMode === 'compare') {
+    // Build term × quarter matrix using ALL quarters (not just selected)
+    const allTerms = new Set();
+    const matrix = {}; // matrix[term][q] = total
+    for(const qObj of data.quarters) {
+      for(const r of qObj.rows) {
+        if(!r.customer && r.total <= 0) continue;
+        allTerms.add(r.term);
+        if(!matrix[r.term]) matrix[r.term] = {};
+        matrix[r.term][qObj.q] = (matrix[r.term][qObj.q] || 0) + r.total;
+      }
+    }
+    const qs = availableQs; // [1,2,3] sorted
+    const termList = Array.from(allTerms).sort((a,b) => {
+      const tA = qs.reduce((s,q) => s + (matrix[a][q]||0), 0);
+      const tB = qs.reduce((s,q) => s + (matrix[b][q]||0), 0);
+      return tB - tA;
+    });
+
+    const fmtDelta = (prev, curr) => {
+      if(prev == null || curr == null) return '<td></td><td></td>';
+      const delta = curr - prev;
+      const pct = prev > 0 ? (delta / prev * 100) : null;
+      const color = delta > 0 ? '#EBCB8B' : delta < 0 ? 'var(--green-text)' : 'var(--text3)';
+      const arrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '→';
+      const pctStr = pct != null ? ` (${Math.abs(pct).toFixed(0)}%)` : '';
+      return `<td style="text-align:right;color:${color};font-size:11px;white-space:nowrap">${arrow} ${Math.abs(delta).toLocaleString('es-AR',{maximumFractionDigits:0})}${pctStr}</td>`;
+    };
+
+    // Delta column headers between consecutive quarters
+    const deltaHeaders = [];
+    for(let i = 1; i < qs.length; i++) deltaHeaders.push(`<th style="text-align:right;font-size:11px;color:var(--text3)">Q${qs[i-1]}→Q${qs[i]}</th>`);
+
+    const headerCols = qs.map(q => `<th style="text-align:right">Q${q}</th>`).join('') + deltaHeaders.join('') + `<th style="text-align:right">Total</th>`;
+
+    const bodyRows = termList.map(term => {
+      const qCells = qs.map(q => {
+        const v = matrix[term][q] || 0;
+        return `<td style="text-align:right;color:${v>0?'var(--text)':'var(--text3)'}">${v>0?fmtAmt(v):'—'}</td>`;
+      }).join('');
+      const deltaCells = [];
+      for(let i = 1; i < qs.length; i++) deltaCells.push(fmtDelta(matrix[term][qs[i-1]]||0, matrix[term][qs[i]]||0));
+      const rowTotal = qs.reduce((s,q) => s + (matrix[term][q]||0), 0);
+      return `<tr>
+        <td style="font-weight:500">${esc(term)}</td>
+        ${qCells}${deltaCells.join('')}
+        <td style="text-align:right;font-weight:700;color:var(--brand-text)">${fmtAmt(rowTotal)}</td>
+      </tr>`;
+    }).join('');
+
+    // Totals row
+    const qTotals = qs.map(q => data.quarters.find(qq=>qq.q===q)?.rows.reduce((s,r)=>s+r.total,0)||0);
+    const totalCells = qTotals.map(v => `<td style="text-align:right;font-weight:700">${fmtAmt(v)}</td>`).join('');
+    const totalDeltas = [];
+    for(let i = 1; i < qs.length; i++) totalDeltas.push(fmtDelta(qTotals[i-1], qTotals[i]));
+    const overallTotal = qTotals.reduce((s,v)=>s+v,0);
+
+    wrap.innerHTML = summaryHtml + `
+      <div class="table-scroll"><table class="data-table" style="font-size:12px">
+        <thead><tr><th>Categoría</th>${headerCols}</tr></thead>
+        <tbody>${bodyRows}</tbody>
+        <tfoot><tr style="font-weight:700;background:var(--bg3)">
+          <td>TOTAL</td>${totalCells}${totalDeltas.join('')}<td style="text-align:right;color:var(--brand-text)">${fmtAmt(overallTotal)}</td>
+        </tr></tfoot>
+      </table></div>`;
+    return;
+  }
+
+  // ── CHARTS MODE ───────────────────────────────────────────
+  const termMap = new Map();
+  for(const r of activeRows) {
+    if(!termMap.has(r.term)) termMap.set(r.term, []);
+    termMap.get(r.term).push(r);
+  }
+  const terms = Array.from(termMap.entries())
+    .map(([term, trows]) => ({ term, rows: trows, total: trows.reduce((s,r)=>s+r.total,0) }))
+    .sort((a,b) => b.total - a.total);
+
   const cardsHtml = terms.map(({ term, rows: trows, total }) => {
     const isExpanded = mktExpandedTerm === term;
-    const pct = grandTotal > 0 ? (total/grandTotal*100) : 0;
+    // % over total budget provided (not over expense sum)
+    const pct = budgetProvided > 0 ? (total / budgetProvided * 100) : 0;
     const safeTermJs = term.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 
-    // Aggregate by customer for donut
     const custMap = new Map();
     for(const r of trows) {
       if(r.total <= 0) continue;
@@ -8891,9 +8986,6 @@ function renderMktTab() {
       .map(([label, value], i) => ({ label, value, color: MKT_SLICE_COLORS[i % MKT_SLICE_COLORS.length] }));
     const custTotal = custArr.reduce((s,c)=>s+c.value,0);
 
-    const donutSvg = _mktBuildDonut(custArr);
-
-    // Legend
     const legendHtml = custArr.map(c => `
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
         <span style="width:10px;height:10px;border-radius:2px;background:${c.color};flex-shrink:0;display:inline-block"></span>
@@ -8904,16 +8996,15 @@ function renderMktTab() {
 
     const chartHtml = custArr.length
       ? `<div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
-           <div style="flex-shrink:0">${donutSvg}</div>
+           <div style="flex-shrink:0">${_mktBuildDonut(custArr)}</div>
            <div style="flex:1;min-width:180px;padding-top:8px">${legendHtml}</div>
          </div>`
       : `<div style="font-size:12px;color:var(--text3);padding:.5rem">Sin montos registrados.</div>`;
 
-    // Detail table (expanded)
     const detailHtml = isExpanded ? `
       <div style="margin-top:1rem;border-top:1px solid var(--border2);padding-top:1rem">
         <table class="data-table" style="font-size:12px">
-          <thead><tr><th>Cliente / Destinatario</th><th>Detalle de actividad</th><th>Q</th><th style="text-align:right">Monto</th></tr></thead>
+          <thead><tr><th>Cliente / Destinatario</th><th>Detalle</th><th>Q</th><th style="text-align:right">Monto</th></tr></thead>
           <tbody>${trows.map(r=>`<tr>
             <td style="font-weight:500">${esc(r.customer||'—')}</td>
             <td style="color:var(--text3);font-size:11px">${esc(r.activity||'—')}</td>
@@ -8932,7 +9023,7 @@ function renderMktTab() {
            onclick="toggleMktTerm('${safeTermJs}')">
         <span style="color:var(--text);font-size:14px"><i class="ti ti-tag" style="color:var(--brand-text)"></i> ${esc(term)}</span>
         <span style="display:flex;align-items:center;gap:10px;white-space:nowrap">
-          <span style="font-size:11px;color:var(--text3)">${pct.toFixed(1)}%</span>
+          <span style="font-size:11px;color:var(--text3)">${pct.toFixed(1)}% del budget</span>
           <span style="font-weight:700;color:var(--brand-text)">${fmtAmt(total)}</span>
           <i class="ti ti-chevron-${isExpanded?'up':'down'}" style="font-size:13px;color:var(--text3)"></i>
         </span>
