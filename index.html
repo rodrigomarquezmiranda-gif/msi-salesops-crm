@@ -1466,7 +1466,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '27.08.26.4';
+const APP_VERSION = '27.08.26.5';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -8719,6 +8719,16 @@ function parseMktBudgetFile(wb) {
     const activityCol = mktCol + 4;
     const totalCol = header.findIndex(v => v && String(v).toLowerCase().includes('total amount'));
     if(totalCol === -1) continue;
+
+    // Parse budget header (rows before the main table) — use the "Total" row value
+    let budgetProvided = 0;
+    for(let i = 0; i < headerIdx; i++) {
+      const row = rows[i] || [];
+      const lob = String(row[0] || '').trim().toUpperCase();
+      const val = row[1];
+      if(lob === 'TOTAL' && typeof val === 'number') { budgetProvided = val; break; }
+    }
+
     const dataRows = [];
     let currentTerm = null;
     for(let i = headerIdx + 1; i < rows.length; i++) {
@@ -8732,7 +8742,7 @@ function parseMktBudgetFile(wb) {
       const activity = _mktClean(row[activityCol]);
       if(customer || total > 0) dataRows.push({ term: currentTerm, customer, activity, total });
     }
-    quarters.push({ q: qNum, rows: dataRows });
+    quarters.push({ q: qNum, rows: dataRows, budgetProvided });
   }
   return quarters.sort((a, b) => a.q - b.q);
 }
@@ -8775,13 +8785,18 @@ function _mktBuildDonut(slices) {
   const cx = 100, cy = 100, R = 80, r = 50;
   const total = slices.reduce((s, sl) => s + sl.value, 0);
   if(total === 0) return '';
-  let angle = 0;
   let paths = '';
-  slices.forEach(sl => {
-    const sweep = (sl.value / total) * 360;
-    paths += _makePieSlice(cx, cy, R, r, angle, angle + sweep - 0.4, sl.color, null);
-    angle += sweep;
-  });
+  if(slices.length === 1) {
+    // Single slice: draw as full ring using two stacked circles
+    paths = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${slices[0].color}" opacity="0.9"/>`;
+  } else {
+    let angle = 0;
+    slices.forEach(sl => {
+      const sweep = (sl.value / total) * 360;
+      paths += _makePieSlice(cx, cy, R, r, angle, angle + sweep - 0.5, sl.color, null);
+      angle += sweep;
+    });
+  }
   return `<svg viewBox="0 0 200 200" width="160" height="160" style="display:block">
     <circle cx="${cx}" cy="${cy}" r="${R+4}" fill="#1E2430"/>
     ${paths}
@@ -8830,12 +8845,32 @@ function renderMktTab() {
     .sort((a,b) => b.total - a.total);
   const grandTotal = terms.reduce((s,t)=>s+t.total,0);
 
-  // KPIs
+  // Budget KPIs
+  const budgetProvided = data.quarters
+    .filter(q => mktSelectedQs.has(q.q))
+    .reduce((s, q) => s + (q.budgetProvided || 0), 0);
+  const remaining = budgetProvided - grandTotal;
+  const remainingColor = remaining >= 0 ? 'var(--green-text)' : 'var(--red-text, #BF616A)';
+  const usedPct = budgetProvided > 0 ? (grandTotal / budgetProvided * 100) : 0;
+
   const qLabel = 'Q' + Array.from(mktSelectedQs).sort().join('+Q');
   const summaryHtml = `<div class="metrics" style="margin-bottom:1.5rem">
-    <div class="metric"><div class="metric-value" style="color:var(--brand-text)">${fmtAmt(grandTotal)}</div><div class="metric-label">Total ${qLabel}</div></div>
-    <div class="metric"><div class="metric-value">${terms.length}</div><div class="metric-label">Categorías</div></div>
-    <div class="metric"><div class="metric-value">${rows.filter(r=>r.total>0).length}</div><div class="metric-label">Líneas con monto</div></div>
+    <div class="metric">
+      <div class="metric-value" style="color:var(--blue-text)">${fmtAmt(budgetProvided)}</div>
+      <div class="metric-label">Budget Provided (${qLabel})</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value" style="color:var(--brand-text)">${fmtAmt(grandTotal)}</div>
+      <div class="metric-label">Expense Planned · ${usedPct.toFixed(1)}% usado</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value" style="color:${remainingColor}">${fmtAmt(Math.abs(remaining))}${remaining<0?' ⚠':''}</div>
+      <div class="metric-label">${remaining>=0?'Remaining Budget':'Excedido por'}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-value">${terms.length}</div>
+      <div class="metric-label">Categorías</div>
+    </div>
   </div>`;
 
   // One card per term
