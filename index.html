@@ -997,12 +997,7 @@
             <span id="mkt-last-upload" style="font-size:11px;color:var(--text3)"></span>
           </div>
         </div>
-        <!-- Quarter pills -->
-        <div id="mkt-q-pills" style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">
-          <button id="mkt-pill-1" class="btn btn-primary" style="padding:5px 16px;font-size:12px" onclick="toggleMktQ(1)">Q1</button>
-          <button id="mkt-pill-2" class="btn btn-primary" style="padding:5px 16px;font-size:12px" onclick="toggleMktQ(2)">Q2</button>
-          <button id="mkt-pill-3" class="btn btn-primary" style="padding:5px 16px;font-size:12px" onclick="toggleMktQ(3)">Q3</button>
-        </div>
+        <div id="mkt-q-pills" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem"></div>
         <div id="mkt-content"></div>
       </div>
 
@@ -1471,7 +1466,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '27.08.26.3';
+const APP_VERSION = '27.08.26.4';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -8684,11 +8679,17 @@ async function handleRotationFiles(fileList) {
   _alert(summary + unrecognizedNote + guessedWarning + upgradeNote + failedNote, {type:'success', title:'Archivos importados'});
 }
 // ─── MARKETING BUDGET ─────────────────────────────────────
+const MKT_SLICE_COLORS = [
+  '#FF6600','#5E81AC','#A3BE8C','#EBCB8B','#BF616A',
+  '#88C0D0','#B48EAD','#D08770','#81A1C1','#4EAACC',
+  '#9B72AA','#6EA89A','#E0A868','#C45C6A','#7EA16B'
+];
+
 let mktSelectedQs = new Set([1, 2, 3]);
 let mktExpandedTerm = null;
 
-function _mktCleanCustomer(raw) {
-  if(!raw) return '';
+function _mktClean(raw) {
+  if(raw == null) return '';
   return String(raw).split('\n')[0].trim();
 }
 
@@ -8696,9 +8697,7 @@ function _mktFindHeaderRow(rows) {
   for(let i = 0; i < Math.min(30, rows.length); i++) {
     const row = rows[i] || [];
     for(let j = 0; j < Math.min(5, row.length); j++) {
-      if(row[j] && String(row[j]).includes('MKT Budget Term')) {
-        return { idx: i, mktCol: j };
-      }
+      if(row[j] && String(row[j]).includes('MKT Budget Term')) return { idx: i, mktCol: j };
     }
   }
   return null;
@@ -8727,13 +8726,11 @@ function parseMktBudgetFile(wb) {
       const termVal = row[mktCol];
       if(termVal && String(termVal).trim()) currentTerm = String(termVal).trim();
       if(!currentTerm) continue;
-      const customer = _mktCleanCustomer(row[customerCol]);
+      const customer = _mktClean(row[customerCol]);
       const rawTotal = row[totalCol];
-      const total = rawTotal != null ? (parseFloat(String(rawTotal).replace(/[^0-9.\-]/g, '')) || 0) : 0;
-      const activity = row[activityCol] ? String(row[activityCol]).split('\n')[0].trim() : '';
-      if(customer || total > 0) {
-        dataRows.push({ term: currentTerm, customer, activity, total });
-      }
+      const total = rawTotal != null ? (parseFloat(String(rawTotal).replace(/[^0-9.\-]/g,'')) || 0) : 0;
+      const activity = _mktClean(row[activityCol]);
+      if(customer || total > 0) dataRows.push({ term: currentTerm, customer, activity, total });
     }
     quarters.push({ q: qNum, rows: dataRows });
   }
@@ -8763,22 +8760,9 @@ function _mktGetActiveRows() {
 }
 
 function toggleMktQ(q) {
-  if(mktSelectedQs.has(q)) {
-    if(mktSelectedQs.size > 1) mktSelectedQs.delete(q);
-  } else {
-    mktSelectedQs.add(q);
-  }
-  _mktUpdatePills();
+  if(mktSelectedQs.has(q)) { if(mktSelectedQs.size > 1) mktSelectedQs.delete(q); }
+  else mktSelectedQs.add(q);
   renderMktTab();
-}
-
-function _mktUpdatePills() {
-  [1, 2, 3].forEach(q => {
-    const btn = document.getElementById('mkt-pill-' + q);
-    if(!btn) return;
-    btn.classList.toggle('btn-primary', mktSelectedQs.has(q));
-    btn.classList.toggle('btn', !mktSelectedQs.has(q));
-  });
 }
 
 function toggleMktTerm(term) {
@@ -8786,25 +8770,48 @@ function toggleMktTerm(term) {
   renderMktTab();
 }
 
+function _mktBuildDonut(slices) {
+  // slices: [{label, value, color}]
+  const cx = 100, cy = 100, R = 80, r = 50;
+  const total = slices.reduce((s, sl) => s + sl.value, 0);
+  if(total === 0) return '';
+  let angle = 0;
+  let paths = '';
+  slices.forEach(sl => {
+    const sweep = (sl.value / total) * 360;
+    paths += _makePieSlice(cx, cy, R, r, angle, angle + sweep - 0.4, sl.color, null);
+    angle += sweep;
+  });
+  return `<svg viewBox="0 0 200 200" width="160" height="160" style="display:block">
+    <circle cx="${cx}" cy="${cy}" r="${R+4}" fill="#1E2430"/>
+    ${paths}
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#252D3A"/>
+    <text x="${cx}" y="${cy+5}" text-anchor="middle" font-size="11" fill="#9EA8BA">TOTAL</text>
+  </svg>`;
+}
+
 function renderMktTab() {
-  _mktUpdatePills();
   const wrap = document.getElementById('mkt-content');
+  const pillsWrap = document.getElementById('mkt-q-pills');
   if(!wrap) return;
+
   const data = (db.mkt || [])[0];
   const lastEl = document.getElementById('mkt-last-upload');
-  if(lastEl && data) lastEl.textContent = `${data.sourceFile} · ${fmtRotDate(data.uploadedAt?.slice(0, 10))}`;
+  if(lastEl) lastEl.textContent = data ? `${data.sourceFile} · ${fmtRotDate(data.uploadedAt?.slice(0,10))}` : '';
 
   if(!data) {
+    if(pillsWrap) pillsWrap.innerHTML = '';
     wrap.innerHTML = `<div class="empty-state"><i class="ti ti-speakerphone"></i><p>Todavía no subiste ningún Marketing Budget.</p></div>`;
     return;
   }
 
-  // Hide pills for quarters not in file
-  const availableQs = new Set(data.quarters.map(q => q.q));
-  [1, 2, 3].forEach(q => {
-    const btn = document.getElementById('mkt-pill-' + q);
-    if(btn) btn.style.display = availableQs.has(q) ? '' : 'none';
-  });
+  // Build pills
+  if(pillsWrap) {
+    const availableQs = data.quarters.map(q => q.q).sort();
+    pillsWrap.innerHTML = availableQs.map(q =>
+      `<button type="button" class="filter-pill ${mktSelectedQs.has(q)?'active':''}" onclick="toggleMktQ(${q})">Q${q}</button>`
+    ).join('');
+  }
 
   const rows = _mktGetActiveRows();
   if(!rows.length) {
@@ -8819,48 +8826,64 @@ function renderMktTab() {
     termMap.get(r.term).push(r);
   }
   const terms = Array.from(termMap.entries())
-    .map(([term, trows]) => ({ term, rows: trows, total: trows.reduce((s, r) => s + r.total, 0) }))
-    .sort((a, b) => b.total - a.total);
-  const grandTotal = terms.reduce((s, t) => s + t.total, 0);
+    .map(([term, trows]) => ({ term, rows: trows, total: trows.reduce((s,r)=>s+r.total,0) }))
+    .sort((a,b) => b.total - a.total);
+  const grandTotal = terms.reduce((s,t)=>s+t.total,0);
 
-  // KPI bar
+  // KPIs
+  const qLabel = 'Q' + Array.from(mktSelectedQs).sort().join('+Q');
   const summaryHtml = `<div class="metrics" style="margin-bottom:1.5rem">
-    <div class="metric"><div class="metric-value" style="color:var(--brand-text)">${fmtAmt(grandTotal)}</div><div class="metric-label">Total Q${Array.from(mktSelectedQs).sort().join('+Q')}</div></div>
+    <div class="metric"><div class="metric-value" style="color:var(--brand-text)">${fmtAmt(grandTotal)}</div><div class="metric-label">Total ${qLabel}</div></div>
     <div class="metric"><div class="metric-value">${terms.length}</div><div class="metric-label">Categorías</div></div>
     <div class="metric"><div class="metric-value">${rows.filter(r=>r.total>0).length}</div><div class="metric-label">Líneas con monto</div></div>
   </div>`;
 
-  // Cards per term
+  // One card per term
   const cardsHtml = terms.map(({ term, rows: trows, total }) => {
     const isExpanded = mktExpandedTerm === term;
-    const pct = grandTotal > 0 ? (total / grandTotal * 100) : 0;
+    const pct = grandTotal > 0 ? (total/grandTotal*100) : 0;
+    const safeTermJs = term.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 
-    // Aggregate by customer for chart
+    // Aggregate by customer for donut
     const custMap = new Map();
     for(const r of trows) {
       if(r.total <= 0) continue;
       const k = r.customer || '(sin nombre)';
-      custMap.set(k, (custMap.get(k) || 0) + r.total);
+      custMap.set(k, (custMap.get(k)||0) + r.total);
     }
-    const chartPoints = Array.from(custMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 12)
-      .map(([lbl, value]) => ({ label: lbl.length > 20 ? lbl.slice(0, 18) + '…' : lbl, value }));
+    const custArr = Array.from(custMap.entries())
+      .sort((a,b) => b[1]-a[1])
+      .map(([label, value], i) => ({ label, value, color: MKT_SLICE_COLORS[i % MKT_SLICE_COLORS.length] }));
+    const custTotal = custArr.reduce((s,c)=>s+c.value,0);
 
-    const chartHtml = chartPoints.length
-      ? buildBarChartSVG(chartPoints, 'var(--brand)')
-      : `<div style="font-size:12px;color:var(--text3);padding:.75rem">Sin montos registrados.</div>`;
+    const donutSvg = _mktBuildDonut(custArr);
 
-    const safeTermJs = term.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    // Legend
+    const legendHtml = custArr.map(c => `
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="width:10px;height:10px;border-radius:2px;background:${c.color};flex-shrink:0;display:inline-block"></span>
+        <span style="font-size:11px;color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.label)}">${esc(c.label)}</span>
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap">${custTotal>0?(c.value/custTotal*100).toFixed(1)+'%':''}</span>
+        <span style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;margin-left:4px">${fmtAmt(c.value)}</span>
+      </div>`).join('');
+
+    const chartHtml = custArr.length
+      ? `<div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
+           <div style="flex-shrink:0">${donutSvg}</div>
+           <div style="flex:1;min-width:180px;padding-top:8px">${legendHtml}</div>
+         </div>`
+      : `<div style="font-size:12px;color:var(--text3);padding:.5rem">Sin montos registrados.</div>`;
+
+    // Detail table (expanded)
     const detailHtml = isExpanded ? `
       <div style="margin-top:1rem;border-top:1px solid var(--border2);padding-top:1rem">
         <table class="data-table" style="font-size:12px">
           <thead><tr><th>Cliente / Destinatario</th><th>Detalle de actividad</th><th>Q</th><th style="text-align:right">Monto</th></tr></thead>
-          <tbody>${trows.map(r => `<tr>
-            <td style="font-weight:500">${esc(r.customer || '—')}</td>
-            <td style="color:var(--text3);font-size:11px">${esc(r.activity || '—')}</td>
+          <tbody>${trows.map(r=>`<tr>
+            <td style="font-weight:500">${esc(r.customer||'—')}</td>
+            <td style="color:var(--text3);font-size:11px">${esc(r.activity||'—')}</td>
             <td style="color:var(--text3)">Q${r.q}</td>
-            <td style="text-align:right;font-weight:${r.total>0?'600':'400'};color:${r.total>0?'var(--text)':'var(--text3)'}">${r.total>0 ? fmtAmt(r.total) : '—'}</td>
+            <td style="text-align:right;font-weight:${r.total>0?'600':'400'};color:${r.total>0?'var(--text)':'var(--text3)'}">${r.total>0?fmtAmt(r.total):'—'}</td>
           </tr>`).join('')}</tbody>
           <tfoot><tr>
             <td colspan="3" style="font-weight:700">Total</td>
@@ -8870,16 +8893,16 @@ function renderMktTab() {
       </div>` : '';
 
     return `<div class="ai-box" style="margin-bottom:1rem">
-      <div class="ai-box-header" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px"
+      <div class="ai-box-header" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:12px"
            onclick="toggleMktTerm('${safeTermJs}')">
         <span style="color:var(--text);font-size:14px"><i class="ti ti-tag" style="color:var(--brand-text)"></i> ${esc(term)}</span>
-        <span style="display:flex;align-items:center;gap:12px;white-space:nowrap">
-          <span style="font-size:11px;color:var(--text3)">${pct.toFixed(1)}% del total</span>
+        <span style="display:flex;align-items:center;gap:10px;white-space:nowrap">
+          <span style="font-size:11px;color:var(--text3)">${pct.toFixed(1)}%</span>
           <span style="font-weight:700;color:var(--brand-text)">${fmtAmt(total)}</span>
-          <i class="ti ti-chevron-${isExpanded?'up':'down'}" style="font-size:14px;color:var(--text3)"></i>
+          <i class="ti ti-chevron-${isExpanded?'up':'down'}" style="font-size:13px;color:var(--text3)"></i>
         </span>
       </div>
-      <div style="margin-top:0.75rem">${chartHtml}</div>
+      <div style="margin-top:1rem">${chartHtml}</div>
       ${detailHtml}
     </div>`;
   }).join('');
