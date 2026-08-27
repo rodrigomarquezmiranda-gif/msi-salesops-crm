@@ -1472,7 +1472,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '27.08.26.6';
+const APP_VERSION = '27.08.26.7';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -8738,18 +8738,31 @@ function parseMktBudgetFile(wb) {
 
     const dataRows = [];
     let currentTerm = null;
+    let expensePlanned = null;
+    let remainingBudget = null;
     for(let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i] || [];
       const termVal = row[mktCol];
-      if(termVal && String(termVal).trim()) currentTerm = String(termVal).trim();
-      if(!currentTerm) continue;
       const customer = _mktClean(row[customerCol]);
       const rawTotal = row[totalCol];
       const total = rawTotal != null ? (parseFloat(String(rawTotal).replace(/[^0-9.\-]/g,'')) || 0) : 0;
+
+      if(termVal && String(termVal).trim()) currentTerm = String(termVal).trim();
+
+      // Summary rows: no term change, no customer, numeric value in total col
+      // These are the SUM/remaining cells (e.g. R40, R41) — capture and skip
+      if(!customer && total > 0.01 && !termVal) {
+        if(expensePlanned === null) expensePlanned = total;
+        else if(remainingBudget === null) remainingBudget = total;
+        continue;
+      }
+
+      // Only add real data rows — must have a customer name
+      if(!currentTerm || !customer) continue;
       const activity = _mktClean(row[activityCol]);
-      if(customer || total > 0) dataRows.push({ term: currentTerm, customer, activity, total });
+      dataRows.push({ term: currentTerm, customer, activity, total });
     }
-    quarters.push({ q: qNum, rows: dataRows, budgetProvided });
+    quarters.push({ q: qNum, rows: dataRows, budgetProvided, expensePlanned: expensePlanned ?? 0, remainingBudget: remainingBudget ?? 0 });
   }
   return quarters.sort((a, b) => a.q - b.q);
 }
@@ -8860,14 +8873,13 @@ function renderMktTab() {
   }
 
   // ── Budget KPIs (always visible) ─────────────────────────
-  const budgetProvided = data.quarters
-    .filter(q => mktSelectedQs.has(q.q))
-    .reduce((s, q) => s + (q.budgetProvided || 0), 0);
+  const activeQs = data.quarters.filter(q => mktSelectedQs.has(q.q));
+  const budgetProvided  = activeQs.reduce((s, q) => s + (q.budgetProvided  || 0), 0);
+  const expensePlanned  = activeQs.reduce((s, q) => s + (q.expensePlanned  || 0), 0);
+  const remainingBudget = activeQs.reduce((s, q) => s + (q.remainingBudget || 0), 0);
   const activeRows = _mktGetActiveRows();
-  const grandTotal = activeRows.reduce((s, r) => s + r.total, 0);
-  const remaining = budgetProvided - grandTotal;
-  const remainingColor = remaining >= 0 ? 'var(--green-text)' : '#BF616A';
-  const usedPct = budgetProvided > 0 ? (grandTotal / budgetProvided * 100) : 0;
+  const usedPct = budgetProvided > 0 ? (expensePlanned / budgetProvided * 100) : 0;
+  const remainingColor = remainingBudget >= 0 ? 'var(--green-text)' : '#BF616A';
   const qLabel = 'Q' + Array.from(mktSelectedQs).sort().join('+Q');
 
   const summaryHtml = `<div class="metrics" style="margin-bottom:1.5rem">
@@ -8876,12 +8888,12 @@ function renderMktTab() {
       <div class="metric-label">Budget Provided (${qLabel})</div>
     </div>
     <div class="metric">
-      <div class="metric-value" style="color:var(--brand-text)">${fmtAmt(grandTotal)}</div>
+      <div class="metric-value" style="color:var(--brand-text)">${fmtAmt(expensePlanned)}</div>
       <div class="metric-label">Expense Planned · ${usedPct.toFixed(1)}%</div>
     </div>
     <div class="metric">
-      <div class="metric-value" style="color:${remainingColor}">${fmtAmt(Math.abs(remaining))}${remaining<0?' ⚠':''}</div>
-      <div class="metric-label">${remaining>=0?'Remaining Budget':'Excedido'}</div>
+      <div class="metric-value" style="color:${remainingColor}">${fmtAmt(remainingBudget)}${remainingBudget<0?' ⚠':''}</div>
+      <div class="metric-label">Remaining Budget</div>
     </div>
   </div>`;
 
@@ -8971,8 +8983,8 @@ function renderMktTab() {
 
   const cardsHtml = terms.map(({ term, rows: trows, total }) => {
     const isExpanded = mktExpandedTerm === term;
-    // % over total budget provided (not over expense sum)
-    const pct = budgetProvided > 0 ? (total / budgetProvided * 100) : 0;
+    // % over expense planned (the real total from the summary cell)
+    const pct = expensePlanned > 0 ? (total / expensePlanned * 100) : 0;
     const safeTermJs = term.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
 
     const custMap = new Map();
