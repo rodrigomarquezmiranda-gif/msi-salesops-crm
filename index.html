@@ -492,6 +492,9 @@
         <i class="ti ti-credit-card" style="color:#A3BE8C"></i> Cuentas
         <span class="nav-count" id="nb-ar">0</span>
       </button>
+      <button class="nav-item" id="nav-mkt" onclick="gotoTab('mkt')">
+        <i class="ti ti-speakerphone" style="color:#EBCB8B"></i> Marketing Budget
+      </button>
     </nav>
     <nav class="nav-section">
       <div class="nav-label">Herramientas</div>
@@ -981,6 +984,28 @@
         <div id="ar-content"></div>
       </div>
 
+      <!-- MARKETING BUDGET -->
+      <div id="tab-mkt" class="tab-pane">
+        <div class="ai-box" style="margin-top:0;margin-bottom:1rem">
+          <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-speakerphone" style="color:#EBCB8B"></i> Marketing Budget Argentina</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">Subí el archivo Excel de Marketing Budget. Se leen las solapas <b>AR Q1</b>, <b>AR Q2</b> y <b>AR Q3</b> automáticamente.</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" style="padding:6px 16px;font-size:13px" onclick="document.getElementById('file-input-mkt').click()">
+              <i class="ti ti-upload"></i> Subir Marketing Budget (.xlsx)
+            </button>
+            <input type="file" id="file-input-mkt" accept=".xlsx,.xls" style="display:none" onchange="handleMktFile(this.files[0]);this.value=''" />
+            <span id="mkt-last-upload" style="font-size:11px;color:var(--text3)"></span>
+          </div>
+        </div>
+        <!-- Quarter pills -->
+        <div id="mkt-q-pills" style="display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap">
+          <button id="mkt-pill-1" class="btn btn-primary" style="padding:5px 16px;font-size:12px" onclick="toggleMktQ(1)">Q1</button>
+          <button id="mkt-pill-2" class="btn btn-primary" style="padding:5px 16px;font-size:12px" onclick="toggleMktQ(2)">Q2</button>
+          <button id="mkt-pill-3" class="btn btn-primary" style="padding:5px 16px;font-size:12px" onclick="toggleMktQ(3)">Q3</button>
+        </div>
+        <div id="mkt-content"></div>
+      </div>
+
       <!-- IA -->
       <div id="tab-ia" class="tab-pane">
         <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
@@ -1446,7 +1471,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '27.08.26.2';
+const APP_VERSION = '27.08.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -1461,7 +1486,7 @@ const DAY_MS = 86400000; // milisegundos en un día
 const fmtUSD = v => 'USD ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2 });
 const fmtAmt = v => 'USD ' + Number(v).toLocaleString('es-AR', { maximumFractionDigits: 2 });
 
-let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], ar:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
+let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], ar:[], mkt:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
 let priceList = { updatedAt:null, sourceFile:null, products:[] };
 let currentTab = 'dashboard';
 let currentFilter = { pi:'all' };
@@ -1645,6 +1670,7 @@ async function loadDB() {
     }
   } catch(e) { console.warn('Error cargando resellers:', e); }
   try { const arRaw = await _idbGetYear('salesops_ar').catch(()=>null); if(arRaw) db.ar = JSON.parse(arRaw); } catch(e) {}
+  try { const mktRaw = await _idbGetYear('salesops_mkt').catch(()=>null); if(mktRaw) db.mkt = JSON.parse(mktRaw); } catch(e) {}
   try { const p = await IDB.get('salesops_pricelist'); if(p) priceList = JSON.parse(p); } catch(e) {}
   if (!priceList.lastDiff) priceList.lastDiff = null;
   if (!priceList.prevSourceFile) priceList.prevSourceFile = null;
@@ -1707,6 +1733,7 @@ function saveDB() {
     ? []   // reader-pi solo tiene acceso a salesops_pi y salesops_resellers (Firebase rules)
     : [
         IDB.set(_yk('salesops_ar'),      JSON.stringify(db.ar           ||[])),
+        IDB.set(_yk('salesops_mkt'),     JSON.stringify(db.mkt          ||[])),
         IDB.set(_yk('salesops_ber'),     JSON.stringify(db.ber          ||[])),
         IDB.set(_yk('salesops_sor'),     JSON.stringify(db.sor          ||[])),
         IDB.set(_yk('salesops_sir'),     JSON.stringify(db.sir          ||[])),
@@ -1803,6 +1830,11 @@ function _startRealtimeSync() {
       key: _yk('salesops_ar'),
       apply: raw => { try { db.ar = JSON.parse(raw); } catch(e) {} },
       render: () => { if(currentTab === 'ar') renderArTab(); }
+    },
+    {
+      key: _yk('salesops_mkt'),
+      apply: raw => { try { db.mkt = JSON.parse(raw); } catch(e) {} },
+      render: () => { if(currentTab === 'mkt') renderMktTab(); }
     },
     {
       key: _yk('salesops_imports'),
@@ -2218,8 +2250,8 @@ function parseDurationString(str) {
 }
 
 // ─── TAB NAV ──────────────────────────────────────────
-const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','clientcompare','imports','etailers','ar','ia','notificaciones','usuarios','semaforo','sugeridos','share','pbm'];
-const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', clientcompare:'Comparador de Clientes', imports:'Análisis de Importaciones', etailers:'Etailers', ar:'Estado de Cuentas', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra', share:'Mi Participación', pbm:'Powered by MSI' };
+const TABS = ['dashboard','pi','rebates','pricelist','salesprices','rotation','trend','rotcompare','clients','resellers-t1','resellers-t2','resellers-t3','catranking','clientcompare','imports','etailers','ar','mkt','ia','notificaciones','usuarios','semaforo','sugeridos','share','pbm'];
+const TITLES = { dashboard:'Dashboard', pi:'Ordenes — Proforma Invoice', rebates:'Rebates: BER · SOR · SIR · PP', pricelist:'Lista de Precios', salesprices:'Precios de Venta', rotation:'Inventario/Ventas', trend:'Tendencia de Venta', rotcompare:'Comparador de Rotación', clients:'Ranking de Clientes', 'resellers-t1':'Resellers T1', 'resellers-t2':'Resellers T2', 'resellers-t3':'Resellers T3', catranking:'Ranking por Categoría', clientcompare:'Comparador de Clientes', imports:'Análisis de Importaciones', etailers:'Etailers', ar:'Estado de Cuentas', mkt:'Marketing Budget', ia:'Analizar archivo con IA', notificaciones:'Notificaciones de Precios', usuarios:'Gestión de Usuarios', semaforo:'Semáforo de Stock', sugeridos:'Sugeridos de Compra', share:'Mi Participación', pbm:'Powered by MSI' };
 
 function gotoTab(tab) {
   currentTab = tab;
@@ -2252,6 +2284,7 @@ function gotoTab(tab) {
   if(tab==='imports') { renderImportsHistory(); renderImportsMonthChips(); renderImportsTab(); }
   if(tab==='etailers') renderEtailersTab();
   if(tab==='ar')       renderArTab();
+  if(tab==='mkt')      renderMktTab();
   if(tab==='notificaciones') renderNotificacionesTab();
   if(tab==='usuarios') renderUsersTab();
   if(tab==='semaforo') renderSemaforoTab();
@@ -8650,6 +8683,210 @@ async function handleRotationFiles(fileList) {
   }
   _alert(summary + unrecognizedNote + guessedWarning + upgradeNote + failedNote, {type:'success', title:'Archivos importados'});
 }
+// ─── MARKETING BUDGET ─────────────────────────────────────
+let mktSelectedQs = new Set([1, 2, 3]);
+let mktExpandedTerm = null;
+
+function _mktCleanCustomer(raw) {
+  if(!raw) return '';
+  return String(raw).split('\n')[0].trim();
+}
+
+function _mktFindHeaderRow(rows) {
+  for(let i = 0; i < Math.min(30, rows.length); i++) {
+    const row = rows[i] || [];
+    for(let j = 0; j < Math.min(5, row.length); j++) {
+      if(row[j] && String(row[j]).includes('MKT Budget Term')) {
+        return { idx: i, mktCol: j };
+      }
+    }
+  }
+  return null;
+}
+
+function parseMktBudgetFile(wb) {
+  const quarters = [];
+  const arSheets = wb.SheetNames.filter(n => /^AR\s*Q[123]$/i.test(n.trim()));
+  for(const sheetName of arSheets) {
+    const qMatch = sheetName.match(/Q(\d)/i);
+    if(!qMatch) continue;
+    const qNum = parseInt(qMatch[1]);
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header:1, raw:true, defval:null });
+    const found = _mktFindHeaderRow(rows);
+    if(!found) continue;
+    const { idx: headerIdx, mktCol } = found;
+    const header = rows[headerIdx] || [];
+    const customerCol = mktCol + 1;
+    const activityCol = mktCol + 4;
+    const totalCol = header.findIndex(v => v && String(v).toLowerCase().includes('total amount'));
+    if(totalCol === -1) continue;
+    const dataRows = [];
+    let currentTerm = null;
+    for(let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i] || [];
+      const termVal = row[mktCol];
+      if(termVal && String(termVal).trim()) currentTerm = String(termVal).trim();
+      if(!currentTerm) continue;
+      const customer = _mktCleanCustomer(row[customerCol]);
+      const rawTotal = row[totalCol];
+      const total = rawTotal != null ? (parseFloat(String(rawTotal).replace(/[^0-9.\-]/g, '')) || 0) : 0;
+      const activity = row[activityCol] ? String(row[activityCol]).split('\n')[0].trim() : '';
+      if(customer || total > 0) {
+        dataRows.push({ term: currentTerm, customer, activity, total });
+      }
+    }
+    quarters.push({ q: qNum, rows: dataRows });
+  }
+  return quarters.sort((a, b) => a.q - b.q);
+}
+
+async function handleMktFile(file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type:'array', cellDates:false });
+    const quarters = parseMktBudgetFile(wb);
+    if(!quarters.length) { _alert('No se encontraron hojas AR Q1/Q2/Q3 en el archivo.', { type:'error' }); return; }
+    db.mkt = [{ id: Date.now(), uploadedAt: new Date().toISOString(), sourceFile: file.name, quarters }];
+    saveDB();
+    renderMktTab();
+    const totalRows = quarters.reduce((s, q) => s + q.rows.length, 0);
+    _alert(`Marketing Budget cargado — ${quarters.length} trimestre(s), ${totalRows} líneas.`, { type:'success', title:'Importado' });
+  } catch(err) { _alert('Error al leer el archivo: ' + err.message, { type:'error' }); }
+}
+
+function _mktGetActiveRows() {
+  const data = (db.mkt || [])[0];
+  if(!data) return [];
+  return data.quarters
+    .filter(q => mktSelectedQs.has(q.q))
+    .flatMap(q => q.rows.map(r => ({ ...r, q: q.q })));
+}
+
+function toggleMktQ(q) {
+  if(mktSelectedQs.has(q)) {
+    if(mktSelectedQs.size > 1) mktSelectedQs.delete(q);
+  } else {
+    mktSelectedQs.add(q);
+  }
+  _mktUpdatePills();
+  renderMktTab();
+}
+
+function _mktUpdatePills() {
+  [1, 2, 3].forEach(q => {
+    const btn = document.getElementById('mkt-pill-' + q);
+    if(!btn) return;
+    btn.classList.toggle('btn-primary', mktSelectedQs.has(q));
+    btn.classList.toggle('btn', !mktSelectedQs.has(q));
+  });
+}
+
+function toggleMktTerm(term) {
+  mktExpandedTerm = mktExpandedTerm === term ? null : term;
+  renderMktTab();
+}
+
+function renderMktTab() {
+  _mktUpdatePills();
+  const wrap = document.getElementById('mkt-content');
+  if(!wrap) return;
+  const data = (db.mkt || [])[0];
+  const lastEl = document.getElementById('mkt-last-upload');
+  if(lastEl && data) lastEl.textContent = `${data.sourceFile} · ${fmtRotDate(data.uploadedAt?.slice(0, 10))}`;
+
+  if(!data) {
+    wrap.innerHTML = `<div class="empty-state"><i class="ti ti-speakerphone"></i><p>Todavía no subiste ningún Marketing Budget.</p></div>`;
+    return;
+  }
+
+  // Hide pills for quarters not in file
+  const availableQs = new Set(data.quarters.map(q => q.q));
+  [1, 2, 3].forEach(q => {
+    const btn = document.getElementById('mkt-pill-' + q);
+    if(btn) btn.style.display = availableQs.has(q) ? '' : 'none';
+  });
+
+  const rows = _mktGetActiveRows();
+  if(!rows.length) {
+    wrap.innerHTML = `<div style="font-size:13px;color:var(--text3);padding:2rem;text-align:center">Sin datos para los trimestres seleccionados.</div>`;
+    return;
+  }
+
+  // Group by term
+  const termMap = new Map();
+  for(const r of rows) {
+    if(!termMap.has(r.term)) termMap.set(r.term, []);
+    termMap.get(r.term).push(r);
+  }
+  const terms = Array.from(termMap.entries())
+    .map(([term, trows]) => ({ term, rows: trows, total: trows.reduce((s, r) => s + r.total, 0) }))
+    .sort((a, b) => b.total - a.total);
+  const grandTotal = terms.reduce((s, t) => s + t.total, 0);
+
+  // KPI bar
+  const summaryHtml = `<div class="metrics" style="margin-bottom:1.5rem">
+    <div class="metric"><div class="metric-value" style="color:var(--brand-text)">${fmtAmt(grandTotal)}</div><div class="metric-label">Total Q${Array.from(mktSelectedQs).sort().join('+Q')}</div></div>
+    <div class="metric"><div class="metric-value">${terms.length}</div><div class="metric-label">Categorías</div></div>
+    <div class="metric"><div class="metric-value">${rows.filter(r=>r.total>0).length}</div><div class="metric-label">Líneas con monto</div></div>
+  </div>`;
+
+  // Cards per term
+  const cardsHtml = terms.map(({ term, rows: trows, total }) => {
+    const isExpanded = mktExpandedTerm === term;
+    const pct = grandTotal > 0 ? (total / grandTotal * 100) : 0;
+
+    // Aggregate by customer for chart
+    const custMap = new Map();
+    for(const r of trows) {
+      if(r.total <= 0) continue;
+      const k = r.customer || '(sin nombre)';
+      custMap.set(k, (custMap.get(k) || 0) + r.total);
+    }
+    const chartPoints = Array.from(custMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([lbl, value]) => ({ label: lbl.length > 20 ? lbl.slice(0, 18) + '…' : lbl, value }));
+
+    const chartHtml = chartPoints.length
+      ? buildBarChartSVG(chartPoints, 'var(--brand)')
+      : `<div style="font-size:12px;color:var(--text3);padding:.75rem">Sin montos registrados.</div>`;
+
+    const safeTermJs = term.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const detailHtml = isExpanded ? `
+      <div style="margin-top:1rem;border-top:1px solid var(--border2);padding-top:1rem">
+        <table class="data-table" style="font-size:12px">
+          <thead><tr><th>Cliente / Destinatario</th><th>Detalle de actividad</th><th>Q</th><th style="text-align:right">Monto</th></tr></thead>
+          <tbody>${trows.map(r => `<tr>
+            <td style="font-weight:500">${esc(r.customer || '—')}</td>
+            <td style="color:var(--text3);font-size:11px">${esc(r.activity || '—')}</td>
+            <td style="color:var(--text3)">Q${r.q}</td>
+            <td style="text-align:right;font-weight:${r.total>0?'600':'400'};color:${r.total>0?'var(--text)':'var(--text3)'}">${r.total>0 ? fmtAmt(r.total) : '—'}</td>
+          </tr>`).join('')}</tbody>
+          <tfoot><tr>
+            <td colspan="3" style="font-weight:700">Total</td>
+            <td style="text-align:right;font-weight:700;color:var(--brand-text)">${fmtAmt(total)}</td>
+          </tr></tfoot>
+        </table>
+      </div>` : '';
+
+    return `<div class="ai-box" style="margin-bottom:1rem">
+      <div class="ai-box-header" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px"
+           onclick="toggleMktTerm('${safeTermJs}')">
+        <span style="color:var(--text);font-size:14px"><i class="ti ti-tag" style="color:var(--brand-text)"></i> ${esc(term)}</span>
+        <span style="display:flex;align-items:center;gap:12px;white-space:nowrap">
+          <span style="font-size:11px;color:var(--text3)">${pct.toFixed(1)}% del total</span>
+          <span style="font-weight:700;color:var(--brand-text)">${fmtAmt(total)}</span>
+          <i class="ti ti-chevron-${isExpanded?'up':'down'}" style="font-size:14px;color:var(--text3)"></i>
+        </span>
+      </div>
+      <div style="margin-top:0.75rem">${chartHtml}</div>
+      ${detailHtml}
+    </div>`;
+  }).join('');
+
+  wrap.innerHTML = summaryHtml + cardsHtml;
+}
+
 // ─── ESTADO DE CUENTAS (AR) ───────────────────────────────
 let _arExpandedDist = null;
 let _arDragSrc = null;
