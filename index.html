@@ -1472,7 +1472,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '27.08.26.7';
+const APP_VERSION = '28.08.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -8904,10 +8904,10 @@ function renderMktTab() {
 
   // ── COMPARE MODE ──────────────────────────────────────────
   if(mktViewMode === 'compare') {
-    // Build term × quarter matrix using ALL quarters (not just selected)
+    // Build term × quarter matrix using only selected quarters (pills)
     const allTerms = new Set();
     const matrix = {}; // matrix[term][q] = total
-    for(const qObj of data.quarters) {
+    for(const qObj of data.quarters.filter(q => mktSelectedQs.has(q.q))) {
       for(const r of qObj.rows) {
         if(!r.customer && r.total <= 0) continue;
         allTerms.add(r.term);
@@ -8915,7 +8915,7 @@ function renderMktTab() {
         matrix[r.term][qObj.q] = (matrix[r.term][qObj.q] || 0) + r.total;
       }
     }
-    const qs = availableQs; // [1,2,3] sorted
+    const qs = [...mktSelectedQs].sort(); // only selected quarters
     const termList = Array.from(allTerms).sort((a,b) => {
       const tA = qs.reduce((s,q) => s + (matrix[a][q]||0), 0);
       const tB = qs.reduce((s,q) => s + (matrix[b][q]||0), 0);
