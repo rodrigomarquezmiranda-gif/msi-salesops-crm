@@ -403,12 +403,12 @@ async function loadApiKey(){
 }
 
 // ── Category normalization ─────────────────────────────────────────────────────
-// Returns a valid key, or null for things we explicitly exclude (Power Cords, etc.)
-const EXCLUDE_CATS=new Set(['power cord','power cords','cable','cables','kit','kits','bundle','bundles']);
+const EXCLUDE_CATS=new Set(['power cord','power cords','cable','cables','kit','kits','bundle','bundles','accessory kit']);
+
 function normalizeCategory(raw){
-  if(!raw)return undefined; // undefined = sin categoría, sigue visible en Todas
+  if(!raw)return undefined;
   const r=String(raw).toLowerCase().trim();
-  if(EXCLUDE_CATS.has(r))return null; // null = excluir
+  if(EXCLUDE_CATS.has(r))return null;
   if(r==='vga'||r==='gpu'||r==='graphics'||r==='video card'||r==='graphics card')return 'vga';
   if(r==='monitor'||r==='monitors'||r==='display'||r==='displays')return 'monitor';
   if(r==='motherboard'||r==='motherboards'||r==='mb'||r==='mainboard')return 'motherboard';
@@ -418,7 +418,28 @@ function normalizeCategory(raw){
   if(r==='gabinete'||r==='gabinetes'||r==='case'||r==='chassis'||r==='cases')return 'gabinete';
   if(r==='cooling'||r==='cooler'||r==='coolers'||r==='fan'||r==='cpu cooler'||r==='liquid cooling')return 'cooling';
   if(r==='accesorios'||r==='accessories'||r==='accessory'||r==='perifericos'||r==='peripheral')return 'accesorios';
-  // Categoría desconocida → la dejamos pasar sin categoría específica
+  return undefined; // desconocida → fallback por descripción
+}
+
+// Clasificador por descripción — fallback cuando Firebase no tiene categoría útil
+function classifyFromDesc(desc){
+  const d=(desc||'').toUpperCase();
+  // VGA: GeForce, series RTX/GTX, líneas gaming MSI
+  if(/RTX\s*\d|GTX\s*\d|GEFORCE|RADEON|RX\s*\d{4}|GAMING X TRIO|GAMING TRIO|SUPRIM|VENTUS|MECH\s|EVOKE|TWIN FROZR/.test(d))return 'vga';
+  // Motherboard: chipsets Intel/AMD
+  if(/\b(Z890|Z790|Z690|Z590|B850|B760|B660|B560|B550|B450|X670|X570|A620|A520)\b|TOMAHAWK|TORPEDO|CARBON\s|MORTAR|UNIFY|GODLIKE|GOD LIKE|MEG\s.*BOARD|MPG\s.*BOARD|MAG\s.*BOARD|PRO\s.*BOARD/.test(d))return 'motherboard';
+  // Monitor: modelos MSI o palabras clave de display
+  if(/\bOPTIX\b|\bMPG\s+\d{2}|\bMAG\s+\d{2}|\bMEG\s+\d{2}|QD-OLED|OLED\s|RAPID IPS|\b\d{2}[""]|\bIPS\b.*HZ|\bVA\b.*HZ/.test(d))return 'monitor';
+  // Mini PC
+  if(/CUBI|MINI\s*PC/.test(d))return 'minipc';
+  // SSD
+  if(/\bSSD\b|SPATIUM|NVME|M\.2\s*\d/.test(d))return 'ssd';
+  // PSU: líneas MAG/MPG/MEG A###
+  if(/\b(MAG|MPG|MEG)\s+A\d{3}|\bPSU\b|\bATX\s*\d|\d{3,4}\s*W\b/.test(d))return 'psu';
+  // Gabinete: líneas MSI de cases
+  if(/MAG\s+FORGE|MAG\s+PANO|MPG\s+GUNGNIR|MPG\s+SEKIRA|MSI\s+CASE|CHASSIS/.test(d))return 'gabinete';
+  // Cooling: AIO, coolers
+  if(/\bAIO\b|LIQUID\s+COOL|CPU\s+COOLER|\bFROZR\b|MAG\s+CORELIQUID|CORE\s*LIQUID/.test(d))return 'cooling';
   return undefined;
 }
 
@@ -433,9 +454,13 @@ async function loadProducts(){
       const uniqueCats=[...new Set(raw.map(p=>p.category||'(sin categoría)'))].sort();
       console.log('[MSI Quiz] Categorías en price list:',uniqueCats);
       products=raw
-        .map(p=>({...p,category:normalizeCategory(p.category)}))
-        .filter(p=>p.category!==null); // null = excluido explícitamente (Power Cords, etc.)
-      // undefined = sin categoría → sigue en "Todas" pero no en pills específicas
+        .map(p=>{
+          const fromField=normalizeCategory(p.category);
+          // null = excluido explícitamente; undefined = desconocida → intentar por descripción
+          const cat=fromField===undefined?classifyFromDesc(p.desc):fromField;
+          return {...p,category:cat};
+        })
+        .filter(p=>p.category!==null);
     }
   }catch(e){console.warn('Error cargando productos:',e)}
   renderCatPills();
