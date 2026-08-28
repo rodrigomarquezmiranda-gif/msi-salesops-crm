@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MSI Training Quiz</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<style>
+:root {
+  --brand:#FF6600; --brand-soft:#ff8833;
+  --bg:#1A1F2E; --bg2:#20263A; --bg3:#161B28; --bg4:#252D3D;
+  --text:#E8EAF0; --text2:#9EA8BA; --text3:#6B7585;
+  --border:#2A3148; --border2:#33405A;
+  --green:#A3BE8C; --red:#BF616A; --blue:#5E81AC; --yellow:#EBCB8B;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;padding:1rem}
+
+/* Screens */
+.screen{display:none;width:100%;max-width:480px}
+.screen.active{display:block}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--brand);color:#fff}
+.btn-primary:not(:disabled):hover{opacity:.85}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:not(:disabled):hover{background:var(--bg2)}
+.btn-block{width:100%;justify-content:center}
+.btn-lg{padding:13px 24px;font-size:15px}
+
+/* Inputs */
+.input{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:14px;outline:none;transition:border-color .15s}
+.input:focus{border-color:var(--brand)}
+.input::placeholder{color:var(--text3)}
+
+/* Cards */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+
+/* Header */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
+.msi-mark{width:38px;height:38px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;letter-spacing:-.5px;flex-shrink:0}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:6px;border-radius:6px;transition:color .15s,background .15s}
+.icon-btn:hover{color:var(--text);background:var(--bg2)}
+
+/* Progress */
+.progress-bar{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:1.5rem}
+.progress-fill{height:100%;background:var(--brand);border-radius:2px;transition:width .35s ease}
+
+/* Option cards */
+.option-card{display:block;width:100%;padding:13px 16px;margin-bottom:10px;background:var(--bg2);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;line-height:1.45;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.option-card:hover:not(:disabled){border-color:var(--brand)}
+.option-card.selected{border-color:var(--brand);background:rgba(255,102,0,.08)}
+.option-card:disabled{cursor:default}
+
+/* Result */
+.result-circle{width:150px;height:150px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 1.5rem;border:4px solid var(--brand)}
+.result-pct{font-size:46px;font-weight:800;line-height:1;color:var(--brand)}
+.result-lbl{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* Badges */
+.badge{display:inline-flex;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:var(--bg4);color:var(--text2)}
+
+/* Dropdown */
+.search-wrap{position:relative}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border2);border-radius:8px;max-height:220px;overflow-y:auto;z-index:100;margin-top:4px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.dropdown-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border)}
+.dropdown-item:last-child{border-bottom:none}
+.dropdown-item:hover{background:var(--bg2)}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:200}
+.modal{background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:1.5rem;width:360px;max-width:90vw}
+
+/* Spinner */
+.spinner{width:44px;height:44px;border:3px solid var(--border2);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.2rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Helpers */
+.gap{display:flex;flex-direction:column;gap:12px}
+.label{font-size:12px;color:var(--text3);margin-bottom:4px}
+.error{color:var(--red);font-size:12px;margin-top:6px}
+.mt-1{margin-top:8px}
+.mt-2{margin-top:16px}
+.mt-3{margin-top:24px}
+.tc{text-align:center}
+.ts{font-size:12px;color:var(--text3)}
+
+/* Product card */
+.prod-card{margin-top:12px;padding:12px;background:var(--bg4);border-radius:8px;border:1px solid var(--border2)}
+
+/* Warn */
+.warn{padding:10px 14px;background:rgba(235,203,139,.1);border:1px solid rgba(235,203,139,.3);border-radius:8px;font-size:12px;color:var(--yellow)}
+
+@media(max-width:520px){
+  body{align-items:stretch;justify-content:flex-start}
+  .screen{max-width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SCREEN: Login ═════════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="tc" style="margin-bottom:2rem">
+    <div class="msi-mark" style="margin:0 auto 14px;width:54px;height:54px;font-size:18px;border-radius:12px">MSI</div>
+    <div style="font-size:24px;font-weight:800">Training Quiz</div>
+    <div class="ts mt-1">Capacitación de productos · MSI Argentina</div>
+  </div>
+  <div class="card gap">
+    <div>
+      <div class="label">Correo electrónico</div>
+      <input class="input" type="email" id="login-email" placeholder="tu@email.com" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div>
+      <div class="label">Contraseña</div>
+      <input class="input" type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div id="login-err" class="error" style="display:none"></div>
+    <button class="btn btn-primary btn-block btn-lg" id="login-btn" onclick="doLogin()">
+      <i class="ti ti-login"></i> Ingresar
+    </button>
+    <div class="ts tc">Usá las mismas credenciales que el CRM</div>
+  </div>
+</div>
+
+<!-- ══ SCREEN: Home ══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-home">
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="msi-mark">MSI</div>
+      <div>
+        <div style="font-size:17px;font-weight:700">Training Quiz</div>
+        <div class="ts" id="home-user" style="font-size:11px"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:4px">
+      <button class="icon-btn" onclick="showSettings()" title="API Key"><i class="ti ti-settings" style="font-size:19px"></i></button>
+      <button class="icon-btn" onclick="doLogout()" title="Cerrar sesión"><i class="ti ti-logout" style="font-size:19px"></i></button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:15px;font-weight:600;margin-bottom:12px">Elegí un producto para practicar</div>
+    <div class="search-wrap">
+      <input class="input" type="text" id="prod-search" placeholder="Buscá por nombre o código…"
+             oninput="onSearch(this.value)" autocomplete="off"/>
+      <div class="dropdown" id="prod-dd" style="display:none"></div>
+    </div>
+    <div class="prod-card" id="prod-card" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div>
+          <div id="prod-name" style="font-weight:600;font-size:13px;line-height:1.3"></div>
+          <div id="prod-code" style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px"></div>
+        </div>
+        <span class="badge" id="prod-cat"></span>
+      </div>
+      <div id="prod-link" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <div class="warn mt-2" id="no-key-warn" style="display:none">
+    <i class="ti ti-alert-triangle"></i>
+    Configurá tu Claude API Key antes de continuar.
+    <a href="#" onclick="showSettings();return false" style="color:var(--yellow);font-weight:600">Configurar →</a>
+  </div>
+
+  <button class="btn btn-primary btn-block btn-lg mt-2" id="gen-btn" onclick="generateQuiz()" disabled>
+    <i class="ti ti-bulb"></i> Generar Quiz
+  </button>
+  <div class="ts tc mt-1">Se generan 10 preguntas sobre el producto seleccionado</div>
+</div>
+
+<!-- ══ SCREEN: Loading ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-loading">
+  <div class="tc">
+    <div class="spinner"></div>
+    <div style="font-size:16px;font-weight:600">Generando preguntas…</div>
+    <div class="ts mt-1" id="load-prod"></div>
+    <div class="ts mt-2">Esto puede tardar unos segundos</div>
+  </div>
+</div>
+
+<!-- ══ SCREEN: Quiz ══════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-quiz">
+  <div class="header" style="margin-bottom:.75rem">
+    <div class="ts" id="q-label">Pregunta 1 de 10</div>
+    <div class="ts" id="q-prod" style="font-size:11px;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+  </div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="q-fill" style="width:10%"></div>
+  </div>
+  <div class="card" style="margin-bottom:1rem">
+    <div style="font-size:16px;font-weight:600;line-height:1.45" id="q-text"></div>
+  </div>
+  <div id="q-opts"></div>
+  <button class="btn btn-primary btn-block mt-2" id="q-next" onclick="nextQ()" disabled>
+    Siguiente <i class="ti ti-arrow-right"></i>
+  </button>
+</div>
+
+<!-- ══ SCREEN: Results ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-results">
+  <div class="tc">
+    <div class="result-circle" id="res-circle">
+      <div class="result-pct" id="res-pct">0%</div>
+      <div class="result-lbl">CORRECTO</div>
+    </div>
+    <div style="font-size:21px;font-weight:700;margin-bottom:6px" id="res-title"></div>
+    <div class="ts" id="res-sub"></div>
+  </div>
+  <div class="gap mt-3">
+    <button class="btn btn-primary btn-block btn-lg" onclick="generateQuiz()">
+      <i class="ti ti-refresh"></i> Nuevo quiz (mismo producto)
+    </button>
+    <button class="btn btn-ghost btn-block" onclick="showScreen('home')">
+      <i class="ti ti-arrow-left"></i> Elegir otro producto
+    </button>
+  </div>
+</div>
+
+<!-- ══ MODAL: Settings ═══════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-settings" style="display:none"
+     onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <div style="font-size:16px;font-weight:600;margin-bottom:1rem">
+      <i class="ti ti-key" style="color:var(--brand)"></i> Claude API Key
+    </div>
+    <div class="gap">
+      <div>
+        <div class="label">Anthropic API Key</div>
+        <input class="input" type="password" id="set-key" placeholder="sk-ant-…"/>
+        <div class="ts mt-1">
+          Se guarda en este dispositivo.
+          <a href="https://console.anthropic.com/keys" target="_blank" style="color:var(--brand)">
+            Obtener clave →</a>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="closeSettings()">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveSettings()">
+          <i class="ti ti-check"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Firebase ─────────────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey:            "AIzaSyCzw8L-EsO-NRN3XLOuQTGtTknBe5F8x-0",
+  authDomain:        "msi-crm.firebaseapp.com",
+  databaseURL:       "https://msi-crm-default-rtdb.firebaseio.com",
+  projectId:         "msi-crm",
+  storageBucket:     "msi-crm.firebasestorage.app",
+  messagingSenderId: "552084412248",
+  appId:             "1:552084412248:web:e5a9c41bc52c94e8f6b72d"
+});
+const fbAuth = firebase.auth();
+const fbDB   = firebase.database();
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let products = [];
+let selectedProd = null;
+let questions = [];
+let currentQ = 0;
+let answers = [];
+let chosenAnswer = null;
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+fbAuth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('home-user').textContent = user.email;
+    loadProducts();
+    showScreen('home');
+  } else {
+    showScreen('login');
+  }
+});
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const btn   = document.getElementById('login-btn');
+  const err   = document.getElementById('login-err');
+  err.style.display = 'none';
+  if (!email || !pass) {
+    err.textContent = 'Completá email y contraseña.';
+    err.style.display = 'block';
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2"></i> Ingresando…';
+  try {
+    await fbAuth.signInWithEmailAndPassword(email, pass);
+  } catch (e) {
+    const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password'
+      ? 'Email o contraseña incorrectos.'
+      : (e.code === 'auth/user-not-found' ? 'Usuario no encontrado.' : e.message);
+    err.textContent = msg;
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-login"></i> Ingresar';
+  }
+}
+
+async function doLogout() {
+  if (!confirm('¿Cerrar sesión?')) return;
+  await fbAuth.signOut();
+  products = [];
+  selectedProd = null;
+}
+
+// ─── Price list ───────────────────────────────────────────────────────────────
+async function loadProducts() {
+  try {
+    const snap = await fbDB.ref('salesops_pricelist').get();
+    if (snap.exists()) {
+      const pl = JSON.parse(snap.val());
+      products = (pl.products || []).filter(p => !p.isSubSection && p.desc && p.code);
+    }
+  } catch(e) {
+    console.warn('Error cargando productos:', e);
+  }
+}
+
+// ─── Product search ───────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const CAT_LABEL = {vga:'GPU',motherboard:'Motherboard',monitor:'Monitor',minipc:'Mini PC',ssd:'SSD',psu:'PSU',gabinete:'Gabinete',cooling:'Cooling',accesorios:'Accesorios'};
+function catLbl(c) { return CAT_LABEL[c] || c || 'Otro'; }
+
+function onSearch(val) {
+  const q = val.trim().toLowerCase();
+  const dd = document.getElementById('prod-dd');
+  if (!q || !products.length) { dd.style.display = 'none'; return; }
+  const hits = products.filter(p =>
+    p.desc.toLowerCase().includes(q) || (p.code || '').toLowerCase().includes(q)
+  ).slice(0, 12);
+  if (!hits.length) { dd.style.display = 'none'; return; }
+  dd.innerHTML = hits.map(p => {
+    const idx = products.indexOf(p);
+    return `<div class="dropdown-item" onclick="selectProd(${idx})">
+      <div style="font-size:13px;font-weight:500">${esc(p.desc)}</div>
+      <div style="font-size:11px;color:var(--text3);font-family:monospace">${esc(p.code || '')} · ${esc(catLbl(p.category))}</div>
+    </div>`;
+  }).join('');
+  dd.style.display = 'block';
+}
+
+function selectProd(idx) {
+  selectedProd = products[idx];
+  document.getElementById('prod-dd').style.display = 'none';
+  document.getElementById('prod-search').value = selectedProd.desc;
+  document.getElementById('prod-card').style.display = 'block';
+  document.getElementById('prod-name').textContent = selectedProd.desc;
+  document.getElementById('prod-code').textContent = selectedProd.code || '';
+  document.getElementById('prod-cat').textContent = catLbl(selectedProd.category);
+  document.getElementById('prod-link').innerHTML = selectedProd.ficha
+    ? `<a href="${esc(selectedProd.ficha)}" target="_blank" style="font-size:11px;color:var(--brand)"><i class="ti ti-external-link"></i> Ver ficha técnica</a>`
+    : '';
+  updateGenBtn();
+}
+
+function updateGenBtn() {
+  const hasKey = !!(localStorage.getItem('msi_quiz_key') || '').trim();
+  const hasProd = !!selectedProd;
+  document.getElementById('gen-btn').disabled = !hasProd;
+  document.getElementById('no-key-warn').style.display = (hasProd && !hasKey) ? 'block' : 'none';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) {
+    const dd = document.getElementById('prod-dd');
+    if (dd) dd.style.display = 'none';
+  }
+});
+
+// ─── Settings ─────────────────────────────────────────────────────────────────
+function showSettings() {
+  document.getElementById('set-key').value = localStorage.getItem('msi_quiz_key') || '';
+  document.getElementById('modal-settings').style.display = 'flex';
+}
+function closeSettings() {
+  document.getElementById('modal-settings').style.display = 'none';
+}
+function saveSettings() {
+  const k = document.getElementById('set-key').value.trim();
+  if (k) localStorage.setItem('msi_quiz_key', k);
+  else localStorage.removeItem('msi_quiz_key');
+  closeSettings();
+  updateGenBtn();
+}
+
+// ─── Generate quiz (Claude API) ───────────────────────────────────────────────
+async function generateQuiz() {
+  const apiKey = (localStorage.getItem('msi_quiz_key') || '').trim();
+  if (!apiKey) { showSettings(); return; }
+  if (!selectedProd) return;
+
+  showScreen('loading');
+  document.getElementById('load-prod').textContent = selectedProd.desc;
+
+  const fichaLine = selectedProd.ficha ? `URL ficha técnica: ${selectedProd.ficha}` : '';
+  const prompt = `Sos un experto en productos MSI con amplio conocimiento de su línea de productos. Generá exactamente 10 preguntas de opción múltiple sobre el siguiente producto para capacitar vendedores de distribuidores MSI Argentina.
+
+Producto: ${selectedProd.desc}
+Categoría: ${catLbl(selectedProd.category)}
+Código: ${selectedProd.code || 'N/A'}
+${fichaLine}
+
+Reglas:
+1. Cada pregunta tiene exactamente 3 opciones: 1 correcta y 2 incorrectas plausibles
+2. Enfocate en KEY POINTS del producto: características destacadas, ventajas competitivas, segmento de usuario al que apunta, casos de uso ideales
+3. NO hagas preguntas sobre especificaciones técnicas muy específicas o irrelevantes para un vendedor
+4. Las preguntas deben ayudar al vendedor a RECOMENDAR mejor el producto a sus clientes
+5. Redacción en español argentino, natural y directo
+6. Las opciones incorrectas deben ser plausibles pero claramente incorrectas para quien conoce el producto
+7. Variá el índice correcto aleatoriamente entre las 10 preguntas — no lo pongas siempre en la misma posición
+8. Tipos de preguntas útiles: ¿Para qué tipo de usuario está pensado este producto? ¿Cuál es su principal diferenciador? ¿Qué característica lo hace mejor que la competencia en su rango?
+
+Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
+{
+  "questions": [
+    {
+      "q": "Texto de la pregunta",
+      "options": ["Opción A", "Opción B", "Opción C"],
+      "correct": 0
+    }
+  ]
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      throw new Error(errBody.error?.message || `Error HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('La IA no devolvió JSON válido');
+    const parsed = JSON.parse(match[0]);
+    if (!Array.isArray(parsed.questions) || parsed.questions.length < 5) {
+      throw new Error('Se generaron pocas preguntas. Intentá de nuevo.');
+    }
+
+    questions = parsed.questions.slice(0, 10);
+    currentQ = 0;
+    answers = [];
+    chosenAnswer = null;
+    startQuiz();
+
+  } catch(e) {
+    showScreen('home');
+    alert('Error al generar el quiz:\n' + e.message);
+  }
+}
+
+// ─── Quiz ─────────────────────────────────────────────────────────────────────
+function startQuiz() {
+  showScreen('quiz');
+  renderQ();
+}
+
+function renderQ() {
+  const q = questions[currentQ];
+  const total = questions.length;
+
+  document.getElementById('q-label').textContent = `Pregunta ${currentQ + 1} de ${total}`;
+  document.getElementById('q-prod').textContent = selectedProd.desc;
+  document.getElementById('q-fill').style.width = ((currentQ / total) * 100) + '%';
+  document.getElementById('q-text').textContent = q.q;
+
+  const letters = ['A', 'B', 'C'];
+  document.getElementById('q-opts').innerHTML = q.options.map((opt, i) =>
+    `<button class="option-card" id="opt${i}" onclick="pickOpt(${i})">
+      <span style="font-weight:700;color:var(--brand);margin-right:8px">${letters[i]}.</span>${esc(opt)}
+    </button>`
+  ).join('');
+
+  const nextBtn = document.getElementById('q-next');
+  nextBtn.disabled = true;
+  nextBtn.innerHTML = 'Siguiente <i class="ti ti-arrow-right"></i>';
+  chosenAnswer = null;
+}
+
+function pickOpt(idx) {
+  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+  const el = document.getElementById('opt' + idx);
+  if (el) el.classList.add('selected');
+  chosenAnswer = idx;
+
+  const nextBtn = document.getElementById('q-next');
+  nextBtn.disabled = false;
+  const isLast = currentQ === questions.length - 1;
+  nextBtn.innerHTML = isLast
+    ? 'Ver resultados <i class="ti ti-check"></i>'
+    : 'Siguiente <i class="ti ti-arrow-right"></i>';
+}
+
+function nextQ() {
+  if (chosenAnswer === null) return;
+  answers.push({ selected: chosenAnswer, correct: questions[currentQ].correct });
+  currentQ++;
+  if (currentQ >= questions.length) showResults();
+  else renderQ();
+}
+
+// ─── Results ──────────────────────────────────────────────────────────────────
+function showResults() {
+  const correct = answers.filter(a => a.selected === a.correct).length;
+  const total   = answers.length;
+  const pct     = Math.round((correct / total) * 100);
+
+  document.getElementById('res-pct').textContent = pct + '%';
+
+  const color = pct >= 80 ? 'var(--green)' : pct >= 60 ? 'var(--yellow)' : 'var(--red)';
+  document.getElementById('res-circle').style.borderColor = color;
+  document.getElementById('res-pct').style.color = color;
+
+  const [title, sub] =
+    pct >= 90 ? ['¡Excelente!',         '¡Sos un experto en este producto!'] :
+    pct >= 70 ? ['¡Bien hecho!',        `${correct} de ${total} correctas. Seguí practicando.`] :
+    pct >= 50 ? ['Puede mejorar',       `${correct} de ${total} correctas. Repasá el producto.`] :
+               ['A seguir estudiando',  `${correct} de ${total} correctas. Revisá la ficha técnica.`];
+
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-sub').textContent   = sub;
+
+  // Fill progress bar to 100%
+  document.getElementById('q-fill') && (document.getElementById('q-fill').style.width = '100%');
+
+  showScreen('results');
+}
+</script>
+</body>
+</html>
