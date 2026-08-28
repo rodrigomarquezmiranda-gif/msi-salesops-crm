@@ -717,10 +717,11 @@ async function loadHistory(){
   if(!currentUser)return;
   let rows=[];
   try{
-    const snap=await fbDB.ref(`quiz_results/${currentUser.uid}`).orderByChild('ts').limitToLast(50).get();
+    const snap=await fbDB.ref(`quiz_results/${currentUser.uid}`).get();
     if(snap.exists())snap.forEach(c=>rows.push(c.val()));
   }catch(e){console.warn(e)}
   rows.sort((a,b)=>b.ts-a.ts);
+  rows=rows.slice(0,50);
 
   const overall=rows.length?Math.round(rows.reduce((s,r)=>s+r.pct,0)/rows.length):null;
   document.getElementById('hist-overall').textContent=overall!==null?`Promedio: ${overall}%`:'';
