@@ -450,7 +450,7 @@ function setCat(el,cat){
   document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   selectedCat=cat||null;
-  // reset product if it doesn't match new category
+  // reset product selection if category changed and doesn't match
   if(selectedCat&&selectedProd&&selectedProd.category!==selectedCat){
     selectedProd=null;
     document.getElementById('prod-search').value='';
@@ -458,7 +458,8 @@ function setCat(el,cat){
     document.getElementById('stat-chips').style.display='none';
     updateGenBtn();
   }
-  onSearch(document.getElementById('prod-search').value);
+  // setTimeout so the click-outside handler fires first, then we reopen
+  setTimeout(()=>onSearch(document.getElementById('prod-search').value),50);
 }
 
 // ── Product search ────────────────────────────────────────────────────────────
@@ -502,7 +503,10 @@ function updateGenBtn(){
   document.getElementById('no-key-warn').style.display=(selectedProd&&!hasKey)?'block':'none';
 }
 
-document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('prod-dd').style.display='none';});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.search-wrap')&&!e.target.closest('.cat-pills'))
+    document.getElementById('prod-dd').style.display='none';
+});
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 function showSettings(){document.getElementById('set-key').value=localStorage.getItem('msi_quiz_key')||'';document.getElementById('modal-settings').style.display='flex'}
@@ -562,7 +566,12 @@ Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
     if(!match)throw new Error('Respuesta inválida de la IA');
     const parsed=JSON.parse(match[0]);
     if(!Array.isArray(parsed.questions)||parsed.questions.length<5)throw new Error('Se generaron pocas preguntas. Intentá de nuevo.');
-    questions=parsed.questions.slice(0,10);
+    questions=parsed.questions.slice(0,10).map(q=>{
+      // Shuffle options so the correct answer isn't always A
+      const idx=[0,1,2];
+      for(let i=2;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
+      return{...q,options:idx.map(i=>q.options[i]),correct:idx.indexOf(q.correct)};
+    });
     currentQ=0;answers=[];chosenAnswer=null;quizPhase='selecting';
     showScreen('quiz');renderQ();
   }catch(e){
@@ -692,10 +701,15 @@ function showResults(){
 
 // ── Save result to Firebase ────────────────────────────────────────────────────
 async function saveQuizResult(correct,total,pct){
-  if(!currentUser||!selectedProd)return;
+  if(!currentUser){console.warn('saveQuizResult: no currentUser');return;}
+  if(!selectedProd){console.warn('saveQuizResult: no selectedProd');return;}
   const record={ts:Date.now(),product:selectedProd.desc,code:selectedProd.code||'',category:selectedProd.category||'',correct,total,pct,email:currentUser.email||''};
-  try{await fbDB.ref(`quiz_results/${currentUser.uid}`).push(record);}
-  catch(e){console.warn('No se pudo guardar resultado:',e)}
+  try{
+    await fbDB.ref(`quiz_results/${currentUser.uid}`).push(record);
+    console.log('✓ Resultado guardado:',pct+'%',record.product);
+  }catch(e){
+    console.error('✗ Error guardando resultado:',e.code,e.message);
+  }
 }
 
 // ── History screen ─────────────────────────────────────────────────────────────
