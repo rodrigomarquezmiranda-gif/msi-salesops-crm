@@ -1472,7 +1472,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '28.08.26.3';
+const APP_VERSION = '28.08.26.4';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -1729,10 +1729,9 @@ function saveDB() {
   // salesops_resellers: cualquier rol puede modificarlo (resellers, targets, manual)
   const resellersSave = IDB.set('salesops_resellers', JSON.stringify({ resellers: db.resellers||{t1:[],t2:[],t3:[]}, resellerTargets: db.resellerTargets||{}, resellerManual: db.resellerManual||{} }));
 
-  // Resto de arrays: solo admin/roles completos los escriben
-  const otherSaves = _currentRole === 'reader-pi'
-    ? []   // reader-pi solo tiene acceso a salesops_pi y salesops_resellers (Firebase rules)
-    : [
+  // Resto de arrays: solo admin los escribe (reader-pi, readonly y distributor no tienen permiso Firebase)
+  const otherSaves = _currentRole === 'admin'
+    ? [
         IDB.set(_yk('salesops_ar'),      JSON.stringify(db.ar           ||[])),
         IDB.set(_yk('salesops_mkt'),     JSON.stringify(db.mkt          ||[])),
         IDB.set(_yk('salesops_ber'),     JSON.stringify(db.ber          ||[])),
@@ -1742,7 +1741,8 @@ function saveDB() {
         IDB.set(_yk('salesops_weekly'),  JSON.stringify(db.weeklyReports||[])),
         IDB.set(_yk('salesops_imports'), JSON.stringify(db.imports      ||[])),
         IDB.set(_yk('salesops_meta'),    JSON.stringify({_migrations: db._migrations||{}})),
-      ];
+      ]
+    : [];
 
   Promise.all([piSave, resellersSave, ...otherSaves])
     .then(() => { setTimeout(() => { _isSavingLocally = false; }, 800); })
