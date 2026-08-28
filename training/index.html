@@ -403,21 +403,23 @@ async function loadApiKey(){
 }
 
 // ── Category normalization ─────────────────────────────────────────────────────
-const VALID_CATS=new Set(['vga','motherboard','monitor','minipc','ssd','psu','gabinete','cooling','accesorios']);
+// Returns a valid key, or null for things we explicitly exclude (Power Cords, etc.)
+const EXCLUDE_CATS=new Set(['power cord','power cords','cable','cables','kit','kits','bundle','bundles']);
 function normalizeCategory(raw){
-  if(!raw)return null;
+  if(!raw)return undefined; // undefined = sin categoría, sigue visible en Todas
   const r=String(raw).toLowerCase().trim();
-  if(r==='vga'||r==='gpu'||r==='graphics'||r==='video card')return 'vga';
+  if(EXCLUDE_CATS.has(r))return null; // null = excluir
+  if(r==='vga'||r==='gpu'||r==='graphics'||r==='video card'||r==='graphics card')return 'vga';
   if(r==='monitor'||r==='monitors'||r==='display'||r==='displays')return 'monitor';
-  if(r==='motherboard'||r==='mb'||r==='mainboard')return 'motherboard';
-  if(r==='minipc'||r==='mini pc'||r==='nuc'||r==='mini-pc')return 'minipc';
-  if(r==='ssd'||r==='storage'||r==='solid state')return 'ssd';
-  if(r==='psu'||r==='power supply'||r==='fuente')return 'psu';
-  if(r==='gabinete'||r==='case'||r==='chassis')return 'gabinete';
-  if(r==='cooling'||r==='cooler'||r==='fan'||r==='cpu cooler')return 'cooling';
-  if(r==='accesorios'||r==='accessories'||r==='accessory')return 'accesorios';
-  // Descartados: Power Cords, cables, kits, etc.
-  return null;
+  if(r==='motherboard'||r==='motherboards'||r==='mb'||r==='mainboard')return 'motherboard';
+  if(r==='minipc'||r==='mini pc'||r==='mini-pc'||r==='nuc'||r==='cubi'||r==='barebones'||r==='barebone')return 'minipc';
+  if(r==='ssd'||r==='storage'||r==='solid state'||r==='m.2'||r==='nvme')return 'ssd';
+  if(r==='psu'||r==='power supply'||r==='fuente'||r==='power supplies')return 'psu';
+  if(r==='gabinete'||r==='gabinetes'||r==='case'||r==='chassis'||r==='cases')return 'gabinete';
+  if(r==='cooling'||r==='cooler'||r==='coolers'||r==='fan'||r==='cpu cooler'||r==='liquid cooling')return 'cooling';
+  if(r==='accesorios'||r==='accessories'||r==='accessory'||r==='perifericos'||r==='peripheral')return 'accesorios';
+  // Categoría desconocida → la dejamos pasar sin categoría específica
+  return undefined;
 }
 
 // ── Price list ────────────────────────────────────────────────────────────────
@@ -426,10 +428,14 @@ async function loadProducts(){
     const snap=await fbDB.ref('salesops_pricelist').get();
     if(snap.exists()){
       const pl=JSON.parse(snap.val());
-      products=(pl.products||[])
-        .filter(p=>!p.isSubSection&&p.desc&&p.code)
+      const raw=(pl.products||[]).filter(p=>!p.isSubSection&&p.desc&&p.code);
+      // Log unique raw categories for debugging
+      const uniqueCats=[...new Set(raw.map(p=>p.category||'(sin categoría)'))].sort();
+      console.log('[MSI Quiz] Categorías en price list:',uniqueCats);
+      products=raw
         .map(p=>({...p,category:normalizeCategory(p.category)}))
-        .filter(p=>p.category!==null);
+        .filter(p=>p.category!==null); // null = excluido explícitamente (Power Cords, etc.)
+      // undefined = sin categoría → sigue en "Todas" pero no en pills específicas
     }
   }catch(e){console.warn('Error cargando productos:',e)}
   renderCatPills();
@@ -437,7 +443,8 @@ async function loadProducts(){
 
 // ── Category pills ─────────────────────────────────────────────────────────────
 function renderCatPills(){
-  const cats=[...new Set(products.map(p=>p.category).filter(Boolean))];
+  // Only show pills for known, valid categories (not undefined)
+  const cats=[...new Set(products.map(p=>p.category).filter(c=>c&&c!==undefined))];
   const order=['vga','motherboard','monitor','minipc','ssd','psu','gabinete','cooling','accesorios'];
   cats.sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return(ia<0?99:ia)-(ib<0?99:ib);});
   const wrap=document.getElementById('cat-pills');
