@@ -402,11 +402,35 @@ async function loadApiKey(){
   }catch(e){}
 }
 
+// ── Category normalization ─────────────────────────────────────────────────────
+const VALID_CATS=new Set(['vga','motherboard','monitor','minipc','ssd','psu','gabinete','cooling','accesorios']);
+function normalizeCategory(raw){
+  if(!raw)return null;
+  const r=String(raw).toLowerCase().trim();
+  if(r==='vga'||r==='gpu'||r==='graphics'||r==='video card')return 'vga';
+  if(r==='monitor'||r==='monitors'||r==='display'||r==='displays')return 'monitor';
+  if(r==='motherboard'||r==='mb'||r==='mainboard')return 'motherboard';
+  if(r==='minipc'||r==='mini pc'||r==='nuc'||r==='mini-pc')return 'minipc';
+  if(r==='ssd'||r==='storage'||r==='solid state')return 'ssd';
+  if(r==='psu'||r==='power supply'||r==='fuente')return 'psu';
+  if(r==='gabinete'||r==='case'||r==='chassis')return 'gabinete';
+  if(r==='cooling'||r==='cooler'||r==='fan'||r==='cpu cooler')return 'cooling';
+  if(r==='accesorios'||r==='accessories'||r==='accessory')return 'accesorios';
+  // Descartados: Power Cords, cables, kits, etc.
+  return null;
+}
+
 // ── Price list ────────────────────────────────────────────────────────────────
 async function loadProducts(){
   try{
     const snap=await fbDB.ref('salesops_pricelist').get();
-    if(snap.exists()){const pl=JSON.parse(snap.val());products=(pl.products||[]).filter(p=>!p.isSubSection&&p.desc&&p.code);}
+    if(snap.exists()){
+      const pl=JSON.parse(snap.val());
+      products=(pl.products||[])
+        .filter(p=>!p.isSubSection&&p.desc&&p.code)
+        .map(p=>({...p,category:normalizeCategory(p.category)}))
+        .filter(p=>p.category!==null);
+    }
   }catch(e){console.warn('Error cargando productos:',e)}
   renderCatPills();
 }
