@@ -514,7 +514,7 @@
         <i class="ti ti-robot" style="color:#7CBAA0"></i> Analizar con IA
       </button>
       <button class="nav-item" onclick="window.open('./training/index.html','_blank')" title="Quiz de capacitación de productos MSI">
-        <i class="ti ti-school" style="color:#A3BE8C"></i> Training Quiz
+        <i class="ti ti-school" style="color:#A3BE8C"></i> MSI Quiz
       </button>
       <button class="nav-item" id="nav-notificaciones" onclick="gotoTab('notificaciones')">
         <i class="ti ti-bell-ringing" style="color:#EBCB8B"></i> Notificaciones
@@ -1475,7 +1475,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '28.08.26.5';
+const APP_VERSION = '28.08.26.6';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -10963,7 +10963,7 @@ function renderResellerTab(tier) {
         <button class="btn${evolOpen?' btn-primary':''}" onclick="_rsToggleEvol('${tier}')" style="${evolOpen?'':'color:'+tierColor+';border-color:'+tierColor+'40'}">
           <i class="ti ti-chart-line" style="font-size:13px"></i> Evolución
         </button>
-        <button class="btn btn-primary" onclick="openAddResellerModal('${tier}')"><i class="ti ti-plus" style="font-size:13px"></i> Agregar reseller</button>
+        <button class="btn btn-primary" onclick="openAddResellerModal('${tier}',event)"><i class="ti ti-plus" style="font-size:13px"></i> Agregar reseller</button>
       </div>
     </div>`;
 
@@ -11135,27 +11135,53 @@ async function editResellerManual(resellerId, lineKey, monthKey, tier) {
 }
 
 function buildAddResellerModal(tier) {
-  return `<div id="add-reseller-modal-${tier}" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:none;align-items:center;justify-content:center">
-    <div style="background:var(--bg);border-radius:12px;padding:24px;width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+  return `
+    <div id="add-reseller-modal-${tier}" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000"></div>
+    <div id="add-reseller-card-${tier}" style="display:none;position:fixed;z-index:1001;background:var(--bg);border-radius:12px;padding:24px;width:420px;max-width:calc(100vw - 32px);box-shadow:0 8px 32px rgba(0,0,0,0.4)">
       <div style="font-size:16px;font-weight:700;margin-bottom:16px">Agregar Reseller a ${tier.toUpperCase()}</div>
       <div class="field"><label>Nombre comercial (nombre fantasía)</label><input id="new-reseller-name-${tier}" type="text" placeholder="Ej: GAMING CITY" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%" /></div>
       <div class="field"><label>CUIT(s) <span style="color:var(--text3);font-weight:400">(uno por línea — pueden ser varios)</span></label><textarea id="new-reseller-cuit-${tier}" rows="3" placeholder="30-71797078-7&#10;20-21140851-1" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical;font-family:monospace"></textarea></div>
       <div class="field"><label>Alias adicionales <span style="color:var(--text3);font-weight:400">(uno por línea)</span></label><textarea id="new-reseller-aliases-${tier}" rows="2" placeholder="Nombre legal, razón social, u otras variantes que aparezcan en los reportes" style="background:var(--bg2);border:0.5px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;width:100%;resize:vertical"></textarea></div>
       <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
-        <button class="btn" onclick="document.getElementById('add-reseller-modal-${tier}').style.display='none'">Cancelar</button>
+        <button class="btn" onclick="_closeAddResellerModal('${tier}')">Cancelar</button>
         <button class="btn btn-primary" onclick="saveNewReseller('${tier}')">Agregar</button>
       </div>
-    </div>
-  </div>`;
+    </div>`;
 }
 
-function openAddResellerModal(tier) {
-  const modal = document.getElementById('add-reseller-modal-' + tier);
-  if(!modal) { renderResellerTab(tier); setTimeout(()=>openAddResellerModal(tier),100); return; }
-  document.getElementById('new-reseller-name-' + tier).value = '';
-  document.getElementById('new-reseller-cuit-' + tier).value = '';
+function _closeAddResellerModal(tier) {
+  const overlay = document.getElementById('add-reseller-modal-' + tier);
+  const card    = document.getElementById('add-reseller-card-'  + tier);
+  if(overlay) overlay.style.display = 'none';
+  if(card)    card.style.display    = 'none';
+}
+
+function openAddResellerModal(tier, evt) {
+  const overlay = document.getElementById('add-reseller-modal-' + tier);
+  const card    = document.getElementById('add-reseller-card-'  + tier);
+  if(!overlay || !card) { renderResellerTab(tier); setTimeout(()=>openAddResellerModal(tier,evt),100); return; }
+  document.getElementById('new-reseller-name-'    + tier).value = '';
+  document.getElementById('new-reseller-cuit-'    + tier).value = '';
   document.getElementById('new-reseller-aliases-' + tier).value = '';
-  modal.style.display = 'flex';
+  overlay.style.display = 'block';
+  card.style.display = 'block';
+  // Posicionar el card cerca del botón que disparó el evento
+  if(evt) {
+    const btn  = evt.currentTarget || evt.target;
+    const rect = btn.getBoundingClientRect();
+    const cw   = Math.min(420, window.innerWidth - 32);
+    let left   = rect.left;
+    let top    = rect.bottom + 8;
+    if(left + cw > window.innerWidth - 16) left = window.innerWidth - cw - 16;
+    if(left < 8) left = 8;
+    // Si no hay espacio abajo, mostrarlo arriba del botón
+    const cardH = 380; // altura estimada
+    if(top + cardH > window.innerHeight - 16) top = Math.max(8, rect.top - cardH - 8);
+    card.style.left  = left + 'px';
+    card.style.top   = top  + 'px';
+    card.style.width = cw   + 'px';
+  }
+  setTimeout(() => document.getElementById('new-reseller-name-' + tier)?.focus(), 50);
 }
 
 function saveNewReseller(tier) {
@@ -11170,7 +11196,7 @@ function saveNewReseller(tier) {
   if(!db.resellers[tier]) db.resellers[tier] = [];
   db.resellers[tier].push({ id, name, cuits, aliases });
   saveDB();
-  document.getElementById('add-reseller-modal-' + tier).style.display = 'none';
+  _closeAddResellerModal(tier);
   renderResellerTab(tier);
 }
 

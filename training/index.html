@@ -3,98 +3,125 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>MSI Training Quiz</title>
+<title>MSI Quiz</title>
+<link rel="icon" href="../favicon.png"/>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css"/>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
-:root {
-  --brand:#FF6600; --brand-soft:#ff8833;
-  --bg:#1A1F2E; --bg2:#20263A; --bg3:#161B28; --bg4:#252D3D;
-  --text:#E8EAF0; --text2:#9EA8BA; --text3:#6B7585;
-  --border:#2A3148; --border2:#33405A;
-  --green:#A3BE8C; --red:#BF616A; --blue:#5E81AC; --yellow:#EBCB8B;
+:root{
+  --brand:#FF6600;--brand2:#cc4400;
+  --bg:#1A1A22;--bg2:#22222E;--bg3:#16161E;--bg4:#28283A;
+  --text:#E8EAF0;--text2:#9EA8BA;--text3:#6B7585;
+  --border:#2A3148;--border2:#33405A;
+  --green:#A3BE8C;--red:#BF616A;--blue:#5E81AC;--yellow:#EBCB8B;
 }
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;padding:1rem}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;padding:1rem}
 
-/* Screens */
-.screen{display:none;width:100%;max-width:480px}
-.screen.active{display:block}
+.screen{display:none;width:100%;max-width:460px}
+.screen.active{display:block;animation:fadeUp .25s ease}
+
+/* MSI mark */
+.msi-mark{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--brand);font-weight:900;font-size:13px;color:#fff;letter-spacing:-.5px;box-shadow:0 2px 8px rgba(255,102,0,.35)}
+.msi-mark-lg{width:62px;height:62px;border-radius:14px;font-size:19px}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:opacity .15s}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-.btn-primary{background:var(--brand);color:#fff}
-.btn-primary:not(:disabled):hover{opacity:.85}
-.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
-.btn-ghost:not(:disabled):hover{background:var(--bg2)}
-.btn-block{width:100%;justify-content:center}
-.btn-lg{padding:13px 24px;font-size:15px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;width:100%}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+.btn-primary{background:var(--brand);color:#fff;box-shadow:0 3px 14px rgba(255,102,0,.3)}
+.btn-primary:not(:disabled):hover{opacity:.9;transform:translateY(-1px);box-shadow:0 5px 18px rgba(255,102,0,.4)}
+.btn-ghost{background:transparent;color:var(--text2);border:1.5px solid var(--border2)}
+.btn-ghost:hover{background:var(--bg2)}
 
 /* Inputs */
-.input{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:14px;outline:none;transition:border-color .15s}
+.input{width:100%;padding:11px 13px;border:1.5px solid var(--border2);border-radius:9px;background:var(--bg2);color:var(--text);font-size:14px;outline:none;transition:border-color .15s}
 .input:focus{border-color:var(--brand)}
 .input::placeholder{color:var(--text3)}
 
 /* Cards */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.25rem}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.1rem}
 
 /* Header */
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
-.msi-mark{width:38px;height:38px;background:var(--brand);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;letter-spacing:-.5px;flex-shrink:0}
-.icon-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:6px;border-radius:6px;transition:color .15s,background .15s}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+.icon-btn{background:none;border:none;cursor:pointer;color:var(--text3);padding:7px;border-radius:7px;transition:color .15s,background .15s}
 .icon-btn:hover{color:var(--text);background:var(--bg2)}
 
 /* Progress */
-.progress-bar{height:4px;background:var(--bg2);border-radius:2px;overflow:hidden;margin-bottom:1.5rem}
-.progress-fill{height:100%;background:var(--brand);border-radius:2px;transition:width .35s ease}
+.prog-wrap{display:flex;align-items:center;gap:10px;margin-bottom:1.1rem}
+.prog-bar{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;flex:1}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--brand),#ff8c3a);border-radius:3px;transition:width .4s ease}
+.prog-pct{font-size:12px;color:var(--text2);font-weight:600;min-width:30px;text-align:right}
 
 /* Option cards */
-.option-card{display:block;width:100%;padding:13px 16px;margin-bottom:10px;background:var(--bg2);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;line-height:1.45;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
-.option-card:hover:not(:disabled){border-color:var(--brand)}
-.option-card.selected{border-color:var(--brand);background:rgba(255,102,0,.08)}
-.option-card:disabled{cursor:default}
+.opt{display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px 14px;margin-bottom:9px;background:var(--bg2);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;line-height:1.4;cursor:pointer;text-align:left;transition:border-color .15s,background .15s,transform .1s}
+.opt:not(:disabled):hover{border-color:#444E6A;transform:translateX(3px)}
+.opt:disabled{cursor:default}
+/* Pending select */
+.opt.sel-a{border-color:var(--blue);background:rgba(94,129,172,.12)}
+.opt.sel-b{border-color:var(--green);background:rgba(163,190,140,.1)}
+.opt.sel-c{border-color:var(--yellow);background:rgba(235,203,139,.1)}
+/* Reveal states */
+.opt.opt-correct{border-color:var(--green)!important;background:rgba(163,190,140,.15)!important}
+.opt.opt-wrong{border-color:var(--red)!important;background:rgba(191,97,106,.12)!important}
+
+/* Letter badges */
+.ltr{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:1px;transition:background .15s,color .15s}
+.ltr-a{background:rgba(94,129,172,.25);color:#88B0D4}
+.ltr-b{background:rgba(163,190,140,.22);color:#A3BE8C}
+.ltr-c{background:rgba(235,203,139,.22);color:#C9A84C}
+.opt.sel-a .ltr-a{background:var(--blue);color:#fff}
+.opt.sel-b .ltr-b{background:var(--green);color:#1A2510}
+.opt.sel-c .ltr-c{background:var(--yellow);color:#2C1E00}
+.opt.opt-correct .ltr{background:var(--green)!important;color:#1A2510!important}
+.opt.opt-wrong .ltr{background:var(--red)!important;color:#fff!important}
+
+/* Correct label badge */
+.correct-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--green);background:rgba(163,190,140,.15);border-radius:4px;padding:2px 7px;margin-left:6px}
+
+/* Stat chips */
+.stat-chip{flex:1;background:var(--bg3);border-radius:8px;padding:9px 10px;text-align:center}
+.stat-chip .val{font-size:19px;font-weight:800;line-height:1}
+.stat-chip .lbl{font-size:10px;color:var(--text3);margin-top:2px}
+
+/* Quiz image */
+.q-image{width:100%;max-height:180px;object-fit:contain;border-radius:8px;margin-bottom:10px;background:var(--bg3);display:block}
 
 /* Result */
-.result-circle{width:150px;height:150px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 1.5rem;border:4px solid var(--brand)}
-.result-pct{font-size:46px;font-weight:800;line-height:1;color:var(--brand)}
-.result-lbl{font-size:11px;color:var(--text3);margin-top:2px}
+.res-circle{width:148px;height:148px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 1.25rem;border:4px solid var(--brand);box-shadow:0 0 28px rgba(255,102,0,.25)}
+.res-pct{font-size:46px;font-weight:900;line-height:1;color:var(--brand)}
+.res-lbl{font-size:10px;letter-spacing:.07em;font-weight:700;color:var(--text3);margin-top:3px}
 
-/* Badges */
-.badge{display:inline-flex;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:var(--bg4);color:var(--text2)}
+/* Score rows */
+.score-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.score-row:last-child{border-bottom:none}
+.score-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 /* Dropdown */
 .search-wrap{position:relative}
-.dropdown{position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1px solid var(--border2);border-radius:8px;max-height:220px;overflow-y:auto;z-index:100;margin-top:4px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
-.dropdown-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border)}
-.dropdown-item:last-child{border-bottom:none}
-.dropdown-item:hover{background:var(--bg2)}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:var(--bg);border:1.5px solid var(--border2);border-radius:9px;max-height:220px;overflow-y:auto;z-index:100;margin-top:4px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+.dd-item{padding:10px 13px;cursor:pointer;border-bottom:1px solid var(--border)}
+.dd-item:last-child{border-bottom:none}
+.dd-item:hover{background:var(--bg2)}
 
 /* Modal */
 .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:200}
-.modal{background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:1.5rem;width:360px;max-width:90vw}
+.modal{background:var(--bg);border:1.5px solid var(--border2);border-radius:14px;padding:1.5rem;width:360px;max-width:90vw}
 
 /* Spinner */
 .spinner{width:44px;height:44px;border:3px solid var(--border2);border-top-color:var(--brand);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 1.2rem}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* Helpers */
-.gap{display:flex;flex-direction:column;gap:12px}
-.label{font-size:12px;color:var(--text3);margin-bottom:4px}
+.gap{display:flex;flex-direction:column;gap:10px}
+.label{font-size:12px;color:var(--text3);margin-bottom:4px;font-weight:600;letter-spacing:.03em}
 .error{color:var(--red);font-size:12px;margin-top:6px}
-.mt-1{margin-top:8px}
-.mt-2{margin-top:16px}
-.mt-3{margin-top:24px}
-.tc{text-align:center}
-.ts{font-size:12px;color:var(--text3)}
-
-/* Product card */
-.prod-card{margin-top:12px;padding:12px;background:var(--bg4);border-radius:8px;border:1px solid var(--border2)}
-
-/* Warn */
+.mt-1{margin-top:8px}.mt-2{margin-top:16px}.mt-3{margin-top:24px}
+.tc{text-align:center}.ts{font-size:12px;color:var(--text3)}
+.prod-card{margin-top:10px;padding:11px 13px;background:var(--bg4);border-radius:9px;border:1px solid var(--border2)}
 .warn{padding:10px 14px;background:rgba(235,203,139,.1);border:1px solid rgba(235,203,139,.3);border-radius:8px;font-size:12px;color:var(--yellow)}
 
 @media(max-width:520px){
@@ -105,12 +132,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </head>
 <body>
 
-<!-- ══ SCREEN: Login ═════════════════════════════════════════════════════════ -->
+<!-- ══ Login ═════════════════════════════════════════════════════════════════ -->
 <div class="screen active" id="screen-login">
-  <div class="tc" style="margin-bottom:2rem">
-    <div class="msi-mark" style="margin:0 auto 14px;width:54px;height:54px;font-size:18px;border-radius:12px">MSI</div>
-    <div style="font-size:24px;font-weight:800">Training Quiz</div>
-    <div class="ts mt-1">Capacitación de productos · MSI Argentina</div>
+  <div class="tc" style="margin-bottom:1.75rem">
+    <div class="msi-mark msi-mark-lg" style="margin:0 auto 14px">MSI</div>
+    <div style="font-size:26px;font-weight:900;letter-spacing:-.5px">MSI Quiz</div>
+    <div class="ts mt-1">¿Cuánto sabés de productos MSI?</div>
   </div>
   <div class="card gap">
     <div>
@@ -122,21 +149,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <input class="input" type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
     <div id="login-err" class="error" style="display:none"></div>
-    <button class="btn btn-primary btn-block btn-lg" id="login-btn" onclick="doLogin()">
+    <button class="btn btn-primary" id="login-btn" onclick="doLogin()" style="margin-top:4px">
       <i class="ti ti-login"></i> Ingresar
     </button>
-    <div class="ts tc">Usá las mismas credenciales que el CRM</div>
+    <div class="ts tc">Ingresá con tu cuenta MSI CRM</div>
   </div>
 </div>
 
-<!-- ══ SCREEN: Home ══════════════════════════════════════════════════════════ -->
+<!-- ══ Home ══════════════════════════════════════════════════════════════════ -->
 <div class="screen" id="screen-home">
-  <div class="header">
+  <div class="hdr">
     <div style="display:flex;align-items:center;gap:10px">
       <div class="msi-mark">MSI</div>
       <div>
-        <div style="font-size:17px;font-weight:700">Training Quiz</div>
-        <div class="ts" id="home-user" style="font-size:11px"></div>
+        <div style="font-size:17px;font-weight:800">MSI Quiz</div>
       </div>
     </div>
     <div style="display:flex;gap:4px">
@@ -146,7 +172,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="card">
-    <div style="font-size:15px;font-weight:600;margin-bottom:12px">Elegí un producto para practicar</div>
+    <div class="label" style="margin-bottom:8px">Elegí un producto</div>
     <div class="search-wrap">
       <input class="input" type="text" id="prod-search" placeholder="Buscá por nombre o código…"
              oninput="onSearch(this.value)" autocomplete="off"/>
@@ -155,95 +181,97 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="prod-card" id="prod-card" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
         <div>
-          <div id="prod-name" style="font-weight:600;font-size:13px;line-height:1.3"></div>
+          <div id="prod-name" style="font-weight:700;font-size:13px;line-height:1.3"></div>
           <div id="prod-code" style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px"></div>
         </div>
-        <span class="badge" id="prod-cat"></span>
+        <span style="display:inline-flex;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(94,129,172,.18);color:#88B0D4" id="prod-cat"></span>
       </div>
-      <div id="prod-link" style="margin-top:6px"></div>
+      <div id="prod-link" style="margin-top:7px"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px" id="stat-chips" style="display:none">
+      <div class="stat-chip"><div class="val" style="color:var(--brand)">10</div><div class="lbl">preguntas</div></div>
+      <div class="stat-chip"><div class="val" style="color:var(--yellow)">~2</div><div class="lbl">minutos</div></div>
+      <div class="stat-chip"><div class="val" style="color:var(--green)">IA</div><div class="lbl">generado</div></div>
     </div>
   </div>
 
   <div class="warn mt-2" id="no-key-warn" style="display:none">
     <i class="ti ti-alert-triangle"></i>
     Configurá tu Claude API Key antes de continuar.
-    <a href="#" onclick="showSettings();return false" style="color:var(--yellow);font-weight:600">Configurar →</a>
+    <a href="#" onclick="showSettings();return false" style="color:var(--yellow);font-weight:700">Configurar →</a>
   </div>
 
-  <button class="btn btn-primary btn-block btn-lg mt-2" id="gen-btn" onclick="generateQuiz()" disabled>
-    <i class="ti ti-bulb"></i> Generar Quiz
+  <button class="btn btn-primary mt-2" id="gen-btn" onclick="generateQuiz()" disabled>
+    <i class="ti ti-player-play"></i> Empezar Quiz
   </button>
-  <div class="ts tc mt-1">Se generan 10 preguntas sobre el producto seleccionado</div>
+  <div class="ts tc mt-1">Sin trampa — cada quiz es diferente</div>
 </div>
 
-<!-- ══ SCREEN: Loading ═══════════════════════════════════════════════════════ -->
+<!-- ══ Loading ═══════════════════════════════════════════════════════════════ -->
 <div class="screen" id="screen-loading">
   <div class="tc">
     <div class="spinner"></div>
-    <div style="font-size:16px;font-weight:600">Generando preguntas…</div>
+    <div style="font-size:16px;font-weight:700">Generando preguntas…</div>
     <div class="ts mt-1" id="load-prod"></div>
     <div class="ts mt-2">Esto puede tardar unos segundos</div>
   </div>
 </div>
 
-<!-- ══ SCREEN: Quiz ══════════════════════════════════════════════════════════ -->
+<!-- ══ Quiz ══════════════════════════════════════════════════════════════════ -->
 <div class="screen" id="screen-quiz">
-  <div class="header" style="margin-bottom:.75rem">
-    <div class="ts" id="q-label">Pregunta 1 de 10</div>
-    <div class="ts" id="q-prod" style="font-size:11px;max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+    <span style="font-size:13px;color:var(--text2);font-weight:600" id="q-label">Pregunta 1 de 10</span>
+    <span style="font-size:11px;color:var(--text3);max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="q-prod"></span>
   </div>
-  <div class="progress-bar">
-    <div class="progress-fill" id="q-fill" style="width:10%"></div>
+  <div class="prog-wrap">
+    <div class="prog-bar"><div class="prog-fill" id="q-fill" style="width:0%"></div></div>
+    <div class="prog-pct" id="q-pct">0%</div>
   </div>
-  <div class="card" style="margin-bottom:1rem">
-    <div style="font-size:16px;font-weight:600;line-height:1.45" id="q-text"></div>
+  <div class="card" style="margin-bottom:.9rem">
+    <img id="q-image" class="q-image" src="" alt="" style="display:none"/>
+    <div style="font-size:15px;font-weight:600;line-height:1.5" id="q-text"></div>
   </div>
   <div id="q-opts"></div>
-  <button class="btn btn-primary btn-block mt-2" id="q-next" onclick="nextQ()" disabled>
-    Siguiente <i class="ti ti-arrow-right"></i>
+  <button class="btn btn-primary" id="q-next" onclick="handleNextBtn()" disabled style="margin-top:4px">
+    Verificar <i class="ti ti-check"></i>
   </button>
 </div>
 
-<!-- ══ SCREEN: Results ═══════════════════════════════════════════════════════ -->
+<!-- ══ Results ═══════════════════════════════════════════════════════════════ -->
 <div class="screen" id="screen-results">
-  <div class="tc">
-    <div class="result-circle" id="res-circle">
-      <div class="result-pct" id="res-pct">0%</div>
-      <div class="result-lbl">CORRECTO</div>
+  <div class="tc" style="margin-bottom:1rem">
+    <div class="res-circle" id="res-circle">
+      <div class="res-pct" id="res-pct">0%</div>
+      <div class="res-lbl">CORRECTO</div>
     </div>
-    <div style="font-size:21px;font-weight:700;margin-bottom:6px" id="res-title"></div>
+    <div style="font-size:21px;font-weight:800;margin-bottom:5px" id="res-title"></div>
     <div class="ts" id="res-sub"></div>
   </div>
-  <div class="gap mt-3">
-    <button class="btn btn-primary btn-block btn-lg" onclick="generateQuiz()">
-      <i class="ti ti-refresh"></i> Nuevo quiz (mismo producto)
-    </button>
-    <button class="btn btn-ghost btn-block" onclick="showScreen('home')">
-      <i class="ti ti-arrow-left"></i> Elegir otro producto
-    </button>
+  <div class="card" id="res-score" style="margin-bottom:12px"></div>
+  <div class="gap">
+    <button class="btn btn-primary" onclick="generateQuiz()"><i class="ti ti-refresh"></i> Nuevo quiz (mismo producto)</button>
+    <button class="btn btn-ghost" onclick="showScreen('home')"><i class="ti ti-arrow-left"></i> Elegir otro producto</button>
   </div>
 </div>
 
-<!-- ══ MODAL: Settings ═══════════════════════════════════════════════════════ -->
+<!-- ══ Settings modal ════════════════════════════════════════════════════════ -->
 <div class="modal-backdrop" id="modal-settings" style="display:none"
      onclick="if(event.target===this)closeSettings()">
   <div class="modal">
-    <div style="font-size:16px;font-weight:600;margin-bottom:1rem">
+    <div style="font-size:16px;font-weight:700;margin-bottom:1rem">
       <i class="ti ti-key" style="color:var(--brand)"></i> Claude API Key
     </div>
     <div class="gap">
       <div>
         <div class="label">Anthropic API Key</div>
         <input class="input" type="password" id="set-key" placeholder="sk-ant-…"/>
-        <div class="ts mt-1">
-          Se guarda en este dispositivo.
-          <a href="https://console.anthropic.com/keys" target="_blank" style="color:var(--brand)">
-            Obtener clave →</a>
+        <div class="ts mt-1">Se guarda en este dispositivo.
+          <a href="https://console.anthropic.com/keys" target="_blank" style="color:var(--brand)">Obtener clave →</a>
         </div>
       </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn btn-ghost" onclick="closeSettings()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveSettings()">
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button class="btn btn-ghost" onclick="closeSettings()" style="width:auto;padding:9px 18px">Cancelar</button>
+        <button class="btn btn-primary" onclick="saveSettings()" style="width:auto;padding:9px 18px">
           <i class="ti ti-check"></i> Guardar
         </button>
       </div>
@@ -252,7 +280,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <script>
-// ─── Firebase ─────────────────────────────────────────────────────────────────
 firebase.initializeApp({
   apiKey:            "AIzaSyCzw8L-EsO-NRN3XLOuQTGtTknBe5F8x-0",
   authDomain:        "msi-crm.firebaseapp.com",
@@ -265,300 +292,289 @@ firebase.initializeApp({
 const fbAuth = firebase.auth();
 const fbDB   = firebase.database();
 
-// ─── State ────────────────────────────────────────────────────────────────────
-let products = [];
-let selectedProd = null;
-let questions = [];
-let currentQ = 0;
-let answers = [];
-let chosenAnswer = null;
+let products = [], selectedProd = null, questions = [];
+let currentQ = 0, answers = [], chosenAnswer = null;
+let quizPhase = 'selecting'; // 'selecting' | 'revealing'
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
+const LETTERS = [
+  {l:'A', sel:'sel-a', ltr:'ltr-a'},
+  {l:'B', sel:'sel-b', ltr:'ltr-b'},
+  {l:'C', sel:'sel-c', ltr:'ltr-c'}
+];
+const CAT_LABEL = {vga:'GPU',motherboard:'Motherboard',monitor:'Monitor',minipc:'Mini PC',ssd:'SSD',psu:'PSU',gabinete:'Gabinete',cooling:'Cooling',accesorios:'Accesorios'};
+function catLbl(c){return CAT_LABEL[c]||c||'Otro'}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ── Screens ───────────────────────────────────────────────────────────────────
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-fbAuth.onAuthStateChanged(user => {
-  if (user) {
-    document.getElementById('home-user').textContent = user.email;
-    loadProducts();
-    showScreen('home');
-  } else {
-    showScreen('login');
-  }
+// ── Auth ──────────────────────────────────────────────────────────────────────
+fbAuth.onAuthStateChanged(user=>{
+  if(user){loadProducts();loadApiKey();showScreen('home');}
+  else showScreen('login');
 });
 
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pass  = document.getElementById('login-pass').value;
-  const btn   = document.getElementById('login-btn');
-  const err   = document.getElementById('login-err');
-  err.style.display = 'none';
-  if (!email || !pass) {
-    err.textContent = 'Completá email y contraseña.';
-    err.style.display = 'block';
-    return;
-  }
-  btn.disabled = true;
-  btn.innerHTML = '<i class="ti ti-loader-2"></i> Ingresando…';
-  try {
-    await fbAuth.signInWithEmailAndPassword(email, pass);
-  } catch (e) {
-    const msg = e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password'
-      ? 'Email o contraseña incorrectos.'
-      : (e.code === 'auth/user-not-found' ? 'Usuario no encontrado.' : e.message);
-    err.textContent = msg;
-    err.style.display = 'block';
-    btn.disabled = false;
-    btn.innerHTML = '<i class="ti ti-login"></i> Ingresar';
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const btn=document.getElementById('login-btn');
+  const err=document.getElementById('login-err');
+  err.style.display='none';
+  if(!email||!pass){err.textContent='Completá email y contraseña.';err.style.display='block';return}
+  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Ingresando…';
+  try{await fbAuth.signInWithEmailAndPassword(email,pass);}
+  catch(e){
+    err.textContent=e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'?'Email o contraseña incorrectos.':e.code==='auth/user-not-found'?'Usuario no encontrado.':e.message;
+    err.style.display='block';btn.disabled=false;btn.innerHTML='<i class="ti ti-login"></i> Ingresar';
   }
 }
 
-async function doLogout() {
-  if (!confirm('¿Cerrar sesión?')) return;
-  await fbAuth.signOut();
-  products = [];
-  selectedProd = null;
-}
+async function doLogout(){if(!confirm('¿Cerrar sesión?'))return;await fbAuth.signOut();products=[];selectedProd=null;}
 
-// ─── Price list ───────────────────────────────────────────────────────────────
-async function loadProducts() {
-  try {
-    const snap = await fbDB.ref('salesops_pricelist').get();
-    if (snap.exists()) {
-      const pl = JSON.parse(snap.val());
-      products = (pl.products || []).filter(p => !p.isSubSection && p.desc && p.code);
+async function loadApiKey(){
+  // Si ya está en localStorage, usar esa
+  if((localStorage.getItem('msi_quiz_key')||'').trim()) return;
+  // Si no, buscar en Firebase (configurada por el admin)
+  try{
+    const snap=await fbDB.ref('msi_quiz_config/apiKey').get();
+    if(snap.exists()&&snap.val()){
+      localStorage.setItem('msi_quiz_key',snap.val());
+      updateGenBtn();
     }
-  } catch(e) {
-    console.warn('Error cargando productos:', e);
-  }
+  }catch(e){}
 }
 
-// ─── Product search ───────────────────────────────────────────────────────────
-function esc(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ── Price list ────────────────────────────────────────────────────────────────
+async function loadProducts(){
+  try{
+    const snap=await fbDB.ref('salesops_pricelist').get();
+    if(snap.exists()){const pl=JSON.parse(snap.val());products=(pl.products||[]).filter(p=>!p.isSubSection&&p.desc&&p.code);}
+  }catch(e){console.warn('Error cargando productos:',e)}
 }
 
-const CAT_LABEL = {vga:'GPU',motherboard:'Motherboard',monitor:'Monitor',minipc:'Mini PC',ssd:'SSD',psu:'PSU',gabinete:'Gabinete',cooling:'Cooling',accesorios:'Accesorios'};
-function catLbl(c) { return CAT_LABEL[c] || c || 'Otro'; }
-
-function onSearch(val) {
-  const q = val.trim().toLowerCase();
-  const dd = document.getElementById('prod-dd');
-  if (!q || !products.length) { dd.style.display = 'none'; return; }
-  const hits = products.filter(p =>
-    p.desc.toLowerCase().includes(q) || (p.code || '').toLowerCase().includes(q)
-  ).slice(0, 12);
-  if (!hits.length) { dd.style.display = 'none'; return; }
-  dd.innerHTML = hits.map(p => {
-    const idx = products.indexOf(p);
-    return `<div class="dropdown-item" onclick="selectProd(${idx})">
-      <div style="font-size:13px;font-weight:500">${esc(p.desc)}</div>
-      <div style="font-size:11px;color:var(--text3);font-family:monospace">${esc(p.code || '')} · ${esc(catLbl(p.category))}</div>
+// ── Product search ────────────────────────────────────────────────────────────
+function onSearch(val){
+  const q=val.trim().toLowerCase();
+  const dd=document.getElementById('prod-dd');
+  if(!q||!products.length){dd.style.display='none';return}
+  const hits=products.filter(p=>p.desc.toLowerCase().includes(q)||(p.code||'').toLowerCase().includes(q)).slice(0,12);
+  if(!hits.length){dd.style.display='none';return}
+  dd.innerHTML=hits.map(p=>{
+    const idx=products.indexOf(p);
+    return `<div class="dd-item" onclick="selectProd(${idx})">
+      <div style="font-size:13px;font-weight:600">${esc(p.desc)}</div>
+      <div style="font-size:11px;color:var(--text3);font-family:monospace">${esc(p.code||'')} · ${esc(catLbl(p.category))}</div>
     </div>`;
   }).join('');
-  dd.style.display = 'block';
+  dd.style.display='block';
 }
 
-function selectProd(idx) {
-  selectedProd = products[idx];
-  document.getElementById('prod-dd').style.display = 'none';
-  document.getElementById('prod-search').value = selectedProd.desc;
-  document.getElementById('prod-card').style.display = 'block';
-  document.getElementById('prod-name').textContent = selectedProd.desc;
-  document.getElementById('prod-code').textContent = selectedProd.code || '';
-  document.getElementById('prod-cat').textContent = catLbl(selectedProd.category);
-  document.getElementById('prod-link').innerHTML = selectedProd.ficha
-    ? `<a href="${esc(selectedProd.ficha)}" target="_blank" style="font-size:11px;color:var(--brand)"><i class="ti ti-external-link"></i> Ver ficha técnica</a>`
-    : '';
+function selectProd(idx){
+  selectedProd=products[idx];
+  document.getElementById('prod-dd').style.display='none';
+  document.getElementById('prod-search').value=selectedProd.desc;
+  document.getElementById('prod-card').style.display='block';
+  document.getElementById('prod-name').textContent=selectedProd.desc;
+  document.getElementById('prod-code').textContent=selectedProd.code||'';
+  document.getElementById('prod-cat').textContent=catLbl(selectedProd.category);
+  document.getElementById('prod-link').innerHTML=selectedProd.ficha
+    ?`<a href="${esc(selectedProd.ficha)}" target="_blank" style="font-size:11px;color:var(--brand)"><i class="ti ti-external-link"></i> Ver ficha técnica</a>`:'';
+  document.getElementById('stat-chips').style.display='flex';
   updateGenBtn();
 }
 
-function updateGenBtn() {
-  const hasKey = !!(localStorage.getItem('msi_quiz_key') || '').trim();
-  const hasProd = !!selectedProd;
-  document.getElementById('gen-btn').disabled = !hasProd;
-  document.getElementById('no-key-warn').style.display = (hasProd && !hasKey) ? 'block' : 'none';
+function updateGenBtn(){
+  const hasKey=!!(localStorage.getItem('msi_quiz_key')||'').trim();
+  document.getElementById('gen-btn').disabled=!selectedProd;
+  document.getElementById('no-key-warn').style.display=(selectedProd&&!hasKey)?'block':'none';
 }
 
-document.addEventListener('click', e => {
-  if (!e.target.closest('.search-wrap')) {
-    const dd = document.getElementById('prod-dd');
-    if (dd) dd.style.display = 'none';
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('prod-dd').style.display='none';});
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+function showSettings(){document.getElementById('set-key').value=localStorage.getItem('msi_quiz_key')||'';document.getElementById('modal-settings').style.display='flex'}
+function closeSettings(){document.getElementById('modal-settings').style.display='none'}
+async function saveSettings(){
+  const k=document.getElementById('set-key').value.trim();
+  if(k){
+    localStorage.setItem('msi_quiz_key',k);
+    // Guardar en Firebase para que todos los usuarios la usen sin configurar
+    try{await fbDB.ref('msi_quiz_config/apiKey').set(k);}catch(e){}
+  }else{
+    localStorage.removeItem('msi_quiz_key');
   }
-});
-
-// ─── Settings ─────────────────────────────────────────────────────────────────
-function showSettings() {
-  document.getElementById('set-key').value = localStorage.getItem('msi_quiz_key') || '';
-  document.getElementById('modal-settings').style.display = 'flex';
-}
-function closeSettings() {
-  document.getElementById('modal-settings').style.display = 'none';
-}
-function saveSettings() {
-  const k = document.getElementById('set-key').value.trim();
-  if (k) localStorage.setItem('msi_quiz_key', k);
-  else localStorage.removeItem('msi_quiz_key');
-  closeSettings();
-  updateGenBtn();
+  closeSettings();updateGenBtn();
 }
 
-// ─── Generate quiz (Claude API) ───────────────────────────────────────────────
-async function generateQuiz() {
-  const apiKey = (localStorage.getItem('msi_quiz_key') || '').trim();
-  if (!apiKey) { showSettings(); return; }
-  if (!selectedProd) return;
-
+// ── Generate ──────────────────────────────────────────────────────────────────
+async function generateQuiz(){
+  const apiKey=(localStorage.getItem('msi_quiz_key')||'').trim();
+  if(!apiKey){showSettings();return}
+  if(!selectedProd)return;
   showScreen('loading');
-  document.getElementById('load-prod').textContent = selectedProd.desc;
+  document.getElementById('load-prod').textContent=selectedProd.desc;
 
-  const fichaLine = selectedProd.ficha ? `URL ficha técnica: ${selectedProd.ficha}` : '';
-  const prompt = `Sos un experto en productos MSI con amplio conocimiento de su línea de productos. Generá exactamente 10 preguntas de opción múltiple sobre el siguiente producto para capacitar vendedores de distribuidores MSI Argentina.
+  const fichaLine=selectedProd.ficha?`URL ficha técnica: ${selectedProd.ficha}`:'';
+  const prompt=`Sos un experto en productos MSI. Generá exactamente 10 preguntas de opción múltiple sobre este producto para vendedores de distribuidores MSI Argentina.
 
 Producto: ${selectedProd.desc}
 Categoría: ${catLbl(selectedProd.category)}
-Código: ${selectedProd.code || 'N/A'}
+Código: ${selectedProd.code||'N/A'}
 ${fichaLine}
 
 Reglas:
-1. Cada pregunta tiene exactamente 3 opciones: 1 correcta y 2 incorrectas plausibles
-2. Enfocate en KEY POINTS del producto: características destacadas, ventajas competitivas, segmento de usuario al que apunta, casos de uso ideales
-3. NO hagas preguntas sobre especificaciones técnicas muy específicas o irrelevantes para un vendedor
-4. Las preguntas deben ayudar al vendedor a RECOMENDAR mejor el producto a sus clientes
-5. Redacción en español argentino, natural y directo
-6. Las opciones incorrectas deben ser plausibles pero claramente incorrectas para quien conoce el producto
-7. Variá el índice correcto aleatoriamente entre las 10 preguntas — no lo pongas siempre en la misma posición
-8. Tipos de preguntas útiles: ¿Para qué tipo de usuario está pensado este producto? ¿Cuál es su principal diferenciador? ¿Qué característica lo hace mejor que la competencia en su rango?
+1. Exactamente 3 opciones por pregunta: 1 correcta, 2 incorrectas plausibles
+2. KEY POINTS del producto: características destacadas, ventajas competitivas, segmento de usuario ideal, casos de uso
+3. NO specs técnicas muy específicas
+4. Las preguntas deben ayudar a RECOMENDAR mejor el producto
+5. Español argentino, natural y directo
+6. Opciones incorrectas plausibles pero claramente incorrectas para alguien que conoce el producto
+7. Variá el índice correcto aleatoriamente entre las 10 preguntas
+8. Para 2 o 3 preguntas donde sea relevante, incluí "imageUrl" con la URL real de una imagen del producto en el CDN de MSI (asset.msi.com) si la conocés con certeza; omitilo si no estás seguro
+9. Tipos de preguntas: ¿Para qué usuario? ¿Principal ventaja? ¿Por qué este vs la competencia? ¿Qué característica lo destaca?
 
 Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
-{
-  "questions": [
-    {
-      "q": "Texto de la pregunta",
-      "options": ["Opción A", "Opción B", "Opción C"],
-      "correct": 0
-    }
-  ]
-}`;
+{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0,"imageUrl":"opcional-url-o-omitir"}]}`;
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
-        messages: [{ role: 'user', content: prompt }]
-      })
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2560,messages:[{role:'user',content:prompt}]})
     });
-
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}));
-      throw new Error(errBody.error?.message || `Error HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '';
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('La IA no devolvió JSON válido');
-    const parsed = JSON.parse(match[0]);
-    if (!Array.isArray(parsed.questions) || parsed.questions.length < 5) {
-      throw new Error('Se generaron pocas preguntas. Intentá de nuevo.');
-    }
-
-    questions = parsed.questions.slice(0, 10);
-    currentQ = 0;
-    answers = [];
-    chosenAnswer = null;
-    startQuiz();
-
-  } catch(e) {
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`Error HTTP ${res.status}`)}
+    const data=await res.json();
+    const text=data.content?.[0]?.text||'';
+    const match=text.match(/\{[\s\S]*\}/);
+    if(!match)throw new Error('Respuesta inválida de la IA');
+    const parsed=JSON.parse(match[0]);
+    if(!Array.isArray(parsed.questions)||parsed.questions.length<5)throw new Error('Se generaron pocas preguntas. Intentá de nuevo.');
+    questions=parsed.questions.slice(0,10);
+    currentQ=0;answers=[];chosenAnswer=null;quizPhase='selecting';
+    showScreen('quiz');renderQ();
+  }catch(e){
     showScreen('home');
-    alert('Error al generar el quiz:\n' + e.message);
+    alert('Error al generar el quiz:\n'+e.message);
   }
 }
 
-// ─── Quiz ─────────────────────────────────────────────────────────────────────
-function startQuiz() {
-  showScreen('quiz');
-  renderQ();
-}
+// ── Quiz rendering ────────────────────────────────────────────────────────────
+function renderQ(){
+  const q=questions[currentQ];
+  const total=questions.length;
+  const pct=Math.round((currentQ/total)*100);
+  document.getElementById('q-label').textContent=`Pregunta ${currentQ+1} de ${total}`;
+  document.getElementById('q-prod').textContent=selectedProd.desc;
+  document.getElementById('q-fill').style.width=pct+'%';
+  document.getElementById('q-pct').textContent=pct+'%';
+  document.getElementById('q-text').textContent=q.q;
 
-function renderQ() {
-  const q = questions[currentQ];
-  const total = questions.length;
+  // Image (optional)
+  const imgEl=document.getElementById('q-image');
+  if(q.imageUrl&&q.imageUrl.startsWith('http')){
+    imgEl.src=q.imageUrl;imgEl.style.display='block';
+    imgEl.onerror=()=>{imgEl.style.display='none'};
+  }else{imgEl.style.display='none';imgEl.src=''}
 
-  document.getElementById('q-label').textContent = `Pregunta ${currentQ + 1} de ${total}`;
-  document.getElementById('q-prod').textContent = selectedProd.desc;
-  document.getElementById('q-fill').style.width = ((currentQ / total) * 100) + '%';
-  document.getElementById('q-text').textContent = q.q;
-
-  const letters = ['A', 'B', 'C'];
-  document.getElementById('q-opts').innerHTML = q.options.map((opt, i) =>
-    `<button class="option-card" id="opt${i}" onclick="pickOpt(${i})">
-      <span style="font-weight:700;color:var(--brand);margin-right:8px">${letters[i]}.</span>${esc(opt)}
+  document.getElementById('q-opts').innerHTML=q.options.map((o,i)=>
+    `<button class="opt" id="opt${i}" onclick="pickOpt(${i})">
+      <div class="ltr ${LETTERS[i].ltr}">${LETTERS[i].l}</div>
+      <span>${esc(o)}</span>
     </button>`
   ).join('');
 
-  const nextBtn = document.getElementById('q-next');
-  nextBtn.disabled = true;
-  nextBtn.innerHTML = 'Siguiente <i class="ti ti-arrow-right"></i>';
-  chosenAnswer = null;
+  quizPhase='selecting';chosenAnswer=null;
+  const nb=document.getElementById('q-next');
+  nb.disabled=true;
+  nb.innerHTML='Verificar <i class="ti ti-check"></i>';
 }
 
-function pickOpt(idx) {
-  document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
-  const el = document.getElementById('opt' + idx);
-  if (el) el.classList.add('selected');
-  chosenAnswer = idx;
-
-  const nextBtn = document.getElementById('q-next');
-  nextBtn.disabled = false;
-  const isLast = currentQ === questions.length - 1;
-  nextBtn.innerHTML = isLast
-    ? 'Ver resultados <i class="ti ti-check"></i>'
-    : 'Siguiente <i class="ti ti-arrow-right"></i>';
+function pickOpt(i){
+  if(quizPhase!=='selecting')return;
+  document.querySelectorAll('.opt').forEach(o=>o.className='opt');
+  document.getElementById('opt'+i).classList.add(LETTERS[i].sel);
+  chosenAnswer=i;
+  document.getElementById('q-next').disabled=false;
 }
 
-function nextQ() {
-  if (chosenAnswer === null) return;
-  answers.push({ selected: chosenAnswer, correct: questions[currentQ].correct });
+// ── Verify / Continuar ────────────────────────────────────────────────────────
+function handleNextBtn(){
+  if(quizPhase==='selecting')revealAnswer();
+  else advanceQ();
+}
+
+function revealAnswer(){
+  if(chosenAnswer===null)return;
+  quizPhase='revealing';
+  const correctIdx=questions[currentQ].correct;
+  const wrong=chosenAnswer!==correctIdx;
+
+  for(let i=0;i<3;i++){
+    const el=document.getElementById('opt'+i);
+    if(!el)continue;
+    el.disabled=true;
+    el.className='opt';
+    if(i===correctIdx){
+      el.classList.add('opt-correct');
+      // Add "Correcta" badge to the label span
+      el.querySelector('span').insertAdjacentHTML('beforeend','<span class="correct-badge"><i class="ti ti-check" style="font-size:10px"></i> Correcta</span>');
+    }else if(i===chosenAnswer&&wrong){
+      el.classList.add('opt-wrong');
+    }
+  }
+
+  answers.push({selected:chosenAnswer,correct:correctIdx});
+
+  const nb=document.getElementById('q-next');
+  nb.disabled=false;
+  const isLast=currentQ===questions.length-1;
+  nb.innerHTML=isLast?'Ver resultados <i class="ti ti-trophy"></i>':'Continuar <i class="ti ti-arrow-right"></i>';
+  nb.style.background=wrong?'var(--blue)':'var(--brand)';
+}
+
+function advanceQ(){
+  nb_reset();
   currentQ++;
-  if (currentQ >= questions.length) showResults();
+  if(currentQ>=questions.length)showResults();
   else renderQ();
 }
 
-// ─── Results ──────────────────────────────────────────────────────────────────
-function showResults() {
-  const correct = answers.filter(a => a.selected === a.correct).length;
-  const total   = answers.length;
-  const pct     = Math.round((correct / total) * 100);
+function nb_reset(){document.getElementById('q-next').style.background='';}
 
-  document.getElementById('res-pct').textContent = pct + '%';
+// ── Results ───────────────────────────────────────────────────────────────────
+function showResults(){
+  document.getElementById('q-fill').style.width='100%';
+  document.getElementById('q-pct').textContent='100%';
+  const correct=answers.filter(a=>a.selected===a.correct).length;
+  const total=answers.length;
+  const pct=Math.round((correct/total)*100);
 
-  const color = pct >= 80 ? 'var(--green)' : pct >= 60 ? 'var(--yellow)' : 'var(--red)';
-  document.getElementById('res-circle').style.borderColor = color;
-  document.getElementById('res-pct').style.color = color;
+  document.getElementById('res-pct').textContent=pct+'%';
+  const color=pct>=80?'#A3BE8C':pct>=60?'#EBCB8B':'#BF616A';
+  const circle=document.getElementById('res-circle');
+  circle.style.borderColor=color;circle.style.boxShadow=`0 0 28px ${color}44`;
+  document.getElementById('res-pct').style.color=color;
 
-  const [title, sub] =
-    pct >= 90 ? ['¡Excelente!',         '¡Sos un experto en este producto!'] :
-    pct >= 70 ? ['¡Bien hecho!',        `${correct} de ${total} correctas. Seguí practicando.`] :
-    pct >= 50 ? ['Puede mejorar',       `${correct} de ${total} correctas. Repasá el producto.`] :
-               ['A seguir estudiando',  `${correct} de ${total} correctas. Revisá la ficha técnica.`];
+  const[t,s]=pct>=90?['¡Excelente! 🔥','¡Sos un crack en este producto!']:
+              pct>=70?['¡Muy bien!',`${correct} de ${total} correctas — seguí así.`]:
+              pct>=50?['Puede mejorar',`${correct} de ${total} correctas — repasá el producto.`]:
+                     ['A estudiar más',`${correct} de ${total} — revisá la ficha técnica.`];
+  document.getElementById('res-title').textContent=t;
+  document.getElementById('res-sub').textContent=s;
 
-  document.getElementById('res-title').textContent = title;
-  document.getElementById('res-sub').textContent   = sub;
-
-  // Fill progress bar to 100%
-  document.getElementById('q-fill') && (document.getElementById('q-fill').style.width = '100%');
+  document.getElementById('res-score').innerHTML=answers.map((a,i)=>{
+    const ok=a.selected===a.correct;
+    const q=questions[i];
+    const short=q.q.length>58?q.q.slice(0,58)+'…':q.q;
+    return `<div class="score-row">
+      <div class="score-dot" style="background:${ok?'#A3BE8C':'#BF616A'}"></div>
+      <span style="flex:1;font-size:12px;color:var(--text2)">${esc(short)}</span>
+      <span style="font-size:13px;font-weight:700;color:${ok?'#A3BE8C':'#BF616A'}">${ok?'✓':'✗'}</span>
+    </div>`;
+  }).join('');
 
   showScreen('results');
 }
