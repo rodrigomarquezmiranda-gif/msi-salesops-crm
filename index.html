@@ -1472,7 +1472,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '28.08.26.2';
+const APP_VERSION = '28.08.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -8878,9 +8878,7 @@ function renderMktTab() {
   // Pills — in compare mode show all; in charts mode filter active
   if(pillsWrap) {
     pillsWrap.innerHTML = availableQs.map(q =>
-      `<div style="display:inline-flex;align-items:center;gap:0">
-        <button type="button" class="filter-pill ${mktSelectedQs.has(q)?'active':''}" style="border-radius:6px 0 0 6px;padding-right:6px" onclick="toggleMktQ(${q})">Q${q}</button><button type="button" title="Borrar Q${q}" onclick="deleteMktQ(${q})" style="height:28px;padding:0 6px;font-size:11px;border-radius:0 6px 6px 0;border:1px solid var(--border2);border-left:none;background:var(--bg2);color:var(--text3);cursor:pointer;line-height:1" onmouseover="this.style.color='#BF616A'" onmouseout="this.style.color='var(--text3)'">✕</button>
-      </div>`
+      `<button type="button" class="filter-pill ${mktSelectedQs.has(q)?'active':''}" onclick="toggleMktQ(${q})">Q${q}</button>`
     ).join('');
   }
 
