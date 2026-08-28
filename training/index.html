@@ -124,6 +124,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .prod-card{margin-top:10px;padding:11px 13px;background:var(--bg4);border-radius:9px;border:1px solid var(--border2)}
 .warn{padding:10px 14px;background:rgba(235,203,139,.1);border:1px solid rgba(235,203,139,.3);border-radius:8px;font-size:12px;color:var(--yellow)}
 
+/* Category pills */
+.cat-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.cat-pill{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;letter-spacing:.02em}
+.cat-pill:hover{border-color:#5E81AC;color:var(--text)}
+.cat-pill.active{border-color:var(--brand);background:rgba(255,102,0,.12);color:var(--brand)}
+
+/* History screen */
+.hist-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-score{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0;border:2px solid}
+.hist-empty{text-align:center;padding:2rem 0;color:var(--text3)}
+
+/* Sparkline bars */
+.spark{display:flex;align-items:flex-end;gap:3px;height:32px}
+.spark-bar{width:10px;border-radius:3px 3px 0 0;min-height:3px;transition:opacity .15s}
+.spark-bar:hover{opacity:.75}
+
 @media(max-width:520px){
   body{align-items:stretch;justify-content:flex-start}
   .screen{max-width:100%}
@@ -152,6 +169,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="btn btn-primary" id="login-btn" onclick="doLogin()" style="margin-top:4px">
       <i class="ti ti-login"></i> Ingresar
     </button>
+    <div style="display:flex;align-items:center;gap:10px;margin:2px 0">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span class="ts">o</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <button class="btn btn-ghost" id="google-btn" onclick="doGoogleLogin()" style="gap:8px">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px"> Continuar con Google
+    </button>
     <div class="ts tc">Ingresá con tu cuenta MSI CRM</div>
   </div>
 </div>
@@ -166,6 +191,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div style="display:flex;gap:4px">
+      <button class="icon-btn" onclick="showScreen('history')" title="Mi historial"><i class="ti ti-chart-bar" style="font-size:19px"></i></button>
       <button class="icon-btn" onclick="showSettings()" title="API Key"><i class="ti ti-settings" style="font-size:19px"></i></button>
       <button class="icon-btn" onclick="doLogout()" title="Cerrar sesión"><i class="ti ti-logout" style="font-size:19px"></i></button>
     </div>
@@ -173,6 +199,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <div class="card">
     <div class="label" style="margin-bottom:8px">Elegí un producto</div>
+    <div class="cat-pills" id="cat-pills"></div>
     <div class="search-wrap">
       <input class="input" type="text" id="prod-search" placeholder="Buscá por nombre o código…"
              oninput="onSearch(this.value)" autocomplete="off"/>
@@ -254,6 +281,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- ══ History ════════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-history">
+  <div class="hdr">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="icon-btn" onclick="showScreen('home')" style="padding:5px"><i class="ti ti-arrow-left" style="font-size:19px"></i></button>
+      <div style="font-size:17px;font-weight:800">Mi historial</div>
+    </div>
+    <div id="hist-overall" style="font-size:13px;color:var(--text2);font-weight:600"></div>
+  </div>
+
+  <!-- Spark progress -->
+  <div class="card" id="hist-spark-card" style="margin-bottom:12px;display:none">
+    <div class="label" style="margin-bottom:10px">Últimos quizzes</div>
+    <div class="spark" id="hist-spark"></div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px" id="hist-trend"></div>
+  </div>
+
+  <!-- List -->
+  <div class="card" id="hist-list">
+    <div class="hist-empty"><i class="ti ti-mood-empty" style="font-size:28px;display:block;margin-bottom:6px"></i>Todavía no hiciste ningún quiz</div>
+  </div>
+</div>
+
 <!-- ══ Settings modal ════════════════════════════════════════════════════════ -->
 <div class="modal-backdrop" id="modal-settings" style="display:none"
      onclick="if(event.target===this)closeSettings()">
@@ -295,6 +345,8 @@ const fbDB   = firebase.database();
 let products = [], selectedProd = null, questions = [];
 let currentQ = 0, answers = [], chosenAnswer = null;
 let quizPhase = 'selecting'; // 'selecting' | 'revealing'
+let selectedCat = null; // category filter pill
+let currentUser = null; // Firebase user
 
 const LETTERS = [
   {l:'A', sel:'sel-a', ltr:'ltr-a'},
@@ -302,19 +354,22 @@ const LETTERS = [
   {l:'C', sel:'sel-c', ltr:'ltr-c'}
 ];
 const CAT_LABEL = {vga:'GPU',motherboard:'Motherboard',monitor:'Monitor',minipc:'Mini PC',ssd:'SSD',psu:'PSU',gabinete:'Gabinete',cooling:'Cooling',accesorios:'Accesorios'};
+const CAT_COLOR = {vga:'#5E81AC',motherboard:'#88C0D0',monitor:'#81A1C1',minipc:'#B48EAD',ssd:'#EBCB8B',psu:'#D08770',gabinete:'#A3BE8C',cooling:'#8FBCBB',accesorios:'#9EA8BA'};
 function catLbl(c){return CAT_LABEL[c]||c||'Otro'}
+function catColor(c){return CAT_COLOR[c]||'var(--text3)'}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
 // ── Screens ───────────────────────────────────────────────────────────────────
 function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
+  if(id==='history')loadHistory();
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 fbAuth.onAuthStateChanged(user=>{
-  if(user){loadProducts();loadApiKey();showScreen('home');}
-  else showScreen('login');
+  if(user){currentUser=user;loadProducts();loadApiKey();showScreen('home');}
+  else{currentUser=null;showScreen('login');}
 });
 
 async function doLogin(){
@@ -353,20 +408,51 @@ async function loadProducts(){
     const snap=await fbDB.ref('salesops_pricelist').get();
     if(snap.exists()){const pl=JSON.parse(snap.val());products=(pl.products||[]).filter(p=>!p.isSubSection&&p.desc&&p.code);}
   }catch(e){console.warn('Error cargando productos:',e)}
+  renderCatPills();
+}
+
+// ── Category pills ─────────────────────────────────────────────────────────────
+function renderCatPills(){
+  const cats=[...new Set(products.map(p=>p.category).filter(Boolean))];
+  const order=['vga','motherboard','monitor','minipc','ssd','psu','gabinete','cooling','accesorios'];
+  cats.sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return(ia<0?99:ia)-(ib<0?99:ib);});
+  const wrap=document.getElementById('cat-pills');
+  wrap.innerHTML=['<button class="cat-pill active" data-cat="" onclick="setCat(this,\'\')">Todas</button>',
+    ...cats.map(c=>`<button class="cat-pill" data-cat="${c}" onclick="setCat(this,'${c}')" style="--pill-c:${catColor(c)}">${esc(catLbl(c))}</button>`)
+  ].join('');
+}
+
+function setCat(el,cat){
+  document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  selectedCat=cat||null;
+  // reset product if it doesn't match new category
+  if(selectedCat&&selectedProd&&selectedProd.category!==selectedCat){
+    selectedProd=null;
+    document.getElementById('prod-search').value='';
+    document.getElementById('prod-card').style.display='none';
+    document.getElementById('stat-chips').style.display='none';
+    updateGenBtn();
+  }
+  onSearch(document.getElementById('prod-search').value);
 }
 
 // ── Product search ────────────────────────────────────────────────────────────
 function onSearch(val){
-  const q=val.trim().toLowerCase();
+  const q=(val||'').trim().toLowerCase();
   const dd=document.getElementById('prod-dd');
-  if(!q||!products.length){dd.style.display='none';return}
-  const hits=products.filter(p=>p.desc.toLowerCase().includes(q)||(p.code||'').toLowerCase().includes(q)).slice(0,12);
+  let pool=products;
+  if(selectedCat)pool=pool.filter(p=>p.category===selectedCat);
+  if(!q&&!selectedCat){dd.style.display='none';return}
+  const hits=q
+    ?pool.filter(p=>p.desc.toLowerCase().includes(q)||(p.code||'').toLowerCase().includes(q)).slice(0,12)
+    :pool.slice(0,12);
   if(!hits.length){dd.style.display='none';return}
   dd.innerHTML=hits.map(p=>{
     const idx=products.indexOf(p);
     return `<div class="dd-item" onclick="selectProd(${idx})">
       <div style="font-size:13px;font-weight:600">${esc(p.desc)}</div>
-      <div style="font-size:11px;color:var(--text3);font-family:monospace">${esc(p.code||'')} · ${esc(catLbl(p.category))}</div>
+      <div style="font-size:11px;color:var(--text3);font-family:monospace">${esc(p.code||'')} · <span style="color:${catColor(p.category)}">${esc(catLbl(p.category))}</span></div>
     </div>`;
   }).join('');
   dd.style.display='block';
@@ -577,6 +663,79 @@ function showResults(){
   }).join('');
 
   showScreen('results');
+  saveQuizResult(correct,total,pct);
+}
+
+// ── Save result to Firebase ────────────────────────────────────────────────────
+async function saveQuizResult(correct,total,pct){
+  if(!currentUser||!selectedProd)return;
+  const record={ts:Date.now(),product:selectedProd.desc,code:selectedProd.code||'',category:selectedProd.category||'',correct,total,pct,email:currentUser.email||''};
+  try{await fbDB.ref(`quiz_results/${currentUser.uid}`).push(record);}
+  catch(e){console.warn('No se pudo guardar resultado:',e)}
+}
+
+// ── History screen ─────────────────────────────────────────────────────────────
+async function loadHistory(){
+  if(!currentUser)return;
+  let rows=[];
+  try{
+    const snap=await fbDB.ref(`quiz_results/${currentUser.uid}`).orderByChild('ts').limitToLast(50).get();
+    if(snap.exists())snap.forEach(c=>rows.push(c.val()));
+  }catch(e){console.warn(e)}
+  rows.sort((a,b)=>b.ts-a.ts);
+
+  const overall=rows.length?Math.round(rows.reduce((s,r)=>s+r.pct,0)/rows.length):null;
+  document.getElementById('hist-overall').textContent=overall!==null?`Promedio: ${overall}%`:'';
+
+  const sparkData=[...rows].reverse().slice(-15);
+  const sparkCard=document.getElementById('hist-spark-card');
+  if(sparkData.length>=2){
+    sparkCard.style.display='block';
+    document.getElementById('hist-spark').innerHTML=sparkData.map(r=>{
+      const h=Math.max(4,Math.round((r.pct/100)*32));
+      const c=r.pct>=80?'#A3BE8C':r.pct>=60?'#EBCB8B':'#BF616A';
+      return `<div class="spark-bar" style="height:${h}px;background:${c};flex:1" title="${r.pct}% — ${r.product.slice(0,30)}"></div>`;
+    }).join('');
+    const mid=Math.floor(sparkData.length/2);
+    const avg1=sparkData.slice(0,mid).reduce((s,r)=>s+r.pct,0)/mid;
+    const avg2=sparkData.slice(mid).reduce((s,r)=>s+r.pct,0)/(sparkData.length-mid);
+    const diff=Math.round(avg2-avg1);
+    document.getElementById('hist-trend').textContent=diff>2?`↑ Mejoraste ${diff}pts respecto a tus primeros quizzes`:diff<-2?`↓ Bajaste ${Math.abs(diff)}pts — ¡a repasar!`:'→ Rendimiento estable';
+  }else{sparkCard.style.display='none'}
+
+  const listEl=document.getElementById('hist-list');
+  if(!rows.length){
+    listEl.innerHTML='<div class="hist-empty"><i class="ti ti-mood-empty" style="font-size:28px;display:block;margin-bottom:6px"></i>Todavía no hiciste ningún quiz</div>';
+    return;
+  }
+  listEl.innerHTML=rows.map(r=>{
+    const color=r.pct>=80?'#A3BE8C':r.pct>=60?'#EBCB8B':'#BF616A';
+    const d=new Date(r.ts);
+    const dateStr=`${d.getDate()}/${d.getMonth()+1} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const short=r.product.length>34?r.product.slice(0,34)+'…':r.product;
+    return `<div class="hist-row">
+      <div class="hist-score" style="color:${color};border-color:${color}">${r.pct}%</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(short)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px"><span style="color:${catColor(r.category)}">${esc(catLbl(r.category))}</span> · ${r.correct}/${r.total} · ${dateStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Google Login ───────────────────────────────────────────────────────────────
+async function doGoogleLogin(){
+  const btn=document.getElementById('google-btn');
+  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Conectando…';
+  try{
+    const provider=new firebase.auth.GoogleAuthProvider();
+    await fbAuth.signInWithPopup(provider);
+  }catch(e){
+    const err=document.getElementById('login-err');
+    err.textContent=e.code==='auth/popup-closed-by-user'?'Cerraste el popup de Google.':e.message;
+    err.style.display='block';
+    btn.disabled=false;btn.innerHTML='<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px"> Continuar con Google';
+  }
 }
 </script>
 </body>
