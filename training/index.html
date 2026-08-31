@@ -191,6 +191,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div style="display:flex;gap:4px">
+      <button class="icon-btn" id="admin-btn" onclick="showScreen('admin')" title="Panel Admin" style="display:none"><i class="ti ti-shield" style="font-size:19px;color:#EBCB8B"></i></button>
       <button class="icon-btn" onclick="showScreen('history')" title="Mi historial"><i class="ti ti-chart-bar" style="font-size:19px"></i></button>
       <button class="icon-btn" onclick="showSettings()" title="API Key"><i class="ti ti-settings" style="font-size:19px"></i></button>
       <button class="icon-btn" onclick="doLogout()" title="Cerrar sesión"><i class="ti ti-logout" style="font-size:19px"></i></button>
@@ -198,8 +199,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="card">
-    <div class="label" style="margin-bottom:8px">Elegí un producto</div>
+    <div class="label" style="margin-bottom:8px">Elegí un producto o categoría</div>
     <div class="cat-pills" id="cat-pills"></div>
+    <!-- Category-mode banner (shows when cat selected, no product) -->
+    <div id="cat-mode-banner" style="display:none;padding:10px 12px;background:rgba(255,102,0,.08);border:1px solid rgba(255,102,0,.25);border-radius:8px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--brand)" id="cat-mode-title"></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">Quiz con preguntas sobre toda la categoría · o buscá un producto específico abajo</div>
+    </div>
     <div class="search-wrap">
       <input class="input" type="text" id="prod-search" placeholder="Buscá por nombre o código…"
              oninput="onSearch(this.value)" autocomplete="off"/>
@@ -231,7 +237,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="btn btn-primary mt-2" id="gen-btn" onclick="generateQuiz()" disabled>
     <i class="ti ti-player-play"></i> Empezar Quiz
   </button>
-  <div class="ts tc mt-1">Sin trampa — cada quiz es diferente</div>
+  <div class="ts tc mt-1" id="gen-hint">Sin trampa — cada quiz es diferente</div>
 </div>
 
 <!-- ══ Loading ═══════════════════════════════════════════════════════════════ -->
@@ -276,8 +282,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   <div class="card" id="res-score" style="margin-bottom:12px"></div>
   <div class="gap">
-    <button class="btn btn-primary" onclick="generateQuiz()"><i class="ti ti-refresh"></i> Nuevo quiz (mismo producto)</button>
-    <button class="btn btn-ghost" onclick="showScreen('home')"><i class="ti ti-arrow-left"></i> Elegir otro producto</button>
+    <button class="btn btn-primary" id="res-retry-btn" onclick="generateQuiz()"><i class="ti ti-refresh"></i> Nuevo quiz</button>
+    <button class="btn btn-ghost" onclick="showScreen('home')"><i class="ti ti-arrow-left"></i> Volver al inicio</button>
   </div>
 </div>
 
@@ -301,6 +307,54 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <!-- List -->
   <div class="card" id="hist-list">
     <div class="hist-empty"><i class="ti ti-mood-empty" style="font-size:28px;display:block;margin-bottom:6px"></i>Todavía no hiciste ningún quiz</div>
+  </div>
+</div>
+
+<!-- ══ Admin ══════════════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-admin">
+  <div class="hdr">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="icon-btn" onclick="showScreen('home')" style="padding:5px"><i class="ti ti-arrow-left" style="font-size:19px"></i></button>
+      <div style="font-size:17px;font-weight:800"><i class="ti ti-shield" style="color:#EBCB8B"></i> Panel Admin</div>
+    </div>
+    <div id="admin-summary" style="font-size:12px;color:var(--text2)"></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card" style="margin-bottom:10px;padding:10px 12px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select class="input" id="admin-filter-cat" onchange="renderAdminTable()" style="width:auto;padding:6px 10px;font-size:12px">
+        <option value="">Todas las categorías</option>
+        <option value="vga">GPU</option>
+        <option value="motherboard">Motherboard</option>
+        <option value="monitor">Monitor</option>
+        <option value="minipc">Mini PC</option>
+        <option value="ssd">SSD</option>
+        <option value="psu">PSU</option>
+        <option value="gabinete">Gabinete</option>
+        <option value="cooling">Cooling</option>
+      </select>
+      <select class="input" id="admin-filter-user" onchange="renderAdminTable()" style="width:auto;padding:6px 10px;font-size:12px">
+        <option value="">Todos los usuarios</option>
+      </select>
+      <select class="input" id="admin-filter-mode" onchange="renderAdminTable()" style="width:auto;padding:6px 10px;font-size:12px">
+        <option value="">Todos los modos</option>
+        <option value="product">Por producto</option>
+        <option value="category">Por categoría</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Per-user summary -->
+  <div class="card" id="admin-user-cards" style="margin-bottom:10px;display:none">
+    <div class="label" style="margin-bottom:8px">Ranking de usuarios</div>
+    <div id="admin-user-list"></div>
+  </div>
+
+  <!-- Results table -->
+  <div class="card" id="admin-results-card">
+    <div class="label" style="margin-bottom:8px">Historial de quizzes <span id="admin-count" style="font-weight:400;color:var(--text3);font-size:11px"></span></div>
+    <div id="admin-table"><div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div></div>
   </div>
 </div>
 
@@ -345,8 +399,12 @@ const fbDB   = firebase.database();
 let products = [], selectedProd = null, questions = [];
 let currentQ = 0, answers = [], chosenAnswer = null;
 let quizPhase = 'selecting'; // 'selecting' | 'revealing'
-let selectedCat = null; // category filter pill
-let currentUser = null; // Firebase user
+let selectedCat = null;  // category filter pill
+let currentMode = 'product'; // 'product' | 'category'
+let quizCatProducts = []; // products used in category quiz
+let currentUser = null;
+let isAdmin = false;
+let adminAllRows = []; // all quiz results loaded for admin panel
 
 const LETTERS = [
   {l:'A', sel:'sel-a', ltr:'ltr-a'},
@@ -364,13 +422,23 @@ function showScreen(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+id).classList.add('active');
   if(id==='history')loadHistory();
+  if(id==='admin')loadAdminData();
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 fbAuth.onAuthStateChanged(user=>{
-  if(user){currentUser=user;loadProducts();loadApiKey();showScreen('home');}
-  else{currentUser=null;showScreen('login');}
+  if(user){currentUser=user;loadProducts();loadApiKey();checkAdmin();showScreen('home');}
+  else{currentUser=null;isAdmin=false;showScreen('login');}
 });
+
+async function checkAdmin(){
+  if(!currentUser)return;
+  try{
+    const snap=await fbDB.ref(`msi_quiz_config/admins/${currentUser.uid}`).get();
+    isAdmin=snap.exists()&&snap.val()===true;
+    document.getElementById('admin-btn').style.display=isAdmin?'':'none';
+  }catch(e){isAdmin=false;}
+}
 
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim();
@@ -506,8 +574,8 @@ function setCat(el,cat){
     document.getElementById('prod-search').value='';
     document.getElementById('prod-card').style.display='none';
     document.getElementById('stat-chips').style.display='none';
-    updateGenBtn();
   }
+  updateGenBtn(); // always update — category mode button may now be active
   // setTimeout so the click-outside handler fires first, then we reopen
   setTimeout(()=>onSearch(document.getElementById('prod-search').value),50);
 }
@@ -549,8 +617,35 @@ function selectProd(idx){
 
 function updateGenBtn(){
   const hasKey=!!(localStorage.getItem('msi_quiz_key')||'').trim();
-  document.getElementById('gen-btn').disabled=!selectedProd;
-  document.getElementById('no-key-warn').style.display=(selectedProd&&!hasKey)?'block':'none';
+  const catBanner=document.getElementById('cat-mode-banner');
+  const genBtn=document.getElementById('gen-btn');
+  const genHint=document.getElementById('gen-hint');
+
+  if(selectedProd){
+    // Product mode
+    currentMode='product';
+    catBanner.style.display='none';
+    genBtn.disabled=false;
+    genBtn.innerHTML='<i class="ti ti-player-play"></i> Empezar Quiz';
+    genHint.textContent='10 preguntas sobre este producto';
+  }else if(selectedCat){
+    // Category mode
+    currentMode='category';
+    const pool=products.filter(p=>p.category===selectedCat);
+    catBanner.style.display='block';
+    document.getElementById('cat-mode-title').textContent=
+      `Quiz de ${catLbl(selectedCat)} — ${pool.length} productos disponibles`;
+    genBtn.disabled=false;
+    genBtn.innerHTML=`<i class="ti ti-layers"></i> Quiz de ${catLbl(selectedCat)}`;
+    genHint.textContent='Preguntas variadas sobre toda la categoría';
+  }else{
+    currentMode='product';
+    catBanner.style.display='none';
+    genBtn.disabled=true;
+    genBtn.innerHTML='<i class="ti ti-player-play"></i> Empezar Quiz';
+    genHint.textContent='Sin trampa — cada quiz es diferente';
+  }
+  document.getElementById('no-key-warn').style.display=((selectedProd||selectedCat)&&!hasKey)?'block':'none';
 }
 
 document.addEventListener('click',e=>{
@@ -594,6 +689,7 @@ function showSaveToast(msg){
 async function generateQuiz(){
   const apiKey=(localStorage.getItem('msi_quiz_key')||'').trim();
   if(!apiKey){showSettings();return}
+  if(currentMode==='category')return generateCatQuiz(apiKey);
   if(!selectedProd)return;
   showScreen('loading');
   document.getElementById('load-prod').textContent=selectedProd.desc;
@@ -620,6 +716,44 @@ Reglas:
 Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
 {"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0,"imageUrl":"opcional-url-o-omitir"}]}`;
 
+  await _callApiAndStart(apiKey,prompt,`Generando quiz: ${selectedProd.desc}`);
+}
+
+async function generateCatQuiz(apiKey){
+  if(!selectedCat)return;
+  const pool=products.filter(p=>p.category===selectedCat);
+  if(!pool.length){alert('No hay productos en esta categoría');return}
+  // Pick 6-8 random products from the category
+  const shuffled=[...pool].sort(()=>Math.random()-.5);
+  quizCatProducts=shuffled.slice(0,Math.min(8,pool.length));
+  showScreen('loading');
+  document.getElementById('load-prod').textContent=`Quiz de ${catLbl(selectedCat)} — ${quizCatProducts.length} productos`;
+
+  const prodList=quizCatProducts.map((p,i)=>`${i+1}. ${p.desc}${p.code?' ('+p.code+')':''}`).join('\n');
+  const prompt=`Sos un experto en productos MSI. Generá exactamente 10 preguntas de opción múltiple sobre la categoría "${catLbl(selectedCat)}" para vendedores de distribuidores MSI Argentina.
+
+Productos del portfolio MSI Argentina en esta categoría:
+${prodList}
+
+Reglas:
+1. Exactamente 3 opciones por pregunta: 1 correcta, 2 incorrectas plausibles
+2. Distribuí las preguntas entre los distintos productos de la lista (al menos 4 productos distintos)
+3. Incluí preguntas comparativas: "¿Cuál de estos es mejor para gaming competitivo?", "¿Qué diferencia al modelo X del modelo Y?", "¿Para qué usuario está pensado...?"
+4. También preguntas de posicionamiento, target de usuario, ventaja clave, segmento de precio
+5. NO specs técnicas muy específicas (MHz, nm de proceso, etc.)
+6. Las preguntas deben ayudar al vendedor a RECOMENDAR correctamente
+7. Español argentino, natural y directo
+8. Variá el índice correcto aleatoriamente
+9. Para preguntas de un producto específico, podés incluir "imageUrl" si conocés la URL del CDN de MSI con certeza
+
+Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
+{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0,"imageUrl":"opcional-o-omitir"}]}`;
+
+  await _callApiAndStart(apiKey,prompt,`Quiz de ${catLbl(selectedCat)}`);
+}
+
+async function _callApiAndStart(apiKey,prompt,loadingLabel){
+  document.getElementById('load-prod').textContent=loadingLabel;
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -634,12 +768,16 @@ Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
     const parsed=JSON.parse(match[0]);
     if(!Array.isArray(parsed.questions)||parsed.questions.length<5)throw new Error('Se generaron pocas preguntas. Intentá de nuevo.');
     questions=parsed.questions.slice(0,10).map(q=>{
-      // Shuffle options so the correct answer isn't always A
       const idx=[0,1,2];
       for(let i=2;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
       return{...q,options:idx.map(i=>q.options[i]),correct:idx.indexOf(q.correct)};
     });
     currentQ=0;answers=[];chosenAnswer=null;quizPhase='selecting';
+    // Update retry button label
+    const rb=document.getElementById('res-retry-btn');
+    if(rb)rb.innerHTML=currentMode==='category'
+      ?`<i class="ti ti-refresh"></i> Otro quiz de ${catLbl(selectedCat)}`
+      :'<i class="ti ti-refresh"></i> Nuevo quiz (mismo producto)';
     showScreen('quiz');renderQ();
   }catch(e){
     showScreen('home');
@@ -653,7 +791,9 @@ function renderQ(){
   const total=questions.length;
   const pct=Math.round((currentQ/total)*100);
   document.getElementById('q-label').textContent=`Pregunta ${currentQ+1} de ${total}`;
-  document.getElementById('q-prod').textContent=selectedProd.desc;
+  document.getElementById('q-prod').textContent=currentMode==='category'
+    ?`Quiz de ${catLbl(selectedCat)}`
+    :selectedProd.desc;
   document.getElementById('q-fill').style.width=pct+'%';
   document.getElementById('q-pct').textContent=pct+'%';
   document.getElementById('q-text').textContent=q.q;
@@ -769,8 +909,18 @@ function showResults(){
 // ── Save result to Firebase ────────────────────────────────────────────────────
 async function saveQuizResult(correct,total,pct){
   if(!currentUser){console.warn('saveQuizResult: no currentUser');return;}
-  if(!selectedProd){console.warn('saveQuizResult: no selectedProd');return;}
-  const record={ts:Date.now(),product:selectedProd.desc,code:selectedProd.code||'',category:selectedProd.category||'',correct,total,pct,email:currentUser.email||''};
+  let record;
+  if(currentMode==='category'){
+    record={ts:Date.now(),mode:'category',
+      product:`Quiz de ${catLbl(selectedCat)}`,
+      code:'',category:selectedCat||'',
+      correct,total,pct,email:currentUser.email||''};
+  }else{
+    if(!selectedProd){console.warn('saveQuizResult: no selectedProd');return;}
+    record={ts:Date.now(),mode:'product',
+      product:selectedProd.desc,code:selectedProd.code||'',
+      category:selectedProd.category||'',correct,total,pct,email:currentUser.email||''};
+  }
   try{
     await fbDB.ref(`quiz_results/${currentUser.uid}`).push(record);
     console.log('✓ Resultado guardado:',pct+'%',record.product);
@@ -827,6 +977,90 @@ async function loadHistory(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ── Admin panel ───────────────────────────────────────────────────────────────
+async function loadAdminData(){
+  if(!isAdmin){document.getElementById('admin-table').innerHTML='<div class="hist-empty">Sin permisos de admin.</div>';return;}
+  document.getElementById('admin-table').innerHTML='<div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div>';
+  adminAllRows=[];
+  try{
+    const snap=await fbDB.ref('quiz_results').get();
+    if(snap.exists()){
+      snap.forEach(userSnap=>{
+        userSnap.forEach(r=>{
+          adminAllRows.push({...r.val(),uid:userSnap.key});
+        });
+      });
+    }
+  }catch(e){
+    document.getElementById('admin-table').innerHTML=`<div class="hist-empty" style="color:#BF616A">Error: ${e.message}<br><small>Verificá las reglas de Firebase</small></div>`;
+    return;
+  }
+  adminAllRows.sort((a,b)=>b.ts-a.ts);
+  // Populate user filter
+  const emails=[...new Set(adminAllRows.map(r=>r.email).filter(Boolean))].sort();
+  const userSel=document.getElementById('admin-filter-user');
+  userSel.innerHTML='<option value="">Todos los usuarios</option>'+
+    emails.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+  document.getElementById('admin-summary').textContent=`${adminAllRows.length} quizzes · ${emails.length} usuarios`;
+  renderAdminTable();
+}
+
+function renderAdminTable(){
+  if(!adminAllRows.length)return;
+  const filterCat=document.getElementById('admin-filter-cat').value;
+  const filterUser=document.getElementById('admin-filter-user').value;
+  const filterMode=document.getElementById('admin-filter-mode').value;
+  let rows=adminAllRows.filter(r=>
+    (!filterCat||r.category===filterCat)&&
+    (!filterUser||r.email===filterUser)&&
+    (!filterMode||r.mode===filterMode||(!r.mode&&filterMode==='product'))
+  );
+  document.getElementById('admin-count').textContent=`(${rows.length})`;
+
+  // Per-user summary card
+  const byUser={};
+  rows.forEach(r=>{
+    const k=r.email||r.uid;
+    if(!byUser[k])byUser[k]={email:k,total:0,sumPct:0,best:0};
+    byUser[k].total++;byUser[k].sumPct+=r.pct;
+    if(r.pct>byUser[k].best)byUser[k].best=r.pct;
+  });
+  const userArr=Object.values(byUser).sort((a,b)=>(b.sumPct/b.total)-(a.sumPct/a.total));
+  const ucEl=document.getElementById('admin-user-cards');
+  ucEl.style.display=userArr.length?'block':'none';
+  document.getElementById('admin-user-list').innerHTML=userArr.map(u=>{
+    const avg=Math.round(u.sumPct/u.total);
+    const c=avg>=80?'#A3BE8C':avg>=60?'#EBCB8B':'#BF616A';
+    return `<div class="hist-row">
+      <div class="hist-score" style="color:${c};border-color:${c}">${avg}%</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.email)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${u.total} quizzes · mejor: ${u.best}%</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Results table
+  document.getElementById('admin-table').innerHTML=rows.slice(0,100).map(r=>{
+    const color=r.pct>=80?'#A3BE8C':r.pct>=60?'#EBCB8B':'#BF616A';
+    const d=new Date(r.ts);
+    const dateStr=`${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const short=(r.product||'').length>36?(r.product).slice(0,36)+'…':r.product||'—';
+    const modeIcon=r.mode==='category'?'<i class="ti ti-layers" style="font-size:10px;color:var(--brand)"></i> ':'';
+    return `<div class="hist-row">
+      <div class="hist-score" style="color:${color};border-color:${color};font-size:12px">${r.pct}%</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${modeIcon}${esc(short)}</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:1px">
+          <span style="color:var(--text2)">${esc(r.email||'—')}</span>
+          · <span style="color:${catColor(r.category)}">${catLbl(r.category)}</span>
+          · ${r.correct}/${r.total} · ${dateStr}
+        </div>
+      </div>
+    </div>`;
+  }).join('')||(rows.length?'':'<div class="hist-empty">Sin resultados con ese filtro</div>');
 }
 
 // ── Google Login ───────────────────────────────────────────────────────────────
