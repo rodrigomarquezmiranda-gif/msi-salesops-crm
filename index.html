@@ -1475,7 +1475,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '31.08.26.1';
+const APP_VERSION = '31.08.26.2';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -6787,8 +6787,8 @@ const _PBM_S = {
 function _pbmChassisNaturalTier(d) {
   if (/GABINETE.*\bMEG\b|MEG\s+(?:MAESTRO|PROSPECT|G\d)/.test(d)) return 1;
   if (/GABINETE.*\bMPG\b|MPG\s+(?:GUNGNIR|VELOCE|SEKIRA)|MAG\s+PANO\s+120R\s+PZ/.test(d)) return 2;
-  if (/MAG\s+PANO/.test(d)) return 3;
-  return 5; // FORGE, VAMPIRIC, SHIELD, PAG PANO, PRO FORGE, PRO SHIELD — todos tier 5
+  if (/MAG\s+PANO/.test(d) && !/M110A/.test(d)) return 3; // MAG PANO genérico (excluye M110A budget)
+  return 5; // FORGE, VAMPIRIC, SHIELD, PAG PANO, M110A, PRO FORGE — todos tier 5
 }
 
 function _pbmPSUNaturalTier(d) {
