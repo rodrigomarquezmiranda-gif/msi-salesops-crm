@@ -390,16 +390,22 @@ async function doLogin(){
 async function doLogout(){if(!confirm('¿Cerrar sesión?'))return;await fbAuth.signOut();products=[];selectedProd=null;}
 
 async function loadApiKey(){
-  // Si ya está en localStorage, usar esa
-  if((localStorage.getItem('msi_quiz_key')||'').trim()) return;
-  // Si no, buscar en Firebase (configurada por el admin)
+  if((localStorage.getItem('msi_quiz_key')||'').trim()){
+    console.log('loadApiKey: clave ya en localStorage');return;
+  }
+  console.log('loadApiKey: buscando en Firebase...');
   try{
     const snap=await fbDB.ref('msi_quiz_config/apiKey').get();
     if(snap.exists()&&snap.val()){
       localStorage.setItem('msi_quiz_key',snap.val());
+      console.log('✓ loadApiKey: clave cargada desde Firebase');
       updateGenBtn();
+    }else{
+      console.warn('loadApiKey: nodo vacío o no existe en Firebase (path: msi_quiz_config/apiKey)');
     }
-  }catch(e){}
+  }catch(e){
+    console.error('✗ loadApiKey Firebase error:',e.code,e.message);
+  }
 }
 
 // ── Category normalization ─────────────────────────────────────────────────────
@@ -559,12 +565,29 @@ async function saveSettings(){
   const k=document.getElementById('set-key').value.trim();
   if(k){
     localStorage.setItem('msi_quiz_key',k);
-    // Guardar en Firebase para que todos los usuarios la usen sin configurar
-    try{await fbDB.ref('msi_quiz_config/apiKey').set(k);}catch(e){}
+    // Guardar en Firebase para que todos los usuarios la reciban sin configurar
+    try{
+      await fbDB.ref('msi_quiz_config/apiKey').set(k);
+      console.log('✓ API key guardada en Firebase');
+      showSaveToast('✓ Clave guardada y compartida con todos los usuarios');
+    }catch(e){
+      console.error('✗ Error guardando en Firebase:',e.code,e.message);
+      showSaveToast('⚠️ Guardado solo en este dispositivo (Firebase: '+e.code+')');
+    }
   }else{
     localStorage.removeItem('msi_quiz_key');
+    try{await fbDB.ref('msi_quiz_config/apiKey').remove();}catch(e){}
   }
   closeSettings();updateGenBtn();
+}
+
+function showSaveToast(msg){
+  let t=document.getElementById('save-toast');
+  if(!t){t=document.createElement('div');t.id='save-toast';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg4);border:1px solid var(--border2);color:var(--text);padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;transition:opacity .3s';
+    document.body.appendChild(t);}
+  t.textContent=msg;t.style.opacity='1';
+  clearTimeout(t._to);t._to=setTimeout(()=>t.style.opacity='0',3500);
 }
 
 // ── Generate ──────────────────────────────────────────────────────────────────

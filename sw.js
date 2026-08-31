@@ -1,6 +1,6 @@
 // MSI SalesOps CRM — Service Worker
 // Cache name includes version — changing it forces old cache eviction on next activate.
-const CACHE = 'salesops-31.08.26.3';
+const CACHE = 'salesops-31.08.26.4';
 const SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-apple.png'];
 
 self.addEventListener('install', e => {
@@ -33,7 +33,8 @@ self.addEventListener('fetch', e => {
       fetch(e.request)
         .then(res => {
           if (res && res.status === 200) {
-            caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+            const cloned = res.clone(); // clone before any async op consumes the body
+            caches.open(CACHE).then(c => c.put(e.request, cloned));
           }
           return res;
         })
@@ -46,7 +47,8 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
       if (res && res.status === 200 && e.request.method === 'GET') {
-        caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+        const cloned = res.clone(); // clone before any async op consumes the body
+        caches.open(CACHE).then(c => c.put(e.request, cloned));
       }
       return res;
     }))
