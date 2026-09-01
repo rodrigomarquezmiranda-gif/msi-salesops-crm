@@ -230,6 +230,13 @@ if not pricelist_raw:
 
 if isinstance(pricelist_raw, str): pricelist_raw = json.loads(pricelist_raw)
 raw_products = pricelist_raw.get("products", {})
+
+# Firebase may return products as a list (array) or dict — normalize to dict
+if isinstance(raw_products, list):
+    raw_products = {
+        (p.get("code") or p.get("partNo") or p.get("sku") or str(i)): p
+        for i, p in enumerate(raw_products) if isinstance(p, dict)
+    }
 print(f"Pricelist: {len(raw_products)} products")
 
 # 2. Build new snapshot
