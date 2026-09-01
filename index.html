@@ -14,6 +14,13 @@
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#CC2222" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#CC2222" media="(prefers-color-scheme: dark)" />
+<!-- Preconnect para reducir latencia en CDNs y Firebase -->
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="preconnect" href="https://msi-crm-default-rtdb.firebaseio.com" crossorigin />
+<link rel="dns-prefetch" href="https://firebaseio.com" />
+<link rel="dns-prefetch" href="https://googleapis.com" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>

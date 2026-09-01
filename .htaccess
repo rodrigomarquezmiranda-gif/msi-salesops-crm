@@ -5,36 +5,49 @@ RewriteEngine On
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
-# Block sensitive files
-<FilesMatch "\.(md|json|bat|xlsx|py|sh|env|log|sql|bak)$">
+# Disable directory listing
+Options -Indexes
+
+# ── Gzip compression ─────────────────────────────────────────────────────────
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json text/plain image/svg+xml
+</IfModule>
+
+# ── Block sensitive files ─────────────────────────────────────────────────────
+# Default deny for everything not explicitly allowed
+<FilesMatch "\.(md|bat|py|sh|env|log|sql|bak|xlsx|csv)$">
   Require all denied
 </FilesMatch>
-
-# Allow only the files the app needs
-<FilesMatch "^(index\.html|sw\.js|manifest\.json|favicon\.png|msi-watermark\.png|icon-192\.png|icon-512\.png|icon-apple\.png|robots\.txt)$">
-  Require all granted
+# Block JSON files except manifest.json
+<FilesMatch "\.json$">
+  Require all denied
 </FilesMatch>
-
-# Override block for manifest.json specifically (needed by PWA)
 <Files "manifest.json">
   Require all granted
 </Files>
 
-# Cache headers for static assets (CDN-friendly)
+# ── Cache headers (CDN-friendly) ──────────────────────────────────────────────
 <IfModule mod_expires.c>
   ExpiresActive On
-  ExpiresByType text/html "access plus 0 seconds"
-  ExpiresByType application/javascript "access plus 1 week"
-  ExpiresByType image/png "access plus 1 month"
-  ExpiresByType image/x-icon "access plus 1 month"
+  # HTML: no cache (always fresh)
+  ExpiresByType text/html                 "access plus 0 seconds"
+  # JS/CSS: 1 week (sw.js bumps version on every deploy)
+  ExpiresByType application/javascript    "access plus 7 days"
+  ExpiresByType text/css                  "access plus 7 days"
+  # Images: 1 month
+  ExpiresByType image/png                 "access plus 30 days"
+  ExpiresByType image/x-icon              "access plus 30 days"
+  ExpiresByType image/webp                "access plus 30 days"
+  # Manifest: no cache
+  ExpiresByType application/manifest+json "access plus 0 seconds"
 </IfModule>
 
-# Security headers
+# ── Security headers ──────────────────────────────────────────────────────────
 <IfModule mod_headers.c>
   Header always set X-Frame-Options "SAMEORIGIN"
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(), camera=(), microphone=()"
+  # CSP: permite Firebase, CDNs usados por la app, y nada más
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.anthropic.com wss://*.firebaseio.com; font-src 'self' https://cdn.jsdelivr.net data:; worker-src 'self' blob:; manifest-src 'self'"
 </IfModule>
-
-# Disable directory listing
-Options -Indexes
