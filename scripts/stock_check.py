@@ -61,169 +61,260 @@ def safe_float(v):
     try: return float(str(v).replace('$','').replace(',','').strip())
     except: return 0.0
 
-# ── Generate Excel (same format as CRM export) ────────────────────────────────
+# ── Generate Excel — IDENTICAL to CRM exportPriceListExcel() ─────────────────
 def generate_excel(raw_products, changes, date_str):
+    """
+    Replica exacta de exportPriceListExcel() en index.html.
+    Mismos colores, fuentes, columnas, sub-secciones y formato de precio.
+    """
     try:
         import openpyxl
         from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
     except ImportError:
         print("[WARN] openpyxl no disponible"); return None
 
-    NAVY   = "1F2A44"
-    ORANGE = "FF6600"
-    WHITE  = "FFFFFF"
-    LGRAY  = "F0F0F0"
-    CATBG  = "2A3550"
+    # ── CRM palette (argb sin el prefijo FF para openpyxl) ──
+    NAVY    = "1F2A44"   # title bg
+    NAVY2   = "30456B"   # date bg
+    RED     = "C8102E"   # category header
+    WHITE   = "FFFFFF"
+    SUBSEC  = "DCE6F1"   # sub-section banner (light blue)
+    ALT1    = "FFFFFF"   # alternating row 1
+    ALT2    = "F7F9FC"   # alternating row 2
+    GREEN_T = "1A5C28"   # price text color
 
+    # Estado fill/text/bold exactly as in CRM
+    ESTADO_FILL  = {"new!":"92D050","focus!":"4472C4","eol":"FF0000",
+                    "to clean":"808080","last batch / eol soon":"FFC000",
+                    "shortage":"FF66CC","wall plug!":"808080"}
+    ESTADO_TEXT  = {"new!":WHITE,"focus!":WHITE,"eol":WHITE,"to clean":WHITE,
+                    "last batch / eol soon":"000000","shortage":WHITE,"wall plug!":"000000"}
+    ESTADO_BOLD  = {"new!":True,"focus!":True,"eol":True,"to clean":True,
+                    "last batch / eol soon":True,"shortage":True,"wall plug!":True}
+
+    BORDER = Border(
+        top=Side(style="thin",color="FFCCCCCC"),
+        left=Side(style="thin",color="FFCCCCCC"),
+        bottom=Side(style="thin",color="FFCCCCCC"),
+        right=Side(style="thin",color="FFCCCCCC"),
+    )
+
+    def sf(argb):
+        return PatternFill("solid", fgColor=argb)
+
+    def cfont(size=10, bold=False, italic=False, color=None, name="Calibri"):
+        return Font(size=size, bold=bold, italic=italic,
+                    color=color or "FF000000", name=name)
+
+    NC = 13
     wb = openpyxl.Workbook()
-
-    # ════════════════════════════════════════════════════════
-    # Sheet 1 — Lista de Precios (formato idéntico al CRM)
-    # ════════════════════════════════════════════════════════
     ws = wb.active
     ws.title = "Lista de Precios"
 
-    title_font  = Font(color=WHITE, bold=True, size=13)
-    note_font   = Font(color="555555", italic=True, size=9)
-    hdr_fill    = PatternFill("solid", fgColor=NAVY)
-    hdr_font    = Font(color=WHITE, bold=True, size=9)
-    cat_fill    = PatternFill("solid", fgColor=CATBG)
-    cat_font    = Font(color=ORANGE, bold=True, size=10)
-    gray_fill   = PatternFill("solid", fgColor=LGRAY)
-    thin        = Border(bottom=Side(style="thin", color="DDDDDD"))
-    center      = Alignment(horizontal="center", vertical="center")
-    NCOLS       = 13
+    # Column widths (px ≈ Excel units, from CRM source)
+    for col, w in enumerate([16,20,40,28,12,11,9,13,12,20,14,22,13], 1):
+        ws.column_dimensions[get_column_letter(col)].width = w
 
-    # Row 1 — Title
-    ws.merge_cells(f"A1:M1")
-    ws["A1"] = f"MSI LATAM — Lista de Precios y Stock"
-    ws["A1"].font = title_font
-    ws["A1"].fill = PatternFill("solid", fgColor=ORANGE)
-    ws["A1"].alignment = center
-    ws.row_dimensions[1].height = 26
+    def add_merged(val, fill_argb, font_obj, height=None):
+        ws.append([""])
+        rn = ws.max_row
+        ws.merge_cells(startRow=rn, startColumn=1, endRow=rn, endColumn=NC)
+        mc = ws.cell(rn, 1)
+        if val is not None: mc.value = val
+        if fill_argb: mc.fill = sf(fill_argb)
+        if font_obj:  mc.font = font_obj
+        mc.alignment = Alignment(horizontal="left", vertical="middle")
+        if height: ws.row_dimensions[rn].height = height
 
-    # Row 2 — Date
-    ws.merge_cells("A2:M2")
-    ws["A2"] = f"Fecha de referencia: {date_str}"
-    ws["A2"].font = Font(color="333333", size=9)
-    ws["A2"].alignment = Alignment(horizontal="left")
+    # ── Rows 1-8: header block (identical to CRM) ──
+    add_merged("MSI LATAM — Lista de Precios y Stock",
+               NAVY, cfont(size=18, bold=True, color="FF"+WHITE), 31.5)
+    add_merged(f"Fecha de referencia: {date_str}",
+               NAVY2, cfont(size=11, color="FF"+WHITE), 15)
+    add_merged(None, None, None, None)
+    add_merged("Notas", None, cfont(size=10, bold=True), 15)
+    nf = cfont(size=9, color="FF555555")
+    add_merged("Miami Stock: físicamente en Miami.   Miami Bonded Stock: físicamente en Miami Bonded / FTZ.   ETA: llegada estimada.", None, nf, 15)
+    add_merged("Precio: se toma el valor de la columna Miami Price; si existe un precio de Market Share menor, se usa el más bajo de los dos.", None, nf, 15)
+    add_merged(f"Exportado desde SalesOps CRM · {date_str}", None, nf, 15)
+    add_merged(None, None, None, None)
 
-    # Rows 3-7 — Notes
-    notes = [
-        None,
-        "Notas",
-        "Miami Stock: físicamente en Miami.   Miami Bonded Stock: físicamente en Miami Bonded / FTZ.   ETA: llegada estimada.",
-        "Precio: se toma el valor de la columna Miami Price; si existe un precio de Market Share menor, se usa el más bajo de los dos.",
-        f"Exportado desde SalesOps CRM · {date_str}",
-    ]
-    for i, note in enumerate(notes, 3):
-        if note:
-            ws.merge_cells(f"A{i}:M{i}")
-            ws[f"A{i}"] = note
-            ws[f"A{i}"].font = note_font if i > 4 else Font(bold=True, size=9)
+    # ── Row 9: column headers ──
+    ws.append([""])
+    hr = ws.max_row  # = 9
+    for i, h in enumerate(["UPC","N° de Parte","Producto","Detalle","Estado","Links",
+                            "Qty/Ctn","Qty/Plt","Miami Stock","Miami ETA",
+                            "Miami Bonded Stock","Miami Bonded ETA","Precio"], 1):
+        c = ws.cell(hr, i)
+        c.value = h
+        c.fill  = sf(NAVY)
+        c.font  = cfont(size=10, bold=True, color="FF"+WHITE)
+        c.alignment = Alignment(horizontal="center", vertical="middle", wrapText=True)
+    ws.row_dimensions[hr].height = 30
 
-    # Row 9 — Headers
-    HEADERS = ["UPC","N° de Parte","Producto","Detalle","Estado","Links",
-               "Qty/Ctn","Qty/Plt","Miami Stock","Miami ETA","Miami Bonded Stock","Miami Bonded ETA","Precio"]
-    for col, h in enumerate(HEADERS, 1):
-        cell = ws.cell(row=9, column=col, value=h)
-        cell.fill = hdr_fill; cell.font = hdr_font; cell.alignment = center
-    ws.row_dimensions[9].height = 18
-
-    COL_W = [14, 20, 44, 36, 8, 8, 9, 9, 13, 11, 18, 16, 12]
-    for col, w in enumerate(COL_W, 1):
-        ws.column_dimensions[ws.cell(row=9, column=col).column_letter].width = w
-
-    # Group products by category, preserving order
-    from collections import OrderedDict
-    by_cat = OrderedDict()
-    for partNo, p in raw_products.items():
-        cat = p.get("category") or p.get("cat") or "Other"
-        by_cat.setdefault(cat, []).append((partNo, p))
-
-    cur_row = 10
-    row_idx = 0
-    for cat, items in by_cat.items():
-        # Category header row
-        ws.merge_cells(f"A{cur_row}:M{cur_row}")
-        ws[f"A{cur_row}"] = cat
-        ws[f"A{cur_row}"].fill = cat_fill
-        ws[f"A{cur_row}"].font = cat_font
-        ws[f"A{cur_row}"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
-        ws.row_dimensions[cur_row].height = 16
-        cur_row += 1
-
-        for partNo, p in items:
-            fill = gray_fill if row_idx % 2 == 0 else None
-            price = safe_float(p.get("price", p.get("priceR", 0)))
-            vals = [
-                p.get("upc",""),
-                partNo,
-                p.get("name",""),
-                p.get("detail", p.get("marketing", p.get("description",""))),
-                p.get("status", p.get("estado","")),
-                "",  # Links — not available via API
-                p.get("qtyCtn",""),
-                p.get("qtyPlt",""),
-                safe_int(p.get("miamiStock",0)),
-                p.get("miamiEta",""),
-                safe_int(p.get("bondedStock",0)),
-                p.get("bondedEta",""),
-                price,
-            ]
-            for col, val in enumerate(vals, 1):
-                cell = ws.cell(row=cur_row, column=col, value=val)
-                if fill: cell.fill = fill
-                cell.border = thin
-                cell.alignment = Alignment(vertical="center",
-                    horizontal="center" if col in (1,6,7,8,9,10,11,12,13) else "left")
-                if col == 13 and isinstance(val, (int,float)) and val:
-                    cell.number_format = '"$"#,##0.00'
-                if col == 9 or col == 11:
-                    cell.number_format = '#,##0'
-            cur_row += 1
-            row_idx += 1
-
-    # Freeze panes below header
+    # Freeze below header
     ws.freeze_panes = "A10"
 
+    # ── Rows 10+: products ──
+    # raw_products can be a list (Firebase array) or dict
+    if isinstance(raw_products, list):
+        items_list = [p for p in raw_products if isinstance(p, dict)]
+    else:
+        items_list = list(raw_products.values())
+
+    current_cat = ""
+    alt_idx = 0
+
+    for item in items_list:
+        if not isinstance(item, dict): continue
+
+        # Sub-section banner (light blue)
+        if item.get("isSubSection"):
+            ws.append([""])
+            srn = ws.max_row
+            ws.merge_cells(startRow=srn, startColumn=1, endRow=srn, endColumn=NC)
+            mc = ws.cell(srn, 1)
+            mc.value = item.get("label","")
+            mc.fill  = sf(SUBSEC)
+            mc.font  = cfont(size=10, italic=True, color="FF"+NAVY)
+            mc.alignment = Alignment(horizontal="left", vertical="middle")
+            ws.row_dimensions[srn].height = 15
+            alt_idx = 0
+            continue
+
+        # Category header (red)
+        cat = item.get("category","")
+        if cat != current_cat:
+            current_cat = cat
+            alt_idx = 0
+            ws.append([""])
+            crn = ws.max_row
+            ws.merge_cells(startRow=crn, startColumn=1, endRow=crn, endColumn=NC)
+            mc = ws.cell(crn, 1)
+            mc.value = cat
+            mc.fill  = sf(RED)
+            mc.font  = cfont(size=11, bold=True, color="FF"+WHITE)
+            mc.alignment = Alignment(horizontal="left", vertical="middle")
+            ws.row_dimensions[crn].height = 21.75
+
+        bg = ALT1 if alt_idx % 2 == 0 else ALT2
+        alt_idx += 1
+
+        ws.append([""])
+        prn = ws.max_row
+        ws.row_dimensions[prn].height = 15
+
+        def setc(col, val, font_obj=None, num_fmt=None, halign="left"):
+            c = ws.cell(prn, col)
+            c.value = val
+            c.fill  = sf(bg)
+            c.border = BORDER
+            c.font  = font_obj or cfont(size=10)
+            c.alignment = Alignment(horizontal=halign, vertical="middle")
+            if num_fmt: c.number_format = num_fmt
+
+        # Col 1: UPC (as number)
+        upc_raw = item.get("upc","")
+        upc_val = int(upc_raw) if str(upc_raw).isdigit() else (upc_raw or "")
+        setc(1, upc_val, cfont(size=10),
+             "0" if isinstance(upc_val, int) else None, "center")
+
+        # Col 2: N° de Parte / code
+        setc(2, item.get("code",""), cfont(size=10), None, "center")
+
+        # Col 3: Producto / desc (bold)
+        setc(3, item.get("desc",""), cfont(size=10, bold=True), None, "left")
+
+        # Col 4: Detalle (italic, gray)
+        setc(4, item.get("detalle",""),
+             cfont(size=9, italic=True, color="FF666666"), None, "left")
+
+        # Col 5: Estado (colored background)
+        estado_val = item.get("estado","")
+        estado_key = estado_val.lower()
+        e_fill = ESTADO_FILL.get(estado_key)
+        e_text = ESTADO_TEXT.get(estado_key, "000000")
+        e_bold = ESTADO_BOLD.get(estado_key, False)
+        ec = ws.cell(prn, 5)
+        ec.value = estado_val
+        ec.fill  = sf(e_fill) if e_fill else sf(bg)
+        ec.font  = cfont(size=9, bold=e_bold, color="FF"+e_text)
+        ec.alignment = Alignment(horizontal="center", vertical="middle")
+        ec.border = BORDER
+
+        # Col 6: Links (hyperlink if URL)
+        ficha = item.get("ficha","")
+        lc = ws.cell(prn, 6)
+        lc.fill  = sf(bg)
+        lc.alignment = Alignment(horizontal="center", vertical="middle")
+        lc.border = BORDER
+        if ficha and (ficha.startswith("http") or ficha.startswith("www")):
+            lc.value = "Links"
+            lc.font  = cfont(size=9, color="FF0563C1")
+            # openpyxl hyperlink
+            lc.hyperlink = ficha
+        elif ficha:
+            lc.value = ficha
+            lc.font  = cfont(size=9, color="FF"+GREEN_T)
+        else:
+            lc.value = ""
+            lc.font  = cfont(size=9)
+
+        setc(7,  item.get("qtyCtn",""),    cfont(size=10), None, "center")
+        setc(8,  item.get("qtyPlt",""),    cfont(size=10), None, "center")
+        setc(9,  item.get("miamiStock",""),cfont(size=10), None, "center")
+        setc(10, item.get("miamiEta",""),  cfont(size=10), None, "left")
+        setc(11, item.get("bondedStock",""),cfont(size=10), None, "center")
+        setc(12, item.get("bondedEta",""), cfont(size=10), None, "left")
+
+        # Col 13: Precio (bold, dark green, $#,##0 sin decimales)
+        price = item.get("price")
+        if price is not None and price != "":
+            price_num = safe_float(price)
+            setc(13, price_num,
+                 cfont(size=10, bold=True, color="FF"+GREEN_T),
+                 "$#,##0", "center")
+        else:
+            setc(13, "", cfont(size=10), None, "center")
+
     # ════════════════════════════════════════════════════════
-    # Sheet 2 — Cambios (only if any)
+    # Sheet 2 — Cambios
     # ════════════════════════════════════════════════════════
     if changes:
         ws2 = wb.create_sheet("Cambios")
-
         ws2.merge_cells("A1:E1")
         ws2["A1"] = f"Cambios detectados — {date_str}"
-        ws2["A1"].font = title_font
-        ws2["A1"].fill = PatternFill("solid", fgColor=ORANGE)
-        ws2["A1"].alignment = center
+        ws2["A1"].font = cfont(size=13, bold=True, color="FF"+WHITE)
+        ws2["A1"].fill = sf("FF6600")
+        ws2["A1"].alignment = Alignment(horizontal="center", vertical="middle")
         ws2.row_dimensions[1].height = 24
 
         h2 = ["Tipo","N° de Parte","Producto","Valor anterior","Valor nuevo"]
         for col, h in enumerate(h2, 1):
-            cell = ws2.cell(row=2, column=col, value=h)
-            cell.fill = hdr_fill; cell.font = hdr_font; cell.alignment = center
+            c = ws2.cell(2, col, value=h)
+            c.fill = sf(NAVY); c.font = cfont(10, True, color="FF"+WHITE)
+            c.alignment = Alignment(horizontal="center")
 
-        type_labels = {"price":"Precio","stock":"Stock","new":"Nuevo","removed":"Retirado"}
-        TYPE_COLORS = {"new":"00875A","removed":"6B7280","price":"0057B8","stock":"444444"}
-        for i, c in enumerate(changes):
+        TYPE_CLR = {"new":GREEN_T,"removed":"6B7280","price":"0057B8","stock":"333333"}
+        TYPE_LBL = {"new":"Nuevo","removed":"Retirado","price":"Precio","stock":"Stock"}
+        for i, ch in enumerate(changes):
             row = i + 3
-            t   = type_labels.get(c.get("type",""), c.get("type",""))
-            old = c.get("oldPrice", c.get("oldStock","—"))
-            new = c.get("newPrice", c.get("newStock","—"))
-            if isinstance(old, float): old = f"${old:,.2f}"
-            if isinstance(new, float): new = f"${new:,.2f}"
-            vals = [t, c.get("partNo",""), c.get("name",""), old, new]
-            clr  = TYPE_COLORS.get(c.get("type",""),"333333")
-            for col, val in enumerate(vals, 1):
-                cell = ws2.cell(row=row, column=col, value=val)
-                if i % 2 == 0: cell.fill = gray_fill
-                cell.border = thin
-                if col == 1: cell.font = Font(color=clr, bold=True, size=9)
+            bg2 = ALT2 if i % 2 == 0 else ALT1
+            t = TYPE_LBL.get(ch.get("type",""), ch.get("type",""))
+            old = ch.get("oldPrice", ch.get("oldStock","—"))
+            new = ch.get("newPrice", ch.get("newStock","—"))
+            if isinstance(old, (int,float)): old = f"${old:,.0f}"
+            if isinstance(new, (int,float)): new = f"${new:,.0f}"
+            clr = TYPE_CLR.get(ch.get("type",""),"333333")
+            for col, val in enumerate([t, ch.get("partNo",""), ch.get("name",""), old, new], 1):
+                c = ws2.cell(row, col, value=val)
+                c.fill = sf(bg2)
+                c.border = BORDER
+                c.font = cfont(10, bold=(col==1), color="FF"+clr if col==1 else "FF000000")
 
-        for col, w in enumerate([12,20,46,16,16],1):
-            ws2.column_dimensions[ws2.cell(row=2,column=col).column_letter].width = w
+        for col, w in enumerate([12,20,46,16,16], 1):
+            ws2.column_dimensions[get_column_letter(col)].width = w
 
     buf = io.BytesIO()
     wb.save(buf); buf.seek(0)
@@ -432,10 +523,16 @@ if isinstance(raw_products, list):
 print(f"Pricelist: {len(raw_products)} products")
 
 # 2. Build snapshot (lean, for diffing)
+# Field names match the CRM: code, desc, price (not name/partNo)
 new_snapshot = {}
-for partNo, p in raw_products.items():
-    new_snapshot[partNo] = {
-        "name":        p.get("name",""),
+items_for_snap = raw_products if isinstance(raw_products, dict) else {
+    (p.get("code") or str(i)): p for i, p in enumerate(raw_products) if isinstance(p, dict)
+}
+for key, p in items_for_snap.items():
+    if p.get("isSubSection"): continue   # skip section markers
+    code = p.get("code") or key
+    new_snapshot[code] = {
+        "name":        p.get("desc", p.get("name","")),
         "category":    p.get("category",""),
         "miamiStock":  safe_int(p.get("miamiStock",0)),
         "miamiPrice":  safe_float(p.get("price", p.get("priceR", 0))),
