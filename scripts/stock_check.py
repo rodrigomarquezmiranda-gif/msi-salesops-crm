@@ -166,7 +166,8 @@ def send_email(summary, changes, excel_bytes, date_str):
 
     msg = MIMEMultipart()
     msg["From"]    = f"MSI Argentina <{SMTP_USER}>"
-    msg["To"]      = ", ".join(RECIPIENTS)
+    msg["To"]      = SMTP_USER          # aparece "Para: sales@msicrm.com"
+    msg["Bcc"]     = ", ".join(RECIPIENTS)  # destinatarios reales en copia oculta
     msg["Subject"] = f"MSI Argentina — Lista de Precios Actualizada ({date_str})"
     msg["Reply-To"] = SMTP_USER
 
