@@ -21,9 +21,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install dependencies
+        run: pip install openpyxl
+
       - name: Run stock check
         env:
-          FIREBASE_SECRET: ${{ secrets.FIREBASE_SECRET }}
+          FIREBASE_SECRET:    ${{ secrets.FIREBASE_SECRET }}
+          SMTP_PASSWORD:      ${{ secrets.SMTP_PASSWORD }}
+          RECIPIENT_EMAILS:   ${{ secrets.RECIPIENT_EMAILS }}
         run: python scripts/stock_check.py
 
       - name: Commit updated snapshot files
