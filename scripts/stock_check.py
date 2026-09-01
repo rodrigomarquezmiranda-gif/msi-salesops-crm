@@ -119,7 +119,7 @@ def generate_excel(raw_products, changes, date_str):
     def add_merged(val, fill_argb, font_obj, height=None):
         ws.append([""])
         rn = ws.max_row
-        ws.merge_cells(startRow=rn, startColumn=1, endRow=rn, endColumn=NC)
+        ws.merge_cells(start_row=rn, start_column=1, end_row=rn, end_column=NC)
         mc = ws.cell(rn, 1)
         if val is not None: mc.value = val
         if fill_argb: mc.fill = sf(fill_argb)
@@ -173,7 +173,7 @@ def generate_excel(raw_products, changes, date_str):
         if item.get("isSubSection"):
             ws.append([""])
             srn = ws.max_row
-            ws.merge_cells(startRow=srn, startColumn=1, endRow=srn, endColumn=NC)
+            ws.merge_cells(start_row=srn, start_column=1, end_row=srn, end_column=NC)
             mc = ws.cell(srn, 1)
             mc.value = item.get("label","")
             mc.fill  = sf(SUBSEC)
@@ -190,7 +190,7 @@ def generate_excel(raw_products, changes, date_str):
             alt_idx = 0
             ws.append([""])
             crn = ws.max_row
-            ws.merge_cells(startRow=crn, startColumn=1, endRow=crn, endColumn=NC)
+            ws.merge_cells(start_row=crn, start_column=1, end_row=crn, end_column=NC)
             mc = ws.cell(crn, 1)
             mc.value = cat
             mc.fill  = sf(RED)
