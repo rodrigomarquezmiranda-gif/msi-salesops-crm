@@ -231,7 +231,7 @@ def generate_excel(raw_products, changes, date_str):
              cfont(size=9, italic=True, color="FF666666"), None, "left")
 
         # Col 5: Estado (colored background)
-        estado_val = item.get("estado","")
+        estado_val = item.get("estado") or ""
         estado_key = estado_val.lower()
         e_fill = ESTADO_FILL.get(estado_key)
         e_text = ESTADO_TEXT.get(estado_key, "000000")
