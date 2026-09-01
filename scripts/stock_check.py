@@ -17,11 +17,15 @@ FB_BASE    = "https://msi-crm-default-rtdb.firebaseio.com"
 FB_SECRET  = os.environ.get("FIREBASE_SECRET", "")
 FB_PARAMS  = f"?auth={FB_SECRET}" if FB_SECRET else ""
 
-SMTP_HOST  = "smtp.hostinger.com"
-SMTP_PORT  = 465
-SMTP_USER  = "sales@msicrm.com"
-SMTP_PASS  = os.environ.get("SMTP_PASSWORD", "")
-RECIPIENTS = [e.strip() for e in os.environ.get("RECIPIENT_EMAILS", "").split(",") if e.strip()]
+SMTP_HOST      = "smtp.hostinger.com"
+SMTP_PORT      = 465
+SMTP_USER      = "sales@msicrm.com"
+SMTP_PASS      = os.environ.get("SMTP_PASSWORD", "")
+FORCE_EMAIL    = os.environ.get("FORCE_EMAIL", "false").lower() == "true"
+TEST_RECIPIENT = os.environ.get("TEST_RECIPIENT", "").strip()
+# TEST_RECIPIENT overrides the full list when set
+_raw_recipients = TEST_RECIPIENT if TEST_RECIPIENT else os.environ.get("RECIPIENT_EMAILS", "")
+RECIPIENTS = [e.strip() for e in _raw_recipients.split(",") if e.strip()]
 
 # ── Firebase helpers ──────────────────────────────────────────────────────────
 def fb_get(path):
@@ -302,9 +306,13 @@ with open(os.path.join(repo_root, 'stock_diff_latest.json'), 'w') as f:
 with open(os.path.join(repo_root, 'stock_snapshot_latest.json'), 'w') as f:
     json.dump(new_snapshot, f, ensure_ascii=False, indent=2)
 
-# 8. Send email if changes detected
-if has_changes:
-    print("Generating Excel and sending email...")
+# 8. Send email if changes detected (or forced)
+if has_changes or FORCE_EMAIL:
+    if FORCE_EMAIL and not has_changes:
+        summary = f"Envío de prueba — {len(new_snapshot)} productos en lista"
+        print("FORCE_EMAIL=true — sending email regardless of changes")
+    else:
+        print("Generating Excel and sending email...")
     excel_bytes = generate_excel(new_snapshot, changes)
     send_email(summary, changes, excel_bytes, date_str)
 else:

@@ -5,7 +5,17 @@ on:
     # 21:30 UTC = 18:30 ART, lunes a viernes
     - cron: '30 21 * * 1-5'
   workflow_dispatch:
-    # Permite correrlo manualmente desde GitHub Actions
+    inputs:
+      force_email:
+        description: 'Forzar envío de email aunque no haya cambios'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      test_recipient:
+        description: 'Email de prueba (deja vacío para usar RECIPIENT_EMAILS)'
+        required: false
+        default: ''
 
 jobs:
   check:
@@ -29,6 +39,8 @@ jobs:
           FIREBASE_SECRET:    ${{ secrets.FIREBASE_SECRET }}
           SMTP_PASSWORD:      ${{ secrets.SMTP_PASSWORD }}
           RECIPIENT_EMAILS:   ${{ secrets.RECIPIENT_EMAILS }}
+          FORCE_EMAIL:        ${{ github.event.inputs.force_email || 'false' }}
+          TEST_RECIPIENT:     ${{ github.event.inputs.test_recipient || '' }}
         run: python scripts/stock_check.py
 
       - name: Commit updated snapshot files
