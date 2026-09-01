@@ -124,7 +124,7 @@ def generate_excel(raw_products, changes, date_str):
         if val is not None: mc.value = val
         if fill_argb: mc.fill = sf(fill_argb)
         if font_obj:  mc.font = font_obj
-        mc.alignment = Alignment(horizontal="left", vertical="middle")
+        mc.alignment = Alignment(horizontal="left", vertical="center")
         if height: ws.row_dimensions[rn].height = height
 
     # ── Rows 1-8: header block (identical to CRM) ──
@@ -150,7 +150,7 @@ def generate_excel(raw_products, changes, date_str):
         c.value = h
         c.fill  = sf(NAVY)
         c.font  = cfont(size=10, bold=True, color="FF"+WHITE)
-        c.alignment = Alignment(horizontal="center", vertical="middle", wrapText=True)
+        c.alignment = Alignment(horizontal="center", vertical="center", wrapText=True)
     ws.row_dimensions[hr].height = 30
 
     # Freeze below header
@@ -178,7 +178,7 @@ def generate_excel(raw_products, changes, date_str):
             mc.value = item.get("label","")
             mc.fill  = sf(SUBSEC)
             mc.font  = cfont(size=10, italic=True, color="FF"+NAVY)
-            mc.alignment = Alignment(horizontal="left", vertical="middle")
+            mc.alignment = Alignment(horizontal="left", vertical="center")
             ws.row_dimensions[srn].height = 15
             alt_idx = 0
             continue
@@ -195,7 +195,7 @@ def generate_excel(raw_products, changes, date_str):
             mc.value = cat
             mc.fill  = sf(RED)
             mc.font  = cfont(size=11, bold=True, color="FF"+WHITE)
-            mc.alignment = Alignment(horizontal="left", vertical="middle")
+            mc.alignment = Alignment(horizontal="left", vertical="center")
             ws.row_dimensions[crn].height = 21.75
 
         bg = ALT1 if alt_idx % 2 == 0 else ALT2
@@ -211,7 +211,7 @@ def generate_excel(raw_products, changes, date_str):
             c.fill  = sf(bg)
             c.border = BORDER
             c.font  = font_obj or cfont(size=10)
-            c.alignment = Alignment(horizontal=halign, vertical="middle")
+            c.alignment = Alignment(horizontal=halign, vertical="center")
             if num_fmt: c.number_format = num_fmt
 
         # Col 1: UPC (as number)
@@ -240,14 +240,14 @@ def generate_excel(raw_products, changes, date_str):
         ec.value = estado_val
         ec.fill  = sf(e_fill) if e_fill else sf(bg)
         ec.font  = cfont(size=9, bold=e_bold, color="FF"+e_text)
-        ec.alignment = Alignment(horizontal="center", vertical="middle")
+        ec.alignment = Alignment(horizontal="center", vertical="center")
         ec.border = BORDER
 
         # Col 6: Links (hyperlink if URL)
         ficha = item.get("ficha","")
         lc = ws.cell(prn, 6)
         lc.fill  = sf(bg)
-        lc.alignment = Alignment(horizontal="center", vertical="middle")
+        lc.alignment = Alignment(horizontal="center", vertical="center")
         lc.border = BORDER
         if ficha and (ficha.startswith("http") or ficha.startswith("www")):
             lc.value = "Links"
@@ -287,7 +287,7 @@ def generate_excel(raw_products, changes, date_str):
         ws2["A1"] = f"Cambios detectados — {date_str}"
         ws2["A1"].font = cfont(size=13, bold=True, color="FF"+WHITE)
         ws2["A1"].fill = sf("FF6600")
-        ws2["A1"].alignment = Alignment(horizontal="center", vertical="middle")
+        ws2["A1"].alignment = Alignment(horizontal="center", vertical="center")
         ws2.row_dimensions[1].height = 24
 
         h2 = ["Tipo","N° de Parte","Producto","Valor anterior","Valor nuevo"]
