@@ -1482,7 +1482,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '31.08.26.4';
+const APP_VERSION = '01.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -6941,6 +6941,85 @@ function _pbmParseFullHard(rows) {
   return parsed;
 }
 
+// ── MEXX multi-column format detector & parser ───────────────
+// Format: separate columns per component (Gabinete, Fuente, Motherboard, VGA, LC/Cooler)
+function _pbmIsMexxFormat(rows) {
+  for (let i = 0; i < Math.min(rows.length, 5); i++) {
+    const h = (rows[i] || []).map(c => String(c || '').toLowerCase().trim());
+    if (h.some(c => c === 'gabinete') && h.some(c => c === 'fuente') && h.some(c => c.includes('motherboard'))) return true;
+  }
+  return false;
+}
+
+function _pbmParseMexx(rows) {
+  // Find header row
+  let headerRow = -1;
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const h = (rows[i] || []).map(c => String(c || '').toLowerCase().trim());
+    if (h.some(c => c === 'gabinete') && h.some(c => c === 'fuente')) { headerRow = i; break; }
+  }
+  if (headerRow < 0) return null;
+
+  const headers = rows[headerRow].map(c => String(c || '').toLowerCase().trim());
+  const iGab    = headers.findIndex(h => h === 'gabinete');
+  const iFuente = headers.findIndex(h => h === 'fuente');
+  const iMB     = headers.findIndex(h => h.includes('motherboard'));
+  const iVGA    = headers.findIndex(h => h === 'vga');
+  const iLC     = headers.findIndex(h => h.startsWith('lc') || h.includes('cooler'));
+  const iDate   = headers.findIndex(h => h.includes('fecha'));
+  const iInv    = headers.findIndex(h => h.includes('factura'));
+  const iVend   = headers.findIndex(h => h.includes('vendedor') || h.includes('canal'));
+
+  // Prefer column named exactly "total", else last column containing "monto"
+  let iClaim = -1;
+  for (let ci = headers.length - 1; ci >= 0; ci--) {
+    if (headers[ci] === 'total') { iClaim = ci; break; }
+  }
+  if (iClaim < 0) {
+    for (let ci = headers.length - 1; ci >= 0; ci--) {
+      if (headers[ci].includes('monto')) { iClaim = ci; break; }
+    }
+  }
+
+  const compCols = [iGab, iFuente, iMB, iVGA, iLC].filter(i => i >= 0);
+
+  const parsed = [];
+  for (let i = headerRow + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    // Only include component columns whose value contains "MSI" — this naturally
+    // excludes non-MSI VGA brands (Gigabyte, ASUS, etc.) and empty cells
+    const parts = compCols
+      .map(ci => String(r[ci] || '').trim())
+      .filter(v => v && v.toUpperCase().includes('MSI'))
+      .map(v => v.toUpperCase());
+    if (!parts.length) continue; // skip rows with no MSI components
+
+    const combinedDesc = parts.join(' | ');
+
+    // Parse date
+    const dateRaw = r[iDate];
+    let dateStr = '';
+    if (dateRaw instanceof Date) dateStr = dateRaw.toLocaleDateString('es-AR');
+    else if (typeof dateRaw === 'number') {
+      const d = XLSX.SSF.parse_date_code(dateRaw);
+      dateStr = `${String(d.d).padStart(2,'0')}/${String(d.m).padStart(2,'0')}/${d.y}`;
+    } else dateStr = String(dateRaw || '').slice(0, 10);
+
+    const claimed = parseFloat(r[iClaim]) || 0;
+    const cls = _pbmClassifyRow(combinedDesc);
+    parsed.push({
+      num: parsed.length + 1,
+      date: dateStr,
+      invoice: String(r[iInv] || ''),
+      desc: combinedDesc,
+      vendedor: String(r[iVend] || ''),
+      claimed,
+      ...cls
+    });
+  }
+  return parsed;
+}
+
 function _pbmParseXLSX(arrayBuffer) {
   // Use SheetJS (loaded via CDN in the existing app)
   const data = XLSX.read(arrayBuffer, { type:'array', cellDates:true });
@@ -6948,6 +7027,8 @@ function _pbmParseXLSX(arrayBuffer) {
   const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:true });
   // Auto-detect FullHard multi-line format
   if (_pbmIsFullHardFormat(rows)) return _pbmParseFullHard(rows);
+  // Auto-detect MEXX multi-column format
+  if (_pbmIsMexxFormat(rows)) return _pbmParseMexx(rows);
   // Find header row
   let headerRow = -1;
   for (let i = 0; i < Math.min(rows.length,10); i++) {
