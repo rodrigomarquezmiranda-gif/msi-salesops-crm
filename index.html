@@ -1482,7 +1482,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '02.09.26.16';
+const APP_VERSION = '02.09.26.17';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -1574,14 +1574,9 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const _fbDB = firebase.database();
-// Hostinger blocks outgoing WebSocket — force HTTP long-polling instead
-try {
-  _fbDB.settings({ experimentalForceLongPolling: true, experimentalAutoDetectLongPolling: false });
-  console.log('[Firebase] Long-polling forzado (Hostinger WAF workaround)');
-} catch(e) { console.warn('[Firebase] settings() no disponible:', e); }
-// Test RTDB connectivity
+// Monitor RTDB connectivity
 _fbDB.ref('.info/connected').on('value', snap => {
-  console.log('[Firebase] RTDB connected:', snap.val());
+  if (snap.val()) console.log('[Firebase] RTDB conectado');
 });
 
 // ── País activo ───────────────────────────────────────────────
@@ -1626,7 +1621,6 @@ async function loadDB() {
   }
   // ── Load db: try split storage first (new), fall back to monolith (legacy) ──
   // Split storage: each pipeline in its own Firebase key to stay under 10MB limit.
-  console.log('[loadDB] iniciando, uid:', _fbDB.app.auth?.()?.currentUser?.uid || firebase.auth().currentUser?.uid || 'unknown');
   try {
     const piRaw = await _idbGetYear('salesops_pi');
     if (piRaw !== null) {
@@ -1682,7 +1676,7 @@ async function loadDB() {
         }, 3000);
       }
     }
-  } catch(e) { console.error('[loadDB] Error cargando DB:', e?.code, e?.message, e); }
+  } catch(e) { console.error('Error cargando DB:', e); }
   if (!db.weeklyReports) db.weeklyReports = [];
   if (!db.imports) db.imports = [];
   // Load resellers config
@@ -1711,14 +1705,9 @@ async function loadDB() {
 // Carga una clave con fallback a la clave legacy (sin año) para migración 2026→año-keyed.
 // En 2027+ no hace fallback: arranca limpio sin datos del año anterior.
 async function _idbGetYear(base) {
-  const key = _yk(base);
-  const r = await IDB.get(key).catch(e => { console.error('[RTDB] read error', key, e?.code, e?.message); return null; });
-  if (r !== null) { console.log('[RTDB] loaded', key, typeof r, r?.length || ''); return r; }
-  if (DATA_YEAR === 2026) {
-    const r2 = await IDB.get(base).catch(e => { console.error('[RTDB] read error (legacy)', base, e?.code, e?.message); return null; });
-    if (r2 !== null) console.log('[RTDB] loaded legacy', base, typeof r2);
-    return r2;
-  }
+  const r = await IDB.get(_yk(base)).catch(() => null);
+  if (r !== null) return r;
+  if (DATA_YEAR === 2026) return IDB.get(base).catch(() => null);
   return null;
 }
 
@@ -13225,12 +13214,10 @@ function signOut() {
 _fbAuth.onAuthStateChanged(async (user) => {
   const loginScreen = document.getElementById('login-screen');
   const appShell    = document.getElementById('app-shell');
-  console.log('[Auth] onAuthStateChanged:', user ? `uid=${user.uid} email=${user.email}` : 'null');
   if (user) {
     let role = null;
     if (user.uid === OWNER_UID) {
       role = 'admin';
-      console.log('[Auth] matched OWNER_UID → admin');
       // Owner entra inmediatamente; carga lista de usuarios en background
       firebase.database().ref('salesops_allowed_users').get()
         .then(snap => { _allowedUsers = snap.exists() ? (snap.val() || {}) : {}; })
@@ -13241,13 +13228,10 @@ _fbAuth.onAuthStateChanged(async (user) => {
       // Usuario no-owner: solo lee su propio nodo (menos permisos necesarios)
       try {
         const key = _eKey(user.email);
-        console.log('[Auth] non-owner, checking salesops_allowed_users/' + key);
         const snap = await firebase.database().ref(`salesops_allowed_users/${key}`).get();
         if (snap.exists() && snap.val()) { role = snap.val().role; _allowedUsers[key] = snap.val(); }
-        console.log('[Auth] RTDB snap exists:', snap.exists(), '→ role:', role);
       } catch(e) { console.error('[Auth] RTDB error:', e); role = null; }
     }
-    console.log('[Auth] final role:', role);
     if (role) {
       _currentUser = user;
       _currentRole = role;
