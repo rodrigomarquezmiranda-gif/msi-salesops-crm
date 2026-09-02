@@ -1482,7 +1482,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '01.09.26.1';
+const APP_VERSION = '01.09.26.2';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13171,14 +13171,27 @@ async function renderUsersTab() {
 
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  _fbAuth.signInWithPopup(provider).catch(e => _alert('Error al iniciar sesión: ' + e.message, {type:'error'}));
+  // Use redirect (works on mobile + all browsers; popup is blocked on mobile)
+  _fbAuth.signInWithRedirect(provider).catch(e => {
+    alert('Error al iniciar sesión con Google: ' + e.message);
+  });
 }
 
 function signInWithEmail() {
-  const email = document.getElementById('login-email').value;
+  const email = document.getElementById('login-email').value.trim();
   const pass  = document.getElementById('login-pass').value;
-  _fbAuth.signInWithEmailAndPassword(email, pass).catch(e => _alert('Error: ' + e.message, {type:'error'}));
+  if (!email || !pass) { alert('Ingresá email y contraseña.'); return; }
+  _fbAuth.signInWithEmailAndPassword(email, pass).catch(e => {
+    alert('Error: ' + e.message);
+  });
 }
+
+// Handle redirect result on page load (Google Sign-In redirect flow)
+_fbAuth.getRedirectResult().catch(e => {
+  if (e && e.code !== 'auth/no-auth-event') {
+    alert('Error al iniciar sesión: ' + e.message);
+  }
+});
 
 function signOut() {
   _confirm('¿Cerrar sesión?', {title:'Cerrar sesión', okLabel:'Cerrar sesión'}).then(ok => { if(ok) _fbAuth.signOut(); });
