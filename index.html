@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="SalesOps" />
+<meta name="description" content="MSI Argentina — Herramienta de ventas y operaciones" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="theme-color" content="#CC2222" media="(prefers-color-scheme: light)" />
 <meta name="theme-color" content="#CC2222" media="(prefers-color-scheme: dark)" />
@@ -1482,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '02.09.26.6';
+const APP_VERSION = '02.09.26.7';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -1658,7 +1659,19 @@ async function loadDB() {
     } else {
       // Legacy monolith — load once, will auto-migrate on next save
       const s = await IDB.get('salesops_db').catch(()=>null);
-      if (s) db = JSON.parse(s);
+      if (s) {
+        db = JSON.parse(s);
+      } else {
+        // IDB completamente vacío (nuevo navegador/dispositivo) — avisar al usuario
+        console.warn('[loadDB] IDB vacío en este origen. Se recomienda importar un respaldo.');
+        setTimeout(() => {
+          if (!db.pi || db.pi.length === 0) {
+            _alert('Este navegador no tiene datos locales. Usá "Importar respaldo" para restaurar tu información.', {
+              type: 'info', title: 'Sin datos locales', duration: 12000
+            });
+          }
+        }, 3000);
+      }
     }
   } catch(e) { console.error('Error cargando DB:', e); }
   if (!db.weeklyReports) db.weeklyReports = [];
