@@ -1482,7 +1482,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '02.09.26.17';
+const APP_VERSION = '02.09.26.18';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -6884,7 +6884,9 @@ function _pbmClassifyRow(desc) {
   const effVgaTier = hasVGA ? (hasMB && mt === 5 ? 5 : vt) : null;
   const vga = hasVGA ? (hasLC ? S.vgaP4[effVgaTier - 1] : S.vgaP3[effVgaTier - 1]) : 0;
 
-  const lc  = hasLC ? S.lc[lt - 1] : null;
+  let lc = hasLC ? S.lc[lt - 1] : null;
+  // CoreLiquid A-series (tier 3) con MB PRO B-series (tier 4) → paga 2 pts en vez de 5
+  if (hasLC && lt === 3 && hasMB && mt === 4) lc = 2;
 
   const correct = gab + psu + mb + vga + (lc || 0);
   const effectiveTier = Math.max(ct, pt, mt || 0, effVgaTier || 0, lt || 0);
