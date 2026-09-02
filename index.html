@@ -1482,7 +1482,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '01.09.26.2';
+const APP_VERSION = '01.09.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13171,9 +13171,14 @@ async function renderUsersTab() {
 
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  // Use redirect (works on mobile + all browsers; popup is blocked on mobile)
-  _fbAuth.signInWithRedirect(provider).catch(e => {
-    alert('Error al iniciar sesión con Google: ' + e.message);
+  _fbAuth.signInWithPopup(provider).catch(e => {
+    console.error('Google sign-in error:', e.code, e.message);
+    if (e.code === 'auth/popup-blocked') {
+      // Fallback to redirect if popup was blocked (common on mobile)
+      _fbAuth.signInWithRedirect(provider).catch(e2 => alert('Error: ' + e2.code));
+    } else if (e.code !== 'auth/popup-closed-by-user') {
+      alert('Error al iniciar sesión (' + e.code + '): ' + e.message);
+    }
   });
 }
 
@@ -13182,16 +13187,9 @@ function signInWithEmail() {
   const pass  = document.getElementById('login-pass').value;
   if (!email || !pass) { alert('Ingresá email y contraseña.'); return; }
   _fbAuth.signInWithEmailAndPassword(email, pass).catch(e => {
-    alert('Error: ' + e.message);
+    alert('Error (' + e.code + '): ' + e.message);
   });
 }
-
-// Handle redirect result on page load (Google Sign-In redirect flow)
-_fbAuth.getRedirectResult().catch(e => {
-  if (e && e.code !== 'auth/no-auth-event') {
-    alert('Error al iniciar sesión: ' + e.message);
-  }
-});
 
 function signOut() {
   _confirm('¿Cerrar sesión?', {title:'Cerrar sesión', okLabel:'Cerrar sesión'}).then(ok => { if(ok) _fbAuth.signOut(); });
