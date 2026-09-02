@@ -48,6 +48,6 @@ Options -Indexes
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
   Header always set Permissions-Policy "geolocation=(), camera=(), microphone=()"
-  # CSP: permite Firebase, CDNs usados por la app, y nada más
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.anthropic.com wss://*.firebaseio.com; font-src 'self' https://cdn.jsdelivr.net data:; worker-src 'self' blob:; manifest-src 'self'"
+  # CSP: permite Firebase Auth (popup), CDNs usados por la app, y nada más
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://apis.google.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://securetoken.googleapis.com https://identitytoolkit.googleapis.com https://accounts.google.com https://api.anthropic.com wss://*.firebaseio.com; frame-src https://msi-crm.firebaseapp.com https://accounts.google.com; font-src 'self' https://cdn.jsdelivr.net data:; worker-src 'self' blob:; manifest-src 'self'"
 </IfModule>
