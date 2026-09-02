@@ -1482,7 +1482,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '02.09.26.10';
+const APP_VERSION = '02.09.26.11';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -1578,6 +1578,15 @@ const _fbDB = firebase.database();
 _fbDB.ref('.info/connected').on('value', snap => {
   console.log('[Firebase] RTDB connected:', snap.val());
 });
+// Log EXACT blocked URLs for CSP diagnosis
+document.addEventListener('securitypolicyviolation', e => {
+  console.error('[CSP BLOCKED]', e.violatedDirective, '→', e.blockedURI);
+});
+// Dump actual CSP headers from server response (to detect Hostinger injected headers)
+fetch(location.href, {method:'HEAD'}).then(r => {
+  const csp = r.headers.get('content-security-policy');
+  console.log('[CSP HEADER]', csp ? csp.slice(0,300) : 'none');
+}).catch(()=>{});
 
 // ── País activo ───────────────────────────────────────────────
 const COUNTRIES = {
