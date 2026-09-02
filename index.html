@@ -1482,7 +1482,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '02.09.26.4';
+const APP_VERSION = '02.09.26.5';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13198,10 +13198,12 @@ function signOut() {
 _fbAuth.onAuthStateChanged(async (user) => {
   const loginScreen = document.getElementById('login-screen');
   const appShell    = document.getElementById('app-shell');
+  console.log('[Auth] onAuthStateChanged:', user ? `uid=${user.uid} email=${user.email}` : 'null');
   if (user) {
     let role = null;
     if (user.uid === OWNER_UID) {
       role = 'admin';
+      console.log('[Auth] matched OWNER_UID → admin');
       // Owner carga toda la lista (tiene permisos totales de RTDB)
       try {
         const snap = await firebase.database().ref('salesops_allowed_users').get();
@@ -13213,10 +13215,13 @@ _fbAuth.onAuthStateChanged(async (user) => {
       // Usuario no-owner: solo lee su propio nodo (menos permisos necesarios)
       try {
         const key = _eKey(user.email);
+        console.log('[Auth] non-owner, checking salesops_allowed_users/' + key);
         const snap = await firebase.database().ref(`salesops_allowed_users/${key}`).get();
         if (snap.exists() && snap.val()) { role = snap.val().role; _allowedUsers[key] = snap.val(); }
-      } catch(e) { role = null; }
+        console.log('[Auth] RTDB snap exists:', snap.exists(), '→ role:', role);
+      } catch(e) { console.error('[Auth] RTDB error:', e); role = null; }
     }
+    console.log('[Auth] final role:', role);
     if (role) {
       _currentUser = user;
       _currentRole = role;
