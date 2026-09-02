@@ -1482,7 +1482,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '02.09.26.8';
+const APP_VERSION = '02.09.26.9';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -1574,6 +1574,10 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const _fbDB = firebase.database();
+// Test RTDB connectivity — log to console so we can diagnose msicrm.com issues
+_fbDB.ref('.info/connected').on('value', snap => {
+  console.log('[Firebase] RTDB connected:', snap.val());
+});
 
 // ── País activo ───────────────────────────────────────────────
 const COUNTRIES = {
@@ -1617,6 +1621,7 @@ async function loadDB() {
   }
   // ── Load db: try split storage first (new), fall back to monolith (legacy) ──
   // Split storage: each pipeline in its own Firebase key to stay under 10MB limit.
+  console.log('[loadDB] iniciando, uid:', _fbDB.app.auth?.()?.currentUser?.uid || firebase.auth().currentUser?.uid || 'unknown');
   try {
     const piRaw = await _idbGetYear('salesops_pi');
     if (piRaw !== null) {
@@ -1672,7 +1677,7 @@ async function loadDB() {
         }, 3000);
       }
     }
-  } catch(e) { console.error('Error cargando DB:', e); }
+  } catch(e) { console.error('[loadDB] Error cargando DB:', e?.code, e?.message, e); }
   if (!db.weeklyReports) db.weeklyReports = [];
   if (!db.imports) db.imports = [];
   // Load resellers config
@@ -1701,9 +1706,14 @@ async function loadDB() {
 // Carga una clave con fallback a la clave legacy (sin año) para migración 2026→año-keyed.
 // En 2027+ no hace fallback: arranca limpio sin datos del año anterior.
 async function _idbGetYear(base) {
-  const r = await IDB.get(_yk(base)).catch(() => null);
-  if (r !== null) return r;
-  if (DATA_YEAR === 2026) return IDB.get(base).catch(() => null);
+  const key = _yk(base);
+  const r = await IDB.get(key).catch(e => { console.error('[RTDB] read error', key, e?.code, e?.message); return null; });
+  if (r !== null) { console.log('[RTDB] loaded', key, typeof r, r?.length || ''); return r; }
+  if (DATA_YEAR === 2026) {
+    const r2 = await IDB.get(base).catch(e => { console.error('[RTDB] read error (legacy)', base, e?.code, e?.message); return null; });
+    if (r2 !== null) console.log('[RTDB] loaded legacy', base, typeof r2);
+    return r2;
+  }
   return null;
 }
 
