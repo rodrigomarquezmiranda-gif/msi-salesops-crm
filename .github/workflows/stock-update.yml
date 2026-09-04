@@ -163,6 +163,9 @@ jobs:
                       price = min(price_q, price_r)
                   else:
                       price = price_q if price_q is not None else price_r
+                  # Skip sub-section headers / spacer rows — no price = not a real product
+                  if price is None or price <= 0:
+                      continue
                   products.append({
                       'code':        code,
                       'desc':        c,

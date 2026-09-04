@@ -531,11 +531,17 @@ items_for_snap = raw_products if isinstance(raw_products, dict) else {
 for key, p in items_for_snap.items():
     if p.get("isSubSection"): continue   # skip section markers
     code = p.get("code") or key
+    # Resolve price — None means sub-section header, skip
+    raw_price = p.get("price")
+    if raw_price is None: raw_price = p.get("priceR")
+    price_val = safe_float(raw_price) if raw_price is not None else 0.0
+    if price_val <= 0:
+        continue  # sub-section header or spacer — not a real product
     new_snapshot[code] = {
         "name":        p.get("desc", p.get("name","")),
         "category":    p.get("category",""),
         "miamiStock":  safe_int(p.get("miamiStock",0)),
-        "miamiPrice":  safe_float(p.get("price", p.get("priceR", 0))),
+        "miamiPrice":  price_val,
         "miamiEta":    p.get("miamiEta",""),
         "bondedStock": safe_int(p.get("bondedStock",0)),
     }
