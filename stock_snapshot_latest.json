@@ -399,14 +399,6 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "Inteo Z890": {
-    "name": "Inteo Z890",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "Z890GODLIKE": {
     "name": "MEG Z890 GODLIKE",
     "category": "MB",
@@ -463,14 +455,6 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "Intel B860": {
-    "name": "Intel B860",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "B860TOMAHAWKWIFI": {
     "name": "MAG B860 TOMAHAWK WIFI",
     "category": "MB",
@@ -519,14 +503,6 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "Intel H 810": {
-    "name": "Intel H 810",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "PROH810ME": {
     "name": "PRO H810M-E",
     "category": "MB",
@@ -534,14 +510,6 @@
     "miamiPrice": 78.0,
     "miamiEta": null,
     "bondedStock": 1880
-  },
-  "Intel Z90 Series": {
-    "name": "Intel Z90 Series",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
   },
   "PROZ790PWIFI": {
     "name": "PRO Z790-P WIFI",
@@ -556,14 +524,6 @@
     "category": "MB",
     "miamiStock": 0,
     "miamiPrice": 170.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "Intel B760 Series": {
-    "name": "Intel B760 Series",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -631,14 +591,6 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "Intel H610 Series": {
-    "name": "Intel H610 Series",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "PROH610MB": {
     "name": "PRO H610M-B",
     "category": "MB",
@@ -695,27 +647,11 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "Intel H410": {
-    "name": "Intel H410",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "PROH410MAP": {
     "name": "H410M-A PRO",
     "category": "MB",
     "miamiStock": 0,
     "miamiPrice": 51.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "AMD X870 Series": {
-    "name": "AMD X870 Series",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -796,14 +732,6 @@
     "category": "MB",
     "miamiStock": 114,
     "miamiPrice": 180.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "AMD B850": {
-    "name": "AMD B850",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -903,14 +831,6 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "AMD B840 series": {
-    "name": "AMD B840 series",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "PROB840M-SEVOWIFI6E": {
     "name": "PRO B840-S EVO WIFI6E",
     "category": "MB",
@@ -943,14 +863,6 @@
     "miamiEta": null,
     "bondedStock": 90
   },
-  "AMD B650 series": {
-    "name": "AMD B650 series",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "B650MGAMINGWIFI": {
     "name": "B650M GAMING WIFI",
     "category": "MB",
@@ -967,14 +879,6 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "AMD B550 series": {
-    "name": "AMD B550 series",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "B550GWIFI6E": {
     "name": "B550 GAMING WIFI6E",
     "category": "MB",
@@ -988,22 +892,6 @@
     "category": "MB",
     "miamiStock": 920,
     "miamiPrice": 80.0,
-    "miamiEta": "ETA 10/22 480pcs",
-    "bondedStock": 0
-  },
-  "PROB550MPWIFE6E": {
-    "name": "PRO B550M-P WIFI6E",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "PROB550MP": {
-    "name": "PRO B550M-P",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
     "miamiEta": "ETA 10/22 480pcs",
     "bondedStock": 0
   },
@@ -1031,14 +919,6 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "AMD A620 series": {
-    "name": "AMD A620 series",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "PROA620AGEVOWIFI": {
     "name": "PRO A620AM-G EVO WIFI",
     "category": "MB",
@@ -1054,14 +934,6 @@
     "miamiPrice": 57.0,
     "miamiEta": null,
     "bondedStock": 1340
-  },
-  "AMD A520 series": {
-    "name": "AMD A520 series",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
   },
   "A520MAPRO": {
     "name": "A520M-A PRO",
@@ -1407,35 +1279,11 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "MPG341CQPXQDOLED": {
-    "name": "MPG 341CQPX QD-OLED",
-    "category": "OLED Monitors - Gaming",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "MPG321CURXQD-OLED": {
-    "name": "MPG 321CURX QD-OLED",
-    "category": "OLED Monitors - Gaming",
-    "miamiStock": 32,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 29
-  },
   "MPG321URXQD-OLED": {
     "name": "MPG 321URX QD-OLED",
     "category": "OLED Monitors - Gaming",
     "miamiStock": 0,
     "miamiPrice": 845.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "MPG321URXWQD-OLED": {
-    "name": "MPG 321URXW QD-OLED",
-    "category": "OLED Monitors - Gaming",
-    "miamiStock": 25,
-    "miamiPrice": 0.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -1452,14 +1300,6 @@
     "category": "OLED Monitors - Gaming",
     "miamiStock": 63,
     "miamiPrice": 782.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "MAG 272UPQDOLEDX24": {
-    "name": "MAG 272UP QD-OLED X24",
-    "category": "OLED Monitors - Gaming",
-    "miamiStock": 48,
-    "miamiPrice": 0.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -1599,14 +1439,6 @@
     "miamiEta": "ETA 09/12 216pcs + ETA 10/07 1134pcs",
     "bondedStock": 0
   },
-  "MAG275CQFE18": {
-    "name": "MAG 275CQF E18",
-    "category": "2K Monitors - Gaming",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "MAG275QFE20": {
     "name": "MAG 275QF E20",
     "category": "2K Monitors - Gaming",
@@ -1719,14 +1551,6 @@
     "miamiEta": "ETA 09/25 640pcs + ETA 10/22 960pcs",
     "bondedStock": 0
   },
-  "PROMAX341QPXW14G": {
-    "name": "PRO MAX 341QPXW14G",
-    "category": "PRO MAX",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": "Pedir para Transferir a Miami",
-    "bondedStock": 0
-  },
   "PROMAX271UPXW12G": {
     "name": "PRO MAX 271UPXW12G",
     "category": "PRO MAX",
@@ -1796,14 +1620,6 @@
     "category": "PRO MNT 34\" Curved",
     "miamiStock": 0,
     "miamiPrice": 175.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "ProMP341CQ": {
-    "name": "PRO MP341CQ",
-    "category": "PRO MNT 34\" Curved",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -2004,30 +1820,6 @@
     "category": "Monitor ARM",
     "miamiStock": 42,
     "miamiPrice": 22.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "K33-3001154-I45": {
-    "name": "K33-3001154-I45",
-    "category": "Power Cords",
-    "miamiStock": 1600,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "K33-3001262-I45": {
-    "name": "K33-3001262-I45",
-    "category": "Power Cords",
-    "miamiStock": 700,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "K33-3001295-I45": {
-    "name": "K33-3001295-I45",
-    "category": "Power Cords",
-    "miamiStock": 700,
-    "miamiPrice": 0.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -2566,14 +2358,6 @@
     "miamiPrice": 42.0,
     "miamiEta": null,
     "bondedStock": 8658
-  },
-  "PROA650BN": {
-    "name": "PRO A650BN",
-    "category": "PSU",
-    "miamiStock": 0,
-    "miamiPrice": 0.0,
-    "miamiEta": null,
-    "bondedStock": 5040
   },
   "MAGA550BN": {
     "name": "MAG A550BN",

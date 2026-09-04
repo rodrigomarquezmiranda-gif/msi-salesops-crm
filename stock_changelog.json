@@ -25,5 +25,14 @@
     "summary": "21 cambio(s) detectado(s)",
     "triggerMode": "workflow_dispatch",
     "triggeredBy": "github-actions"
+  },
+  {
+    "checkedAt": "2026-09-04T17:34:51.552281+00:00",
+    "productCount": 299,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "workflow_dispatch",
+    "triggeredBy": "github-actions"
   }
 ]
