@@ -390,7 +390,7 @@ def build_html_email(summary_text, changes, date_str, product_count):
   <!-- Header -->
   <tr><td style="background:#1F2A44;border-radius:10px 10px 0 0;padding:20px 28px">
     <table width="100%"><tr>
-      <td><div style="color:#FF6600;font-size:18px;font-weight:700;letter-spacing:-.3px">Alerta de Cambios de Precios</div>
+      <td><div style="color:#FF6600;font-size:18px;font-weight:700;letter-spacing:-.3px">Alerta de Cambios</div>
           <div style="color:#8b9ab5;font-size:12px;margin-top:2px">MSI LATAM · SalesOps CRM</div></td>
       <td align="right" style="color:#8b9ab5;font-size:12px;white-space:nowrap">{date_str}</td>
     </tr></table>
