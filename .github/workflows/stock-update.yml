@@ -29,34 +29,42 @@ jobs:
       - name: Install dependencies
         run: pip install google-auth requests --break-system-packages
 
-      - name: Run stock diff and push to Firebase
+      - name: Run stock update from Google Sheets
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           python3 - << 'PYEOF'
-          import json, glob, re, urllib.request, os
+          import json, re, urllib.request, urllib.parse, os
           from datetime import datetime, timezone
           import google.oauth2.service_account
           import google.auth.transport.requests
 
-          WORKSPACE = "."
+          SHEET_ID    = '1wgHbYfXo65Z9iZxGV0vTdy1NCiKnyl5J0Ju9HrsuiKw'
+          FB_BASE     = "https://msi-crm-default-rtdb.firebaseio.com"
+          SHEETS_BASE = "https://sheets.googleapis.com/v4/spreadsheets"
 
-          SNAPSHOT_FILE   = f"{WORKSPACE}/stock_snapshot_latest.json"
-          DIFF_FILE       = f"{WORKSPACE}/stock_diff_latest.json"
-          CHANGELOG_FILE  = f"{WORKSPACE}/stock_changelog.json"
+          WORKSPACE      = "."
+          SNAPSHOT_FILE  = f"{WORKSPACE}/stock_snapshot_latest.json"
+          DIFF_FILE      = f"{WORKSPACE}/stock_diff_latest.json"
+          CHANGELOG_FILE = f"{WORKSPACE}/stock_changelog.json"
 
-          FB_BASE = "https://msi-crm-default-rtdb.firebaseio.com"
-
+          # ── Auth ─────────────────────────────────────────────────────────────────
           sa_info = json.loads(os.environ["FIREBASE_SERVICE_ACCOUNT"])
           credentials = google.oauth2.service_account.Credentials.from_service_account_info(
               sa_info,
               scopes=[
                   "https://www.googleapis.com/auth/firebase.database",
                   "https://www.googleapis.com/auth/userinfo.email",
+                  "https://www.googleapis.com/auth/spreadsheets.readonly",
               ]
           )
           credentials.refresh(google.auth.transport.requests.Request())
           TOKEN = credentials.token
+
+          def api_get(url):
+              req = urllib.request.Request(url, headers={'Authorization': f'Bearer {TOKEN}'})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return json.loads(r.read())
 
           def fb_put(path, data_str):
               url = f"{FB_BASE}/{path}.json"
@@ -80,48 +88,144 @@ jobs:
               with urllib.request.urlopen(req, timeout=30) as r:
                   return json.loads(r.read())
 
-          # Lee la lista de precios desde Firebase (ya no depende de pricelist_snapshot.json local)
-          print("Leyendo salesops_pricelist desde Firebase...")
-          pricelist_raw = fb_get("salesops_pricelist")
-          if isinstance(pricelist_raw, str):
-              pricelist_raw = json.loads(pricelist_raw)
-
-          raw_products = pricelist_raw.get("products", {}) if isinstance(pricelist_raw, dict) else {}
-          if isinstance(raw_products, list):
-              raw_products = {
-                  (p.get("code") or p.get("partNo") or str(i)): p
-                  for i, p in enumerate(raw_products) if isinstance(p, dict)
-              }
-          print(f"Productos leídos desde Firebase: {len(raw_products)}")
-
+          # ── Parse helpers ─────────────────────────────────────────────────────────
           def safe_int(v):
-              try:
-                  m = re.match(r'(\d+)', str(v).strip())
-                  return int(m.group(1)) if m else 0
-              except:
-                  return 0
+              try: m = re.match(r'(\d+)', str(v).strip()); return int(m.group(1)) if m else 0
+              except: return 0
 
           def safe_float(v):
-              try:
-                  return float(str(v).replace('$','').replace(',','').strip())
-              except:
-                  return 0.0
+              try: return float(str(v).replace('$','').replace(',','').strip())
+              except: return 0.0
 
+          def parse_num(v):
+              if v is None or str(v).strip() == '': return None
+              try:
+                  n = float(re.sub(r'[^0-9.\-]', '', str(v)))
+                  return None if n != n else n
+              except: return None
+
+          # LATAM column indices (0-based)
+          COL = {'upc':0,'code':1,'desc':2,'detalle':3,'estado':4,'ficha':5,
+                 'qtyCtn':6,'qtyPlt':7,'miamiStock':8,'miamiEta':9,
+                 'bondedStock':10,'bondedEta':11,'price':16,'priceR':17}
+
+          CAT_MAP = {
+              'bundle':'Bundle','vga':'VGA','mb':'MB','ssd':'SSD',
+              'net working / router':'Net Working / Router',
+              'networking':'Net Working / Router','gd':'Net Working / Router',
+              'accesorios':'Accessories','accessories':'Accessories',
+              'oled monitors - gaming':'OLED Monitors - Gaming',
+              'mini led monitors - gaming':'Mini LED Monitors - Gaming',
+              'ultra wide monitors - gaming':'Ultra Wide Monitors - Gaming',
+              '4k monitors - gaming':'4K Monitors - Gaming',
+              '2k monitors - gaming':'2K Monitors - Gaming',
+              'fhd monitors - gaming':'FHD Monitors - Gaming',
+              'pro max':'PRO MAX',
+              'pro mnt 34" curved':'PRO MNT 34" Curved',
+              'pro mnt 27" flat':'PRO MNT 27" Flat',
+              'pro mnt 25"/24" flat':'PRO MNT 25"/24" Flat',
+              'pro mnt 22"/16" flat':'PRO MNT 22"/16" Flat',
+              'monitor arm':'Monitor ARM','arm':'Monitor ARM',
+              'power cords':'Power Cords','cubi':'CUBI','minipc':'CUBI',
+              'gabinete':'Chassis','gabinetes':'Chassis','chassis':'Chassis',
+              'liquid cooling':'Liquid Cooling','cooling':'Liquid Cooling','psu':'PSU'
+          }
+
+          SKIP_KW = ['numero de parte','sku','upc','codigo','part number','miami stock','miami price']
+
+          def gcell(row, idx):
+              return row[idx] if idx < len(row) else ''
+
+          def parse_latam_rows(rows):
+              products, seen = [], set()
+              current_cat, seen_cat = '', False
+              for row in rows:
+                  a = str(gcell(row, COL['upc'])).strip()
+                  b = str(gcell(row, COL['code'])).strip()
+                  c = str(gcell(row, COL['desc'])).strip()
+                  # Category header
+                  if a.lower() == 'upc':
+                      mapped = CAT_MAP.get(c.lower()) or CAT_MAP.get(b.lower())
+                      if mapped is not None:
+                          current_cat = mapped; seen_cat = True
+                      continue
+                  if a and not re.match(r'^\d', a): continue
+                  if not seen_cat: continue
+                  code = b or c
+                  if not code: continue
+                  if '---' in code or '===' in code or len(code) > 60: continue
+                  if any(k in code.lower() for k in SKIP_KW): continue
+                  if code.lower() in seen: continue
+                  seen.add(code.lower())
+                  price_q = parse_num(gcell(row, COL['price']))
+                  price_r = parse_num(gcell(row, COL['priceR']))
+                  if price_q is not None and price_r is not None:
+                      price = min(price_q, price_r)
+                  else:
+                      price = price_q if price_q is not None else price_r
+                  products.append({
+                      'code':        code,
+                      'desc':        c,
+                      'category':    current_cat,
+                      'price':       price,
+                      'miamiStock':  parse_num(gcell(row, COL['miamiStock'])),
+                      'miamiEta':    str(gcell(row, COL['miamiEta'])).strip() or None,
+                      'bondedStock': parse_num(gcell(row, COL['bondedStock'])),
+                      'bondedEta':   str(gcell(row, COL['bondedEta'])).strip() or None,
+                      'qtyCtn':      parse_num(gcell(row, COL['qtyCtn'])),
+                      'qtyPlt':      parse_num(gcell(row, COL['qtyPlt'])),
+                      'upc':         str(gcell(row, COL['upc'])).strip() or None,
+                  })
+              return products
+
+          # ── Step 1: Get sheet list ────────────────────────────────────────────────
+          print("Obteniendo lista de sheets...")
+          meta = api_get(f"{SHEETS_BASE}/{SHEET_ID}?fields=sheets.properties")
+          sheet_names = [s['properties']['title'] for s in meta.get('sheets', [])]
+          print(f"Sheets: {sheet_names}")
+
+          # ── Step 2: Find LATAM sheet ──────────────────────────────────────────────
+          latam_sheet = next(
+              (n for n in sheet_names if 'latam' in n.lower()),
+              next((n for n in sheet_names if 'all' in n.lower()), sheet_names[0])
+          )
+          print(f"Sheet seleccionado: {latam_sheet}")
+
+          # ── Step 3: Get values (cols A–R) ─────────────────────────────────────────
+          rng = urllib.parse.quote(f"{latam_sheet}!A:R")
+          data = api_get(f"{SHEETS_BASE}/{SHEET_ID}/values/{rng}")
+          rows = data.get('values', [])
+          print(f"Filas leídas: {len(rows)}")
+
+          # ── Step 4: Parse ─────────────────────────────────────────────────────────
+          products = parse_latam_rows(rows)
+          print(f"Productos parseados: {len(products)}")
+          if not products:
+              print("[ERROR] No se parsearon productos — abortando"); exit(1)
+
+          # ── Step 5: Store pricelist in Firebase ───────────────────────────────────
+          now_iso = datetime.now(timezone.utc).isoformat()
+          date_str = datetime.now().strftime("%d/%m/%Y")
+          pricelist_payload = {
+              'capturedAt': now_iso,
+              'products':   {p['code']: p for p in products},
+          }
+          fb_put("salesops_pricelist", json.dumps(pricelist_payload, ensure_ascii=False))
+          print("salesops_pricelist actualizado en Firebase OK")
+
+          # ── Step 6: Build new_snapshot ────────────────────────────────────────────
           new_snapshot = {}
-          for key, p in raw_products.items():
-              if p.get("isSubSection"): continue
-              code = p.get("code") or key
-              new_snapshot[code] = {
-                  "name":        p.get("desc", p.get("name", "")),
-                  "category":    p.get("category", ""),
-                  "miamiStock":  safe_int(p.get("miamiStock", 0)),
-                  "miamiPrice":  safe_float(p.get("price", p.get("priceR", 0))),
-                  "miamiEta":    p.get("miamiEta", ""),
-                  "bondedStock": safe_int(p.get("bondedStock", 0)),
+          for p in products:
+              new_snapshot[p['code']] = {
+                  'name':        p.get('desc', ''),
+                  'category':    p.get('category', ''),
+                  'miamiStock':  safe_int(p.get('miamiStock')),
+                  'miamiPrice':  safe_float(p.get('price')),
+                  'miamiEta':    p.get('miamiEta') or '',
+                  'bondedStock': safe_int(p.get('bondedStock')),
               }
 
-          print(f"Productos parseados: {len(new_snapshot)}")
-
+          # ── Step 7: Load old snapshot from Firebase ───────────────────────────────
           try:
               old_raw = fb_get("salesops_stock_snapshot")
               if isinstance(old_raw, str): old_raw = json.loads(old_raw)
@@ -131,47 +235,26 @@ jobs:
               old_snapshot = None
               print("Sin snapshot anterior — guardando baseline")
 
-          last_changes = []
-          last_changes_at = None
-          try:
-              with open(DIFF_FILE) as f:
-                  prev_diff = json.load(f)
-              if prev_diff.get('hasChanges') and prev_diff.get('changes'):
-                  last_changes    = prev_diff['changes']
-                  last_changes_at = prev_diff['checkedAt']
-              elif prev_diff.get('lastChanges'):
-                  last_changes    = prev_diff['lastChanges']
-                  last_changes_at = prev_diff.get('lastChangesAt')
-          except:
-              pass
-
+          # ── Step 8: Compute diff ──────────────────────────────────────────────────
           changes = []
           if old_snapshot:
-              all_parts = set(old_snapshot.keys()) | set(new_snapshot.keys())
-              for partNo in sorted(all_parts):
-                  old = old_snapshot.get(partNo)
-                  new = new_snapshot.get(partNo)
-                  if old is None and new is not None:
-                      changes.append({"type":"new", "partNo":partNo, "name":new["name"], "category":new["category"], "newPrice":new["miamiPrice"]})
-                  elif old is not None and new is None:
-                      changes.append({"type":"removed", "partNo":partNo, "name":old["name"], "category":old.get("category","")})
-                  elif old and new:
+              all_parts = set(new_snapshot) | set(old_snapshot)
+              for code in sorted(all_parts):
+                  n = new_snapshot.get(code)
+                  o = old_snapshot.get(code)
+                  if n and not o:
+                      changes.append({"type":"new","partNo":code,"name":n["name"],"category":n["category"],"newPrice":n["miamiPrice"]})
+                  elif o and not n:
+                      changes.append({"type":"removed","partNo":code,"name":o["name"],"category":o.get("category","")})
+                  elif n and o:
                       try:
-                          if abs(new["miamiPrice"] - old["miamiPrice"]) > 1:
-                              changes.append({"type":"price", "partNo":partNo, "name":new["name"], "category":new["category"],
-                                              "oldPrice":old["miamiPrice"], "newPrice":new["miamiPrice"]})
-                      except: pass
-                      try:
-                          if abs(new["miamiStock"] - old["miamiStock"]) >= 200:
-                              changes.append({"type":"stock", "partNo":partNo, "name":new["name"], "category":new["category"],
-                                              "oldStock":old["miamiStock"], "newStock":new["miamiStock"]})
+                          if abs(n["miamiPrice"] - o["miamiPrice"]) > 0.5:
+                              changes.append({"type":"price","partNo":code,"name":n["name"],"category":n["category"],
+                                              "oldPrice":o["miamiPrice"],"newPrice":n["miamiPrice"]})
                       except: pass
 
-          now_iso = datetime.now(timezone.utc).isoformat()
           has_changes = len(changes) > 0
-
           trigger_mode = os.environ.get("GITHUB_EVENT_NAME", "schedule")
-          triggered_by = "sistema"
 
           diff_payload = {
               "checkedAt":     now_iso,
@@ -179,10 +262,8 @@ jobs:
               "hasChanges":    has_changes,
               "changeCount":   len(changes),
               "changes":       changes[:100] if has_changes else [],
-              "lastChanges":   changes[:100] if has_changes else last_changes,
-              "lastChangesAt": now_iso       if has_changes else last_changes_at,
               "summary":       f"{len(changes)} cambio(s) detectado(s)" if has_changes else "Sin cambios",
-              "triggeredBy":   triggered_by,
+              "triggeredBy":   "github-actions",
               "triggerMode":   trigger_mode,
           }
 
@@ -193,27 +274,22 @@ jobs:
               "changeCount":  len(changes),
               "summary":      diff_payload["summary"],
               "triggerMode":  trigger_mode,
-              "triggeredBy":  triggered_by,
+              "triggeredBy":  "github-actions",
           }
 
+          # ── Step 9: Write to Firebase ─────────────────────────────────────────────
           with open(SNAPSHOT_FILE, 'w') as f:
               json.dump(new_snapshot, f, ensure_ascii=False, indent=2)
-          print(f"Snapshot guardado: {len(new_snapshot)} productos")
-
           with open(DIFF_FILE, 'w') as f:
               json.dump(diff_payload, f, ensure_ascii=False, indent=2)
-          print(f"Diff guardado: {len(changes)} cambios")
 
           try:
-              with open(CHANGELOG_FILE) as f:
-                  changelog = json.load(f)
-          except:
-              changelog = []
+              with open(CHANGELOG_FILE) as f: changelog = json.load(f)
+          except: changelog = []
           changelog.append(changelog_entry)
           changelog = changelog[-90:]
           with open(CHANGELOG_FILE, 'w') as f:
               json.dump(changelog, f, ensure_ascii=False, indent=2)
-          print(f"Changelog actualizado: {len(changelog)} entradas")
 
           fb_put("salesops_stock_diff",     json.dumps(diff_payload, ensure_ascii=False))
           fb_put("salesops_stock_snapshot", json.dumps(new_snapshot, ensure_ascii=False))
@@ -223,9 +299,8 @@ jobs:
           print(f"\nRESUMEN: {diff_payload['summary']}")
           if changes:
               for c in changes:
-                  if   c['type']=='price':   print(f"  [PRECIO]   {c['partNo']} ({c['category']}) - {c['name']}: ${c['oldPrice']} -> ${c['newPrice']}")
-                  elif c['type']=='stock':   print(f"  [STOCK]    {c['partNo']} ({c['category']}) - {c['name']}: {c['oldStock']} -> {c['newStock']}")
-                  elif c['type']=='new':     print(f"  [NUEVO]    {c['partNo']} ({c['category']}) - {c['name']}: ${c['newPrice']}")
+                  if   c['type']=='price':   print(f"  [PRECIO]   {c['partNo']} ({c['category']}) - {c['name']}: ${c.get('oldPrice','')} -> ${c.get('newPrice','')}")
+                  elif c['type']=='new':     print(f"  [NUEVO]    {c['partNo']} ({c['category']}) - {c['name']}")
                   elif c['type']=='removed': print(f"  [REMOVIDO] {c['partNo']} ({c['category']}) - {c['name']}")
           PYEOF
 
