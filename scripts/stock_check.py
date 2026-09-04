@@ -512,14 +512,18 @@ if not pricelist_raw:
         print("[ERROR] No pricelist available. Exiting."); sys.exit(1)
 
 if isinstance(pricelist_raw, str): pricelist_raw = json.loads(pricelist_raw)
-raw_products = pricelist_raw.get("products", {})
+raw_products_raw = pricelist_raw.get("products", [])
 
-# Firebase may return products as list — normalize to dict
-if isinstance(raw_products, list):
+# Normalize to dict keyed by code (products stored as array by stock-update.yml)
+if isinstance(raw_products_raw, list):
     raw_products = {
         (p.get("code") or p.get("partNo") or p.get("sku") or str(i)): p
-        for i, p in enumerate(raw_products) if isinstance(p, dict)
+        for i, p in enumerate(raw_products_raw) if isinstance(p, dict)
     }
+elif isinstance(raw_products_raw, dict):
+    raw_products = raw_products_raw
+else:
+    raw_products = {}
 print(f"Pricelist: {len(raw_products)} products")
 
 # 2. Build snapshot (lean, for diffing)

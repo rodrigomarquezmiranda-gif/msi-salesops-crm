@@ -208,7 +208,7 @@ jobs:
           date_str = datetime.now().strftime("%d/%m/%Y")
           pricelist_payload = {
               'capturedAt': now_iso,
-              'products':   {p['code']: p for p in products},
+              'products':   products,  # array — CRM expects list, not dict
           }
           fb_put("salesops_pricelist", json.dumps(pricelist_payload, ensure_ascii=False))
           print("salesops_pricelist actualizado en Firebase OK")
