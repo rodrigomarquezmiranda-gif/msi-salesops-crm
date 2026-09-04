@@ -2,7 +2,7 @@
   "G507T-16FEC": {
     "name": "GeForce RTX 5070 Ti 16G FRIEREN EDITION OC",
     "category": "Bundle",
-    "miamiStock": 376,
+    "miamiStock": 0,
     "miamiPrice": 1060.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -47,20 +47,12 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "G5080-16GTCW": {
-    "name": "GeForce RTX 5080 16G GAMING TRIO OC WHITE",
-    "category": "VGA",
-    "miamiStock": 0,
-    "miamiPrice": 1645.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "G5080-16GTC": {
     "name": "GeForce RTX 5080 16G GAMING TRIO OC",
     "category": "VGA",
-    "miamiStock": 0,
+    "miamiStock": 40,
     "miamiPrice": 1645.0,
-    "miamiEta": "ETA 8/24 80pcs",
+    "miamiEta": null,
     "bondedStock": 0
   },
   "G5080-16I3CB": {
@@ -103,20 +95,12 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "G507T-16MEC": {
-    "name": "GeForce RTX 5070 Ti 16G MLG EDITION OC",
-    "category": "VGA",
-    "miamiStock": 0,
-    "miamiPrice": 1150.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "G507T-16GTC": {
     "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC",
     "category": "VGA",
-    "miamiStock": 0,
+    "miamiStock": 200,
     "miamiPrice": 1130.0,
-    "miamiEta": "ETA 9/1 200pcs",
+    "miamiEta": null,
     "bondedStock": 0
   },
   "G507T-16GTCW": {
@@ -146,7 +130,7 @@
   "G507T-16S3C": {
     "name": "Geforce RTX 5070 TI 16G SHADOW 3X OC",
     "category": "VGA",
-    "miamiStock": 184,
+    "miamiStock": 172,
     "miamiPrice": 1060.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -170,7 +154,7 @@
   "G5070-12S3C": {
     "name": "Geforce RTX 5070 12G SHADOW 3X OC",
     "category": "VGA",
-    "miamiStock": 100,
+    "miamiStock": 208,
     "miamiPrice": 740.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -178,7 +162,7 @@
   "G5070-12V2CB": {
     "name": "GeForce RTX 5070 12G VENTUS 2X OC BLACK",
     "category": "VGA",
-    "miamiStock": 84,
+    "miamiStock": 5,
     "miamiPrice": 735.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -196,14 +180,6 @@
     "category": "VGA",
     "miamiStock": 0,
     "miamiPrice": 725.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "G506T-16GTCW": {
-    "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC WHITE",
-    "category": "VGA",
-    "miamiStock": 0,
-    "miamiPrice": 730.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -226,7 +202,7 @@
   "G506T-16V3C": {
     "name": "Geforce RTX 5060 Ti 16G VENTUS 3X OC",
     "category": "VGA",
-    "miamiStock": 0,
+    "miamiStock": 156,
     "miamiPrice": 730.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -234,9 +210,9 @@
   "G506T-16V2CBP": {
     "name": "GeForce RTX 5060 Ti 16G VENTUS 2X OC BLACK PLUS",
     "category": "VGA",
-    "miamiStock": 0,
+    "miamiStock": 708,
     "miamiPrice": 720.0,
-    "miamiEta": "ETA 8/24 708pcs",
+    "miamiEta": null,
     "bondedStock": 0
   },
   "G506T-16V2CP": {
@@ -250,16 +226,8 @@
   "G506T-16S2CP": {
     "name": "Geforce RTX 5060 Ti 16G SHADOW 2X OC PLUS",
     "category": "VGA",
-    "miamiStock": 1582,
+    "miamiStock": 421,
     "miamiPrice": 710.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "G506T-8GTCW": {
-    "name": "GeForce RTX 5060 Ti 8G GAMING TRIO OC WHITE",
-    "category": "VGA",
-    "miamiStock": 0,
-    "miamiPrice": 494.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -277,7 +245,7 @@
     "miamiStock": 0,
     "miamiPrice": 485.0,
     "miamiEta": null,
-    "bondedStock": 476
+    "bondedStock": 468
   },
   "G506T8V2CWP": {
     "name": "GeForce RTX 5060 Ti 8G VENTUS 2X OC WHITE PLUS",
@@ -306,7 +274,7 @@
   "G5060-8GC": {
     "name": "Geforce RTX 5060 8G GAMING OC",
     "category": "VGA",
-    "miamiStock": 36,
+    "miamiStock": 43,
     "miamiPrice": 448.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -314,7 +282,7 @@
   "G5060-8V3C": {
     "name": "Geforce RTX 5060 8G VENTUS 3X OC",
     "category": "VGA",
-    "miamiStock": 22,
+    "miamiStock": 24,
     "miamiPrice": 430.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -322,7 +290,7 @@
   "G5060-8V2CW": {
     "name": "Geforce RTX 5060 8G VENTUS 2X OC WHITE",
     "category": "VGA",
-    "miamiStock": 53,
+    "miamiStock": 29,
     "miamiPrice": 422.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -330,7 +298,7 @@
   "G5060-8V2C": {
     "name": "Geforce RTX 5060 8G VENTUS 2X OC",
     "category": "VGA",
-    "miamiStock": 0,
+    "miamiStock": 444,
     "miamiPrice": 422.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -338,17 +306,9 @@
   "G5060-8S2C": {
     "name": "Geforce RTX 5060 8G SHADOW 2X OC",
     "category": "VGA",
-    "miamiStock": 0,
+    "miamiStock": 9,
     "miamiPrice": 420.0,
     "miamiEta": "ETA 9/10 2110pcs",
-    "bondedStock": 0
-  },
-  "G5050-8GC": {
-    "name": "Geforce RTX 5050 8G GAMING OC",
-    "category": "VGA",
-    "miamiStock": 0,
-    "miamiPrice": 395.0,
-    "miamiEta": null,
     "bondedStock": 0
   },
   "G5050-8V2C": {
@@ -362,7 +322,7 @@
   "G5050-8S2C": {
     "name": "Geforce RTX 5050 8G SHADOW 2X OC",
     "category": "VGA",
-    "miamiStock": 26,
+    "miamiStock": 0,
     "miamiPrice": 373.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -370,7 +330,7 @@
   "G3060V2X12C1": {
     "name": "GeForce RTX 3060 VENTUS 2X 12G OC V1",
     "category": "VGA",
-    "miamiStock": 1340,
+    "miamiStock": 1050,
     "miamiPrice": 430.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -378,7 +338,7 @@
   "G3050V2X6C": {
     "name": "GeForce RTX 3050 VENTUS 2X 6G OC",
     "category": "VGA",
-    "miamiStock": 1108,
+    "miamiStock": 854,
     "miamiPrice": 255.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -386,7 +346,7 @@
   "G3050LP6C": {
     "name": "GeForce RTX 3050 LP 6G OC",
     "category": "VGA",
-    "miamiStock": 2253,
+    "miamiStock": 1003,
     "miamiPrice": 255.0,
     "miamiEta": "ETA 9/23 3370pcs",
     "bondedStock": 0
@@ -394,7 +354,7 @@
   "G103044PC": {
     "name": "GeForce GT 1030 4GD4 LP OC",
     "category": "VGA",
-    "miamiStock": 270,
+    "miamiStock": 0,
     "miamiPrice": 95.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -402,7 +362,7 @@
   "G7102D3P": {
     "name": "GT 710 2GD3 LP",
     "category": "VGA",
-    "miamiStock": 345,
+    "miamiStock": 205,
     "miamiPrice": 50.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -410,7 +370,7 @@
   "G2101D3": {
     "name": "N210-MD1G/D3",
     "category": "VGA",
-    "miamiStock": 2431,
+    "miamiStock": 1541,
     "miamiPrice": 30.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -418,7 +378,7 @@
   "X870ETMAHAWKWIFPZ": {
     "name": "MAG X870E TOMAHAWK MAX WIFI PZ",
     "category": "MB",
-    "miamiStock": 20,
+    "miamiStock": 0,
     "miamiPrice": 282.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -434,7 +394,7 @@
   "B850GPWIFIPZ": {
     "name": "B850 GAMING PLUS WIFI PZ",
     "category": "MB",
-    "miamiStock": 50,
+    "miamiStock": 45,
     "miamiPrice": 195.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -474,7 +434,7 @@
   "Z890TOMAHAWKWIFI": {
     "name": "MAG Z890 TOMAHAWK WIFI",
     "category": "MB",
-    "miamiStock": 53,
+    "miamiStock": 48,
     "miamiPrice": 244.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -482,39 +442,15 @@
   "Z890GAMINGPWIFI6E": {
     "name": "Z890 GAMING PLUS WIFI6E",
     "category": "MB",
-    "miamiStock": 70,
+    "miamiStock": 40,
     "miamiPrice": 195.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "Z890GAMINGPWIFI": {
-    "name": "Z890 GAMING PLUS WIFI",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 180.0,
     "miamiEta": null,
     "bondedStock": 0
   },
   "Z890PWIFI": {
     "name": "PRO Z890-P WIFI",
     "category": "MB",
-    "miamiStock": 85,
-    "miamiPrice": 190.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "Z890SWIFI": {
-    "name": "PRO Z890-S WIFI",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 180.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "Z890SWHITEWIFI": {
-    "name": "PRO Z890-S WIFI WHITE",
-    "category": "MB",
-    "miamiStock": 0,
+    "miamiStock": 80,
     "miamiPrice": 190.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -532,7 +468,15 @@
     "category": "MB",
     "miamiStock": 0,
     "miamiPrice": 155.0,
-    "miamiEta": null,
+    "miamiEta": "ETA 10/22 287pcs",
+    "bondedStock": 0
+  },
+  "B860MGPW6E": {
+    "name": "B860M GAMING PLUS WIFI6E",
+    "category": "MB",
+    "miamiStock": 0,
+    "miamiPrice": 140.0,
+    "miamiEta": "ETA 10/22 200pcs",
     "bondedStock": 0
   },
   "B860MGPW": {
@@ -546,7 +490,7 @@
   "PROB860MB": {
     "name": "PRO B860M-E",
     "category": "MB",
-    "miamiStock": 780,
+    "miamiStock": 740,
     "miamiPrice": 90.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -562,18 +506,10 @@
   "PROH810ME": {
     "name": "PRO H810M-E",
     "category": "MB",
-    "miamiStock": 660,
+    "miamiStock": 630,
     "miamiPrice": 78.0,
     "miamiEta": null,
     "bondedStock": 1880
-  },
-  "PROZ790GAMPLUSWIFI": {
-    "name": "Z790 GAMING PLUS WIFI",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 195.0,
-    "miamiEta": null,
-    "bondedStock": 0
   },
   "PROZ790PWIFI": {
     "name": "PRO Z790-P WIFI",
@@ -594,7 +530,7 @@
   "B760GPWIFI": {
     "name": "B760 GAMING PLUS WIFI",
     "category": "MB",
-    "miamiStock": 122,
+    "miamiStock": 112,
     "miamiPrice": 115.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -602,10 +538,10 @@
   "B760MGPWIFI": {
     "name": "B760M GAMING PLUS WIFI",
     "category": "MB",
-    "miamiStock": 0,
+    "miamiStock": 400,
     "miamiPrice": 110.0,
     "miamiEta": null,
-    "bondedStock": 1330
+    "bondedStock": 930
   },
   "B760GPWIFID4": {
     "name": "B760 GAMING PLUS WIFI DDR4",
@@ -629,7 +565,7 @@
     "miamiStock": 0,
     "miamiPrice": 84.0,
     "miamiEta": null,
-    "bondedStock": 1690
+    "bondedStock": 1680
   },
   "PROB760E": {
     "name": "PRO B760M-E",
@@ -642,15 +578,15 @@
   "PROB760PD4": {
     "name": "PRO B760M-P DDR4",
     "category": "MB",
-    "miamiStock": 1030,
+    "miamiStock": 730,
     "miamiPrice": 77.0,
     "miamiEta": "ETA 9/30 960pcs",
-    "bondedStock": 270
+    "bondedStock": 250
   },
   "PROB760ED4": {
     "name": "PRO B760M-E DDR4",
     "category": "MB",
-    "miamiStock": 760,
+    "miamiStock": 720,
     "miamiPrice": 68.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -669,7 +605,7 @@
     "miamiStock": 0,
     "miamiPrice": 50.0,
     "miamiEta": null,
-    "bondedStock": 350
+    "bondedStock": 330
   },
   "PROH610MS": {
     "name": "PRO H610M-S",
@@ -682,7 +618,7 @@
   "PRO H610MAD4": {
     "name": "PRO H610M-A DDR4",
     "category": "MB",
-    "miamiStock": 1680,
+    "miamiStock": 1480,
     "miamiPrice": 55.0,
     "miamiEta": null,
     "bondedStock": 770
@@ -690,7 +626,7 @@
   "PROH610MGD4": {
     "name": "PRO H610M-G DDR4",
     "category": "MB",
-    "miamiStock": 466,
+    "miamiStock": 146,
     "miamiPrice": 53.0,
     "miamiEta": "ETA 9/30 1680pcs",
     "bondedStock": 0
@@ -706,7 +642,7 @@
   "PROH610MSD4": {
     "name": "PRO H610M-S DDR4",
     "category": "MB",
-    "miamiStock": 430,
+    "miamiStock": 390,
     "miamiPrice": 49.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -716,7 +652,7 @@
     "category": "MB",
     "miamiStock": 0,
     "miamiPrice": 51.0,
-    "miamiEta": "ETA 9/1 560pcs",
+    "miamiEta": null,
     "bondedStock": 0
   },
   "X87EGODLIKE": {
@@ -746,7 +682,7 @@
   "X870E CARBON WIFI7": {
     "name": "MPG X870E CARBON WIFI",
     "category": "MB",
-    "miamiStock": 60,
+    "miamiStock": 20,
     "miamiPrice": 440.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -754,7 +690,7 @@
   "MAGX870ETMW": {
     "name": "MAG X870E TOMAHAWK MAX WIFI",
     "category": "MB",
-    "miamiStock": 100,
+    "miamiStock": 90,
     "miamiPrice": 274.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -770,10 +706,10 @@
   "X870EGPWIFI": {
     "name": "X870E GAMING PLUS WIFI",
     "category": "MB",
-    "miamiStock": 32,
+    "miamiStock": 22,
     "miamiPrice": 234.0,
     "miamiEta": null,
-    "bondedStock": 515
+    "bondedStock": 505
   },
   "MAGX870EGMW": {
     "name": "MAG X870E GAMING MAX WIFI",
@@ -789,20 +725,12 @@
     "miamiStock": 0,
     "miamiPrice": 219.0,
     "miamiEta": null,
-    "bondedStock": 490
-  },
-  "X870EPWIFI": {
-    "name": "PRO X870E-P WIFI",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 185.0,
-    "miamiEta": null,
-    "bondedStock": 0
+    "bondedStock": 485
   },
   "X870PWIFI": {
     "name": "PRO X870-P WIFI",
     "category": "MB",
-    "miamiStock": 119,
+    "miamiStock": 114,
     "miamiPrice": 180.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -810,31 +738,15 @@
   "B850TMAHAWKWIFIMAXII": {
     "name": "MAG B850 TOMAHAWK MAX WIFI II",
     "category": "MB",
-    "miamiStock": 305,
+    "miamiStock": 300,
     "miamiPrice": 212.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "B850TMAHAWKWIFIMAX": {
-    "name": "MAG B850 TOMAHAWK MAX WIFI",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 175.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "B850TMAHAWKWIFI": {
-    "name": "MAG B850 TOMAHAWK WIFI",
-    "category": "MB",
-    "miamiStock": 95,
-    "miamiPrice": 180.0,
     "miamiEta": null,
     "bondedStock": 0
   },
   "B860GPMW": {
     "name": "MAG B850 GAMING PLUS MAX WIFI",
     "category": "MB",
-    "miamiStock": 365,
+    "miamiStock": 135,
     "miamiPrice": 165.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -853,12 +765,12 @@
     "miamiStock": 250,
     "miamiPrice": 168.0,
     "miamiEta": null,
-    "bondedStock": 280
+    "bondedStock": 270
   },
   "PROB850PWIFI": {
     "name": "PRO B850-P WIFI",
     "category": "MB",
-    "miamiStock": 200,
+    "miamiStock": 0,
     "miamiPrice": 158.0,
     "miamiEta": null,
     "bondedStock": 5
@@ -866,7 +778,7 @@
   "PROB850SWIFI6E": {
     "name": "PRO B850-S WIFI6E",
     "category": "MB",
-    "miamiStock": 110,
+    "miamiStock": 80,
     "miamiPrice": 150.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -874,10 +786,10 @@
   "B850MGPROWIFI6E": {
     "name": "B850M GAMING PRO WIFI6E",
     "category": "MB",
-    "miamiStock": 0,
+    "miamiStock": 200,
     "miamiPrice": 130.0,
     "miamiEta": null,
-    "bondedStock": 660
+    "bondedStock": 430
   },
   "B850MGPWIFI6E": {
     "name": "B850M GAMING PLUS WIFI6E",
@@ -885,7 +797,7 @@
     "miamiStock": 0,
     "miamiPrice": 155.0,
     "miamiEta": null,
-    "bondedStock": 920
+    "bondedStock": 910
   },
   "PROB850MPWIFI": {
     "name": "PRO B850M-P WIFI",
@@ -898,15 +810,15 @@
   "B850MGWIFI6E": {
     "name": "B850M GAMING WIFI6E",
     "category": "MB",
-    "miamiStock": 0,
+    "miamiStock": 280,
     "miamiPrice": 101.0,
     "miamiEta": null,
-    "bondedStock": 290
+    "bondedStock": 0
   },
   "B850MBGEN4": {
     "name": "PRO B850M-B GEN4",
     "category": "MB",
-    "miamiStock": 230,
+    "miamiStock": 220,
     "miamiPrice": 86.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -914,16 +826,8 @@
   "PROB850MEEVO": {
     "name": "PRO B850M-E EVO",
     "category": "MB",
-    "miamiStock": 220,
+    "miamiStock": 160,
     "miamiPrice": 79.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "B840GAMINGPWIFI": {
-    "name": "B840 GAMING PLUS WIFI",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 125.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -946,15 +850,15 @@
   "B840MGAMINGWIFI6E": {
     "name": "B840M GAMING WIFI6E",
     "category": "MB",
-    "miamiStock": 90,
+    "miamiStock": 70,
     "miamiPrice": 95.0,
     "miamiEta": null,
-    "bondedStock": 400
+    "bondedStock": 380
   },
   "PROB840MB": {
     "name": "PRO B840M-B",
     "category": "MB",
-    "miamiStock": 2990,
+    "miamiStock": 2980,
     "miamiPrice": 65.0,
     "miamiEta": null,
     "bondedStock": 90
@@ -962,7 +866,7 @@
   "B650MGAMINGWIFI": {
     "name": "B650M GAMING WIFI",
     "category": "MB",
-    "miamiStock": 224,
+    "miamiStock": 204,
     "miamiPrice": 98.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -986,17 +890,9 @@
   "B550MGPWIFI6E": {
     "name": "B550M GAMING PLUS WIFI6E",
     "category": "MB",
-    "miamiStock": 1010,
+    "miamiStock": 920,
     "miamiPrice": 80.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "B550MPVDHWIFI": {
-    "name": "B550M PRO-VDH WIFI",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 73.0,
-    "miamiEta": null,
+    "miamiEta": "ETA 10/22 480pcs",
     "bondedStock": 0
   },
   "PROB550MPWIFE6E": {
@@ -1007,34 +903,34 @@
     "miamiEta": null,
     "bondedStock": 0
   },
-  "B550MPVDH": {
-    "name": "B550M PRO-VDH",
-    "category": "MB",
-    "miamiStock": 0,
-    "miamiPrice": 62.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "PROB550MP": {
     "name": "PRO B550M-P",
     "category": "MB",
     "miamiStock": 0,
     "miamiPrice": 60.0,
-    "miamiEta": null,
+    "miamiEta": "ETA 10/22 480pcs",
+    "bondedStock": 0
+  },
+  "PROB550MWIFI6E": {
+    "name": "PRO B550M WIFI6E",
+    "category": "MB",
+    "miamiStock": 0,
+    "miamiPrice": 66.0,
+    "miamiEta": "ETA 10/22 980pcs",
     "bondedStock": 0
   },
   "B550MB": {
     "name": "PRO B550M-B",
     "category": "MB",
-    "miamiStock": 450,
+    "miamiStock": 250,
     "miamiPrice": 57.0,
     "miamiEta": null,
-    "bondedStock": 460
+    "bondedStock": 400
   },
   "B550MAPRO": {
     "name": "B550M-A PRO",
     "category": "MB",
-    "miamiStock": 2040,
+    "miamiStock": 2020,
     "miamiPrice": 56.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1058,7 +954,7 @@
   "A520MAPRO": {
     "name": "A520M-A PRO",
     "category": "MB",
-    "miamiStock": 3320,
+    "miamiStock": 2510,
     "miamiPrice": 43.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1074,9 +970,9 @@
   "PROA520MS": {
     "name": "PRO A520M-S",
     "category": "MB",
-    "miamiStock": 1280,
+    "miamiStock": 120,
     "miamiPrice": 41.0,
-    "miamiEta": "ETA 9/30 2800pcs",
+    "miamiEta": "ETA 9/30 2800pcs + ETA 10/22 5360pcs",
     "bondedStock": 0
   },
   "SM371N1500G": {
@@ -1148,13 +1044,13 @@
     "category": "SSD",
     "miamiStock": 0,
     "miamiPrice": 55.0,
-    "miamiEta": null,
+    "miamiEta": "ETA 9/4 9000pcs",
     "bondedStock": 0
   },
   "SS270S480G": {
     "name": "SPATIUM S270 SATA 2.5” 480GB",
     "category": "SSD",
-    "miamiStock": 3300,
+    "miamiStock": 2000,
     "miamiPrice": 85.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1172,22 +1068,6 @@
     "category": "Net Working / Router",
     "miamiStock": 0,
     "miamiPrice": 127.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "ForceGC30V2_W": {
-    "name": "Force GC30 V2 WHITE",
-    "category": "Accessories",
-    "miamiStock": 0,
-    "miamiPrice": 25.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "ForceGC30V2": {
-    "name": "Force GC30 V2",
-    "category": "Accessories",
-    "miamiStock": 0,
-    "miamiPrice": 25.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -1394,7 +1274,7 @@
   "MPG491CQPXQD-OLED": {
     "name": "MPG 491CQPX QD-OLED",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 0,
+    "miamiStock": 22,
     "miamiPrice": 891.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1426,7 +1306,7 @@
   "MPG321CURXQD-OLED": {
     "name": "MPG 321CURX QD-OLED",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 35,
+    "miamiStock": 32,
     "miamiPrice": 880.0,
     "miamiEta": null,
     "bondedStock": 29
@@ -1442,7 +1322,7 @@
   "MPG321URXWQD-OLED": {
     "name": "MPG 321URXW QD-OLED",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 26,
+    "miamiStock": 25,
     "miamiPrice": 880.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1458,7 +1338,7 @@
   "MPG272URXQD-OLED": {
     "name": "MPG 272URX QD-OLED",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 70,
+    "miamiStock": 63,
     "miamiPrice": 782.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1466,15 +1346,15 @@
   "MAG 272UPQDOLEDX24": {
     "name": "MAG 272UP QD-OLED X24",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 50,
-    "miamiPrice": 665.0,
+    "miamiStock": 48,
+    "miamiPrice": 0.0,
     "miamiEta": null,
     "bondedStock": 0
   },
   "MAG272QPQDOLEDX50": {
     "name": "MAG 272QP QD-OLED X50",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 0,
+    "miamiStock": 32,
     "miamiPrice": 660.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1482,7 +1362,7 @@
   "MAG271QPXQDOLED": {
     "name": "MAG 271QPX QD-OLED",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 6,
+    "miamiStock": 4,
     "miamiPrice": 542.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1490,7 +1370,7 @@
   "MAG271QPQDOLEDX28": {
     "name": "MAG 271QP QD-OLED X28",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 0,
+    "miamiStock": 64,
     "miamiPrice": 494.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1506,7 +1386,7 @@
   "MAG272QPQD-OLEDX24": {
     "name": "MAG 272QP QD-OLED X24",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 891,
+    "miamiStock": 797,
     "miamiPrice": 448.0,
     "miamiEta": null,
     "bondedStock": 10
@@ -1514,7 +1394,7 @@
   "MAG274QPQD-OLEDX24": {
     "name": "MAG 274QP QD-OLED X24",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 26,
+    "miamiStock": 57,
     "miamiPrice": 448.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1546,7 +1426,7 @@
   "MAG321UPDE14": {
     "name": "MAG 321UPD E14",
     "category": "4K Monitors - Gaming",
-    "miamiStock": 397,
+    "miamiStock": 367,
     "miamiPrice": 293.0,
     "miamiEta": "ETA 09/19 320 pcs",
     "bondedStock": 0
@@ -1565,12 +1445,12 @@
     "miamiStock": 0,
     "miamiPrice": 190.0,
     "miamiEta": null,
-    "bondedStock": 17
+    "bondedStock": 21
   },
   "MAG274CQPDFX32": {
     "name": "MAG 274CQPDF X32",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 108,
+    "miamiStock": 76,
     "miamiPrice": 192.0,
     "miamiEta": "ETA 09/17 570 pcs",
     "bondedStock": 0
@@ -1578,7 +1458,7 @@
   "MAG274QPFX32": {
     "name": "MAG 274QPF X32",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 602,
+    "miamiStock": 476,
     "miamiPrice": 192.0,
     "miamiEta": "ETA 09/12 152 pcs",
     "bondedStock": 0
@@ -1586,7 +1466,7 @@
   "MAG274QRFWX32": {
     "name": "MAG 274QRFW X32",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 166,
+    "miamiStock": 149,
     "miamiPrice": 192.0,
     "miamiEta": "ETA 09/03 798 pcs + ETA 09/12 418 pcs",
     "bondedStock": 0
@@ -1594,7 +1474,7 @@
   "MAG275CQDFX24": {
     "name": "MAG 275CQDF X24",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 903,
+    "miamiStock": 524,
     "miamiPrice": 148.0,
     "miamiEta": "ETA 09/12 874 pcs",
     "bondedStock": 0
@@ -1626,7 +1506,7 @@
   "MAG32C6X": {
     "name": "MAG 32C6X",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 0,
+    "miamiStock": 333,
     "miamiPrice": 149.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1634,7 +1514,7 @@
   "MAG276CXF": {
     "name": "MAG 276CXF",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 360,
+    "miamiStock": 264,
     "miamiPrice": 120.0,
     "miamiEta": null,
     "bondedStock": 76
@@ -1642,7 +1522,7 @@
   "MAG274CFX24": {
     "name": "MAG 274CF X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 1084,
+    "miamiStock": 948,
     "miamiPrice": 115.0,
     "miamiEta": null,
     "bondedStock": 554
@@ -1658,9 +1538,9 @@
   "MAG272FX24": {
     "name": "MAG 272F X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 681,
+    "miamiStock": 489,
     "miamiPrice": 125.0,
-    "miamiEta": "ETA 09/26 54pcs",
+    "miamiEta": "ETA 09/25 54pcs",
     "bondedStock": 0
   },
   "MAG276CFE20": {
@@ -1684,23 +1564,23 @@
     "category": "FHD Monitors - Gaming",
     "miamiStock": 178,
     "miamiPrice": 102.0,
-    "miamiEta": "ETA 09/10 1470pcs + ETA 09/27 70pcs",
+    "miamiEta": "ETA 09/06 1470pcs + ETA 10/01 70pcs + ETA 10/22 700pcs",
     "bondedStock": 0
   },
   "MAG245PFX24": {
     "name": "MAG 245PF X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 907,
+    "miamiStock": 887,
     "miamiPrice": 108.0,
-    "miamiEta": "ETA 09/06 616pcs",
+    "miamiEta": "ETA 09/07 616pcs",
     "bondedStock": 0
   },
   "MAG245FX24": {
     "name": "MAG 245F X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 100,
+    "miamiStock": 20,
     "miamiPrice": 102.0,
-    "miamiEta": "ETA 09/09 800pcs + 09/19 480pcs",
+    "miamiEta": "ETA 09/07 800pcs + 09/28 480pcs + 10/22 480pcs",
     "bondedStock": 0
   },
   "MAG255FE20": {
@@ -1708,7 +1588,7 @@
     "category": "FHD Monitors - Gaming",
     "miamiStock": 0,
     "miamiPrice": 95.0,
-    "miamiEta": "ETA 09/19 350pcs + ETA 09/26 1470pcs + ETA 09/27 350pcs",
+    "miamiEta": "ETA 09/28 350pcs + ETA 10/01 1820pcs",
     "bondedStock": 0
   },
   "MAG245CX24": {
@@ -1722,9 +1602,9 @@
   "G242LE14": {
     "name": "G242L E14",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 80,
+    "miamiStock": 160,
     "miamiPrice": 70.0,
-    "miamiEta": "ETA 09/26 640pcs",
+    "miamiEta": "ETA 09/25 640pcs + ETA 10/22 960pcs",
     "bondedStock": 0
   },
   "PROMAX341QPXW14G": {
@@ -1794,7 +1674,7 @@
   "PRO MP341CQWE12": {
     "name": "PRO MP341CQW E12",
     "category": "PRO MNT 34\" Curved",
-    "miamiStock": 40,
+    "miamiStock": 10,
     "miamiPrice": 190.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1826,7 +1706,7 @@
   "PROMP271E14A": {
     "name": "PRO MP271 E14A",
     "category": "PRO MNT 27\" Flat",
-    "miamiStock": 431,
+    "miamiStock": 129,
     "miamiPrice": 87.0,
     "miamiEta": "ETA 09/10 1134pcs",
     "bondedStock": 1096
@@ -1834,7 +1714,7 @@
   "PROMP273WE14A": {
     "name": "PRO MP273W E14A",
     "category": "PRO MNT 27\" Flat",
-    "miamiStock": 32,
+    "miamiStock": 12,
     "miamiPrice": 85.0,
     "miamiEta": "ETA 09/20 1134pcs + ETA 09/27 108pcs",
     "bondedStock": 0
@@ -1842,7 +1722,7 @@
   "PROMP273LE14": {
     "name": "PRO MP273L E14",
     "category": "PRO MNT 27\" Flat",
-    "miamiStock": 227,
+    "miamiStock": 0,
     "miamiPrice": 85.0,
     "miamiEta": "ETA 09/12 300pcs + ETA 09/27 450pcs",
     "bondedStock": 0
@@ -1850,7 +1730,7 @@
   "PROMP251E14L": {
     "name": "PRO MP251 E14L",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 1620,
+    "miamiStock": 1120,
     "miamiPrice": 72.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1858,7 +1738,7 @@
   "ProMP251L E2": {
     "name": "PRO MP251L E2",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 1235,
+    "miamiStock": 375,
     "miamiPrice": 69.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1874,7 +1754,7 @@
   "PROMP242E14A": {
     "name": "PRO MP242 E14A",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 1080,
+    "miamiStock": 710,
     "miamiPrice": 74.0,
     "miamiEta": "ETA 09/27 320pcs",
     "bondedStock": 0
@@ -1882,7 +1762,7 @@
   "PROMP243WE14": {
     "name": "PRO MP243W E14",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 1730,
+    "miamiStock": 1570,
     "miamiPrice": 72.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1890,7 +1770,7 @@
   "PROMP243LE14": {
     "name": "PRO MP243L E14",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 0,
+    "miamiStock": 87,
     "miamiPrice": 72.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -1898,7 +1778,7 @@
   "ProMP225E12VL": {
     "name": "PRO MP225 E12VL",
     "category": "PRO MNT 22\"/16\" Flat",
-    "miamiStock": 2305,
+    "miamiStock": 1715,
     "miamiPrice": 55.0,
     "miamiEta": "ETA 09/10 1890pcs +  ETA 09/27 1890pcs",
     "bondedStock": 0
@@ -1986,7 +1866,7 @@
   "MAGMT201D": {
     "name": "MAG MT201D",
     "category": "Monitor ARM",
-    "miamiStock": 220,
+    "miamiStock": 215,
     "miamiPrice": 59.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -2002,7 +1882,7 @@
   "MAGMT101DG": {
     "name": "MAG MT101DG",
     "category": "Monitor ARM",
-    "miamiStock": 16,
+    "miamiStock": 336,
     "miamiPrice": 35.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -2010,7 +1890,7 @@
   "MAGMT101G": {
     "name": "MAG MT101G",
     "category": "Monitor ARM",
-    "miamiStock": 0,
+    "miamiStock": 42,
     "miamiPrice": 22.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -2106,7 +1986,7 @@
   "CUBI Z AI 8M-024B": {
     "name": "Cubi Z AI 8M-024BUS",
     "category": "CUBI",
-    "miamiStock": 100,
+    "miamiStock": 90,
     "miamiPrice": 495.0,
     "miamiEta": "<---- Last Stock",
     "bondedStock": 0
@@ -2170,7 +2050,7 @@
   "VIXTA300RPZ": {
     "name": "MPG VIXTA 300R PZ",
     "category": "Chassis",
-    "miamiStock": 72,
+    "miamiStock": 50,
     "miamiPrice": 82.0,
     "miamiEta": "ETA 9/1 44pcs",
     "bondedStock": 0
@@ -2211,7 +2091,7 @@
     "name": "MAG PANO 130R PZ WHITE",
     "category": "Chassis",
     "miamiStock": 0,
-    "miamiPrice": 65.0,
+    "miamiPrice": 55.0,
     "miamiEta": null,
     "bondedStock": 112
   },
@@ -2219,9 +2099,9 @@
     "name": "MAG PANO 130R PZ",
     "category": "Chassis",
     "miamiStock": 0,
-    "miamiPrice": 60.0,
+    "miamiPrice": 55.0,
     "miamiEta": null,
-    "bondedStock": 140
+    "bondedStock": 132
   },
   "PANO110RPZWHT": {
     "name": "MAG PANO 110R PZ WHITE",
@@ -2234,7 +2114,7 @@
   "PANO110RPZ": {
     "name": "MAG PANO 110R PZ",
     "category": "Chassis",
-    "miamiStock": 86,
+    "miamiStock": 62,
     "miamiPrice": 60.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -2242,7 +2122,7 @@
   "PANOM110R": {
     "name": "MAG PANO M110R",
     "category": "Chassis",
-    "miamiStock": 38,
+    "miamiStock": 14,
     "miamiPrice": 48.0,
     "miamiEta": "ETA 9/1 48pcs",
     "bondedStock": 0
@@ -2250,17 +2130,17 @@
   "FORGE120AAIR": {
     "name": "MAG FORGE 120A AIRFLOW",
     "category": "Chassis",
-    "miamiStock": 119,
+    "miamiStock": 317,
     "miamiPrice": 45.0,
-    "miamiEta": "ETA 9/1 240pcs",
+    "miamiEta": null,
     "bondedStock": 0
   },
   "PAGPANOM110A": {
     "name": "PAG PANO M110A",
     "category": "Chassis",
-    "miamiStock": 72,
+    "miamiStock": 318,
     "miamiPrice": 30.0,
-    "miamiEta": "ETA 9/1 256pcs",
+    "miamiEta": null,
     "bondedStock": 44
   },
   "PROPANOM120LW": {
@@ -2314,7 +2194,7 @@
   "CLP13360": {
     "name": "MPG CORELIQUID P13 360",
     "category": "Liquid Cooling",
-    "miamiStock": 75,
+    "miamiStock": 55,
     "miamiPrice": 120.0,
     "miamiEta": null,
     "bondedStock": 0
@@ -2339,7 +2219,7 @@
     "name": "MAG CORELIQUID E360 WHITE",
     "category": "Liquid Cooling",
     "miamiStock": 0,
-    "miamiPrice": 87.0,
+    "miamiPrice": 75.0,
     "miamiEta": null,
     "bondedStock": 120
   },
@@ -2347,7 +2227,7 @@
     "name": "MAG CORELIQUID E360",
     "category": "Liquid Cooling",
     "miamiStock": 0,
-    "miamiPrice": 85.0,
+    "miamiPrice": 75.0,
     "miamiEta": null,
     "bondedStock": 148
   },
@@ -2355,7 +2235,7 @@
     "name": "MAG CORELIQUID E240 WHITE",
     "category": "Liquid Cooling",
     "miamiStock": 0,
-    "miamiPrice": 77.0,
+    "miamiPrice": 65.0,
     "miamiEta": null,
     "bondedStock": 164
   },
@@ -2363,9 +2243,9 @@
     "name": "MAG CORELIQUID E240",
     "category": "Liquid Cooling",
     "miamiStock": 0,
-    "miamiPrice": 75.0,
+    "miamiPrice": 65.0,
     "miamiEta": null,
-    "bondedStock": 272
+    "bondedStock": 268
   },
   "CLA15360": {
     "name": "MAG CORELIQUID A15 360",
@@ -2410,7 +2290,7 @@
   "CLA13240": {
     "name": "MAG CORELIQUID A13 240",
     "category": "Liquid Cooling",
-    "miamiStock": 508,
+    "miamiStock": 503,
     "miamiPrice": 47.0,
     "miamiEta": null,
     "bondedStock": 140
@@ -2418,7 +2298,7 @@
   "CLA12360": {
     "name": "MAG CORELIQUID A12 360",
     "category": "Liquid Cooling",
-    "miamiStock": 1445,
+    "miamiStock": 1427,
     "miamiPrice": 48.0,
     "miamiEta": null,
     "bondedStock": 4274
@@ -2426,7 +2306,7 @@
   "CLA12240": {
     "name": "MAG CORELIQUID A12 240",
     "category": "Liquid Cooling",
-    "miamiStock": 1732,
+    "miamiStock": 1720,
     "miamiPrice": 42.0,
     "miamiEta": null,
     "bondedStock": 6786
@@ -2434,10 +2314,10 @@
   "CFAA13": {
     "name": "MAG COREFROZR AA13",
     "category": "Liquid Cooling",
-    "miamiStock": 1368,
+    "miamiStock": 1328,
     "miamiPrice": 13.0,
     "miamiEta": null,
-    "bondedStock": 11410
+    "bondedStock": 10858
   },
   "CFAA13W": {
     "name": "MAG COREFROZR AA13 WHITE",
@@ -2445,13 +2325,13 @@
     "miamiStock": 976,
     "miamiPrice": 13.0,
     "miamiEta": null,
-    "bondedStock": 1696
+    "bondedStock": 1664
   },
   "EZ120ARGB3W": {
     "name": "MPG EZ120 ARGB WHITE-3W",
     "category": "Liquid Cooling",
     "miamiStock": 0,
-    "miamiPrice": 50.0,
+    "miamiPrice": 40.0,
     "miamiEta": null,
     "bondedStock": 0
   },
@@ -2503,22 +2383,6 @@
     "miamiEta": null,
     "bondedStock": 1010
   },
-  "MAGA100GLPCIE5W": {
-    "name": "MAG A1000GL PCIE5 WHITE",
-    "category": "PSU",
-    "miamiStock": 0,
-    "miamiPrice": 90.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
-  "MAGA850GLSPCIE5": {
-    "name": "MAG A850GLS PCIE5",
-    "category": "PSU",
-    "miamiStock": 0,
-    "miamiPrice": 80.0,
-    "miamiEta": null,
-    "bondedStock": 0
-  },
   "MAGA850GLPCIE5WT": {
     "name": "MAG A850GL PCIE5 WHITE",
     "category": "PSU",
@@ -2533,7 +2397,7 @@
     "miamiStock": 0,
     "miamiPrice": 70.0,
     "miamiEta": null,
-    "bondedStock": 4392
+    "bondedStock": 4372
   },
   "MAGA750GLSPCIE5": {
     "name": "MAG A750GLS PCIE5",
@@ -2557,7 +2421,7 @@
     "miamiStock": 0,
     "miamiPrice": 56.0,
     "miamiEta": null,
-    "bondedStock": 1574
+    "bondedStock": 1538
   },
   "MAG650GNII": {
     "name": "MAG A650GN II",
@@ -2589,7 +2453,7 @@
     "miamiStock": 0,
     "miamiPrice": 42.0,
     "miamiEta": null,
-    "bondedStock": 8814
+    "bondedStock": 8658
   },
   "PROA650BN": {
     "name": "PRO A650BN",
@@ -2602,7 +2466,7 @@
   "MAGA550BN": {
     "name": "MAG A550BN",
     "category": "PSU",
-    "miamiStock": 349,
+    "miamiStock": 139,
     "miamiPrice": 34.0,
     "miamiEta": null,
     "bondedStock": 1070
@@ -2613,7 +2477,7 @@
     "miamiStock": 0,
     "miamiPrice": 30.0,
     "miamiEta": null,
-    "bondedStock": 700
+    "bondedStock": 680
   },
   "MAGA600DNII": {
     "name": "MAG A600DN II",
@@ -2621,7 +2485,7 @@
     "miamiStock": 0,
     "miamiPrice": 27.0,
     "miamiEta": null,
-    "bondedStock": 920
+    "bondedStock": 900
   },
   "MAGA500DNII": {
     "name": "MAG A500DN II",
@@ -2629,6 +2493,6 @@
     "miamiStock": 0,
     "miamiPrice": 25.0,
     "miamiEta": null,
-    "bondedStock": 332
+    "bondedStock": 312
   }
 }
