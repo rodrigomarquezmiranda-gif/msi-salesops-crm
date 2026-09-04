@@ -41,7 +41,6 @@ jobs:
 
           WORKSPACE = "."
 
-          PRICELIST_FILE  = f"{WORKSPACE}/pricelist_snapshot.json"
           SNAPSHOT_FILE   = f"{WORKSPACE}/stock_snapshot_latest.json"
           DIFF_FILE       = f"{WORKSPACE}/stock_diff_latest.json"
           CHANGELOG_FILE  = f"{WORKSPACE}/stock_changelog.json"
@@ -75,10 +74,25 @@ jobs:
                                                     'Authorization': f'Bearer {TOKEN}'})
               urllib.request.urlopen(req, timeout=15)
 
-          with open(PRICELIST_FILE) as f:
-              pricelist = json.load(f)
+          def fb_get(path):
+              url = f"{FB_BASE}/{path}.json"
+              req = urllib.request.Request(url, headers={'Authorization': f'Bearer {TOKEN}'})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return json.loads(r.read())
 
-          raw_products = pricelist.get("products", {})
+          # Lee la lista de precios desde Firebase (ya no depende de pricelist_snapshot.json local)
+          print("Leyendo salesops_pricelist desde Firebase...")
+          pricelist_raw = fb_get("salesops_pricelist")
+          if isinstance(pricelist_raw, str):
+              pricelist_raw = json.loads(pricelist_raw)
+
+          raw_products = pricelist_raw.get("products", {}) if isinstance(pricelist_raw, dict) else {}
+          if isinstance(raw_products, list):
+              raw_products = {
+                  (p.get("code") or p.get("partNo") or str(i)): p
+                  for i, p in enumerate(raw_products) if isinstance(p, dict)
+              }
+          print(f"Productos leídos desde Firebase: {len(raw_products)}")
 
           def safe_int(v):
               try:
@@ -94,12 +108,14 @@ jobs:
                   return 0.0
 
           new_snapshot = {}
-          for partNo, p in raw_products.items():
-              new_snapshot[partNo] = {
-                  "name":        p.get("name", ""),
+          for key, p in raw_products.items():
+              if p.get("isSubSection"): continue
+              code = p.get("code") or key
+              new_snapshot[code] = {
+                  "name":        p.get("desc", p.get("name", "")),
                   "category":    p.get("category", ""),
                   "miamiStock":  safe_int(p.get("miamiStock", 0)),
-                  "miamiPrice":  safe_float(p.get("price", 0)),
+                  "miamiPrice":  safe_float(p.get("price", p.get("priceR", 0))),
                   "miamiEta":    p.get("miamiEta", ""),
                   "bondedStock": safe_int(p.get("bondedStock", 0)),
               }
@@ -107,9 +123,10 @@ jobs:
           print(f"Productos parseados: {len(new_snapshot)}")
 
           try:
-              with open(SNAPSHOT_FILE) as f:
-                  old_snapshot = json.load(f)
-              print(f"Snapshot anterior: {len(old_snapshot)} productos")
+              old_raw = fb_get("salesops_stock_snapshot")
+              if isinstance(old_raw, str): old_raw = json.loads(old_raw)
+              old_snapshot = old_raw if isinstance(old_raw, dict) and old_raw else None
+              print(f"Snapshot anterior: {len(old_snapshot)} productos" if old_snapshot else "Sin snapshot anterior — guardando baseline")
           except:
               old_snapshot = None
               print("Sin snapshot anterior — guardando baseline")
