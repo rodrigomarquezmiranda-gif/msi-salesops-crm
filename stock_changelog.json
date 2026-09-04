@@ -1,0 +1,11 @@
+[
+  {
+    "checkedAt": "2026-09-04T15:59:33.125164+00:00",
+    "productCount": 329,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "workflow_dispatch",
+    "triggeredBy": "sistema"
+  }
+]
