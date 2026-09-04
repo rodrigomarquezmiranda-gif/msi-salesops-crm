@@ -1,926 +1,165 @@
 {
-  "checkedAt": "2026-09-04T16:29:59.420747+00:00",
-  "productCount": 312,
+  "checkedAt": "2026-09-04T16:53:23.458808+00:00",
+  "productCount": 326,
   "hasChanges": true,
-  "changeCount": 62,
+  "changeCount": 21,
   "changes": [
     {
-      "type": "stock",
-      "partNo": "A520MAPRO",
-      "name": "A520M-A PRO",
-      "category": "MB",
-      "oldStock": 3320,
-      "newStock": 2510
-    },
-    {
-      "type": "stock",
-      "partNo": "B550MB",
-      "name": "PRO B550M-B",
-      "category": "MB",
-      "oldStock": 450,
-      "newStock": 250
-    },
-    {
-      "type": "removed",
-      "partNo": "B550MPVDH",
-      "name": "B550M PRO-VDH",
-      "category": "MB"
-    },
-    {
-      "type": "removed",
-      "partNo": "B550MPVDHWIFI",
-      "name": "B550M PRO-VDH WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "stock",
-      "partNo": "B760MGPWIFI",
-      "name": "B760M GAMING PLUS WIFI",
-      "category": "MB",
-      "oldStock": 0,
-      "newStock": 400
-    },
-    {
-      "type": "removed",
-      "partNo": "B840GAMINGPWIFI",
-      "name": "B840 GAMING PLUS WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "stock",
-      "partNo": "B850MGPROWIFI6E",
-      "name": "B850M GAMING PRO WIFI6E",
-      "category": "MB",
-      "oldStock": 0,
-      "newStock": 200
-    },
-    {
-      "type": "stock",
-      "partNo": "B850MGWIFI6E",
-      "name": "B850M GAMING WIFI6E",
-      "category": "MB",
-      "oldStock": 0,
-      "newStock": 280
-    },
-    {
-      "type": "removed",
-      "partNo": "B850TMAHAWKWIFI",
-      "name": "MAG B850 TOMAHAWK WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "removed",
-      "partNo": "B850TMAHAWKWIFIMAX",
-      "name": "MAG B850 TOMAHAWK MAX WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "stock",
-      "partNo": "B860GPMW",
-      "name": "MAG B850 GAMING PLUS MAX WIFI",
-      "category": "MB",
-      "oldStock": 365,
-      "newStock": 135
-    },
-    {
       "type": "new",
-      "partNo": "B860MGPW6E",
-      "name": "B860M GAMING PLUS WIFI6E",
+      "partNo": "AMD A520 series",
+      "name": "AMD A520 series",
       "category": "MB",
-      "newPrice": 140.0
-    },
-    {
-      "type": "price",
-      "partNo": "CLE240",
-      "name": "MAG CORELIQUID E240",
-      "category": "Liquid Cooling",
-      "oldPrice": 75.0,
-      "newPrice": 65.0
-    },
-    {
-      "type": "price",
-      "partNo": "CLE240WT",
-      "name": "MAG CORELIQUID E240 WHITE",
-      "category": "Liquid Cooling",
-      "oldPrice": 77.0,
-      "newPrice": 65.0
-    },
-    {
-      "type": "price",
-      "partNo": "CLE360",
-      "name": "MAG CORELIQUID E360",
-      "category": "Liquid Cooling",
-      "oldPrice": 85.0,
-      "newPrice": 75.0
-    },
-    {
-      "type": "price",
-      "partNo": "CLE360WT",
-      "name": "MAG CORELIQUID E360 WHITE",
-      "category": "Liquid Cooling",
-      "oldPrice": 87.0,
-      "newPrice": 75.0
-    },
-    {
-      "type": "price",
-      "partNo": "EZ120ARGB3W",
-      "name": "MPG EZ120 ARGB WHITE-3W",
-      "category": "Liquid Cooling",
-      "oldPrice": 50.0,
-      "newPrice": 40.0
-    },
-    {
-      "type": "removed",
-      "partNo": "ForceGC30V2",
-      "name": "Force GC30 V2",
-      "category": "Accessories"
-    },
-    {
-      "type": "removed",
-      "partNo": "ForceGC30V2_W",
-      "name": "Force GC30 V2 WHITE",
-      "category": "Accessories"
-    },
-    {
-      "type": "stock",
-      "partNo": "G103044PC",
-      "name": "GeForce GT 1030 4GD4 LP OC",
-      "category": "VGA",
-      "oldStock": 270,
-      "newStock": 0
-    },
-    {
-      "type": "stock",
-      "partNo": "G2101D3",
-      "name": "N210-MD1G/D3",
-      "category": "VGA",
-      "oldStock": 2431,
-      "newStock": 1541
-    },
-    {
-      "type": "stock",
-      "partNo": "G3050LP6C",
-      "name": "GeForce RTX 3050 LP 6G OC",
-      "category": "VGA",
-      "oldStock": 2253,
-      "newStock": 1003
-    },
-    {
-      "type": "stock",
-      "partNo": "G3050V2X6C",
-      "name": "GeForce RTX 3050 VENTUS 2X 6G OC",
-      "category": "VGA",
-      "oldStock": 1108,
-      "newStock": 854
-    },
-    {
-      "type": "stock",
-      "partNo": "G3060V2X12C1",
-      "name": "GeForce RTX 3060 VENTUS 2X 12G OC V1",
-      "category": "VGA",
-      "oldStock": 1340,
-      "newStock": 1050
-    },
-    {
-      "type": "removed",
-      "partNo": "G5050-8GC",
-      "name": "Geforce RTX 5050 8G GAMING OC",
-      "category": "VGA"
-    },
-    {
-      "type": "stock",
-      "partNo": "G5060-8V2C",
-      "name": "Geforce RTX 5060 8G VENTUS 2X OC",
-      "category": "VGA",
-      "oldStock": 0,
-      "newStock": 444
-    },
-    {
-      "type": "removed",
-      "partNo": "G506T-16GTCW",
-      "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC WHITE",
-      "category": "VGA"
-    },
-    {
-      "type": "stock",
-      "partNo": "G506T-16S2CP",
-      "name": "Geforce RTX 5060 Ti 16G SHADOW 2X OC PLUS",
-      "category": "VGA",
-      "oldStock": 1582,
-      "newStock": 421
-    },
-    {
-      "type": "stock",
-      "partNo": "G506T-16V2CBP",
-      "name": "GeForce RTX 5060 Ti 16G VENTUS 2X OC BLACK PLUS",
-      "category": "VGA",
-      "oldStock": 0,
-      "newStock": 708
-    },
-    {
-      "type": "removed",
-      "partNo": "G506T-8GTCW",
-      "name": "GeForce RTX 5060 Ti 8G GAMING TRIO OC WHITE",
-      "category": "VGA"
-    },
-    {
-      "type": "stock",
-      "partNo": "G507T-16FEC",
-      "name": "GeForce RTX 5070 Ti 16G FRIEREN EDITION OC",
-      "category": "Bundle",
-      "oldStock": 376,
-      "newStock": 0
-    },
-    {
-      "type": "stock",
-      "partNo": "G507T-16GTC",
-      "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC",
-      "category": "VGA",
-      "oldStock": 0,
-      "newStock": 200
-    },
-    {
-      "type": "removed",
-      "partNo": "G507T-16MEC",
-      "name": "GeForce RTX 5070 Ti 16G MLG EDITION OC",
-      "category": "VGA"
-    },
-    {
-      "type": "removed",
-      "partNo": "G5080-16GTCW",
-      "name": "GeForce RTX 5080 16G GAMING TRIO OC WHITE",
-      "category": "VGA"
-    },
-    {
-      "type": "price",
-      "partNo": "MAG 272UPQDOLEDX24",
-      "name": "MAG 272UP QD-OLED X24",
-      "category": "OLED Monitors - Gaming",
-      "oldPrice": 665.0,
       "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "MAG275CQDFX24",
-      "name": "MAG 275CQDF X24",
-      "category": "2K Monitors - Gaming",
-      "oldStock": 903,
-      "newStock": 524
-    },
-    {
-      "type": "stock",
-      "partNo": "MAG32C6X",
-      "name": "MAG 32C6X",
-      "category": "FHD Monitors - Gaming",
-      "oldStock": 0,
-      "newStock": 333
-    },
-    {
-      "type": "removed",
-      "partNo": "MAGA100GLPCIE5W",
-      "name": "MAG A1000GL PCIE5 WHITE",
-      "category": "PSU"
-    },
-    {
-      "type": "stock",
-      "partNo": "MAGA550BN",
-      "name": "MAG A550BN",
-      "category": "PSU",
-      "oldStock": 349,
-      "newStock": 139
-    },
-    {
-      "type": "removed",
-      "partNo": "MAGA850GLSPCIE5",
-      "name": "MAG A850GLS PCIE5",
-      "category": "PSU"
-    },
-    {
-      "type": "stock",
-      "partNo": "MAGMT101DG",
-      "name": "MAG MT101DG",
-      "category": "Monitor ARM",
-      "oldStock": 16,
-      "newStock": 336
-    },
-    {
-      "type": "stock",
-      "partNo": "PAGPANOM110A",
-      "name": "PAG PANO M110A",
-      "category": "Chassis",
-      "oldStock": 72,
-      "newStock": 318
-    },
-    {
-      "type": "price",
-      "partNo": "PANO130RPZ",
-      "name": "MAG PANO 130R PZ",
-      "category": "Chassis",
-      "oldPrice": 60.0,
-      "newPrice": 55.0
-    },
-    {
-      "type": "price",
-      "partNo": "PANO130RPZWHT",
-      "name": "MAG PANO 130R PZ WHITE",
-      "category": "Chassis",
-      "oldPrice": 65.0,
-      "newPrice": 55.0
-    },
-    {
-      "type": "stock",
-      "partNo": "PRO H610MAD4",
-      "name": "PRO H610M-A DDR4",
-      "category": "MB",
-      "oldStock": 1680,
-      "newStock": 1480
-    },
-    {
-      "type": "stock",
-      "partNo": "PROA520MS",
-      "name": "PRO A520M-S",
-      "category": "MB",
-      "oldStock": 1280,
-      "newStock": 120
-    },
-    {
       "type": "new",
-      "partNo": "PROB550MWIFI6E",
-      "name": "PRO B550M WIFI6E",
+      "partNo": "AMD A620 series",
+      "name": "AMD A620 series",
       "category": "MB",
-      "newPrice": 66.0
-    },
-    {
-      "type": "stock",
-      "partNo": "PROB760PD4",
-      "name": "PRO B760M-P DDR4",
-      "category": "MB",
-      "oldStock": 1030,
-      "newStock": 730
-    },
-    {
-      "type": "stock",
-      "partNo": "PROB850PWIFI",
-      "name": "PRO B850-P WIFI",
-      "category": "MB",
-      "oldStock": 200,
-      "newStock": 0
-    },
-    {
-      "type": "stock",
-      "partNo": "PROH610MGD4",
-      "name": "PRO H610M-G DDR4",
-      "category": "MB",
-      "oldStock": 466,
-      "newStock": 146
-    },
-    {
-      "type": "stock",
-      "partNo": "PROMP242E14A",
-      "name": "PRO MP242 E14A",
-      "category": "PRO MNT 25\"/24\" Flat",
-      "oldStock": 1080,
-      "newStock": 710
-    },
-    {
-      "type": "stock",
-      "partNo": "PROMP251E14L",
-      "name": "PRO MP251 E14L",
-      "category": "PRO MNT 25\"/24\" Flat",
-      "oldStock": 1620,
-      "newStock": 1120
-    },
-    {
-      "type": "stock",
-      "partNo": "PROMP271E14A",
-      "name": "PRO MP271 E14A",
-      "category": "PRO MNT 27\" Flat",
-      "oldStock": 431,
-      "newStock": 129
-    },
-    {
-      "type": "stock",
-      "partNo": "PROMP273LE14",
-      "name": "PRO MP273L E14",
-      "category": "PRO MNT 27\" Flat",
-      "oldStock": 227,
-      "newStock": 0
-    },
-    {
-      "type": "removed",
-      "partNo": "PROZ790GAMPLUSWIFI",
-      "name": "Z790 GAMING PLUS WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "stock",
-      "partNo": "ProMP225E12VL",
-      "name": "PRO MP225 E12VL",
-      "category": "PRO MNT 22\"/16\" Flat",
-      "oldStock": 2305,
-      "newStock": 1715
-    },
-    {
-      "type": "stock",
-      "partNo": "ProMP251L E2",
-      "name": "PRO MP251L E2",
-      "category": "PRO MNT 25\"/24\" Flat",
-      "oldStock": 1235,
-      "newStock": 375
-    },
-    {
-      "type": "stock",
-      "partNo": "SS270S480G",
-      "name": "SPATIUM S270 SATA 2.5” 480GB",
-      "category": "SSD",
-      "oldStock": 3300,
-      "newStock": 2000
-    },
-    {
-      "type": "removed",
-      "partNo": "X870EPWIFI",
-      "name": "PRO X870E-P WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "removed",
-      "partNo": "Z890GAMINGPWIFI",
-      "name": "Z890 GAMING PLUS WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "removed",
-      "partNo": "Z890SWHITEWIFI",
-      "name": "PRO Z890-S WIFI WHITE",
-      "category": "MB"
-    },
-    {
-      "type": "removed",
-      "partNo": "Z890SWIFI",
-      "name": "PRO Z890-S WIFI",
-      "category": "MB"
-    }
-  ],
-  "lastChanges": [
-    {
-      "type": "stock",
-      "partNo": "A520MAPRO",
-      "name": "A520M-A PRO",
-      "category": "MB",
-      "oldStock": 3320,
-      "newStock": 2510
-    },
-    {
-      "type": "stock",
-      "partNo": "B550MB",
-      "name": "PRO B550M-B",
-      "category": "MB",
-      "oldStock": 450,
-      "newStock": 250
-    },
-    {
-      "type": "removed",
-      "partNo": "B550MPVDH",
-      "name": "B550M PRO-VDH",
-      "category": "MB"
-    },
-    {
-      "type": "removed",
-      "partNo": "B550MPVDHWIFI",
-      "name": "B550M PRO-VDH WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "stock",
-      "partNo": "B760MGPWIFI",
-      "name": "B760M GAMING PLUS WIFI",
-      "category": "MB",
-      "oldStock": 0,
-      "newStock": 400
-    },
-    {
-      "type": "removed",
-      "partNo": "B840GAMINGPWIFI",
-      "name": "B840 GAMING PLUS WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "stock",
-      "partNo": "B850MGPROWIFI6E",
-      "name": "B850M GAMING PRO WIFI6E",
-      "category": "MB",
-      "oldStock": 0,
-      "newStock": 200
-    },
-    {
-      "type": "stock",
-      "partNo": "B850MGWIFI6E",
-      "name": "B850M GAMING WIFI6E",
-      "category": "MB",
-      "oldStock": 0,
-      "newStock": 280
-    },
-    {
-      "type": "removed",
-      "partNo": "B850TMAHAWKWIFI",
-      "name": "MAG B850 TOMAHAWK WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "removed",
-      "partNo": "B850TMAHAWKWIFIMAX",
-      "name": "MAG B850 TOMAHAWK MAX WIFI",
-      "category": "MB"
-    },
-    {
-      "type": "stock",
-      "partNo": "B860GPMW",
-      "name": "MAG B850 GAMING PLUS MAX WIFI",
-      "category": "MB",
-      "oldStock": 365,
-      "newStock": 135
-    },
-    {
-      "type": "new",
-      "partNo": "B860MGPW6E",
-      "name": "B860M GAMING PLUS WIFI6E",
-      "category": "MB",
-      "newPrice": 140.0
-    },
-    {
-      "type": "price",
-      "partNo": "CLE240",
-      "name": "MAG CORELIQUID E240",
-      "category": "Liquid Cooling",
-      "oldPrice": 75.0,
-      "newPrice": 65.0
-    },
-    {
-      "type": "price",
-      "partNo": "CLE240WT",
-      "name": "MAG CORELIQUID E240 WHITE",
-      "category": "Liquid Cooling",
-      "oldPrice": 77.0,
-      "newPrice": 65.0
-    },
-    {
-      "type": "price",
-      "partNo": "CLE360",
-      "name": "MAG CORELIQUID E360",
-      "category": "Liquid Cooling",
-      "oldPrice": 85.0,
-      "newPrice": 75.0
-    },
-    {
-      "type": "price",
-      "partNo": "CLE360WT",
-      "name": "MAG CORELIQUID E360 WHITE",
-      "category": "Liquid Cooling",
-      "oldPrice": 87.0,
-      "newPrice": 75.0
-    },
-    {
-      "type": "price",
-      "partNo": "EZ120ARGB3W",
-      "name": "MPG EZ120 ARGB WHITE-3W",
-      "category": "Liquid Cooling",
-      "oldPrice": 50.0,
-      "newPrice": 40.0
-    },
-    {
-      "type": "removed",
-      "partNo": "ForceGC30V2",
-      "name": "Force GC30 V2",
-      "category": "Accessories"
-    },
-    {
-      "type": "removed",
-      "partNo": "ForceGC30V2_W",
-      "name": "Force GC30 V2 WHITE",
-      "category": "Accessories"
-    },
-    {
-      "type": "stock",
-      "partNo": "G103044PC",
-      "name": "GeForce GT 1030 4GD4 LP OC",
-      "category": "VGA",
-      "oldStock": 270,
-      "newStock": 0
-    },
-    {
-      "type": "stock",
-      "partNo": "G2101D3",
-      "name": "N210-MD1G/D3",
-      "category": "VGA",
-      "oldStock": 2431,
-      "newStock": 1541
-    },
-    {
-      "type": "stock",
-      "partNo": "G3050LP6C",
-      "name": "GeForce RTX 3050 LP 6G OC",
-      "category": "VGA",
-      "oldStock": 2253,
-      "newStock": 1003
-    },
-    {
-      "type": "stock",
-      "partNo": "G3050V2X6C",
-      "name": "GeForce RTX 3050 VENTUS 2X 6G OC",
-      "category": "VGA",
-      "oldStock": 1108,
-      "newStock": 854
-    },
-    {
-      "type": "stock",
-      "partNo": "G3060V2X12C1",
-      "name": "GeForce RTX 3060 VENTUS 2X 12G OC V1",
-      "category": "VGA",
-      "oldStock": 1340,
-      "newStock": 1050
-    },
-    {
-      "type": "removed",
-      "partNo": "G5050-8GC",
-      "name": "Geforce RTX 5050 8G GAMING OC",
-      "category": "VGA"
-    },
-    {
-      "type": "stock",
-      "partNo": "G5060-8V2C",
-      "name": "Geforce RTX 5060 8G VENTUS 2X OC",
-      "category": "VGA",
-      "oldStock": 0,
-      "newStock": 444
-    },
-    {
-      "type": "removed",
-      "partNo": "G506T-16GTCW",
-      "name": "Geforce RTX 5060 Ti 16G GAMING TRIO OC WHITE",
-      "category": "VGA"
-    },
-    {
-      "type": "stock",
-      "partNo": "G506T-16S2CP",
-      "name": "Geforce RTX 5060 Ti 16G SHADOW 2X OC PLUS",
-      "category": "VGA",
-      "oldStock": 1582,
-      "newStock": 421
-    },
-    {
-      "type": "stock",
-      "partNo": "G506T-16V2CBP",
-      "name": "GeForce RTX 5060 Ti 16G VENTUS 2X OC BLACK PLUS",
-      "category": "VGA",
-      "oldStock": 0,
-      "newStock": 708
-    },
-    {
-      "type": "removed",
-      "partNo": "G506T-8GTCW",
-      "name": "GeForce RTX 5060 Ti 8G GAMING TRIO OC WHITE",
-      "category": "VGA"
-    },
-    {
-      "type": "stock",
-      "partNo": "G507T-16FEC",
-      "name": "GeForce RTX 5070 Ti 16G FRIEREN EDITION OC",
-      "category": "Bundle",
-      "oldStock": 376,
-      "newStock": 0
-    },
-    {
-      "type": "stock",
-      "partNo": "G507T-16GTC",
-      "name": "GeForce RTX 5070 Ti 16G GAMING TRIO OC",
-      "category": "VGA",
-      "oldStock": 0,
-      "newStock": 200
-    },
-    {
-      "type": "removed",
-      "partNo": "G507T-16MEC",
-      "name": "GeForce RTX 5070 Ti 16G MLG EDITION OC",
-      "category": "VGA"
-    },
-    {
-      "type": "removed",
-      "partNo": "G5080-16GTCW",
-      "name": "GeForce RTX 5080 16G GAMING TRIO OC WHITE",
-      "category": "VGA"
-    },
-    {
-      "type": "price",
-      "partNo": "MAG 272UPQDOLEDX24",
-      "name": "MAG 272UP QD-OLED X24",
-      "category": "OLED Monitors - Gaming",
-      "oldPrice": 665.0,
       "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "MAG275CQDFX24",
-      "name": "MAG 275CQDF X24",
-      "category": "2K Monitors - Gaming",
-      "oldStock": 903,
-      "newStock": 524
-    },
-    {
-      "type": "stock",
-      "partNo": "MAG32C6X",
-      "name": "MAG 32C6X",
-      "category": "FHD Monitors - Gaming",
-      "oldStock": 0,
-      "newStock": 333
-    },
-    {
-      "type": "removed",
-      "partNo": "MAGA100GLPCIE5W",
-      "name": "MAG A1000GL PCIE5 WHITE",
-      "category": "PSU"
-    },
-    {
-      "type": "stock",
-      "partNo": "MAGA550BN",
-      "name": "MAG A550BN",
-      "category": "PSU",
-      "oldStock": 349,
-      "newStock": 139
-    },
-    {
-      "type": "removed",
-      "partNo": "MAGA850GLSPCIE5",
-      "name": "MAG A850GLS PCIE5",
-      "category": "PSU"
-    },
-    {
-      "type": "stock",
-      "partNo": "MAGMT101DG",
-      "name": "MAG MT101DG",
-      "category": "Monitor ARM",
-      "oldStock": 16,
-      "newStock": 336
-    },
-    {
-      "type": "stock",
-      "partNo": "PAGPANOM110A",
-      "name": "PAG PANO M110A",
-      "category": "Chassis",
-      "oldStock": 72,
-      "newStock": 318
-    },
-    {
-      "type": "price",
-      "partNo": "PANO130RPZ",
-      "name": "MAG PANO 130R PZ",
-      "category": "Chassis",
-      "oldPrice": 60.0,
-      "newPrice": 55.0
-    },
-    {
-      "type": "price",
-      "partNo": "PANO130RPZWHT",
-      "name": "MAG PANO 130R PZ WHITE",
-      "category": "Chassis",
-      "oldPrice": 65.0,
-      "newPrice": 55.0
-    },
-    {
-      "type": "stock",
-      "partNo": "PRO H610MAD4",
-      "name": "PRO H610M-A DDR4",
+      "type": "new",
+      "partNo": "AMD B550 series",
+      "name": "AMD B550 series",
       "category": "MB",
-      "oldStock": 1680,
-      "newStock": 1480
-    },
-    {
-      "type": "stock",
-      "partNo": "PROA520MS",
-      "name": "PRO A520M-S",
-      "category": "MB",
-      "oldStock": 1280,
-      "newStock": 120
+      "newPrice": 0.0
     },
     {
       "type": "new",
-      "partNo": "PROB550MWIFI6E",
-      "name": "PRO B550M WIFI6E",
+      "partNo": "AMD B650 series",
+      "name": "AMD B650 series",
       "category": "MB",
-      "newPrice": 66.0
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "PROB760PD4",
-      "name": "PRO B760M-P DDR4",
+      "type": "new",
+      "partNo": "AMD B840 series",
+      "name": "AMD B840 series",
       "category": "MB",
-      "oldStock": 1030,
-      "newStock": 730
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "PROB850PWIFI",
-      "name": "PRO B850-P WIFI",
+      "type": "new",
+      "partNo": "AMD B850",
+      "name": "AMD B850",
       "category": "MB",
-      "oldStock": 200,
-      "newStock": 0
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "PROH610MGD4",
-      "name": "PRO H610M-G DDR4",
+      "type": "new",
+      "partNo": "AMD X870 Series",
+      "name": "AMD X870 Series",
       "category": "MB",
-      "oldStock": 466,
-      "newStock": 146
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "PROMP242E14A",
-      "name": "PRO MP242 E14A",
-      "category": "PRO MNT 25\"/24\" Flat",
-      "oldStock": 1080,
-      "newStock": 710
+      "type": "new",
+      "partNo": "Intel B760 Series",
+      "name": "Intel B760 Series",
+      "category": "MB",
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "PROMP251E14L",
-      "name": "PRO MP251 E14L",
-      "category": "PRO MNT 25\"/24\" Flat",
-      "oldStock": 1620,
-      "newStock": 1120
+      "type": "new",
+      "partNo": "Intel B860",
+      "name": "Intel B860",
+      "category": "MB",
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "PROMP271E14A",
-      "name": "PRO MP271 E14A",
-      "category": "PRO MNT 27\" Flat",
-      "oldStock": 431,
-      "newStock": 129
+      "type": "new",
+      "partNo": "Intel H 810",
+      "name": "Intel H 810",
+      "category": "MB",
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "PROMP273LE14",
-      "name": "PRO MP273L E14",
-      "category": "PRO MNT 27\" Flat",
-      "oldStock": 227,
-      "newStock": 0
+      "type": "new",
+      "partNo": "Intel H410",
+      "name": "Intel H410",
+      "category": "MB",
+      "newPrice": 0.0
     },
     {
-      "type": "removed",
-      "partNo": "PROZ790GAMPLUSWIFI",
-      "name": "Z790 GAMING PLUS WIFI",
-      "category": "MB"
+      "type": "new",
+      "partNo": "Intel H610 Series",
+      "name": "Intel H610 Series",
+      "category": "MB",
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "ProMP225E12VL",
-      "name": "PRO MP225 E12VL",
-      "category": "PRO MNT 22\"/16\" Flat",
-      "oldStock": 2305,
-      "newStock": 1715
+      "type": "new",
+      "partNo": "Intel Z90 Series",
+      "name": "Intel Z90 Series",
+      "category": "MB",
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "ProMP251L E2",
-      "name": "PRO MP251L E2",
-      "category": "PRO MNT 25\"/24\" Flat",
-      "oldStock": 1235,
-      "newStock": 375
+      "type": "new",
+      "partNo": "Inteo Z890",
+      "name": "Inteo Z890",
+      "category": "MB",
+      "newPrice": 0.0
     },
     {
-      "type": "stock",
-      "partNo": "SS270S480G",
-      "name": "SPATIUM S270 SATA 2.5” 480GB",
-      "category": "SSD",
-      "oldStock": 3300,
-      "newStock": 2000
+      "type": "price",
+      "partNo": "MAG275CQFE18",
+      "name": "MAG 275CQF E18",
+      "category": "2K Monitors - Gaming",
+      "oldPrice": 138.0,
+      "newPrice": 0.0
     },
     {
-      "type": "removed",
-      "partNo": "X870EPWIFI",
-      "name": "PRO X870E-P WIFI",
-      "category": "MB"
+      "type": "price",
+      "partNo": "MPG321CURXQD-OLED",
+      "name": "MPG 321CURX QD-OLED",
+      "category": "OLED Monitors - Gaming",
+      "oldPrice": 880.0,
+      "newPrice": 0.0
     },
     {
-      "type": "removed",
-      "partNo": "Z890GAMINGPWIFI",
-      "name": "Z890 GAMING PLUS WIFI",
-      "category": "MB"
+      "type": "price",
+      "partNo": "MPG321URXWQD-OLED",
+      "name": "MPG 321URXW QD-OLED",
+      "category": "OLED Monitors - Gaming",
+      "oldPrice": 880.0,
+      "newPrice": 0.0
     },
     {
-      "type": "removed",
-      "partNo": "Z890SWHITEWIFI",
-      "name": "PRO Z890-S WIFI WHITE",
-      "category": "MB"
+      "type": "price",
+      "partNo": "MPG341CQPXQDOLED",
+      "name": "MPG 341CQPX QD-OLED",
+      "category": "OLED Monitors - Gaming",
+      "oldPrice": 704.0,
+      "newPrice": 0.0
     },
     {
-      "type": "removed",
-      "partNo": "Z890SWIFI",
-      "name": "PRO Z890-S WIFI",
-      "category": "MB"
+      "type": "price",
+      "partNo": "PROB550MP",
+      "name": "PRO B550M-P",
+      "category": "MB",
+      "oldPrice": 60.0,
+      "newPrice": 0.0
+    },
+    {
+      "type": "price",
+      "partNo": "PROB550MPWIFE6E",
+      "name": "PRO B550M-P WIFI6E",
+      "category": "MB",
+      "oldPrice": 67.0,
+      "newPrice": 0.0
+    },
+    {
+      "type": "price",
+      "partNo": "ProMP341CQ",
+      "name": "PRO MP341CQ",
+      "category": "PRO MNT 34\" Curved",
+      "oldPrice": 190.0,
+      "newPrice": 0.0
     }
   ],
-  "lastChangesAt": "2026-09-04T16:29:59.420747+00:00",
-  "summary": "62 cambio(s) detectado(s)",
-  "triggeredBy": "sistema",
-  "triggerMode": "schedule"
+  "summary": "21 cambio(s) detectado(s)",
+  "triggeredBy": "github-actions",
+  "triggerMode": "workflow_dispatch"
 }
