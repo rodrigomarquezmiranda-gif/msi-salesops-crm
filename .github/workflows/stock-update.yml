@@ -163,9 +163,6 @@ jobs:
                       price = min(price_q, price_r)
                   else:
                       price = price_q if price_q is not None else price_r
-                  # Skip sub-section headers / spacer rows — no price = not a real product
-                  if price is None or price <= 0:
-                      continue
                   products.append({
                       'code':        code,
                       'desc':        c,
@@ -216,14 +213,17 @@ jobs:
           fb_put("salesops_pricelist", json.dumps(pricelist_payload, ensure_ascii=False))
           print("salesops_pricelist actualizado en Firebase OK")
 
-          # ── Step 6: Build new_snapshot ────────────────────────────────────────────
+          # ── Step 6: Build new_snapshot (only real products with price > 0) ─────────
           new_snapshot = {}
           for p in products:
+              price_val = safe_float(p.get('price'))
+              if price_val <= 0:
+                  continue  # sub-section header or spacer — skip for diff, kept in pricelist
               new_snapshot[p['code']] = {
                   'name':        p.get('desc', ''),
                   'category':    p.get('category', ''),
                   'miamiStock':  safe_int(p.get('miamiStock')),
-                  'miamiPrice':  safe_float(p.get('price')),
+                  'miamiPrice':  price_val,
                   'miamiEta':    p.get('miamiEta') or '',
                   'bondedStock': safe_int(p.get('bondedStock')),
               }
