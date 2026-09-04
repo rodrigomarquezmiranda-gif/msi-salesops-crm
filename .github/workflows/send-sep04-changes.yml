@@ -1,0 +1,103 @@
+name: Enviar Cambios 04/09 (uso único)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install openpyxl --break-system-packages
+
+      - name: Write diff to Firebase and send email
+        env:
+          FIREBASE_SECRET: ${{ secrets.FIREBASE_SECRET }}
+          SMTP_PASSWORD:   ${{ secrets.SMTP_PASSWORD }}
+          RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
+        run: |
+          python3 - << 'PYEOF'
+          import json, os, sys
+          sys.path.insert(0, 'scripts')
+
+          # Patch env so stock_check.py picks up force_email
+          os.environ['FORCE_EMAIL'] = 'true'
+
+          # Import helpers from stock_check
+          FB_BASE   = "https://msi-crm-default-rtdb.firebaseio.com"
+          FB_SECRET = os.environ.get("FIREBASE_SECRET", "")
+          FB_PARAMS = f"?auth={FB_SECRET}" if FB_SECRET else ""
+
+          from urllib import request as urlrequest
+
+          def fb_put(path, data):
+              url = f"{FB_BASE}/{path}.json{FB_PARAMS}"
+              req = urlrequest.Request(url, data=json.dumps(data).encode(),
+                                       method="PUT", headers={"Content-Type":"application/json"})
+              with urlrequest.urlopen(req, timeout=30) as r:
+                  print(f"[OK] PUT {path} → {r.status}")
+
+          # ── Cambios reales detectados el 04/09/2026 ──────────────────────────
+          changes = [
+            {"type":"new","partNo":"B860MGPW6E","name":"B860M GAMING PLUS WIFI6E","category":"MB","newPrice":140.0},
+            {"type":"new","partNo":"PROB550MWIFI6E","name":"PRO B550M WIFI6E","category":"MB","newPrice":66.0},
+            {"type":"price","partNo":"CLE360","name":"MAG CORELIQUID E360","category":"Liquid Cooling","oldPrice":85.0,"newPrice":75.0},
+            {"type":"price","partNo":"CLE360WT","name":"MAG CORELIQUID E360 WHITE","category":"Liquid Cooling","oldPrice":87.0,"newPrice":75.0},
+            {"type":"price","partNo":"CLE240","name":"MAG CORELIQUID E240","category":"Liquid Cooling","oldPrice":75.0,"newPrice":65.0},
+            {"type":"price","partNo":"CLE240WT","name":"MAG CORELIQUID E240 WHITE","category":"Liquid Cooling","oldPrice":77.0,"newPrice":65.0},
+            {"type":"price","partNo":"EZ120ARGB3W","name":"MPG EZ120 ARGB WHITE-3W","category":"Liquid Cooling","oldPrice":50.0,"newPrice":40.0},
+            {"type":"price","partNo":"PANO130RPZ","name":"MAG PANO 130R PZ","category":"Chassis","oldPrice":60.0,"newPrice":55.0},
+            {"type":"price","partNo":"PANO130RPZWHT","name":"MAG PANO 130R PZ WHITE","category":"Chassis","oldPrice":65.0,"newPrice":55.0},
+            {"type":"removed","partNo":"B550MPVDH","name":"PRO B550M-P DDR4","category":"MB"},
+            {"type":"removed","partNo":"B550MPVDHWIFI","name":"PRO B550M-P WIFI DDR4","category":"MB"},
+            {"type":"removed","partNo":"B840GAMINGPWIFI","name":"B840 GAMING PLUS WIFI","category":"MB"},
+            {"type":"removed","partNo":"B850TMAHAWKWIFI","name":"MAG B850 TOMAHAWK WIFI","category":"MB"},
+            {"type":"removed","partNo":"B850TMAHAWKWIFIMAX","name":"MAG B850 TOMAHAWK WIFI MAX","category":"MB"},
+            {"type":"removed","partNo":"PROZ790GAMPLUSWIFI","name":"PRO Z790-A GAMING PLUS WIFI","category":"MB"},
+            {"type":"removed","partNo":"X870EPWIFI","name":"X870-E WIFI","category":"MB"},
+            {"type":"removed","partNo":"Z890GAMINGPWIFI","name":"Z890 GAMING PLUS WIFI","category":"MB"},
+            {"type":"removed","partNo":"Z890SWIFI","name":"Z890-S WIFI","category":"MB"},
+            {"type":"removed","partNo":"Z890SWHITEWIFI","name":"Z890-S WHITE WIFI","category":"MB"},
+            {"type":"removed","partNo":"G506T-16GTCW","name":"GeForce RTX 5060 Ti 16G GAMING X TRIO WHITE","category":"VGA"},
+            {"type":"removed","partNo":"G506T-8GTCW","name":"GeForce RTX 5060 Ti 8G GAMING X TRIO WHITE","category":"VGA"},
+            {"type":"removed","partNo":"G5050-8GC","name":"GeForce RTX 5050 8G GAMING X","category":"VGA"},
+            {"type":"removed","partNo":"G507T-16MEC","name":"GeForce RTX 5070 Ti 16G MECH","category":"VGA"},
+            {"type":"removed","partNo":"G5080-16GTCW","name":"GeForce RTX 5080 16G GAMING X TRIO WHITE","category":"VGA"},
+            {"type":"removed","partNo":"MAGA100GLPCIE5W","name":"MAG A1000GL PCIE5 WHITE","category":"PSU"},
+            {"type":"removed","partNo":"MAGA850GLSPCIE5","name":"MAG A850GL SLIM PCIE5","category":"PSU"},
+            {"type":"removed","partNo":"ForceGC30V2","name":"Force GC30 V2","category":"Accessories"},
+            {"type":"removed","partNo":"ForceGC30V2_W","name":"Force GC30 V2 White","category":"Accessories"},
+          ]
+
+          summary = f"{len(changes)} cambio(s) detectado(s)"
+          diff_payload = {
+              "checkedAt":    "2026-09-04T16:29:59.000000+00:00",
+              "productCount": 312,
+              "hasChanges":   True,
+              "changeCount":  len(changes),
+              "changes":      changes,
+              "summary":      summary,
+              "triggeredBy":  "github-actions",
+              "triggerMode":  "manual",
+          }
+
+          print(f"Escribiendo diff en Firebase: {summary}")
+          fb_put("salesops_stock_diff", json.dumps(diff_payload))
+          print("Diff guardado. Corriendo stock_check.py...")
+          PYEOF
+
+      - name: Run stock check (send email)
+        env:
+          FIREBASE_SECRET:  ${{ secrets.FIREBASE_SECRET }}
+          SMTP_PASSWORD:    ${{ secrets.SMTP_PASSWORD }}
+          RECIPIENT_EMAILS: ${{ secrets.RECIPIENT_EMAILS }}
+          FORCE_EMAIL:      'true'
+        run: python3 scripts/stock_check.py
