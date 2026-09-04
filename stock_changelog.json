@@ -16,5 +16,14 @@
     "summary": "62 cambio(s) detectado(s)",
     "triggerMode": "schedule",
     "triggeredBy": "sistema"
+  },
+  {
+    "checkedAt": "2026-09-04T16:53:23.458808+00:00",
+    "productCount": 326,
+    "hasChanges": true,
+    "changeCount": 21,
+    "summary": "21 cambio(s) detectado(s)",
+    "triggerMode": "workflow_dispatch",
+    "triggeredBy": "github-actions"
   }
 ]
