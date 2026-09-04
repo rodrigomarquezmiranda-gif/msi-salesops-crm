@@ -1,10 +1,10 @@
 {
-  "checkedAt": "2026-09-04T17:34:51.552281+00:00",
+  "checkedAt": "2026-09-04T17:35:33.159491+00:00",
   "productCount": 299,
   "hasChanges": false,
   "changeCount": 0,
   "changes": [],
-  "summary": "Sin cambios",
+  "summary": "Envío de prueba — 299 productos en lista",
   "triggeredBy": "github-actions",
-  "triggerMode": "workflow_dispatch"
+  "triggerMode": "auto"
 }
