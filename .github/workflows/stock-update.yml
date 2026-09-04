@@ -233,6 +233,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add stock_snapshot_latest.json stock_diff_latest.json stock_changelog.json
+          git add -f stock_snapshot_latest.json stock_diff_latest.json stock_changelog.json
           git diff --staged --quiet || git commit -m "chore: stock/price update $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
