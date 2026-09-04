@@ -1,10 +1,10 @@
 {
-  "checkedAt": "2026-09-04T23:08:02.158533+00:00",
+  "checkedAt": "2026-09-04T23:11:30.199952+00:00",
   "productCount": 299,
   "hasChanges": false,
   "changeCount": 0,
   "changes": [],
   "summary": "Sin cambios",
   "triggeredBy": "github-actions",
-  "triggerMode": "schedule"
+  "triggerMode": "auto"
 }
