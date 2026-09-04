@@ -565,6 +565,26 @@ has_changes = len(changes) > 0
 summary = f"{len(changes)} cambio(s) detectado(s)" if has_changes else "Sin cambios"
 print(f"Changes: {summary}")
 
+# 4b. If force_email and no new changes, fall back to last known diff from Firebase
+if FORCE_EMAIL and not has_changes:
+    print("FORCE_EMAIL=true and no new changes — checking Firebase for last known diff...")
+    try:
+        last_diff_raw = fb_get("salesops_stock_diff")
+        if isinstance(last_diff_raw, str): last_diff_raw = json.loads(last_diff_raw)
+        if (isinstance(last_diff_raw, dict)
+                and last_diff_raw.get("hasChanges")
+                and last_diff_raw.get("changes")):
+            changes = last_diff_raw["changes"]
+            has_changes = True
+            summary = last_diff_raw.get("summary", f"{len(changes)} cambio(s) detectado(s)")
+            print(f"Using last known diff from Firebase: {summary}")
+        else:
+            summary = f"Envío de prueba — {len(new_snapshot)} productos en lista"
+            print("No previous diff with changes found — sending as test")
+    except Exception as e:
+        summary = f"Envío de prueba — {len(new_snapshot)} productos en lista"
+        print(f"Could not read last diff from Firebase: {e}")
+
 # 5. Write to Firebase
 diff_payload = {
     "checkedAt": now_iso, "productCount": len(new_snapshot),
@@ -592,11 +612,7 @@ with open(os.path.join(repo_root, 'stock_snapshot_latest.json'), 'w') as f:
 
 # 7. Send email
 if has_changes or FORCE_EMAIL:
-    if FORCE_EMAIL and not has_changes:
-        summary = f"Envío de prueba — {len(new_snapshot)} productos en lista"
-        print("FORCE_EMAIL=true — sending regardless of changes")
-    else:
-        print("Generating Excel and sending email...")
+    print("Generating Excel and sending email...")
     excel_bytes = generate_excel(raw_products, changes, date_str)
     send_email(summary, changes, excel_bytes, date_str, len(new_snapshot))
 else:
