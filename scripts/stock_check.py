@@ -21,8 +21,34 @@ SMTP_USER      = "sales@msicrm.com"
 SMTP_PASS      = os.environ.get("SMTP_PASSWORD", "")
 FORCE_EMAIL    = os.environ.get("FORCE_EMAIL", "false").lower() == "true"
 TEST_RECIPIENT = os.environ.get("TEST_RECIPIENT", "").strip()
-_raw_recipients = TEST_RECIPIENT if TEST_RECIPIENT else os.environ.get("RECIPIENT_EMAILS", "")
-RECIPIENTS = [e.strip() for e in _raw_recipients.split(",") if e.strip()]
+
+def _load_recipients():
+    """Lee la lista de destinatarios desde Firebase salesops_notif_emails.
+    Fallback: variable de entorno RECIPIENT_EMAILS (para compatibilidad)."""
+    if TEST_RECIPIENT:
+        return [TEST_RECIPIENT]
+    try:
+        url = f"{FB_BASE}/salesops_notif_emails.json{FB_PARAMS}"
+        import urllib.request as _ur
+        with _ur.urlopen(url, timeout=10) as r:
+            raw = json.loads(r.read())
+        if isinstance(raw, list):
+            emails = [e.strip() for e in raw if isinstance(e, str) and e.strip()]
+        elif isinstance(raw, dict):
+            # Firebase puede devolver dict con keys generadas por push()
+            emails = [v.strip() for v in raw.values() if isinstance(v, str) and v.strip()]
+        else:
+            emails = []
+        if emails:
+            print(f"Destinatarios desde Firebase: {len(emails)}")
+            return emails
+    except Exception as e:
+        print(f"[WARN] No se pudo leer destinatarios de Firebase: {e}")
+    # Fallback a env var
+    raw_env = os.environ.get("RECIPIENT_EMAILS", "")
+    return [e.strip() for e in raw_env.split(",") if e.strip()]
+
+RECIPIENTS = _load_recipients()
 
 # ── Firebase helpers ──────────────────────────────────────────────────────────
 def fb_get(path):
