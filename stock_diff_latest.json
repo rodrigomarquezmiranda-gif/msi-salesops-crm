@@ -1,10 +1,25 @@
 {
-  "checkedAt": "2026-09-04T23:11:30.199952+00:00",
-  "productCount": 299,
-  "hasChanges": false,
-  "changeCount": 0,
-  "changes": [],
-  "summary": "Sin cambios",
+  "checkedAt": "2026-09-07T17:47:55.552253+00:00",
+  "productCount": 301,
+  "hasChanges": true,
+  "changeCount": 2,
+  "changes": [
+    {
+      "type": "new",
+      "partNo": "SM470PN1TB",
+      "name": "SPATIUM M470 PRO PCIe 4.0 NVMe M.2 1TB",
+      "category": "SSD",
+      "newPrice": 145.0
+    },
+    {
+      "type": "new",
+      "partNo": "SM470PN2TB",
+      "name": "SPATIUM M470 PRO PCIe 4.0 NVMe M.2 2TB",
+      "category": "SSD",
+      "newPrice": 245.0
+    }
+  ],
+  "summary": "2 cambio(s) detectado(s)",
   "triggeredBy": "github-actions",
-  "triggerMode": "auto"
+  "triggerMode": "schedule"
 }
