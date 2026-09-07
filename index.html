@@ -1482,7 +1482,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '02.09.26.18';
+const APP_VERSION = '07.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9111,74 +9111,158 @@ function renderMktTab() {
     termMap.get(r.term).push(r);
   }
   const terms = Array.from(termMap.entries())
-    .map(([term, trows]) => ({ term, rows: trows, total: trows.reduce((s,r)=>s+r.total,0) }))
+    .map(([term, trows], i) => ({
+      term, rows: trows,
+      total: trows.reduce((s,r)=>s+r.total,0),
+      color: MKT_SLICE_COLORS[i % MKT_SLICE_COLORS.length]
+    }))
     .sort((a,b) => b.total - a.total);
 
-  const cardsHtml = terms.map(({ term, rows: trows, total }) => {
-    const isExpanded = mktExpandedTerm === term;
-    // % over expense planned (the real total from the summary cell)
-    const pct = expensePlanned > 0 ? (total / expensePlanned * 100) : 0;
-    const safeTermJs = term.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  // ── TORTA PRINCIPAL por departamento ──────────────────────
+  const overviewSlices = terms.filter(t=>t.total>0).map(t=>({ label:t.term, value:t.total, color:t.color }));
+  const overviewTotal  = overviewSlices.reduce((s,sl)=>s+sl.value,0);
+  const usedPct2       = budgetProvided > 0 ? (overviewTotal/budgetProvided*100) : 0;
 
-    const custMap = new Map();
-    for(const r of trows) {
-      if(r.total <= 0) continue;
-      const k = r.customer || '(sin nombre)';
-      custMap.set(k, (custMap.get(k)||0) + r.total);
+  // Build large donut (200px)
+  const _buildOverviewDonut = (slices) => {
+    const cx=110,cy=110,R=95,ri=62, tot=slices.reduce((s,sl)=>s+sl.value,0);
+    if(!tot) return '';
+    let paths='', angle=0;
+    if(slices.length===1) {
+      paths=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="${slices[0].color}" opacity="0.9"/>`;
+    } else {
+      slices.forEach(sl=>{
+        const sweep=(sl.value/tot)*360;
+        paths+=_makePieSlice(cx,cy,R,ri,angle,angle+sweep-0.4,sl.color,null);
+        angle+=sweep;
+      });
     }
-    const custArr = Array.from(custMap.entries())
-      .sort((a,b) => b[1]-a[1])
-      .map(([label, value], i) => ({ label, value, color: MKT_SLICE_COLORS[i % MKT_SLICE_COLORS.length] }));
-    const custTotal = custArr.reduce((s,c)=>s+c.value,0);
+    return `<svg viewBox="0 0 220 220" width="200" height="200" style="display:block">
+      <circle cx="${cx}" cy="${cy}" r="${R+5}" fill="#1E2430"/>
+      ${paths}
+      <circle cx="${cx}" cy="${cy}" r="${ri}" fill="#1A2232"/>
+      <text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="10" fill="#9EA8BA">TOTAL USADO</text>
+      <text x="${cx}" y="${cy+8}" text-anchor="middle" font-size="13" font-weight="700" fill="#FF6600">${usedPct2.toFixed(1)}%</text>
+      <text x="${cx}" y="${cy+22}" text-anchor="middle" font-size="9" fill="#9EA8BA">${fmtAmt(overviewTotal)}</text>
+    </svg>`;
+  };
 
-    const legendHtml = custArr.map(c => `
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-        <span style="width:10px;height:10px;border-radius:2px;background:${c.color};flex-shrink:0;display:inline-block"></span>
-        <span style="font-size:11px;color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.label)}">${esc(c.label)}</span>
-        <span style="font-size:11px;color:var(--text3);white-space:nowrap">${custTotal>0?(c.value/custTotal*100).toFixed(1)+'%':''}</span>
-        <span style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;margin-left:4px">${fmtAmt(c.value)}</span>
-      </div>`).join('');
-
-    const chartHtml = custArr.length
-      ? `<div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
-           <div style="flex-shrink:0">${_mktBuildDonut(custArr)}</div>
-           <div style="flex:1;min-width:180px;padding-top:8px">${legendHtml}</div>
-         </div>`
-      : `<div style="font-size:12px;color:var(--text3);padding:.5rem">Sin montos registrados.</div>`;
-
-    const detailHtml = isExpanded ? `
-      <div style="margin-top:1rem;border-top:1px solid var(--border2);padding-top:1rem">
-        <table class="data-table" style="font-size:12px">
-          <thead><tr><th>Cliente / Destinatario</th><th>Detalle</th><th>Q</th><th style="text-align:right">Monto</th></tr></thead>
-          <tbody>${trows.map(r=>`<tr>
-            <td style="font-weight:500">${esc(r.customer||'—')}</td>
-            <td style="color:var(--text3);font-size:11px">${esc(r.activity||'—')}</td>
-            <td style="color:var(--text3)">Q${r.q}</td>
-            <td style="text-align:right;font-weight:${r.total>0?'600':'400'};color:${r.total>0?'var(--text)':'var(--text3)'}">${r.total>0?fmtAmt(r.total):'—'}</td>
-          </tr>`).join('')}</tbody>
-          <tfoot><tr>
-            <td colspan="3" style="font-weight:700">Total</td>
-            <td style="text-align:right;font-weight:700;color:var(--brand-text)">${fmtAmt(total)}</td>
-          </tr></tfoot>
-        </table>
-      </div>` : '';
-
-    return `<div class="ai-box" style="margin-bottom:1rem">
-      <div class="ai-box-header" style="cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between;gap:12px"
-           onclick="toggleMktTerm('${safeTermJs}')">
-        <span style="color:var(--text);font-size:14px"><i class="ti ti-tag" style="color:var(--brand-text)"></i> ${esc(term)}</span>
-        <span style="display:flex;align-items:center;gap:10px;white-space:nowrap">
-          <span style="font-size:11px;color:var(--text3)">${pct.toFixed(1)}% del budget</span>
-          <span style="font-weight:700;color:var(--brand-text)">${fmtAmt(total)}</span>
-          <i class="ti ti-chevron-${isExpanded?'up':'down'}" style="font-size:13px;color:var(--text3)"></i>
-        </span>
-      </div>
-      <div style="margin-top:1rem">${chartHtml}</div>
-      ${detailHtml}
+  const overviewLegendHtml = overviewSlices.map(sl => {
+    const pctOfBudget = budgetProvided>0 ? (sl.value/budgetProvided*100).toFixed(1) : '0.0';
+    const pctOfUsed   = overviewTotal>0  ? (sl.value/overviewTotal*100).toFixed(1)  : '0.0';
+    return `<div style="display:flex;align-items:center;gap:7px;padding:4px 0;border-bottom:0.5px solid var(--border)">
+      <span style="width:10px;height:10px;border-radius:2px;background:${sl.color};flex-shrink:0"></span>
+      <span style="font-size:12px;color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sl.label)}</span>
+      <span style="font-size:11px;color:var(--text3);white-space:nowrap;min-width:38px;text-align:right">${pctOfUsed}%</span>
+      <span style="font-size:11px;font-weight:600;color:var(--text);white-space:nowrap;min-width:80px;text-align:right">${fmtAmt(sl.value)}</span>
     </div>`;
   }).join('');
 
-  wrap.innerHTML = summaryHtml + cardsHtml;
+  const overviewHtml = overviewSlices.length ? `
+    <div class="ai-box" style="margin-bottom:1.5rem">
+      <div class="ai-box-header"><i class="ti ti-chart-pie-2" style="color:var(--brand-text)"></i> Distribución por Departamento</div>
+      <div style="display:flex;align-items:flex-start;gap:24px;margin-top:1rem;flex-wrap:wrap">
+        <div style="flex-shrink:0">${_buildOverviewDonut(overviewSlices)}</div>
+        <div style="flex:1;min-width:200px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);padding:0 0 4px;border-bottom:1px solid var(--border2);margin-bottom:2px">
+            <span>DEPARTAMENTO</span><span style="min-width:38px;text-align:right">% USADO</span><span style="min-width:80px;text-align:right">MONTO</span>
+          </div>
+          ${overviewLegendHtml}
+          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;padding:6px 0 0;color:var(--brand-text)">
+            <span>Budget Total</span><span>${fmtAmt(budgetProvided)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;padding:2px 0 0;color:${remainingColor}">
+            <span>Remaining</span><span>${fmtAmt(remainingBudget)}</span>
+          </div>
+        </div>
+      </div>
+    </div>` : '';
+
+  // ── CARDS por departamento (grid compacto) ─────────────────
+  const cardsHtml = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">${
+    terms.map(({ term, rows: trows, total, color: termColor }) => {
+      const isExpanded = mktExpandedTerm === term;
+      const pct = expensePlanned > 0 ? (total / expensePlanned * 100) : 0;
+      const safeTermJs = term.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+      const custMap = new Map();
+      for(const r of trows) {
+        if(r.total <= 0) continue;
+        const k = r.customer || '(sin nombre)';
+        custMap.set(k, (custMap.get(k)||0) + r.total);
+      }
+      const custArr = Array.from(custMap.entries())
+        .sort((a,b) => b[1]-a[1])
+        .map(([label, value], i) => ({ label, value, color: MKT_SLICE_COLORS[i % MKT_SLICE_COLORS.length] }));
+      const custTotal = custArr.reduce((s,c)=>s+c.value,0);
+
+      // Compact donut (120px) + info below
+      const smallDonut = custArr.length ? (() => {
+        const cx=60,cy=60,R=50,ri=32,tot=custTotal;
+        let paths='',angle=0;
+        if(custArr.length===1){
+          paths=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="${custArr[0].color}" opacity="0.9"/>`;
+        } else {
+          custArr.forEach(sl=>{
+            const sweep=(sl.value/tot)*360;
+            paths+=_makePieSlice(cx,cy,R,ri,angle,angle+sweep-0.4,sl.color,null);
+            angle+=sweep;
+          });
+        }
+        return `<svg viewBox="0 0 120 120" width="110" height="110" style="display:block;margin:0 auto">
+          <circle cx="${cx}" cy="${cy}" r="${R+4}" fill="#1E2430"/>
+          ${paths}
+          <circle cx="${cx}" cy="${cy}" r="${ri}" fill="#1A2232"/>
+          <text x="${cx}" y="${cy+4}" text-anchor="middle" font-size="9" fill="#9EA8BA">${pct.toFixed(0)}%</text>
+        </svg>`;
+      })() : '';
+
+      const legendCompact = custArr.slice(0,5).map(c=>`
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+          <span style="width:7px;height:7px;border-radius:1px;background:${c.color};flex-shrink:0"></span>
+          <span style="font-size:10px;color:var(--text3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.label)}</span>
+          <span style="font-size:10px;font-weight:600;color:var(--text);white-space:nowrap">${fmtAmt(c.value)}</span>
+        </div>`).join('');
+
+      const detailHtml = isExpanded ? `
+        <div style="margin-top:.75rem;border-top:1px solid var(--border2);padding-top:.75rem">
+          <table class="data-table" style="font-size:11px">
+            <thead><tr><th>Cliente</th><th>Detalle</th><th>Q</th><th style="text-align:right">Monto</th></tr></thead>
+            <tbody>${trows.map(r=>`<tr>
+              <td style="font-weight:500">${esc(r.customer||'—')}</td>
+              <td style="color:var(--text3);font-size:10px">${esc(r.activity||'—')}</td>
+              <td style="color:var(--text3)">Q${r.q}</td>
+              <td style="text-align:right;font-weight:${r.total>0?'600':'400'};color:${r.total>0?'var(--text)':'var(--text3)'}">${r.total>0?fmtAmt(r.total):'—'}</td>
+            </tr>`).join('')}</tbody>
+            <tfoot><tr>
+              <td colspan="3" style="font-weight:700">Total</td>
+              <td style="text-align:right;font-weight:700;color:var(--brand-text)">${fmtAmt(total)}</td>
+            </tr></tfoot>
+          </table>
+        </div>` : '';
+
+      return `<div class="ai-box" style="margin-bottom:0;padding:12px">
+        <div style="cursor:pointer;user-select:none" onclick="toggleMktTerm('${safeTermJs}')">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="display:flex;align-items:center;gap:6px">
+              <span style="width:10px;height:10px;border-radius:2px;background:${termColor};flex-shrink:0"></span>
+              <span style="font-size:12px;font-weight:600;color:var(--text)">${esc(term)}</span>
+            </span>
+            <i class="ti ti-chevron-${isExpanded?'up':'down'}" style="font-size:12px;color:var(--text3)"></i>
+          </div>
+          ${custArr.length ? smallDonut : ''}
+          <div style="text-align:center;margin-top:6px">
+            <div style="font-size:16px;font-weight:700;color:var(--brand-text)">${fmtAmt(total)}</div>
+            <div style="font-size:10px;color:var(--text3)">${pct.toFixed(1)}% del expense planned</div>
+          </div>
+          ${custArr.length ? `<div style="margin-top:10px;border-top:0.5px solid var(--border);padding-top:8px">${legendCompact}</div>` : ''}
+        </div>
+        ${detailHtml}
+      </div>`;
+    }).join('')
+  }</div>`;
+
+  wrap.innerHTML = summaryHtml + overviewHtml + cardsHtml;
 }
 
 // ─── ESTADO DE CUENTAS (AR) ───────────────────────────────
