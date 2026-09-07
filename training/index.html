@@ -193,7 +193,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div style="display:flex;gap:4px">
       <button class="icon-btn" id="admin-btn" onclick="showScreen('admin')" title="Panel Admin" style="display:none"><i class="ti ti-shield" style="font-size:19px;color:#EBCB8B"></i></button>
       <button class="icon-btn" onclick="showScreen('history')" title="Mi historial"><i class="ti ti-chart-bar" style="font-size:19px"></i></button>
-      <button class="icon-btn" onclick="showSettings()" title="API Key"><i class="ti ti-settings" style="font-size:19px"></i></button>
+      <!-- settings btn removed: API key managed server-side via Cloudflare Worker -->
       <button class="icon-btn" onclick="doLogout()" title="Cerrar sesión"><i class="ti ti-logout" style="font-size:19px"></i></button>
     </div>
   </div>
@@ -226,12 +226,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="stat-chip"><div class="val" style="color:var(--yellow)">~2</div><div class="lbl">minutos</div></div>
       <div class="stat-chip"><div class="val" style="color:var(--green)">IA</div><div class="lbl">generado</div></div>
     </div>
-  </div>
-
-  <div class="warn mt-2" id="no-key-warn" style="display:none">
-    <i class="ti ti-alert-triangle"></i>
-    Configurá tu Claude API Key antes de continuar.
-    <a href="#" onclick="showSettings();return false" style="color:var(--yellow);font-weight:700">Configurar →</a>
   </div>
 
   <button class="btn btn-primary mt-2" id="gen-btn" onclick="generateQuiz()" disabled>
@@ -358,30 +352,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
-<!-- ══ Settings modal ════════════════════════════════════════════════════════ -->
-<div class="modal-backdrop" id="modal-settings" style="display:none"
-     onclick="if(event.target===this)closeSettings()">
-  <div class="modal">
-    <div style="font-size:16px;font-weight:700;margin-bottom:1rem">
-      <i class="ti ti-key" style="color:var(--brand)"></i> Claude API Key
-    </div>
-    <div class="gap">
-      <div>
-        <div class="label">Anthropic API Key</div>
-        <input class="input" type="password" id="set-key" placeholder="sk-ant-…"/>
-        <div class="ts mt-1">Se guarda en este dispositivo.
-          <a href="https://console.anthropic.com/keys" target="_blank" style="color:var(--brand)">Obtener clave →</a>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
-        <button class="btn btn-ghost" onclick="closeSettings()" style="width:auto;padding:9px 18px">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveSettings()" style="width:auto;padding:9px 18px">
-          <i class="ti ti-check"></i> Guardar
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- Settings modal removed: API key managed server-side via Cloudflare Worker -->
 
 <script>
 firebase.initializeApp({
@@ -395,6 +366,9 @@ firebase.initializeApp({
 });
 const fbAuth = firebase.auth();
 const fbDB   = firebase.database();
+
+// Cloudflare Worker URL — update after deploying cloudflare-worker/quiz-proxy.js
+const QUIZ_WORKER_URL = 'https://msi-quiz-proxy.TU-SUBDOMINIO.workers.dev';
 
 let products = [], selectedProd = null, questions = [];
 let currentQ = 0, answers = [], chosenAnswer = null;
@@ -427,7 +401,7 @@ function showScreen(id){
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 fbAuth.onAuthStateChanged(user=>{
-  if(user){currentUser=user;loadProducts();loadApiKey();checkAdmin();showScreen('home');}
+  if(user){currentUser=user;loadProducts();checkAdmin();showScreen('home');}
   else{currentUser=null;isAdmin=false;showScreen('login');}
 });
 
@@ -457,24 +431,7 @@ async function doLogin(){
 
 async function doLogout(){if(!confirm('¿Cerrar sesión?'))return;await fbAuth.signOut();products=[];selectedProd=null;}
 
-async function loadApiKey(){
-  if((localStorage.getItem('msi_quiz_key')||'').trim()){
-    console.log('loadApiKey: clave ya en localStorage');return;
-  }
-  console.log('loadApiKey: buscando en Firebase...');
-  try{
-    const snap=await fbDB.ref('msi_quiz_config/apiKey').get();
-    if(snap.exists()&&snap.val()){
-      localStorage.setItem('msi_quiz_key',snap.val());
-      console.log('✓ loadApiKey: clave cargada desde Firebase');
-      updateGenBtn();
-    }else{
-      console.warn('loadApiKey: nodo vacío o no existe en Firebase (path: msi_quiz_config/apiKey)');
-    }
-  }catch(e){
-    console.error('✗ loadApiKey Firebase error:',e.code,e.message);
-  }
-}
+// loadApiKey removed: API key managed server-side via Cloudflare Worker
 
 // ── Category normalization ─────────────────────────────────────────────────────
 function normalizeCategory(raw){
@@ -616,7 +573,6 @@ function selectProd(idx){
 }
 
 function updateGenBtn(){
-  const hasKey=!!(localStorage.getItem('msi_quiz_key')||'').trim();
   const catBanner=document.getElementById('cat-mode-banner');
   const genBtn=document.getElementById('gen-btn');
   const genHint=document.getElementById('gen-hint');
@@ -645,7 +601,6 @@ function updateGenBtn(){
     genBtn.innerHTML='<i class="ti ti-player-play"></i> Empezar Quiz';
     genHint.textContent='Sin trampa — cada quiz es diferente';
   }
-  document.getElementById('no-key-warn').style.display=((selectedProd||selectedCat)&&!hasKey)?'block':'none';
 }
 
 document.addEventListener('click',e=>{
@@ -653,28 +608,7 @@ document.addEventListener('click',e=>{
     document.getElementById('prod-dd').style.display='none';
 });
 
-// ── Settings ──────────────────────────────────────────────────────────────────
-function showSettings(){document.getElementById('set-key').value=localStorage.getItem('msi_quiz_key')||'';document.getElementById('modal-settings').style.display='flex'}
-function closeSettings(){document.getElementById('modal-settings').style.display='none'}
-async function saveSettings(){
-  const k=document.getElementById('set-key').value.trim();
-  if(k){
-    localStorage.setItem('msi_quiz_key',k);
-    // Guardar en Firebase para que todos los usuarios la reciban sin configurar
-    try{
-      await fbDB.ref('msi_quiz_config/apiKey').set(k);
-      console.log('✓ API key guardada en Firebase');
-      showSaveToast('✓ Clave guardada y compartida con todos los usuarios');
-    }catch(e){
-      console.error('✗ Error guardando en Firebase:',e.code,e.message);
-      showSaveToast('⚠️ Guardado solo en este dispositivo (Firebase: '+e.code+')');
-    }
-  }else{
-    localStorage.removeItem('msi_quiz_key');
-    try{await fbDB.ref('msi_quiz_config/apiKey').remove();}catch(e){}
-  }
-  closeSettings();updateGenBtn();
-}
+// Settings functions removed: API key managed server-side via Cloudflare Worker
 
 function showSaveToast(msg){
   let t=document.getElementById('save-toast');
@@ -687,9 +621,7 @@ function showSaveToast(msg){
 
 // ── Generate ──────────────────────────────────────────────────────────────────
 async function generateQuiz(){
-  const apiKey=(localStorage.getItem('msi_quiz_key')||'').trim();
-  if(!apiKey){showSettings();return}
-  if(currentMode==='category')return generateCatQuiz(apiKey);
+  if(currentMode==='category')return generateCatQuiz();
   if(!selectedProd)return;
   showScreen('loading');
   document.getElementById('load-prod').textContent=selectedProd.desc;
@@ -716,10 +648,10 @@ Reglas:
 Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
 {"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0,"imageUrl":"opcional-url-o-omitir"}]}`;
 
-  await _callApiAndStart(apiKey,prompt,`Generando quiz: ${selectedProd.desc}`);
+  await _callApiAndStart(prompt,`Generando quiz: ${selectedProd.desc}`);
 }
 
-async function generateCatQuiz(apiKey){
+async function generateCatQuiz(){
   if(!selectedCat)return;
   const pool=products.filter(p=>p.category===selectedCat);
   if(!pool.length){alert('No hay productos en esta categoría');return}
@@ -749,15 +681,15 @@ Reglas:
 Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
 {"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0,"imageUrl":"opcional-o-omitir"}]}`;
 
-  await _callApiAndStart(apiKey,prompt,`Quiz de ${catLbl(selectedCat)}`);
+  await _callApiAndStart(prompt,`Quiz de ${catLbl(selectedCat)}`);
 }
 
-async function _callApiAndStart(apiKey,prompt,loadingLabel){
+async function _callApiAndStart(prompt,loadingLabel){
   document.getElementById('load-prod').textContent=loadingLabel;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    const res=await fetch(QUIZ_WORKER_URL,{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:2560,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`Error HTTP ${res.status}`)}
