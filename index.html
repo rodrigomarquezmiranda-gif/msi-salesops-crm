@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '07.09.26.2';
+const APP_VERSION = '07.09.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -2100,13 +2100,14 @@ function saveApiKey() { localStorage.setItem('salesops_apikey', document.getElem
       const root = _getDialogRoot();
       root.style.display = 'flex';
       const title = opts.title || 'Ingresar valor';
+      const safeDefault = String(defaultVal ?? '');
       const card = _buildCard(`
         <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px">
           ${_iconFor('input')}
           <div style="flex:1">
             <div style="font-weight:600;font-size:14px;margin-bottom:4px">${title}</div>
             <div style="color:var(--text2);font-size:13px;margin-bottom:10px;white-space:pre-wrap">${msg}</div>
-            <input id="_dlg_input" type="${opts.type||'text'}" value="${(defaultVal||'').replace(/"/g,'&quot;')}"
+            <input id="_dlg_input" type="${opts.type||'text'}" value="${safeDefault.replace(/"/g,'&quot;')}"
               placeholder="${opts.placeholder||''}"
               style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-size:13px;outline:none;box-sizing:border-box"/>
           </div>
@@ -11369,7 +11370,7 @@ async function editResellerManual(resellerId, lineKey, monthKey, tier) {
     return s.rows.some(r => matchesReseller(r.client||'', r.cuit||'', resellerObj) && classifyResellerLine(r.description||'')===lineKey);
   });
   const mkey = resellerId + ':' + lineKey + ':' + monthKey;
-  const curVal = db.resellerManual[mkey] ?? '';
+  const curVal = String(db.resellerManual[mkey] ?? '');
   const val = await _prompt(`Valor manual para ${lineKey} — ${monthKey}. Dejá vacío para borrar.`, curVal, {title:'Valor manual' + (autoSnap?' (ya hay datos automáticos)':'')});
   if(val === null) return;
   const num = parseInt(val);
