@@ -356,13 +356,22 @@ def build_html_email(summary_text, changes, date_str, product_count):
         bg = "#f9fafb" if i % 2 == 0 else "#ffffff"
 
         if c["type"] == "price":
-            old_v = f'<span style="color:#9ca3af;text-decoration:line-through">${c.get("oldPrice",0):,.2f}</span>'
-            new_v = f'<span style="color:#{"166534" if c.get("newPrice",0)<c.get("oldPrice",0) else "7f1d1d"};font-weight:700">${c.get("newPrice",0):,.2f}</span>'
+            old_p = c.get("oldPrice", 0) or 0
+            new_p = c.get("newPrice", 0) or 0
+            old_v = f'<span style="color:#9ca3af;text-decoration:line-through">${old_p:,.2f}</span>'
+            is_drop = new_p < old_p
+            new_v = f'<span style="color:#{"166534" if is_drop else "7f1d1d"};font-weight:700">${new_p:,.2f}</span>'
+            pct = abs((new_p - old_p) / old_p * 100) if old_p else 0
+            if is_drop:
+                badge = f'<span style="background:#dcfce7;color:#166534;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700">▼ {pct:.1f}%</span>'
+            else:
+                badge = f'<span style="background:#fee2e2;color:#7f1d1d;border-radius:4px;padding:2px 7px;font-size:11px;font-weight:700">▲ {pct:.1f}%</span>'
         elif c["type"] == "new":
             old_v = "—"
             new_v = f'<span style="color:#166534;font-weight:700">${c.get("newPrice",0):,.2f}</span>'
         elif c["type"] == "removed":
-            old_v = f'${c.get("oldPrice",0):,.2f}'
+            old_p = c.get("oldPrice", 0) or 0
+            old_v = f'${old_p:,.2f}' if old_p else '—'
             new_v = '<span style="color:#9ca3af">—</span>'
         else:  # stock
             old_v = str(c.get("oldStock","—"))
