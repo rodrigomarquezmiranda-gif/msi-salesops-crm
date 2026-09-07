@@ -61,5 +61,14 @@
     "summary": "2 cambio(s) detectado(s)",
     "triggerMode": "schedule",
     "triggeredBy": "github-actions"
+  },
+  {
+    "checkedAt": "2026-09-07T23:37:59.903113+00:00",
+    "productCount": 301,
+    "hasChanges": false,
+    "changeCount": 0,
+    "summary": "Sin cambios",
+    "triggerMode": "schedule",
+    "triggeredBy": "github-actions"
   }
 ]
