@@ -957,7 +957,7 @@
         </div>
         <div class="export-row" style="margin-bottom:0.5rem">
           <button class="filter-pill active" id="etailer-pill-compragamer" onclick="setEtailerFilter('compragamer',this)">COMPRAGAMER</button>
-          <button class="filter-pill" id="etailer-pill-uy_etailer" onclick="setEtailerFilter('uy_etailer',this)">ETAILER UY</button>
+          <button class="filter-pill" id="etailer-pill-uy_etailer" onclick="setEtailerFilter('uy_etailer',this)">THOT COMPUTACION</button>
         </div>
         <div id="etailers-month-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0.75rem"></div>
         <div class="upload-zone" id="drop-zone-etailers" onclick="document.getElementById('file-input-etailers').click()" style="margin:1rem 0;padding:2.5rem 1.5rem;border-width:2px;min-height:140px;justify-content:center;flex-direction:column;gap:10px">
@@ -8307,7 +8307,7 @@ function exportSalesPricePDF() {
 
 // ─── ROTACIÓN DE STOCK (reportes semanales por proveedor) ───
 const DISTRIBUTORS = { air:'AIR COMPUTERS', invid:'INVID', solutionbox:'SOLUTION BOX', ashir:'ASHIR', elit:'ELIT' };
-const ETAILERS     = { compragamer:'COMPRAGAMER', uy_etailer:'ETAILER UY' };
+const ETAILERS     = { compragamer:'COMPRAGAMER', uy_etailer:'THOT COMPUTACION' };
 
 // Mapeo de códigos de cliente MSI → distribuidor del CRM
 const AR_CUSTOMER_DIST = {
@@ -8326,8 +8326,8 @@ const AR_CUSTOMER_DIST = {
   // 102GELIROX: ignorado
 };
 const AR_OTHER_LABELS = { _aurora:'AURORA (Paraguay)', _laset:'LASET (LATAM)', _micinf:'MICRO INFORMATICA (Miami)' };
-const ETAILER_LABELS = { compragamer:'COMPRAGAMER', uy_etailer:'ETAILER UY' };
-const ETAILER_SHORT  = { compragamer:'CGAMER', uy_etailer:'UY' };
+const ETAILER_LABELS = { compragamer:'COMPRAGAMER', uy_etailer:'THOT COMPUTACION' };
+const ETAILER_SHORT  = { compragamer:'CGAMER', uy_etailer:'THOT' };
 function normDesc(d) { return String(d||'').trim().toUpperCase().replace(/\s+/g, ' '); }
 function normClientKey(name) { return String(name||'').toUpperCase().replace(/[.,]/g, '').replace(/\s+/g, ' ').trim(); }
 
