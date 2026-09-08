@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '08.09.26.8';
+const APP_VERSION = '08.09.26.9';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -10062,6 +10062,7 @@ function renderRotationTab() {
   const sortKey = document.getElementById('rotation-sort')?.value || 'sold_desc';
   let html = '';
   let grandTotalSold = 0;
+  let grandStockTotal = 0;
   let anyData = false;
   dists.forEach(distKey => {
     const stockSnaps = db.weeklyReports.filter(s=>s.distributor===distKey && s.reportType==='stock').sort((a,b)=>(b.periodEnd||'').localeCompare(a.periodEnd||'') || (b.uploadedAt||'').localeCompare(a.uploadedAt||''));
@@ -10140,6 +10141,8 @@ function renderRotationTab() {
     const filteredStockCount = q && latestStock ? latestStock.rows.filter(r=>(r.code+' '+(r.description||'')).toLowerCase().includes(q)).length : (latestStock ? latestStock.rows.length : null);
     const filteredTotalSold = q ? Array.from(salesAgg.values()).filter(a=>(a.code+' '+(a.description||'')).toLowerCase().includes(q)).reduce((s,a)=>s+a.qty,0) : totalSoldAllTime;
     grandTotalSold += filteredTotalSold;
+    const distStockTotal = tableRows.reduce((s,r) => s + (r.stockQty || 0), 0);
+    grandStockTotal += distStockTotal;
     html += `<div class="alert-section">
       <div class="section-header"><div class="section-title">${DISTRIBUTORS[distKey]}</div></div>
       <div class="metrics" style="margin-bottom:12px">
@@ -10167,8 +10170,8 @@ function renderRotationTab() {
     wrap.innerHTML = `<div class="empty-state"><i class="ti ti-chart-line"></i><p>Todavía no cargaste reportes semanales. Subí el primero para empezar a ver rotación y stock.</p></div>`;
     return;
   }
-  const grandBanner = grandTotalSold > 0 ? `<div class="metrics" style="margin-bottom:20px;background:var(--bg2);border-radius:10px;padding:14px 18px;border:1px solid var(--border)">
-    <div class="metric"><div class="metric-value" style="color:var(--brand-text);font-size:28px">${grandTotalSold.toLocaleString('es-AR')}</div><div class="metric-label">TOTAL GENERAL — todos los distribuidores${q?' · filtrado: "'+q+'"':''}</div></div>
+  const grandBanner = grandStockTotal > 0 ? `<div class="metrics" style="margin-bottom:20px;background:var(--bg2);border-radius:10px;padding:14px 18px;border:1px solid var(--border)">
+    <div class="metric"><div class="metric-value" style="color:var(--brand-text);font-size:28px">${grandStockTotal.toLocaleString('es-AR')}</div><div class="metric-label">STOCK ACTUAL TOTAL — todos los distribuidores${q?' · filtrado: "'+q+'"':''}</div></div>
   </div>` : '';
   wrap.innerHTML = grandBanner + html;
 }
