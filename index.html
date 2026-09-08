@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '08.09.26.4';
+const APP_VERSION = '08.09.26.5';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9843,7 +9843,7 @@ function renderEtailersTab() {
         : (r.stockQty!=null && r.stockQty>0 ? '<span class="pill pill-gray" style="font-size:10px">sin ventas</span>' : '—');
       tbl += `<tr>
         <td style="color:var(--brand-text);font-size:12px;font-weight:600">${i+1}</td>
-        <td><code style="font-size:12px">${esc(r.code)}</code></td>
+        <td style="font-size:12px">${esc(r.code)}</td>
         <td style="font-size:12px">${esc(r.desc)}</td>
         <td style="text-align:right;font-weight:600">${r.totalSold.toLocaleString('es-AR')}</td>
         <td style="text-align:right;color:var(--text2);font-size:12px">${r.avgPerWeek!=null?r.avgPerWeek.toLocaleString('es-AR',{maximumFractionDigits:1}):'—'}</td>
