@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '08.09.26.7';
+const APP_VERSION = '08.09.26.8';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -10061,6 +10061,7 @@ function renderRotationTab() {
   const q = (document.getElementById('rotation-search')?.value || '').toLowerCase();
   const sortKey = document.getElementById('rotation-sort')?.value || 'sold_desc';
   let html = '';
+  let grandTotalSold = 0;
   let anyData = false;
   dists.forEach(distKey => {
     const stockSnaps = db.weeklyReports.filter(s=>s.distributor===distKey && s.reportType==='stock').sort((a,b)=>(b.periodEnd||'').localeCompare(a.periodEnd||'') || (b.uploadedAt||'').localeCompare(a.uploadedAt||''));
@@ -10138,12 +10139,14 @@ function renderRotationTab() {
     const totalSoldAllTime = Array.from(salesAgg.values()).reduce((s,a)=>s+a.qty,0);
     const filteredStockCount = q && latestStock ? latestStock.rows.filter(r=>(r.code+' '+(r.description||'')).toLowerCase().includes(q)).length : (latestStock ? latestStock.rows.length : null);
     const filteredTotalSold = q ? Array.from(salesAgg.values()).filter(a=>(a.code+' '+(a.description||'')).toLowerCase().includes(q)).reduce((s,a)=>s+a.qty,0) : totalSoldAllTime;
+    grandTotalSold += filteredTotalSold;
     html += `<div class="alert-section">
       <div class="section-header"><div class="section-title">${DISTRIBUTORS[distKey]}</div></div>
       <div class="metrics" style="margin-bottom:12px">
         <div class="metric"><div class="metric-value">${filteredStockCount??'-'}</div><div class="metric-label">SKUs en stock${q?' (filtrado)':''}</div><div class="metric-sub">${latestStock ? 'al '+fmtRotDate(latestStock.periodEnd) : 'sin datos'}</div></div>
         <div class="metric"><div class="metric-value">${numSalesWeeks}</div><div class="metric-label">Semanas de venta cargadas</div><div class="metric-sub">${_salesDateRange}</div></div>
-        <div class="metric"><div class="metric-value">${filteredTotalSold}</div><div class="metric-label">Unidades vendidas (acum.)${q?' (filtrado)':''}</div><div class="metric-sub">todas las semanas cargadas</div></div>
+        <div class="metric"><div class="metric-value">${filteredTotalSold.toLocaleString('es-AR')}</div><div class="metric-label">Unidades vendidas (acum.)${q?' (filtrado)':''}</div><div class="metric-sub">todas las semanas cargadas</div></div>
+        <div class="metric" style="border-left:2px solid var(--brand);padding-left:12px"><div class="metric-value" style="color:var(--brand-text)">${filteredTotalSold.toLocaleString('es-AR')}</div><div class="metric-label">TOTAL ${DISTRIBUTORS[distKey]}${q?' · filtrado':''}</div><div class="metric-sub">${numSalesWeeks} sem. acum.</div></div>
       </div>
       ${stockSnaps.length<=1 ? `<div style="font-size:11.5px;color:var(--text3);margin-bottom:8px"><i class="ti ti-info-circle"></i> Todavía hay una sola carga de stock para ${DISTRIBUTORS[distKey]} — en cuanto subas la próxima semana, "Stock sem. anterior" va a mostrar la diferencia.</div>` : ''}
       <div class="table-scroll"><table class="data-table">
@@ -10164,7 +10167,10 @@ function renderRotationTab() {
     wrap.innerHTML = `<div class="empty-state"><i class="ti ti-chart-line"></i><p>Todavía no cargaste reportes semanales. Subí el primero para empezar a ver rotación y stock.</p></div>`;
     return;
   }
-  wrap.innerHTML = html;
+  const grandBanner = grandTotalSold > 0 ? `<div class="metrics" style="margin-bottom:20px;background:var(--bg2);border-radius:10px;padding:14px 18px;border:1px solid var(--border)">
+    <div class="metric"><div class="metric-value" style="color:var(--brand-text);font-size:28px">${grandTotalSold.toLocaleString('es-AR')}</div><div class="metric-label">TOTAL GENERAL — todos los distribuidores${q?' · filtrado: "'+q+'"':''}</div></div>
+  </div>` : '';
+  wrap.innerHTML = grandBanner + html;
 }
 let selectedRotationSnapshotIds = new Set();
 function renderRotationHistory(resetPaging) {
