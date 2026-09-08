@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '08.09.26.2';
+const APP_VERSION = '08.09.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -7396,8 +7396,18 @@ function renderPBMTab() {
   const rep = _pbmActiveReport();
   if (!rep) { renderPBMTab(); return; }
 
-  // Re-classify from desc at render time so rule changes apply without re-uploading
-  const rows = rep.rows.map(r => r.desc ? { ...r, ..._pbmClassifyRow(r.desc) } : r);
+  // Re-classify from desc at render time so rule changes apply without re-uploading.
+  // If desc contains ' | ' (Venex/columnar format), split and use _pbmClassifyComponents
+  // to avoid cross-contamination between component descriptions.
+  const rows = rep.rows.map(r => {
+    if (!r.desc) return r;
+    const parts = r.desc.split(' | ');
+    if (parts.length >= 2) {
+      const [gabD='',psuD='',mbD='',vgaD='',lcD=''] = parts;
+      return { ...r, ..._pbmClassifyComponents(gabD, psuD, mbD, vgaD, lcD) };
+    }
+    return { ...r, ..._pbmClassifyRow(r.desc) };
+  });
   const totalClaimed = rows.reduce((s,r) => s + r.claimed, 0);
   const totalCorrect = rows.reduce((s,r) => s + r.correct, 0);
   const diff = totalCorrect - totalClaimed;
