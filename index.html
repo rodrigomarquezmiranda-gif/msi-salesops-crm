@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '08.09.26.1';
+const APP_VERSION = '08.09.26.2';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -6818,7 +6818,8 @@ function _pbmChassisNaturalTier(d) {
 
 function _pbmPSUNaturalTier(d) {
   // Tier 1: MEG PSU / MPG 1600+1300 Titanium
-  if (/MPG.*(?:1600|1300).*TI|MEG.*PSU|MEG.*A\d{4}/.test(d)) return 1;
+  // "MEG 1600W AI1600T" — nota: AI1600T tiene "I" antes de los dígitos, por eso A\d{4} no alcanzaba
+  if (/MPG.*(?:1600|1300).*TI|MEG.*PSU|MEG.*A\d{4}|MEG.*\d{3,4}W/.test(d)) return 1;
   // Tier 2: MPG/MAG 1000+ Plat, PRO 1000 Plat
   if (/(?:MPG|MAG).*(?:1000|1200).*PLAT|PRO.*1000.*PLAT/.test(d)) return 2;
   // Tier 3: MAG 750/850 GOLD (GL/GN), PRO 850/1000 Plat
@@ -6879,7 +6880,9 @@ function _pbmClassifyRow(desc) {
   // Cada componente puntúa en su PROPIO tier de forma independiente.
   // Excepción VGA: si la MB es tier 5 (A520/H610 etc.), la VGA se capea
   // a tier 5 (14pts P4 / 8pts P3) independientemente del modelo de GPU.
-  const gab = S.chassis[ct - 1];
+  let gab = S.chassis[ct - 1];
+  // MAG PANO (tier 3) paga 5 si PSU ≥ 750W (tier 1-3), 4 si PSU < 750W (tier 4-5)
+  if (ct === 3 && pt >= 4) gab = 4;
   const psu = S.psu[pt - 1];
   const mb  = hasMB ? S.mb[mt - 1] : 0;
 
@@ -7040,6 +7043,33 @@ function _pbmParseMexx(rows) {
   return parsed;
 }
 
+// ── Component-aware classifier (evalúa cada descripción por separado) ──────────
+// Evita cross-contamination cuando se combinan columnas (ej: MEG de la PSU
+// no debe afectar el tier del gabinete ni del liquid cooling).
+function _pbmClassifyComponents(gabDesc, psuDesc, mbDesc, vgaDesc, lcDesc) {
+  const S = _PBM_S;
+  const ct = _pbmChassisNaturalTier((gabDesc||'').toUpperCase());
+  const pt = _pbmPSUNaturalTier((psuDesc||'').toUpperCase());
+  const mt = _pbmMBNaturalTier((mbDesc||'').toUpperCase());
+  const vt = _pbmVGANaturalTier((vgaDesc||'').toUpperCase());
+  const lt = _pbmLCNaturalTier((lcDesc||'').toUpperCase());
+  const hasVGA = vt !== null;
+  const hasLC  = lt !== null;
+  const hasMB  = mt !== null;
+  const prog = hasLC ? (hasVGA ? 4 : 2) : (hasVGA ? 3 : 1);
+  let gab = S.chassis[ct - 1];
+  if (ct === 3 && pt >= 4) gab = 4;  // MAG PANO + PSU < 750W → $4
+  const psu = S.psu[pt - 1];
+  const mb  = hasMB ? S.mb[mt - 1] : 0;
+  const effVgaTier = hasVGA ? (hasMB && mt === 5 ? 5 : vt) : null;
+  const vga = hasVGA ? (hasLC ? S.vgaP4[effVgaTier - 1] : S.vgaP3[effVgaTier - 1]) : 0;
+  let lc = hasLC ? S.lc[lt - 1] : null;
+  if (hasLC && lt === 3 && hasMB && mt === 4) lc = 2;
+  const correct = gab + psu + mb + vga + (lc || 0);
+  const effectiveTier = Math.max(ct, pt, mt || 0, effVgaTier || 0, lt || 0);
+  return { chassisTier: ct, effectiveTier, prog, gab, psu, mb, vga, lc, correct, claimed: 0 };
+}
+
 // ── VENEX multi-column format detector & parser ───────────────
 // Format: PC, VNTID, Factura, Fecha, Cliente, Vendedor, Rebate USD, Componentes,
 //         Modelo completo gabinete, Modelo completo fuente, Modelo completo mother,
@@ -7077,10 +7107,12 @@ function _pbmParseVenex(rows) {
   const parsed = [];
   for (let i = headerRow + 1; i < rows.length; i++) {
     const r = rows[i] || [];
-    // Build combined description from non-empty component columns
-    const parts = [iGab, iFte, iMB, iVGA, iWC]
-      .map(idx => (idx >= 0 ? String(r[idx] || '').trim() : ''))
-      .filter(Boolean);
+    const gabStr = iGab >= 0 ? String(r[iGab] || '').trim() : '';
+    const psuStr = iFte >= 0 ? String(r[iFte] || '').trim() : '';
+    const mbStr  = iMB  >= 0 ? String(r[iMB]  || '').trim() : '';
+    const vgaStr = iVGA >= 0 ? String(r[iVGA] || '').trim() : '';
+    const lcStr  = iWC  >= 0 ? String(r[iWC]  || '').trim() : '';
+    const parts = [gabStr, psuStr, mbStr, vgaStr, lcStr].filter(Boolean);
     if (!parts.length) continue;
     const combinedDesc = parts.join(' | ').toUpperCase();
 
@@ -7096,7 +7128,8 @@ function _pbmParseVenex(rows) {
     const invoice = String(r[iInv] || r[iVntid] || '').trim();
     const vendedor = String(r[iVend] || '').trim();
     const claimed  = Math.abs(parseFloat(r[iClaim]) || 0);
-    const cls      = _pbmClassifyRow(combinedDesc);
+    // Clasificar por columna individual para evitar cross-contamination
+    const cls = _pbmClassifyComponents(gabStr, psuStr, mbStr, vgaStr, lcStr);
 
     parsed.push({ num: parsed.length + 1, date: dateStr, invoice, desc: combinedDesc, vendedor, claimed, ...cls });
   }
