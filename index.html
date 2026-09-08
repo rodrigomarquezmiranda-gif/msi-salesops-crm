@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '07.09.26.4';
+const APP_VERSION = '08.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -7040,6 +7040,69 @@ function _pbmParseMexx(rows) {
   return parsed;
 }
 
+// ── VENEX multi-column format detector & parser ───────────────
+// Format: PC, VNTID, Factura, Fecha, Cliente, Vendedor, Rebate USD, Componentes,
+//         Modelo completo gabinete, Modelo completo fuente, Modelo completo mother,
+//         Modelo completo VGA, Modelo completo water
+function _pbmIsVenexFormat(rows) {
+  for (let i = 0; i < Math.min(rows.length, 5); i++) {
+    const h = (rows[i] || []).map(c => String(c || '').toLowerCase().trim());
+    if (h.some(c => c.includes('modelo completo'))) return true;
+  }
+  return false;
+}
+
+function _pbmParseVenex(rows) {
+  // Find header row
+  let headerRow = -1;
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const h = (rows[i] || []).map(c => String(c || '').toLowerCase().trim());
+    if (h.some(c => c.includes('modelo completo'))) { headerRow = i; break; }
+  }
+  if (headerRow < 0) return null;
+
+  const headers = rows[headerRow].map(c => String(c || '').toLowerCase().trim());
+  const iDate  = headers.findIndex(h => h.includes('fecha'));
+  const iInv   = headers.findIndex(h => h.includes('factura'));
+  const iVntid = headers.findIndex(h => h.includes('vntid'));
+  const iVend  = headers.findIndex(h => h.includes('vendedor'));
+  const iClaim = headers.findIndex(h => h.includes('rebate'));
+  // Component columns
+  const iGab   = headers.findIndex(h => h.includes('modelo completo gabinete') || (h.includes('modelo') && h.includes('gabinete')));
+  const iFte   = headers.findIndex(h => h.includes('modelo completo fuente') || (h.includes('modelo') && h.includes('fuente')));
+  const iMB    = headers.findIndex(h => h.includes('modelo completo mother') || (h.includes('modelo') && h.includes('mother')));
+  const iVGA   = headers.findIndex(h => h.includes('modelo completo vga') || (h.includes('modelo') && h.includes('vga')));
+  const iWC    = headers.findIndex(h => h.includes('modelo completo water') || h.includes('modelo completo lc') || (h.includes('modelo') && (h.includes('water') || h.includes('cooler'))));
+
+  const parsed = [];
+  for (let i = headerRow + 1; i < rows.length; i++) {
+    const r = rows[i] || [];
+    // Build combined description from non-empty component columns
+    const parts = [iGab, iFte, iMB, iVGA, iWC]
+      .map(idx => (idx >= 0 ? String(r[idx] || '').trim() : ''))
+      .filter(Boolean);
+    if (!parts.length) continue;
+    const combinedDesc = parts.join(' | ').toUpperCase();
+
+    // Date
+    const dateRaw = r[iDate];
+    let dateStr = '';
+    if (dateRaw instanceof Date) dateStr = dateRaw.toLocaleDateString('es-AR');
+    else if (typeof dateRaw === 'number') {
+      const d = XLSX.SSF.parse_date_code(dateRaw);
+      dateStr = `${String(d.d).padStart(2,'0')}/${String(d.m).padStart(2,'0')}/${d.y}`;
+    } else dateStr = String(dateRaw || '').slice(0, 10);
+
+    const invoice = String(r[iInv] || r[iVntid] || '').trim();
+    const vendedor = String(r[iVend] || '').trim();
+    const claimed  = Math.abs(parseFloat(r[iClaim]) || 0);
+    const cls      = _pbmClassifyRow(combinedDesc);
+
+    parsed.push({ num: parsed.length + 1, date: dateStr, invoice, desc: combinedDesc, vendedor, claimed, ...cls });
+  }
+  return parsed;
+}
+
 function _pbmParseXLSX(arrayBuffer) {
   // Use SheetJS (loaded via CDN in the existing app)
   const data = XLSX.read(arrayBuffer, { type:'array', cellDates:true });
@@ -7047,6 +7110,8 @@ function _pbmParseXLSX(arrayBuffer) {
   const rows = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', raw:true });
   // Auto-detect FullHard multi-line format
   if (_pbmIsFullHardFormat(rows)) return _pbmParseFullHard(rows);
+  // Auto-detect VENEX multi-column format (Modelo completo gabinete/fuente/mother/VGA/water)
+  if (_pbmIsVenexFormat(rows)) return _pbmParseVenex(rows);
   // Auto-detect MEXX multi-column format
   if (_pbmIsMexxFormat(rows)) return _pbmParseMexx(rows);
   // Find header row
