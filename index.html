@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '08.09.26.6';
+const APP_VERSION = '08.09.26.7';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -7015,15 +7015,20 @@ function _pbmParseMexx(rows) {
   const parsed = [];
   for (let i = headerRow + 1; i < rows.length; i++) {
     const r = rows[i] || [];
-    // Only include component columns whose value contains "MSI" — this naturally
-    // excludes non-MSI VGA brands (Gigabyte, ASUS, etc.) and empty cells
-    const parts = compCols
-      .map(ci => String(r[ci] || '').trim())
-      .filter(v => v && v.toUpperCase().includes('MSI'))
-      .map(v => v.toUpperCase());
-    if (!parts.length) continue; // skip rows with no MSI components
+    // Extract each component string individually (preserving position)
+    const gabStr = iGab    >= 0 ? String(r[iGab]    || '').trim() : '';
+    const psuStr = iFuente >= 0 ? String(r[iFuente] || '').trim() : '';
+    const mbStr  = iMB     >= 0 ? String(r[iMB]     || '').trim() : '';
+    const vgaStr = iVGA    >= 0 ? String(r[iVGA]    || '').trim() : '';
+    const lcStr  = iLC     >= 0 ? String(r[iLC]     || '').trim() : '';
 
-    const combinedDesc = parts.join(' | ');
+    // Skip rows with no MSI components at all
+    const allParts = [gabStr, psuStr, mbStr, vgaStr, lcStr];
+    if (!allParts.some(v => v && v.toUpperCase().includes('MSI'))) continue;
+
+    // Store as fixed positional pipe-separated (all 5 slots) so render-time
+    // re-classification via _pbmClassifyComponents works correctly
+    const combinedDesc = allParts.map(s => s.toUpperCase()).join(' | ');
 
     // Parse date
     const dateRaw = r[iDate];
@@ -7035,7 +7040,7 @@ function _pbmParseMexx(rows) {
     } else dateStr = String(dateRaw || '').slice(0, 10);
 
     const claimed = parseFloat(r[iClaim]) || 0;
-    const cls = _pbmClassifyRow(combinedDesc);
+    const cls = _pbmClassifyComponents(gabStr, psuStr, mbStr, vgaStr, lcStr);
     parsed.push({
       num: parsed.length + 1,
       date: dateStr,
