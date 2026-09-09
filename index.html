@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.9';
+const APP_VERSION = '09.09.26.10';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -12756,10 +12756,8 @@ function renderImportsTab() {
 
   if(importsViewMode === 'importer') {
     const importerData = computeImporterBrandBreakdown(batch, importsSelectedMonths);
-    if(!importerData) {
+    if(!importerData || !importerData.length) {
       wrap.innerHTML = toggleHtml + `<div style="font-size:13px;color:var(--text3)"><i class="ti ti-info-circle" style="margin-right:6px"></i>Este archivo no tiene hoja de detalle por operación (necesita columnas Importador · Marca · Modelo · Cantidad). El archivo de <b>${esc(getCurrentImportBatch()?.category||'esta categoría')}</b> solo tiene el resumen mensual — la vista Por Importador no está disponible para este archivo.</div>`;
-    } else if(!importerData.length) {
-      wrap.innerHTML = toggleHtml + `<div style="font-size:13px;color:var(--text3)"><i class="ti ti-info-circle" style="margin-right:6px"></i>Este archivo no tiene etiquetas de mes por operación — la vista Por Importador no se puede filtrar por mes. Elegí <b>Todos</b> para ver el período completo.</div>`;
     } else {
       // Collect all unique brands across all importers for the header, limited to top ones
       const brandTotals = new Map();
@@ -12791,7 +12789,11 @@ function renderImportsTab() {
         return `<tr><td style="font-weight:500;white-space:nowrap">${esc(im.importer)}</td>${cells}${othersCell}<td style="font-weight:600">${im.totalQty.toLocaleString('es-AR')}</td></tr>`;
       }).join('');
 
+      const _fallbackNote = importerData._usedFallback
+        ? `<div style="font-size:11px;color:var(--brand-text);margin-bottom:6px"><i class="ti ti-alert-triangle"></i> Este archivo no tiene etiquetas de mes por operación — se muestran los totales del <b>período completo</b>, no del período seleccionado.</div>`
+        : '';
       wrap.innerHTML = toggleHtml + `
+        ${_fallbackNote}
         <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-info-circle"></i> ${filterNote} Ordenado por unidades MSI descendente. El % es la participación de la marca dentro de ese importador.</div>
         <div class="table-scroll"><table class="data-table" style="font-size:12px">
           <thead><tr><th>Importador</th>${headerCells}</tr></thead>
@@ -12922,8 +12924,14 @@ function computeMsiDetailFromModelTable(modelTable, monthFilterSet) {
 }
 function computeBrandImporterBreakdown(batch, brand, monthFilterSet) {
   if(!batch.transactions) return null;
-  const filter = monthFilterSet.size ? monthFilterSet : 'all';
-  const txs = batch.transactions.filter(t => normDesc(t.brand)===normDesc(brand) && monthMatchesFilter(t.month, filter));
+  const isFiltered = monthFilterSet && monthFilterSet.size > 0;
+  // month:null = wide-format (no month tag). Include when no filter; exclude when filter is active.
+  const txs = batch.transactions.filter(t => {
+    if(normDesc(t.brand) !== normDesc(brand)) return false;
+    if(!isFiltered) return true;          // no filter → include all (including month:null)
+    if(t.month === null) return false;    // filter active but no month tag → exclude
+    return monthMatchesFilter(t.month, isFiltered ? monthFilterSet : 'all');
+  });
   const byImporter = new Map();
   txs.forEach(t => {
     if(!byImporter.has(t.importer)) byImporter.set(t.importer, { importer:t.importer, qty:0, fob:0, models:new Set() });
@@ -12943,15 +12951,16 @@ function normBrandName(b) {
 function computeImporterBrandBreakdown(batch, monthFilterSet) {
   if(!batch.transactions) return null;
   const isFiltered = monthFilterSet && monthFilterSet.size > 0;
-  const filter = isFiltered ? monthFilterSet : 'all';
-  // When filter is active: only include rows that have month data AND match.
-  // month:null (wide-format) rows are excluded when filtering — can't assign them to a month.
-  // When no filter: include everything (month:null rows represent the full period).
-  const txs = batch.transactions.filter(t => {
-    if(!isFiltered) return true;           // no filter → include all
-    if(t.month === null) return false;     // filter active but no month tag → exclude
-    return monthMatchesFilter(t.month, filter);
-  });
+  // Try filtered first (only rows with actual month tags matching the filter)
+  let txs = isFiltered
+    ? batch.transactions.filter(t => t.month !== null && monthMatchesFilter(t.month, monthFilterSet))
+    : batch.transactions;
+  // If filter active but result is empty (all rows were month:null wide-format), fall back to full period
+  let usedFallback = false;
+  if(isFiltered && txs.length === 0 && batch.transactions.length > 0) {
+    txs = batch.transactions;
+    usedFallback = true;
+  }
   // Group by importer → by brand (normalize brand name)
   const byImporter = new Map();
   txs.forEach(t => {
@@ -12962,7 +12971,7 @@ function computeImporterBrandBreakdown(batch, monthFilterSet) {
     if(!im.brands.has(brand)) im.brands.set(brand, 0);
     im.brands.set(brand, im.brands.get(brand) + t.qty);
   });
-  return Array.from(byImporter.values())
+  const result = Array.from(byImporter.values())
     .map(im => ({
       importer: im.importer,
       totalQty: im.totalQty,
@@ -12970,7 +12979,9 @@ function computeImporterBrandBreakdown(batch, monthFilterSet) {
         .map(([brand, qty]) => ({ brand, qty, pct: im.totalQty > 0 ? qty / im.totalQty * 100 : 0 }))
         .sort((a, b) => b.qty - a.qty)
     }))
-    .sort((a, b) => b.totalQty - a.totalQty); // sort by total units desc
+    .sort((a, b) => b.totalQty - a.totalQty);
+  result._usedFallback = usedFallback; // flag: shown full-period because no month tags
+  return result;
 }
 let currentImportBatchForTooltip = null;
 function showImportImporterTooltip(evt, importer) {
