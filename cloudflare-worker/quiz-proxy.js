@@ -17,7 +17,10 @@
 //   'https://tu-dominio.com'
 // Dejá 'http://localhost' y 'http://127.0.0.1' para pruebas locales.
 const ALLOWED_ORIGINS = [
+  'https://msicrm.com',
+  'https://www.msicrm.com',
   'https://rodrigomarquezmiranda.github.io',
+  'https://rodrigomarquezmiranda-gif.github.io',
   'http://localhost',
   'http://127.0.0.1',
 ];
