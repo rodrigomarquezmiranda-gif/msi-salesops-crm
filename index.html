@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.12';
+const APP_VERSION = '09.09.26.13';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -12392,6 +12392,18 @@ function normalizeMonthKey(raw) {
   if(m) return `${m[1]}-${m[2]}`;
   m = s.match(/^(\d{4})-(\d{1,2})$/);
   if(m) return `${m[1]}-${m[2].padStart(2,'0')}`;
+  // DD/MM/YYYY o DD-MM-YYYY — fecha completa, formato argentino (día primero)
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m) {
+    const month = parseInt(m[2],10);
+    if(month >= 1 && month <= 12) return `${m[3]}-${String(month).padStart(2,'0')}`;
+  }
+  // DD/MM/YY o DD-MM-YY — fecha completa con año de 2 dígitos
+  m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
+  if(m) {
+    const month = parseInt(m[2],10);
+    if(month >= 1 && month <= 12) return `20${m[3]}-${String(month).padStart(2,'0')}`;
+  }
   m = s.match(/^(\d{1,2})[\/-](\d{4})$/);
   if(m) return `${m[2]}-${m[1].padStart(2,'0')}`;
   m = s.match(/^([A-Za-zÁÉÍÓÚñÑ]+)[\s\-\/]+(\d{2,4})$/);
@@ -12401,6 +12413,14 @@ function normalizeMonthKey(raw) {
       let year = m[2];
       if(year.length === 2) year = '20' + year;
       return `${year}-${monthNum}`;
+    }
+  }
+  // Número de serie de Excel como texto (por si cellDates no lo convirtió a Date)
+  if(/^\d{4,6}$/.test(s)) {
+    const serial = parseInt(s,10);
+    if(serial > 20000 && serial < 90000) {
+      const d = new Date(Date.UTC(1899, 11, 30) + serial * 86400000);
+      if(!isNaN(d.getTime())) return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;
     }
   }
   return null; // no se pudo reconocer el formato
