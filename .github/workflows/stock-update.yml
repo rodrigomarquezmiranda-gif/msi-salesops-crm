@@ -174,9 +174,9 @@ jobs:
                   products.append({
                       'code':        code,
                       'desc':        c,
-                      'detalle':     str(gcell(row, COL['detalle'])).strip() if COL.get('detalle') is not None else '',
-                      'estado':      str(gcell(row, COL['estado'])).strip()  if COL.get('estado')  is not None else '',
-                      'ficha':       str(gcell(row, COL['ficha'])).strip()   if COL.get('ficha')   is not None else '',
+                      'detalle':     str(gcell(row, COL['detalle']) or '').strip(),
+                      'estado':      str(gcell(row, COL['estado'])  or '').strip(),
+                      'ficha':       str(gcell(row, COL['ficha'])   or '').strip(),
                       'category':    current_cat,
                       'price':       price,
                       'miamiStock':  parse_num(gcell(row, COL['miamiStock'])),
