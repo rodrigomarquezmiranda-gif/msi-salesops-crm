@@ -144,9 +144,25 @@ jobs:
           def gcell(row, idx):
               return row[idx] if idx < len(row) else ''
 
-          def parse_latam_rows(rows):
+          # Normaliza estado: mayúsculas, strip, colapsa signos repetidos
+          ESTADO_CANON = {
+              'new': 'NEW!', 'focus': 'FOCUS!', 'eol': 'EOL',
+              'to clean': 'TO CLEAN', 'last batch / eol soon': 'LAST BATCH / EOL SOON',
+              'shortage': 'SHORTAGE', 'wall plug': 'WALL PLUG!', 'hold': 'HOLD',
+          }
+          def norm_estado(v):
+              if not v: return ''
+              v = str(v).strip().upper().rstrip('!')
+              canonical = ESTADO_CANON.get(v.lower())
+              if canonical: return canonical
+              # fallback: devolver con un solo !
+              return v + '!'
+
+          def parse_latam_rows(rows, hyperlinks_by_row=None):
+              if hyperlinks_by_row is None: hyperlinks_by_row = {}
               products, seen = [], set()
               current_cat, seen_cat = '', False
+              row_idx = 0
               for row in rows:
                   a = str(gcell(row, COL['upc'])).strip()
                   b = str(gcell(row, COL['code'])).strip()
@@ -156,14 +172,27 @@ jobs:
                       mapped = CAT_MAP.get(c.lower()) or CAT_MAP.get(b.lower())
                       if mapped is not None:
                           current_cat = mapped; seen_cat = True
+                      row_idx += 1
                       continue
-                  if a and not re.match(r'^\d', a): continue
-                  if not seen_cat: continue
+                  if a and not re.match(r'^\d', a):
+                      row_idx += 1
+                      continue
+                  if not seen_cat:
+                      row_idx += 1
+                      continue
                   code = b or c
-                  if not code: continue
-                  if '---' in code or '===' in code or len(code) > 60: continue
-                  if any(k in code.lower() for k in SKIP_KW): continue
-                  if code.lower() in seen: continue
+                  if not code:
+                      row_idx += 1
+                      continue
+                  if '---' in code or '===' in code or len(code) > 60:
+                      row_idx += 1
+                      continue
+                  if any(k in code.lower() for k in SKIP_KW):
+                      row_idx += 1
+                      continue
+                  if code.lower() in seen:
+                      row_idx += 1
+                      continue
                   seen.add(code.lower())
                   price_q = parse_num(gcell(row, COL['price']))
                   price_r = parse_num(gcell(row, COL['priceR']))
@@ -171,22 +200,27 @@ jobs:
                       price = min(price_q, price_r)
                   else:
                       price = price_q if price_q is not None else price_r
+                  # Hyperlink real de col F (si existe), fallback al texto de la celda
+                  ficha_href = hyperlinks_by_row.get(row_idx, '')
+                  ficha_txt  = str(gcell(row, COL['ficha']) or '').strip()
+                  ficha      = ficha_href or ficha_txt
                   products.append({
                       'code':        code,
                       'desc':        c,
                       'detalle':     str(gcell(row, COL['detalle']) or '').strip(),
-                      'estado':      str(gcell(row, COL['estado'])  or '').strip(),
-                      'ficha':       str(gcell(row, COL['ficha'])   or '').strip(),
+                      'estado':      norm_estado(gcell(row, COL['estado'])),
+                      'ficha':       ficha,
                       'category':    current_cat,
                       'price':       price,
                       'miamiStock':  parse_num(gcell(row, COL['miamiStock'])),
-                      'miamiEta':    str(gcell(row, COL['miamiEta'])).strip() or None,
+                      'miamiEta':    str(gcell(row, COL['miamiEta']) or '').strip() or None,
                       'bondedStock': parse_num(gcell(row, COL['bondedStock'])),
-                      'bondedEta':   str(gcell(row, COL['bondedEta'])).strip() or None,
+                      'bondedEta':   str(gcell(row, COL['bondedEta']) or '').strip() or None,
                       'qtyCtn':      parse_num(gcell(row, COL['qtyCtn'])),
                       'qtyPlt':      parse_num(gcell(row, COL['qtyPlt'])),
-                      'upc':         str(gcell(row, COL['upc'])).strip() or None,
+                      'upc':         str(gcell(row, COL['upc']) or '').strip() or None,
                   })
+                  row_idx += 1
               return products
 
           # ── Step 1: Get sheet list ────────────────────────────────────────────────
@@ -208,8 +242,29 @@ jobs:
           rows = data.get('values', [])
           print(f"Filas leídas: {len(rows)}")
 
+          # ── Step 3b: Get hyperlinks from col F (ficha/links) ──────────────────────
+          # La API values solo trae texto; includeGridData da los href reales
+          hyperlinks_by_row = {}
+          try:
+              rng_f = urllib.parse.quote(f"{latam_sheet}!F:F")
+              hlink_url = (f"{SHEETS_BASE}/{SHEET_ID}"
+                           f"?includeGridData=true"
+                           f"&ranges={rng_f}"
+                           f"&fields=sheets.data.rowData.values.hyperlink")
+              hlink_data = api_get(hlink_url)
+              for sheet_obj in hlink_data.get('sheets', []):
+                  for data_obj in sheet_obj.get('data', []):
+                      for i, rd in enumerate(data_obj.get('rowData', [])):
+                          vals = rd.get('values', [{}])
+                          href = vals[0].get('hyperlink', '') if vals else ''
+                          if href:
+                              hyperlinks_by_row[i] = href
+              print(f"Hipervínculos encontrados: {len(hyperlinks_by_row)}")
+          except Exception as e:
+              print(f"[WARN] No se pudieron obtener hipervínculos: {e}")
+
           # ── Step 4: Parse ─────────────────────────────────────────────────────────
-          products = parse_latam_rows(rows)
+          products = parse_latam_rows(rows, hyperlinks_by_row)
           print(f"Productos parseados: {len(products)}")
           if not products:
               print("[ERROR] No se parsearon productos — abortando"); exit(1)

@@ -117,13 +117,29 @@ def generate_excel(raw_products, changes, date_str):
     GREEN_T = "1A5C28"   # price text color
 
     # Estado fill/text/bold exactly as in CRM
-    ESTADO_FILL  = {"new!":"92D050","focus!":"4472C4","eol":"FF0000",
-                    "to clean":"808080","last batch / eol soon":"FFC000",
-                    "shortage":"FF66CC","wall plug!":"808080"}
-    ESTADO_TEXT  = {"new!":WHITE,"focus!":WHITE,"eol":WHITE,"to clean":WHITE,
-                    "last batch / eol soon":"000000","shortage":WHITE,"wall plug!":"000000"}
-    ESTADO_BOLD  = {"new!":True,"focus!":True,"eol":True,"to clean":True,
-                    "last batch / eol soon":True,"shortage":True,"wall plug!":True}
+    # Keys en MAYÚSCULAS — coinciden con norm_estado() en stock-update.yml
+    ESTADO_FILL  = {
+        "NEW!":                  "92D050",
+        "FOCUS!":                "4472C4",
+        "EOL":                   "FF0000",
+        "TO CLEAN":              "808080",
+        "LAST BATCH / EOL SOON": "FFC000",
+        "SHORTAGE":              "FF66CC",
+        "WALL PLUG!":            "808080",
+        "HOLD":                  "",        # sin fill especial — usa color de fila
+    }
+    ESTADO_TEXT  = {
+        "NEW!":                  WHITE,
+        "FOCUS!":                WHITE,
+        "EOL":                   WHITE,
+        "TO CLEAN":              WHITE,
+        "LAST BATCH / EOL SOON": "000000",
+        "SHORTAGE":              WHITE,
+        "WALL PLUG!":            "000000",
+        "HOLD":                  "000000",
+    }
+    ESTADO_BOLD  = {k: True for k in ESTADO_FILL}
+    ESTADO_BOLD["HOLD"] = False
 
     BORDER = Border(
         top=Side(style="thin",color="FFCCCCCC"),
@@ -263,11 +279,10 @@ def generate_excel(raw_products, changes, date_str):
              cfont(size=9, italic=True, color="FF666666"), None, "left")
 
         # Col 5: Estado (colored background)
-        estado_val = item.get("estado") or ""
-        estado_key = estado_val.lower()
-        e_fill = ESTADO_FILL.get(estado_key)
-        e_text = ESTADO_TEXT.get(estado_key, "000000")
-        e_bold = ESTADO_BOLD.get(estado_key, False)
+        estado_val = str(item.get("estado") or "").strip()
+        e_fill = ESTADO_FILL.get(estado_val)
+        e_text = ESTADO_TEXT.get(estado_val, "000000")
+        e_bold = ESTADO_BOLD.get(estado_val, False)
         ec = ws.cell(prn, 5)
         ec.value = estado_val
         ec.fill  = sf(e_fill) if e_fill else sf(bg)
