@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.15';
+const APP_VERSION = '09.09.26.16';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -12540,7 +12540,63 @@ function extractRawTransactions(wb) {
     return txs.length >= 3 ? txs : null;
   }
 
-  // Priority 1: sheets whose name contains "importador" (handles emoji prefixes too)
+  // Helper: parse the "Datos Filtrados"/"Datos Fuente"-style raw customs export.
+  // These sheets repeat the declaration-level columns (Fecha, Importador...) per sub-item, and
+  // have DUPLICATE column names for the sub-item level (Cantidad vs Cantidad.1, Item vs Item.1) —
+  // the generic keyword guesser would grab the wrong ("Cantidad" = whole-declaration total) column.
+  // This parser specifically targets the "Marca - Sufijos" / "Cantidad.1" / "FOB Divisa" sub-item columns.
+  function parseAduanaDetailSheet(rows) {
+    if(!rows || rows.length < 2) return null;
+    let headerIdx = -1;
+    for(let i=0; i<Math.min(10, rows.length); i++) {
+      if((rows[i]||[]).filter(c => c!=null && String(c).trim()).length >= 5) { headerIdx = i; break; }
+    }
+    if(headerIdx < 0) return null;
+    const header = (rows[headerIdx]||[]).map(h => h!=null ? String(h) : '');
+    const strip = s => normImportHeader(s).replace(/[^A-Z0-9]/g,'');
+    const stripped = header.map(strip);
+    const fechaIdx    = stripped.indexOf('FECHA');
+    const importerIdx = stripped.indexOf('IMPORTADOR');
+    const brandIdx    = stripped.indexOf('MARCASUFIJOS');
+    const qtyIdx      = stripped.indexOf('CANTIDAD1');
+    const fobIdx      = stripped.indexOf('FOBDIVISA');
+    const modelIdx    = stripped.indexOf('MODELO');
+    // Fingerprint: needs this exact combination — unique to this aduana export tool
+    if(fechaIdx===-1 || importerIdx===-1 || brandIdx===-1 || qtyIdx===-1 || modelIdx===-1) return null;
+    const data = rows.slice(headerIdx+1).filter(r => r && r.some(c => c!=null && String(c).trim()));
+    const txs = data.map(r => ({
+      month:    normalizeMonthKey(r[fechaIdx]),
+      brand:    normBrandName(String(r[brandIdx]||'').trim()),
+      importer: String(r[importerIdx]||'').trim(),
+      model:    String(r[modelIdx]||'').trim(),
+      origin:   '',
+      qty:      importCellToNum(r[qtyIdx]),
+      fob:      fobIdx>-1 ? importCellToNum(r[fobIdx]) : null,
+    })).filter(t => t.importer && t.brand && !isNaN(t.qty) && t.qty > 0);
+    return txs.length >= 3 ? txs : null;
+  }
+
+  // Priority 0: raw per-transaction sheets with a REAL date/month column, picked by content
+  // (not sheet name) — preferred over any no-month summary sheet, even if the summary sheet's
+  // name literally contains "importador". Among candidates, prefer ones with real month data,
+  // then the sheet with the most detail rows.
+  const candidates = [];
+  for(const name of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header:1, raw:true, defval:null });
+    const aduanaTxs = parseAduanaDetailSheet(rows);
+    if(aduanaTxs) { candidates.push({ txs: aduanaTxs, hasMonth: aduanaTxs.some(t=>t.month!==null), count: aduanaTxs.length, tier: 3 }); continue; }
+    const txs = parseSheetLong(rows);
+    if(txs) {
+      const hasMonth = txs.some(t => t.month !== null);
+      candidates.push({ txs, hasMonth, count: txs.length, tier: hasMonth ? 2 : 1 });
+    }
+  }
+  if(candidates.length) {
+    candidates.sort((a,b) => b.tier - a.tier || b.count - a.count);
+    if(candidates[0].tier >= 2) return candidates[0].txs; // has real month data — use it
+  }
+
+  // Priority 1: sheets whose name contains "importador" (handles emoji prefixes too) — summary, no month
   const importerSheets = wb.SheetNames.filter(n =>
     n.replace(/[^\w\s]/g,'').toUpperCase().includes('IMPORTADOR')
   );
@@ -12551,6 +12607,7 @@ function extractRawTransactions(wb) {
     if(txs) combined = combined.concat(txs);
   }
   if(combined.length >= 3) return combined;
+  if(candidates.length) return candidates[0].txs; // fall back to best no-month candidate found above
 
   // Priority 2: any other sheet with importer + brand/model + qty columns
   for(const name of wb.SheetNames) {
