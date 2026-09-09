@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.3';
+const APP_VERSION = '09.09.26.4';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9507,7 +9507,8 @@ function _arParseHtml(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const tables = Array.from(doc.querySelectorAll('table'));
   if (!tables.length) return null;
-  const parseAmt = s => { if(!s) return 0; return parseFloat(s.replace(/,/g,'').trim()) || 0; };
+  const parseAmt = s => { if(!s) return 0; return parseFloat(s.replace(/[ \s,]/g,'').replace(/[^0-9.\-]/g,'')) || 0; };
+  const normText = s => (s||'').replace(/\s+/g,' ').trim();
 
   // Tabla 0: todas las facturas
   const accounts = {};
@@ -9531,13 +9532,13 @@ function _arParseHtml(html) {
   let si = 0;
   for (let i = 1; i < tables.length && si < accountOrder.length; i++) {
     const trows = Array.from(tables[i].querySelectorAll('tr'));
-    const r0 = Array.from(trows[0]?.querySelectorAll('td')||[]).map(td => td.textContent.trim());
+    const r0 = Array.from(trows[0]?.querySelectorAll('td')||[]).map(td => normText(td.textContent));
     if (!r0[0]?.includes('Credit Limit')) continue;
     const acc = accounts[accountOrder[si]];
     acc.creditLimit = parseAmt(r0[1]);
-    const r1 = Array.from(trows[1]?.querySelectorAll('td')||[]).map(td => td.textContent.trim());
+    const r1 = Array.from(trows[1]?.querySelectorAll('td')||[]).map(td => normText(td.textContent));
     if (r1.length >= 6) { acc.openAR = parseAmt(r1[1]); acc.outstandingOrders = parseAmt(r1[5]); }
-    const r2 = Array.from(trows[2]?.querySelectorAll('td')||[]).map(td => td.textContent.trim());
+    const r2 = Array.from(trows[2]?.querySelectorAll('td')||[]).map(td => normText(td.textContent));
     if (r2.length >= 3) acc.remaining = parseAmt(r2[2]);
     si++;
   }
