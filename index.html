@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.14';
+const APP_VERSION = '09.09.26.15';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -12776,21 +12776,8 @@ function renderImportsTab() {
 
   if(importsViewMode === 'importer') {
     const importerData = computeImporterBrandBreakdown(batch, importsSelectedMonths);
-    if(!importerData) {
+    if(!importerData || !importerData.length) {
       wrap.innerHTML = toggleHtml + `<div style="font-size:13px;color:var(--text3)"><i class="ti ti-info-circle" style="margin-right:6px"></i>Este archivo no tiene hoja de detalle por operación (necesita columnas Importador · Marca · Modelo · Cantidad). El archivo de <b>${esc(getCurrentImportBatch()?.category||'esta categoría')}</b> solo tiene el resumen mensual — la vista Por Importador no está disponible para este archivo.</div>`;
-    } else if(!importerData.length) {
-      // Filter active but file has no month-per-row data → show monthly brand totals instead
-      const _fm = getImportsSelectedMonthly(batch);
-      const _activeBrands = (importsGlobalOnly ? batch.brands.filter(b=>isGlobalBrand(b)) : batch.brands);
-      const _bTotals = {}; _activeBrands.forEach(b=>{ _bTotals[b]=0; }); _fm.forEach(m=>_activeBrands.forEach(b=>{ _bTotals[b]=(_bTotals[b]||0)+(m.values[b]||0); }));
-      const _bRows = _activeBrands.map(b=>({brand:b,qty:_bTotals[b]})).filter(r=>r.qty>0).sort((a,b)=>b.qty-a.qty);
-      const _bTotal = _bRows.reduce((s,r)=>s+r.qty,0);
-      wrap.innerHTML = toggleHtml + `
-        <div style="font-size:11px;color:var(--brand-text);margin-bottom:8px"><i class="ti ti-alert-triangle"></i> Este archivo no tiene etiquetas de mes por operación — no se puede mostrar el desglose por importador para el período filtrado. Se muestran los totales correctos por marca para <b>${esc(getMonthFilterLabel(importsSelectedMonths))}</b>.</div>
-        <div class="table-scroll"><table class="data-table" style="font-size:12px">
-          <thead><tr><th>#</th><th>Marca</th><th>Unidades</th><th>% del total</th></tr></thead>
-          <tbody>${_bRows.map((r,i)=>`<tr><td>${i+1}</td><td>${normDesc(r.brand)==='MSI'?`<span style="color:var(--brand-text);font-weight:600">${esc(r.brand)}</span>`:esc(r.brand)}</td><td>${r.qty.toLocaleString('es-AR')}</td><td>${(_bTotal>0?r.qty/_bTotal*100:0).toFixed(1)}%</td></tr>`).join('')}</tbody>
-        </table></div>`;
     } else {
       // Collect all unique brands across all importers for the header, limited to top ones
       const brandTotals = new Map();
@@ -12822,7 +12809,11 @@ function renderImportsTab() {
         return `<tr><td style="font-weight:500;white-space:nowrap">${esc(im.importer)}</td>${cells}${othersCell}<td style="font-weight:600">${im.totalQty.toLocaleString('es-AR')}</td></tr>`;
       }).join('');
 
+      const _estNote = importerData._isEstimated
+        ? `<div style="font-size:11px;color:var(--brand-text);margin-bottom:6px"><i class="ti ti-alert-triangle"></i> Este archivo no tiene etiquetas de mes por operación. Los valores para <b>${esc(getMonthFilterLabel(importsSelectedMonths))}</b> son una <b>estimación</b>: se toman los totales reales por marca de ese período y se reparten entre importadores según su participación en el período completo.</div>`
+        : '';
       wrap.innerHTML = toggleHtml + `
+        ${_estNote}
         <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-info-circle"></i> ${filterNote} Ordenado por unidades MSI descendente. El % es la participación de la marca dentro de ese importador.</div>
         <div class="table-scroll"><table class="data-table" style="font-size:12px">
           <thead><tr><th>Importador</th>${headerCells}</tr></thead>
@@ -12985,35 +12976,62 @@ function normBrandName(b) {
   // Strip "MARCA: " prefix that some export formats include as column headers
   return String(b||'').replace(/^MARCA\s*:\s*/i,'').trim();
 }
+function _groupImporterBrand(txs) {
+  const byImporter = new Map();
+  txs.forEach(t => {
+    const brand = normBrandName(t.brand) || normBrandName(t.model) || '—';
+    if(!byImporter.has(t.importer)) byImporter.set(t.importer, { importer: t.importer, brands: new Map() });
+    const im = byImporter.get(t.importer);
+    im.brands.set(brand, (im.brands.get(brand)||0) + t.qty);
+  });
+  return byImporter;
+}
 function computeImporterBrandBreakdown(batch, monthFilterSet) {
   if(!batch.transactions) return null;
   const isFiltered = monthFilterSet && monthFilterSet.size > 0;
   // Try filtered first (only rows with actual month tags matching the filter)
-  let txs = isFiltered
+  const filteredTxs = isFiltered
     ? batch.transactions.filter(t => t.month !== null && monthMatchesFilter(t.month, monthFilterSet))
     : batch.transactions;
-  // If filter active but result is empty (all rows were month:null), flag it — don't fall back to full period
-  const noMonthData = isFiltered && txs.length === 0 && batch.transactions.length > 0;
-  if(noMonthData) return []; // caller will show monthly brand summary instead
-  // Group by importer → by brand (normalize brand name)
-  const byImporter = new Map();
-  txs.forEach(t => {
-    const brand = normBrandName(t.brand) || normBrandName(t.model) || '—';
-    if(!byImporter.has(t.importer)) byImporter.set(t.importer, { importer: t.importer, totalQty: 0, brands: new Map() });
-    const im = byImporter.get(t.importer);
-    im.totalQty += t.qty;
-    if(!im.brands.has(brand)) im.brands.set(brand, 0);
-    im.brands.set(brand, im.brands.get(brand) + t.qty);
-  });
+  const hasExactMatch = !isFiltered || filteredTxs.length > 0;
+
+  let byImporter, isEstimated = false;
+  if(hasExactMatch) {
+    byImporter = _groupImporterBrand(filteredTxs);
+  } else {
+    // No transaction has a real month tag matching the filter (wide-format file, month:null).
+    // Build a proportional estimate: distribute the ACCURATE monthly brand totals (from the
+    // Evolución Mensual matrix) across importers using their full-period brand share.
+    const fullByImporter = _groupImporterBrand(batch.transactions);
+    const fullBrandTotals = {};
+    fullByImporter.forEach(im => im.brands.forEach((qty, brand) => { fullBrandTotals[brand] = (fullBrandTotals[brand]||0) + qty; }));
+    const filteredMonthly = getImportsSelectedMonthly(batch);
+    const targetBrandTotals = {};
+    filteredMonthly.forEach(m => Object.keys(m.values||{}).forEach(b => { targetBrandTotals[normBrandName(b)] = (targetBrandTotals[normBrandName(b)]||0) + (m.values[b]||0); }));
+    const scale = {};
+    Object.keys(fullBrandTotals).forEach(b => { scale[b] = fullBrandTotals[b] > 0 ? (targetBrandTotals[b]||0) / fullBrandTotals[b] : 0; });
+    byImporter = new Map();
+    fullByImporter.forEach((im, importer) => {
+      const scaledBrands = new Map();
+      im.brands.forEach((qty, brand) => { scaledBrands.set(brand, qty * (scale[brand]||0)); });
+      byImporter.set(importer, { importer, brands: scaledBrands });
+    });
+    isEstimated = true;
+  }
+
   const result = Array.from(byImporter.values())
-    .map(im => ({
-      importer: im.importer,
-      totalQty: im.totalQty,
-      brands: Array.from(im.brands.entries())
-        .map(([brand, qty]) => ({ brand, qty, pct: im.totalQty > 0 ? qty / im.totalQty * 100 : 0 }))
-        .sort((a, b) => b.qty - a.qty)
-    }))
+    .map(im => {
+      const brandsArr = Array.from(im.brands.entries()).map(([brand, qty]) => ({ brand, qty })).filter(b => b.qty >= 0.5);
+      const totalQty = brandsArr.reduce((s,b)=>s+b.qty, 0);
+      return {
+        importer: im.importer,
+        totalQty: Math.round(totalQty),
+        brands: brandsArr.map(b => ({ brand: b.brand, qty: Math.round(b.qty), pct: totalQty > 0 ? b.qty/totalQty*100 : 0 })).sort((a,b)=>b.qty-a.qty)
+      };
+    })
+    .filter(im => im.totalQty > 0)
     .sort((a, b) => b.totalQty - a.totalQty);
+  result._isEstimated = isEstimated;
   return result;
 }
 let currentImportBatchForTooltip = null;
