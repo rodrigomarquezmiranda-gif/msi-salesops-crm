@@ -998,13 +998,13 @@ function renderAdminTable(){
 // ── Google Login ───────────────────────────────────────────────────────────────
 async function doGoogleLogin(){
   const btn=document.getElementById('google-btn');
-  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Conectando…';
+  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Redirigiendo…';
   try{
     const provider=new firebase.auth.GoogleAuthProvider();
-    await fbAuth.signInWithPopup(provider);
+    await fbAuth.signInWithRedirect(provider);
   }catch(e){
     const err=document.getElementById('login-err');
-    err.textContent=e.code==='auth/popup-closed-by-user'?'Cerraste el popup de Google.':e.message;
+    err.textContent=e.message;
     err.style.display='block';
     btn.disabled=false;btn.innerHTML='<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px"> Continuar con Google';
   }

@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.4';
+const APP_VERSION = '09.09.26.5';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13478,14 +13478,9 @@ async function renderUsersTab() {
 
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  _fbAuth.signInWithPopup(provider).catch(e => {
+  _fbAuth.signInWithRedirect(provider).catch(e => {
     console.error('Google sign-in error:', e.code, e.message);
-    if (e.code === 'auth/popup-blocked') {
-      // Fallback to redirect if popup was blocked (common on mobile)
-      _fbAuth.signInWithRedirect(provider).catch(e2 => alert('Error: ' + e2.code));
-    } else if (e.code !== 'auth/popup-closed-by-user') {
-      alert('Error al iniciar sesión (' + e.code + '): ' + e.message);
-    }
+    alert('Error al iniciar sesión (' + e.code + '): ' + e.message);
   });
 }
 
