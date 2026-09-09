@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.5';
+const APP_VERSION = '09.09.26.6';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13496,6 +13496,11 @@ function signInWithEmail() {
 function signOut() {
   _confirm('¿Cerrar sesión?', {title:'Cerrar sesión', okLabel:'Cerrar sesión'}).then(ok => { if(ok) _fbAuth.signOut(); });
 }
+
+// Procesar resultado del redirect de Google (necesario para signInWithRedirect)
+_fbAuth.getRedirectResult().catch(e => {
+  if (e.code && e.code !== 'auth/no-auth-event') console.error('[Auth] getRedirectResult:', e.code);
+});
 
 _fbAuth.onAuthStateChanged(async (user) => {
   const loginScreen = document.getElementById('login-screen');
