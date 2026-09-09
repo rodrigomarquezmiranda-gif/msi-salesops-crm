@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.8';
+const APP_VERSION = '09.09.26.9';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -12818,26 +12818,35 @@ function renderImportsTab() {
   currentImportBatchForTooltip = { batch, brand: importsSelectedBrand };
   const isMsiBrand = normDesc(importsSelectedBrand) === 'MSI';
   const importerHeaderIdx = msi.importerTable ? msi.importerTable.header.findIndex(h => normImportHeader(h)==='IMPORTADOR') : -1;
-  // Monthly fallback: filtered by pills, always available even without transaction-level data
+  // For MSI: try to build filtered importer+model detail from msi.modelTable (has per-row month data)
+  const msiDetail = isMsiBrand ? computeMsiDetailFromModelTable(msi.modelTable, importsSelectedMonths) : null;
+  // Monthly fallback for non-MSI: filtered by pills from monthly summary
   const filteredMonthly = getImportsSelectedMonthly(batch);
   const brandMonthlyRows = filteredMonthly.map(m => ({ month: m.month, qty: m.values[importsSelectedBrand] || 0 })).filter(m => m.qty > 0);
   const brandMonthlyTotal = brandMonthlyRows.reduce((s,m) => s+m.qty, 0);
-  const hasSupplement = isMsiBrand ? ((msi.kpis && msi.kpis.length) || msi.importerTable || msi.modelTable || dynamicImporters || brandMonthlyRows.length > 0) : !!(dynamicImporters || brandMonthlyRows.length > 0);
+  // Determine what importer list to show for the supplement header table
+  const activeImporters = dynamicImporters && dynamicImporters.length ? dynamicImporters
+    : (msiDetail && msiDetail.importers && msiDetail.importers.length ? msiDetail.importers : null);
+  const hasSupplement = isMsiBrand
+    ? ((msi.kpis && msi.kpis.length) || activeImporters || msiDetail || msi.importerTable || msi.modelTable || brandMonthlyRows.length > 0)
+    : !!(dynamicImporters || brandMonthlyRows.length > 0);
   const _suppFilterLabel = esc(getMonthFilterLabel(importsSelectedMonths));
+  const _isFiltered = importsSelectedMonths.size > 0;
   supplement.innerHTML = hasSupplement ? `
     <div class="section-header"><div class="section-title">Detalle de ${esc(importsSelectedBrand)} — ${_suppFilterLabel}</div></div>
     ${isMsiBrand && msi.kpis && msi.kpis.length ? `<div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:14px">${msi.kpis.map(k=>`<div style="font-size:12px;color:var(--text2)"><b style="color:var(--text)">${esc(formatImportValue(k.label, k.value))}</b> — ${esc(k.label)}</div>`).join('')}</div>` : ''}
-    ${dynamicImporters && dynamicImporters.length ? `
+    ${activeImporters && activeImporters.length ? `
       <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Importadores de ${esc(importsSelectedBrand)} <span style="font-weight:400;color:var(--text3)">(pasá el mouse sobre uno para ver modelos)</span></div>
       <div class="table-scroll" style="margin-bottom:16px"><table class="data-table" style="font-size:12px">
-        <thead><tr><th>Importador</th><th>Unidades</th><th>% del total</th><th>Modelos distintos</th>${dynamicImporters.some(r=>r.fob)?'<th>U$S FOB</th>':''}</tr></thead>
-        <tbody>${dynamicImporters.map(r => `<tr>
+        <thead><tr><th>Importador</th><th>Unidades</th><th>% del total</th><th>Modelos distintos</th>${activeImporters.some(r=>r.fob)?'<th>U$S FOB</th>':''}</tr></thead>
+        <tbody>${activeImporters.map(r => `<tr>
           <td><span class="client-name-hover" onmouseenter="showImportImporterTooltip(event,'${r.importer.replace(/'/g,"\\'")}')" onmouseleave="hideClientCompositionTooltip()">${esc(r.importer)}</span></td>
           <td>${r.qty.toLocaleString('es-AR')}</td><td>${r.pct.toFixed(1)}%</td><td>${r.modelCount}</td>
-          ${dynamicImporters.some(x=>x.fob)?`<td>${r.fob?'USD '+r.fob.toLocaleString('es-AR',{maximumFractionDigits:0}):'-'}</td>`:''}
+          ${activeImporters.some(x=>x.fob)?`<td>${r.fob?'USD '+r.fob.toLocaleString('es-AR',{maximumFractionDigits:0}):'-'}</td>`:''}
         </tr>`).join('')}</tbody>
       </table></div>`
-      : (isMsiBrand && msi.importerTable ? `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Importadores de MSI${importsSelectedMonths.size > 0 ? ' <span style="font-weight:400;font-size:11px;color:var(--text3)">(resumen del período completo del archivo — sin filtro mensual)</span>' : ''}</div>
+    : (!activeImporters && isMsiBrand && msi.importerTable && !_isFiltered ? `
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Importadores de MSI</div>
       <div class="table-scroll" style="margin-bottom:16px"><table class="data-table" style="font-size:12px">
         <thead><tr>${msi.importerTable.header.filter(h=>h!=null&&String(h).trim()!=='').map(h=>`<th>${esc(String(h||''))}</th>`).join('')}</tr></thead>
         <tbody>${msi.importerTable.dataRows.map(r=>`<tr>${msi.importerTable.header.map((h,i)=>{
@@ -12846,19 +12855,26 @@ function renderImportsTab() {
           return i===importerHeaderIdx ? `<td><span class="client-name-hover" onmouseenter="showImportImporterTooltip(event,'${String(r[i]||'').replace(/'/g,"\\'")}')" onmouseleave="hideClientCompositionTooltip()">${cellHtml}</span></td>` : `<td>${cellHtml}</td>`;
         }).join('')}</tr>`).join('')}</tbody>
       </table></div>` : '')}
-    ${!dynamicImporters && brandMonthlyRows.length ? `
+    ${!activeImporters && !isMsiBrand && brandMonthlyRows.length ? `
       <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Unidades importadas de ${esc(importsSelectedBrand)} por mes</div>
       <div class="table-scroll" style="margin-bottom:12px"><table class="data-table" style="font-size:12px">
         <thead><tr><th>Mes</th><th>Unidades</th></tr></thead>
         <tbody>${brandMonthlyRows.map(m=>`<tr><td>${esc(getMonthLabel(m.month))}</td><td>${m.qty.toLocaleString('es-AR')}</td></tr>`).join('')}
         <tr style="font-weight:600;border-top:2px solid var(--border2)"><td>Total</td><td>${brandMonthlyTotal.toLocaleString('es-AR')}</td></tr></tbody>
       </table></div>
-      ${!batch.transactions ? `<div style="font-size:11px;color:var(--text3)"><i class="ti ti-info-circle"></i> Este archivo no tiene hoja de detalle por operación — no se puede mostrar el desglose por importador.</div>` : `<div style="font-size:11px;color:var(--text3)"><i class="ti ti-info-circle"></i> El detalle por importador no está disponible para el período seleccionado.</div>`}` : ''}
-    ${isMsiBrand && msi.modelTable ? `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;margin-top:8px">Modelos MSI importados${importsSelectedMonths.size > 0 ? ' <span style="font-weight:400;font-size:11px;color:var(--text3)">(período completo del archivo)</span>' : ''}</div>
-      <div class="table-scroll"><table class="data-table" style="font-size:12px">
-        <thead><tr>${msi.modelTable.header.filter(h=>h!=null&&String(h).trim()!=='').map(h=>`<th>${esc(String(h||''))}</th>`).join('')}</tr></thead>
-        <tbody>${msi.modelTable.dataRows.map(r=>`<tr>${msi.modelTable.header.map((h,i)=>h!=null&&String(h).trim()!==''?`<td>${esc(formatImportValue(h, r[i]))}</td>`:'').join('')}</tr>`).join('')}</tbody>
-      </table></div>` : ''}
+      <div style="font-size:11px;color:var(--text3)"><i class="ti ti-info-circle"></i> Este archivo no tiene detalle de importadores para ${esc(importsSelectedBrand)}.</div>` : ''}
+    ${isMsiBrand ? (() => {
+      // Show model rows: use filtered msiDetail.modelRows if available, else full msi.modelTable
+      const modelRows = (msiDetail && msiDetail.modelRows) ? msiDetail.modelRows : (msi.modelTable ? msi.modelTable.dataRows : null);
+      const modelHeader = msi.modelTable ? msi.modelTable.header : null;
+      if(!modelRows || !modelHeader) return '';
+      const periodNote = (_isFiltered && msiDetail && msiDetail.hasMonthCol) ? '' : (_isFiltered ? ' <span style="font-weight:400;font-size:11px;color:var(--text3)">(período completo del archivo)</span>' : '');
+      return `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;margin-top:8px">Modelos MSI importados${periodNote}</div>
+        <div class="table-scroll"><table class="data-table" style="font-size:12px">
+          <thead><tr>${modelHeader.filter(h=>h!=null&&String(h).trim()!=='').map(h=>`<th>${esc(String(h||''))}</th>`).join('')}</tr></thead>
+          <tbody>${modelRows.map(r=>`<tr>${modelHeader.map((h,i)=>h!=null&&String(h).trim()!==''?`<td>${esc(formatImportValue(h, r[i]))}</td>`:'').join('')}</tr>`).join('')}</tbody>
+        </table></div>`;
+    })() : ''}
   ` : '';
 }
 function selectImportBrand(brand) {
@@ -12869,6 +12885,40 @@ function selectImportBrand(brand) {
 function setImportsViewMode(mode) {
   importsViewMode = mode;
   renderImportsTab();
+}
+// Build filtered MSI importer + model detail from msi.modelTable rows (has MES column)
+function computeMsiDetailFromModelTable(modelTable, monthFilterSet) {
+  if(!modelTable || !modelTable.header || !modelTable.dataRows || !modelTable.dataRows.length) return null;
+  const h = modelTable.header.map(x => normImportHeader(String(x||'')));
+  const mesIdx      = h.findIndex(x => x.includes('MES') || x.includes('MONTH') || x.includes('FECHA'));
+  const importerIdx = h.findIndex(x => x.includes('IMPORTADOR') || x.includes('IMPORTER'));
+  const modelIdx    = h.findIndex(x => x.includes('MODELO') || x.includes('MODEL') || x.includes('SKU') || x.includes('ITEM'));
+  const qtyIdx      = h.findIndex(x => x.includes('UNIDAD') || x.includes('UNIT') || x.includes('QTY') || x.includes('CANTIDAD'));
+  const fobIdx      = h.findIndex(x => x.includes('FOB'));
+  if(importerIdx === -1 || qtyIdx === -1) return null;
+  const isFiltered = monthFilterSet && monthFilterSet.size > 0;
+  const filter = isFiltered ? monthFilterSet : 'all';
+  const filteredRows = modelTable.dataRows.filter(r => {
+    if(!isFiltered || mesIdx === -1) return true;
+    return monthMatchesFilter(normalizeMonthKey(r[mesIdx]), filter);
+  });
+  if(!filteredRows.length && isFiltered) return { importers: [], modelRows: [], hasMonthCol: mesIdx > -1 };
+  const byImporter = new Map();
+  filteredRows.forEach(r => {
+    const importer = String(r[importerIdx]||'').trim(); if(!importer) return;
+    const qty = importCellToNum(r[qtyIdx]) || 0;
+    const fob = fobIdx > -1 ? (importCellToNum(r[fobIdx]) || 0) : 0;
+    const model = modelIdx > -1 ? String(r[modelIdx]||'').trim() : '';
+    if(!byImporter.has(importer)) byImporter.set(importer, { importer, qty:0, fob:0, models:new Set() });
+    const im = byImporter.get(importer);
+    im.qty += qty; im.fob += fob;
+    if(model && qty > 0) im.models.add(model);
+  });
+  const total = Array.from(byImporter.values()).reduce((s,r)=>s+r.qty,0);
+  const importers = Array.from(byImporter.values())
+    .map(im => ({ importer:im.importer, qty:im.qty, fob:im.fob||null, modelCount:im.models.size, pct: total>0 ? im.qty/total*100 : 0 }))
+    .sort((a,b) => b.qty-a.qty);
+  return { importers, modelRows: filteredRows, hasMonthCol: mesIdx > -1, modelTable };
 }
 function computeBrandImporterBreakdown(batch, brand, monthFilterSet) {
   if(!batch.transactions) return null;
