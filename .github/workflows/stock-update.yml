@@ -144,18 +144,34 @@ jobs:
           def gcell(row, idx):
               return row[idx] if idx < len(row) else ''
 
-          # Normaliza estado: mayúsculas, strip, colapsa signos repetidos
+          # Normaliza estado: mayúsculas, strip espacios y ! sobrantes, aliases
           ESTADO_CANON = {
-              'new': 'NEW!', 'focus': 'FOCUS!', 'eol': 'EOL',
-              'to clean': 'TO CLEAN', 'last batch / eol soon': 'LAST BATCH / EOL SOON',
-              'shortage': 'SHORTAGE', 'wall plug': 'WALL PLUG!', 'hold': 'HOLD',
+              'new':                    'NEW!',
+              'focus':                  'FOCUS!',
+              'eol':                    'EOL',
+              'to clean':               'TO CLEAN',
+              'last batch / eol soon':  'LAST BATCH / EOL SOON',
+              'last batch':             'LAST BATCH / EOL SOON',
+              'eol soon':               'LAST BATCH / EOL SOON',
+              'shortage':               'SHORTAGE',
+              'wall plug':              'WALL PLUG!',
+              'hold':                   'HOLD',
           }
           def norm_estado(v):
               if not v: return ''
-              v = str(v).strip().upper().rstrip('!')
+              # Normalizar: mayúsculas, quitar espacios internos alrededor de !, strip
+              v = str(v).strip().upper()
+              v = v.replace(' !', '!').replace('! ', '!') # "FOCUS !" → "FOCUS!"
+              v = v.rstrip('! ').strip()                  # quitar ! y espacios al final
               canonical = ESTADO_CANON.get(v.lower())
               if canonical: return canonical
-              # fallback: devolver con un solo !
+              # prefijos conocidos
+              vl = v.lower()
+              for prefix, out in [('last batch','LAST BATCH / EOL SOON'),
+                                   ('eol soon','LAST BATCH / EOL SOON'),
+                                   ('new','NEW!'),('focus','FOCUS!'),
+                                   ('wall plug','WALL PLUG!')]:
+                  if vl.startswith(prefix): return out
               return v + '!'
 
           def parse_latam_rows(rows, hyperlinks_by_row=None):
