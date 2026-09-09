@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.10';
+const APP_VERSION = '09.09.26.11';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -12838,7 +12838,7 @@ function renderImportsTab() {
     <div class="section-header"><div class="section-title">Detalle de ${esc(importsSelectedBrand)} — ${_suppFilterLabel}</div></div>
     ${isMsiBrand && msi.kpis && msi.kpis.length ? `<div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:14px">${msi.kpis.map(k=>`<div style="font-size:12px;color:var(--text2)"><b style="color:var(--text)">${esc(formatImportValue(k.label, k.value))}</b> — ${esc(k.label)}</div>`).join('')}</div>` : ''}
     ${activeImporters && activeImporters.length ? `
-      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Importadores de ${esc(importsSelectedBrand)} <span style="font-weight:400;color:var(--text3)">(pasá el mouse sobre uno para ver modelos)</span></div>
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Importadores de ${esc(importsSelectedBrand)} <span style="font-weight:400;color:var(--text3)">(pasá el mouse sobre uno para ver modelos)</span>${dynamicImporters && dynamicImporters._usedFallback ? ' <span style="font-weight:400;font-size:11px;color:var(--brand-text)">⚠ período completo — sin etiquetas de mes</span>' : ''}</div>
       <div class="table-scroll" style="margin-bottom:16px"><table class="data-table" style="font-size:12px">
         <thead><tr><th>Importador</th><th>Unidades</th><th>% del total</th><th>Modelos distintos</th>${activeImporters.some(r=>r.fob)?'<th>U$S FOB</th>':''}</tr></thead>
         <tbody>${activeImporters.map(r => `<tr>
@@ -12925,13 +12925,19 @@ function computeMsiDetailFromModelTable(modelTable, monthFilterSet) {
 function computeBrandImporterBreakdown(batch, brand, monthFilterSet) {
   if(!batch.transactions) return null;
   const isFiltered = monthFilterSet && monthFilterSet.size > 0;
-  // month:null = wide-format (no month tag). Include when no filter; exclude when filter is active.
-  const txs = batch.transactions.filter(t => {
+  // Try filtered first (only rows with actual month tags matching the filter)
+  let txs = batch.transactions.filter(t => {
     if(normDesc(t.brand) !== normDesc(brand)) return false;
-    if(!isFiltered) return true;          // no filter → include all (including month:null)
-    if(t.month === null) return false;    // filter active but no month tag → exclude
-    return monthMatchesFilter(t.month, isFiltered ? monthFilterSet : 'all');
+    if(!isFiltered) return true;
+    if(t.month === null) return false;
+    return monthMatchesFilter(t.month, monthFilterSet);
   });
+  // If filter active but result empty (all were month:null wide-format), fall back to full-period
+  let usedFallback = false;
+  if(isFiltered && txs.length === 0) {
+    const allBrand = batch.transactions.filter(t => normDesc(t.brand) === normDesc(brand));
+    if(allBrand.length > 0) { txs = allBrand; usedFallback = true; }
+  }
   const byImporter = new Map();
   txs.forEach(t => {
     if(!byImporter.has(t.importer)) byImporter.set(t.importer, { importer:t.importer, qty:0, fob:0, models:new Set() });
@@ -12940,9 +12946,11 @@ function computeBrandImporterBreakdown(batch, brand, monthFilterSet) {
     if(t.qty > 0) im.models.add(t.model);
   });
   const total = Array.from(byImporter.values()).reduce((s,r)=>s+r.qty,0);
-  return Array.from(byImporter.values())
+  const result = Array.from(byImporter.values())
     .map(im => ({ importer:im.importer, qty:im.qty, fob:im.fob, modelCount:im.models.size, pct: total>0 ? im.qty/total*100 : 0 }))
     .sort((a,b) => b.qty-a.qty);
+  result._usedFallback = usedFallback;
+  return result;
 }
 function normBrandName(b) {
   // Strip "MARCA: " prefix that some export formats include as column headers
