@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.2';
+const APP_VERSION = '09.09.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9573,7 +9573,7 @@ async function handleArFile(file) {
     if (prog) prog.textContent = `✓ ${accounts.length} cuentas importadas`;
     setTimeout(() => { if(prog) prog.textContent = ''; }, 3000);
     renderArTab();
-    toast(`${accounts.length} cuentas cargadas correctamente`);
+    _alert(`${accounts.length} cuentas cargadas correctamente`, {type:'success', title:'Importado'});
   } catch(e) {
     if (prog) prog.textContent = '';
     _alert('Error procesando el archivo: ' + e.message, {type:'error', title:'Error'});
