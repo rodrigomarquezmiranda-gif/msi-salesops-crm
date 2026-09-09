@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.16';
+const APP_VERSION = '09.09.26.17';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -3463,11 +3463,27 @@ function parseInvoiceLineItems(lines) {
         if(COO_RE.test(t)) break;                           // COO country name
         modelPart.push(t);
       }
-      if(modelPart.length > 0) {
+      // The Description column mirrors "MS-code\MarketingName" — when BOTH the Marketing Name
+      // and Description columns wrap to this same continuation line, the tail of modelPart is
+      // actually the Description column's overflow, which re-starts from the beginning of the
+      // marketing-name continuation (e.g. "PLUS WIFI PLUS" = name-cont "PLUS WIFI" + desc-cont
+      // "PLUS"; "TOMAHAWK WIFI TOMAHAWK" = name-cont "TOMAHAWK WIFI" + desc-cont "TOMAHAWK").
+      // Detect that trailing repeat and drop it so it isn't appended twice into marketingName.
+      const trimmedModelPart = (() => {
+        for(let split = 1; split < modelPart.length; split++) {
+          const head = modelPart.slice(0, split);
+          const tail = modelPart.slice(split);
+          if(tail.length > 0 && tail.length <= head.length && head.slice(0, tail.length).join(' ') === tail.join(' ')) {
+            return head;
+          }
+        }
+        return modelPart;
+      })();
+      if(trimmedModelPart.length > 0) {
         // Append model-name tokens to the pending marketing name.
         // e.g. "900R" → "MEG MAESTRO 900R"
         //      "QD-OLED X24" (from "QD-OLED X24 Black,26.5,Anti-Reflectio") → "MAG 274QP QD-OLED X24"
-        pending.marketingName = (pending.marketingName + ' ' + modelPart.join(' ')).trim();
+        pending.marketingName = (pending.marketingName + ' ' + trimmedModelPart.join(' ')).trim();
       } else {
         const cooMatch = l.match(new RegExp('^(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
         if(cooMatch) {
