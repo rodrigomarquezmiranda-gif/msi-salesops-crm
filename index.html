@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.11';
+const APP_VERSION = '09.09.26.12';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -12756,8 +12756,21 @@ function renderImportsTab() {
 
   if(importsViewMode === 'importer') {
     const importerData = computeImporterBrandBreakdown(batch, importsSelectedMonths);
-    if(!importerData || !importerData.length) {
+    if(!importerData) {
       wrap.innerHTML = toggleHtml + `<div style="font-size:13px;color:var(--text3)"><i class="ti ti-info-circle" style="margin-right:6px"></i>Este archivo no tiene hoja de detalle por operación (necesita columnas Importador · Marca · Modelo · Cantidad). El archivo de <b>${esc(getCurrentImportBatch()?.category||'esta categoría')}</b> solo tiene el resumen mensual — la vista Por Importador no está disponible para este archivo.</div>`;
+    } else if(!importerData.length) {
+      // Filter active but file has no month-per-row data → show monthly brand totals instead
+      const _fm = getImportsSelectedMonthly(batch);
+      const _activeBrands = (importsGlobalOnly ? batch.brands.filter(b=>isGlobalBrand(b)) : batch.brands);
+      const _bTotals = {}; _activeBrands.forEach(b=>{ _bTotals[b]=0; }); _fm.forEach(m=>_activeBrands.forEach(b=>{ _bTotals[b]=(_bTotals[b]||0)+(m.values[b]||0); }));
+      const _bRows = _activeBrands.map(b=>({brand:b,qty:_bTotals[b]})).filter(r=>r.qty>0).sort((a,b)=>b.qty-a.qty);
+      const _bTotal = _bRows.reduce((s,r)=>s+r.qty,0);
+      wrap.innerHTML = toggleHtml + `
+        <div style="font-size:11px;color:var(--brand-text);margin-bottom:8px"><i class="ti ti-alert-triangle"></i> Este archivo no tiene etiquetas de mes por operación — no se puede mostrar el desglose por importador para el período filtrado. Se muestran los totales correctos por marca para <b>${esc(getMonthFilterLabel(importsSelectedMonths))}</b>.</div>
+        <div class="table-scroll"><table class="data-table" style="font-size:12px">
+          <thead><tr><th>#</th><th>Marca</th><th>Unidades</th><th>% del total</th></tr></thead>
+          <tbody>${_bRows.map((r,i)=>`<tr><td>${i+1}</td><td>${normDesc(r.brand)==='MSI'?`<span style="color:var(--brand-text);font-weight:600">${esc(r.brand)}</span>`:esc(r.brand)}</td><td>${r.qty.toLocaleString('es-AR')}</td><td>${(_bTotal>0?r.qty/_bTotal*100:0).toFixed(1)}%</td></tr>`).join('')}</tbody>
+        </table></div>`;
     } else {
       // Collect all unique brands across all importers for the header, limited to top ones
       const brandTotals = new Map();
@@ -12789,11 +12802,7 @@ function renderImportsTab() {
         return `<tr><td style="font-weight:500;white-space:nowrap">${esc(im.importer)}</td>${cells}${othersCell}<td style="font-weight:600">${im.totalQty.toLocaleString('es-AR')}</td></tr>`;
       }).join('');
 
-      const _fallbackNote = importerData._usedFallback
-        ? `<div style="font-size:11px;color:var(--brand-text);margin-bottom:6px"><i class="ti ti-alert-triangle"></i> Este archivo no tiene etiquetas de mes por operación — se muestran los totales del <b>período completo</b>, no del período seleccionado.</div>`
-        : '';
       wrap.innerHTML = toggleHtml + `
-        ${_fallbackNote}
         <div style="font-size:11px;color:var(--text3);margin-bottom:8px"><i class="ti ti-info-circle"></i> ${filterNote} Ordenado por unidades MSI descendente. El % es la participación de la marca dentro de ese importador.</div>
         <div class="table-scroll"><table class="data-table" style="font-size:12px">
           <thead><tr><th>Importador</th>${headerCells}</tr></thead>
@@ -12963,12 +12972,9 @@ function computeImporterBrandBreakdown(batch, monthFilterSet) {
   let txs = isFiltered
     ? batch.transactions.filter(t => t.month !== null && monthMatchesFilter(t.month, monthFilterSet))
     : batch.transactions;
-  // If filter active but result is empty (all rows were month:null wide-format), fall back to full period
-  let usedFallback = false;
-  if(isFiltered && txs.length === 0 && batch.transactions.length > 0) {
-    txs = batch.transactions;
-    usedFallback = true;
-  }
+  // If filter active but result is empty (all rows were month:null), flag it — don't fall back to full period
+  const noMonthData = isFiltered && txs.length === 0 && batch.transactions.length > 0;
+  if(noMonthData) return []; // caller will show monthly brand summary instead
   // Group by importer → by brand (normalize brand name)
   const byImporter = new Map();
   txs.forEach(t => {
