@@ -297,7 +297,7 @@ def generate_excel(raw_products, changes, date_str):
         lc.alignment = Alignment(horizontal="center", vertical="center")
         lc.border = BORDER
         if ficha and (ficha.startswith("http") or ficha.startswith("www")):
-            lc.value = "Links"
+            lc.value = "Link"
             lc.font  = cfont(size=9, color="FF0563C1")
             # openpyxl hyperlink
             lc.hyperlink = ficha
