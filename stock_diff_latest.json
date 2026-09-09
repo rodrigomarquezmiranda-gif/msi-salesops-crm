@@ -1,24 +1,10 @@
 {
-  "checkedAt": "2026-09-09T14:34:40.290145+00:00",
+  "checkedAt": "2026-09-09T15:04:32.236058+00:00",
   "productCount": 301,
-  "hasChanges": true,
-  "changeCount": 2,
-  "changes": [
-    {
-      "type": "removed",
-      "partNo": "PRO DP21 14AM",
-      "name": "PRO DP21 14AM",
-      "category": "CUBI"
-    },
-    {
-      "type": "new",
-      "partNo": "PRO DP21 14MA-267BUS",
-      "name": "PRO DP21 14MA-267BUS",
-      "category": "CUBI",
-      "newPrice": 182.0
-    }
-  ],
-  "summary": "2 cambio(s) detectado(s)",
+  "hasChanges": false,
+  "changeCount": 0,
+  "changes": [],
+  "summary": "Sin cambios",
   "triggeredBy": "github-actions",
   "triggerMode": "workflow_dispatch"
 }
