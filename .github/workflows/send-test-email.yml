@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       test_recipient:
-        description: 'Email destinatario de prueba'
-        required: true
-        default: 'rodrigomarquezmiranda@gmail.com'
+        description: 'Email destinatario de prueba (vacío = enviar a todos en Firebase)'
+        required: false
+        default: ''
 
 jobs:
   send:
