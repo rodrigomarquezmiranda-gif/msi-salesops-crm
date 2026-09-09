@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.7';
+const APP_VERSION = '09.09.26.8';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -12756,8 +12756,10 @@ function renderImportsTab() {
 
   if(importsViewMode === 'importer') {
     const importerData = computeImporterBrandBreakdown(batch, importsSelectedMonths);
-    if(!importerData || !importerData.length) {
+    if(!importerData) {
       wrap.innerHTML = toggleHtml + `<div style="font-size:13px;color:var(--text3)"><i class="ti ti-info-circle" style="margin-right:6px"></i>Este archivo no tiene hoja de detalle por operación (necesita columnas Importador · Marca · Modelo · Cantidad). El archivo de <b>${esc(getCurrentImportBatch()?.category||'esta categoría')}</b> solo tiene el resumen mensual — la vista Por Importador no está disponible para este archivo.</div>`;
+    } else if(!importerData.length) {
+      wrap.innerHTML = toggleHtml + `<div style="font-size:13px;color:var(--text3)"><i class="ti ti-info-circle" style="margin-right:6px"></i>Este archivo no tiene etiquetas de mes por operación — la vista Por Importador no se puede filtrar por mes. Elegí <b>Todos</b> para ver el período completo.</div>`;
     } else {
       // Collect all unique brands across all importers for the header, limited to top ones
       const brandTotals = new Map();
@@ -12890,9 +12892,16 @@ function normBrandName(b) {
 }
 function computeImporterBrandBreakdown(batch, monthFilterSet) {
   if(!batch.transactions) return null;
-  const filter = monthFilterSet && monthFilterSet.size ? monthFilterSet : 'all';
-  // month:null means no month info in file — always include (can't filter what we don't have)
-  const txs = batch.transactions.filter(t => t.month === null || monthMatchesFilter(t.month, filter));
+  const isFiltered = monthFilterSet && monthFilterSet.size > 0;
+  const filter = isFiltered ? monthFilterSet : 'all';
+  // When filter is active: only include rows that have month data AND match.
+  // month:null (wide-format) rows are excluded when filtering — can't assign them to a month.
+  // When no filter: include everything (month:null rows represent the full period).
+  const txs = batch.transactions.filter(t => {
+    if(!isFiltered) return true;           // no filter → include all
+    if(t.month === null) return false;     // filter active but no month tag → exclude
+    return monthMatchesFilter(t.month, filter);
+  });
   // Group by importer → by brand (normalize brand name)
   const byImporter = new Map();
   txs.forEach(t => {
