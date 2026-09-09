@@ -2036,15 +2036,15 @@
     "category": "Chassis",
     "miamiStock": 62,
     "miamiPrice": 60.0,
-    "miamiEta": "ETA 9/8 48pcs",
+    "miamiEta": "ETA 9/14 48pcs",
     "bondedStock": 0
   },
   "PANOM110R": {
     "name": "MAG PANO M110R",
     "category": "Chassis",
-    "miamiStock": 62,
+    "miamiStock": 86,
     "miamiPrice": 48.0,
-    "miamiEta": "ETA 9/8 24pcs",
+    "miamiEta": "",
     "bondedStock": 0
   },
   "FORGE120AAIR": {
@@ -2068,7 +2068,7 @@
     "category": "Chassis",
     "miamiStock": 33,
     "miamiPrice": 32.0,
-    "miamiEta": "ETA 9/8 48pcs",
+    "miamiEta": "ETA 9/14 48pcs",
     "bondedStock": 0
   },
   "PROFORGEM051A": {
@@ -2324,7 +2324,7 @@
     "category": "PSU",
     "miamiStock": 0,
     "miamiPrice": 60.0,
-    "miamiEta": "ETA 9/8 240pcs",
+    "miamiEta": "ETA 9/14 240pcs",
     "bondedStock": 0
   },
   "MAG850GN": {
@@ -2332,7 +2332,7 @@
     "category": "PSU",
     "miamiStock": 0,
     "miamiPrice": 64.0,
-    "miamiEta": "",
+    "miamiEta": "ETA 9/14 51pcs",
     "bondedStock": 0
   },
   "MAG750GN": {
