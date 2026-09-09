@@ -1,25 +1,24 @@
 {
-  "checkedAt": "2026-09-07T17:47:55.552253+00:00",
+  "checkedAt": "2026-09-09T14:34:40.290145+00:00",
   "productCount": 301,
   "hasChanges": true,
   "changeCount": 2,
   "changes": [
     {
-      "type": "new",
-      "partNo": "SM470PN1TB",
-      "name": "SPATIUM M470 PRO PCIe 4.0 NVMe M.2 1TB",
-      "category": "SSD",
-      "newPrice": 145.0
+      "type": "removed",
+      "partNo": "PRO DP21 14AM",
+      "name": "PRO DP21 14AM",
+      "category": "CUBI"
     },
     {
       "type": "new",
-      "partNo": "SM470PN2TB",
-      "name": "SPATIUM M470 PRO PCIe 4.0 NVMe M.2 2TB",
-      "category": "SSD",
-      "newPrice": 245.0
+      "partNo": "PRO DP21 14MA-267BUS",
+      "name": "PRO DP21 14MA-267BUS",
+      "category": "CUBI",
+      "newPrice": 182.0
     }
   ],
   "summary": "2 cambio(s) detectado(s)",
   "triggeredBy": "github-actions",
-  "triggerMode": "schedule"
+  "triggerMode": "workflow_dispatch"
 }
