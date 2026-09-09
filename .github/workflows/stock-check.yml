@@ -1,9 +1,7 @@
-name: Stock & Price Check
+name: Stock & Price Check (manual only)
 
 on:
-  schedule:
-    # 21:30 UTC = 18:30 ART, lunes a viernes
-    - cron: '30 21 * * 1-5'
+  # Cron deshabilitado — el email ahora corre integrado en stock-update.yml a las 15:00 ART
   workflow_dispatch:
     inputs:
       force_email:

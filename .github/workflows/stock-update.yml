@@ -2,16 +2,24 @@ name: MSI Stock & Price Update
 
 on:
   schedule:
-    # AM run: 12:30 UTC = 09:30 ART
-    - cron: '30 12 * * 1-5'
-    # PM run: 21:30 UTC = 18:30 ART
-    - cron: '30 21 * * 1-5'
+    # Una corrida diaria: 18:00 UTC = 15:00 ART, lunes a viernes
+    - cron: '0 18 * * 1-5'
   workflow_dispatch:
     inputs:
       trigger_mode:
         description: 'Modo de disparo'
         required: false
         default: 'manual'
+      force_email:
+        description: 'Forzar envío de email aunque no haya cambios'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      test_recipient:
+        description: 'Email de prueba (deja vacío para usar lista de Firebase)'
+        required: false
+        default: ''
 
 jobs:
   stock-diff:
@@ -314,3 +322,16 @@ jobs:
           git add -f stock_snapshot_latest.json stock_diff_latest.json stock_changelog.json
           git diff --staged --quiet || git commit -m "chore: stock/price update $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
+
+      - name: Install email dependencies
+        run: pip install openpyxl --break-system-packages
+
+      - name: Send email if changes detected
+        env:
+          FIREBASE_SECRET:    ${{ secrets.FIREBASE_SECRET }}
+          SMTP_PASSWORD:      ${{ secrets.SMTP_PASSWORD }}
+          RECIPIENT_EMAILS:   ${{ secrets.RECIPIENT_EMAILS }}
+          FORCE_EMAIL:        ${{ github.event.inputs.force_email || 'false' }}
+          TEST_RECIPIENT:     ${{ github.event.inputs.test_recipient || '' }}
+          USE_LOCAL_DIFF:     'true'
+        run: python scripts/stock_check.py

@@ -1,6 +1,11 @@
 """
 MSI SalesOps — Stock & Price Check + Email Notification
-Corre vía GitHub Actions todos los días hábiles a las 18:30 ART.
+Corre vía GitHub Actions todos los días hábiles a las 15:00 ART.
+
+Modos de operación:
+  - Normal (USE_LOCAL_DIFF no seteado): computa diff leyendo pricelist + snapshot de Firebase.
+  - USE_LOCAL_DIFF=true: lee stock_diff_latest.json del repo (ya calculado por stock-update.yml)
+    y solo genera el Excel + envía email. Evita que stock-update pise el snapshot antes del diff.
 """
 import json, re, sys, os, io, smtplib
 from datetime import datetime, timezone
@@ -26,7 +31,8 @@ def _load_recipients():
     """Lee la lista de destinatarios desde Firebase salesops_notif_emails.
     Fallback: variable de entorno RECIPIENT_EMAILS (para compatibilidad)."""
     if TEST_RECIPIENT:
-        return [TEST_RECIPIENT]
+        # Soporta múltiples destinatarios separados por coma
+        return [e.strip() for e in TEST_RECIPIENT.split(",") if e.strip()]
     try:
         url = f"{FB_BASE}/salesops_notif_emails.json{FB_PARAMS}"
         import urllib.request as _ur
@@ -534,6 +540,52 @@ def send_email(summary_text, changes, excel_bytes, date_str, product_count):
 print("=== MSI Stock & Price Check ===")
 now_iso  = datetime.now(timezone.utc).isoformat()
 date_str = datetime.now().strftime("%d/%m/%Y")
+
+USE_LOCAL_DIFF = os.environ.get("USE_LOCAL_DIFF", "false").lower() == "true"
+
+# ── Modo USE_LOCAL_DIFF: lee diff pre-calculado y solo envía email ─────────────
+if USE_LOCAL_DIFF:
+    repo_root  = os.path.join(os.path.dirname(__file__), '..')
+    diff_file  = os.path.join(repo_root, 'stock_diff_latest.json')
+    snap_file  = os.path.join(repo_root, 'stock_snapshot_latest.json')
+
+    with open(diff_file) as f:
+        diff_payload = json.load(f)
+
+    changes    = diff_payload.get("changes", [])
+    has_changes= diff_payload.get("hasChanges", False)
+    summary    = diff_payload.get("summary", "Sin cambios")
+    product_count = diff_payload.get("productCount", 0)
+
+    if FORCE_EMAIL and not has_changes:
+        print("USE_LOCAL_DIFF + FORCE_EMAIL=true: forzando envío aunque no haya cambios")
+        summary = f"Envío forzado — {product_count} productos en lista"
+        has_changes = True
+
+    print(f"Diff local: {summary}")
+
+    if has_changes:
+        # Cargar productos del snapshot para el Excel
+        try:
+            with open(snap_file) as f:
+                snap = json.load(f)
+            raw_products = [
+                {'code': k, 'desc': v.get('name',''), 'category': v.get('category',''),
+                 'price': v.get('miamiPrice', 0)}
+                for k, v in snap.items()
+            ]
+        except Exception as e:
+            print(f"[WARN] No se pudo leer snapshot local: {e}")
+            raw_products = []
+
+        print("Generando Excel y enviando email...")
+        excel_bytes = generate_excel(raw_products, changes, date_str)
+        send_email(summary, changes, excel_bytes, date_str, product_count)
+    else:
+        print("Sin cambios — no se envía email")
+
+    print(f"\nRESULT: {summary}")
+    sys.exit(0)
 
 # 1. Load pricelist
 print("Loading pricelist from Firebase...")
