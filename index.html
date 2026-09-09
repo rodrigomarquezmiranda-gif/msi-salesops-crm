@@ -1483,7 +1483,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '08.09.26.9';
+const APP_VERSION = '09.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13582,6 +13582,12 @@ _fbAuth.onAuthStateChanged(async (user) => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
+  });
+  // Cuando un SW nuevo toma control (skipWaiting + clients.claim), recargar la página
+  // para que Firebase Auth y el resto del JS corran con el nuevo código limpio.
+  // Sin esto, el usuario ve la UI "congelada" en el login hasta hacer Ctrl+Shift+R.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
   });
 }
 
