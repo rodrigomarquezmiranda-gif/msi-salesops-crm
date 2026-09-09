@@ -565,18 +565,16 @@ if USE_LOCAL_DIFF:
     print(f"Diff local: {summary}")
 
     if has_changes:
-        # Cargar productos del snapshot para el Excel
+        # Cargar pricelist completo de Firebase para el Excel (tiene UPC, detalle, estado, links, qtyCtn, etc.)
+        raw_products = []
         try:
-            with open(snap_file) as f:
-                snap = json.load(f)
-            raw_products = [
-                {'code': k, 'desc': v.get('name',''), 'category': v.get('category',''),
-                 'price': v.get('miamiPrice', 0)}
-                for k, v in snap.items()
-            ]
+            pl_raw = fb_get("salesops_pricelist")
+            if isinstance(pl_raw, str): pl_raw = json.loads(pl_raw)
+            if isinstance(pl_raw, dict):
+                raw_products = pl_raw.get("products", [])
+            print(f"Pricelist completo: {len(raw_products)} productos")
         except Exception as e:
-            print(f"[WARN] No se pudo leer snapshot local: {e}")
-            raw_products = []
+            print(f"[WARN] No se pudo cargar pricelist de Firebase: {e}")
 
         print("Generando Excel y enviando email...")
         excel_bytes = generate_excel(raw_products, changes, date_str)
