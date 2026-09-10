@@ -1486,7 +1486,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '10.09.26.3';
+const APP_VERSION = '10.09.26.4';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9052,6 +9052,18 @@ function _mktFindHeaderRow(rows) {
   return null;
 }
 
+// Finds the "LOB" header of the department budget table — searched by text rather than assumed
+// to be column A, since frozen panes / hidden columns can shift it in real files.
+function _mktFindLobHeaderRow(rows) {
+  for(let i = 0; i < Math.min(20, rows.length); i++) {
+    const row = rows[i] || [];
+    for(let j = 0; j < Math.min(6, row.length); j++) {
+      if(row[j] && String(row[j]).trim().toUpperCase() === 'LOB') return { idx: i, lobCol: j };
+    }
+  }
+  return null;
+}
+
 // Identifies summary rows in the per-department usage block (below the main activity table) —
 // labels can sit in any column (the block isn't at a fixed row/col across quarter tabs), so we
 // scan every cell of the row for the label text instead of assuming a fixed offset.
@@ -9068,10 +9080,20 @@ function _mktRowLabel(row) {
   }
   return null;
 }
+// Handles both "1,234.56" (US) and "1.234,56" (AR/ES) formatted numbers-as-text, not just plain numbers.
 function _mktNum(v) {
   if(v == null) return 0;
   if(typeof v === 'number') return v;
-  return parseFloat(String(v).replace(/[^0-9.\-]/g, '')) || 0;
+  let s = String(v).trim().replace(/[^0-9.,\-]/g, '');
+  if(!s) return 0;
+  const lastComma = s.lastIndexOf(','), lastDot = s.lastIndexOf('.');
+  if(lastComma > -1 && lastDot > -1) {
+    s = lastComma > lastDot ? s.replace(/\./g,'').replace(',', '.') : s.replace(/,/g,'');
+  } else if(lastComma > -1) {
+    const decLen = s.length - lastComma - 1;
+    s = decLen > 0 && decLen <= 2 ? s.replace(',', '.') : s.replace(/,/g,'');
+  }
+  return parseFloat(s) || 0;
 }
 
 function parseMktBudgetFile(wb) {
@@ -9094,19 +9116,31 @@ function parseMktBudgetFile(wb) {
     // Parse budget header (rows before the main table): per-department allocation (LOB name,
     // $ amount, budget number) plus the overall "Total" row. Row order here matches the column
     // order of the department columns below 1:1 (confirmed against real files), so we zip them
-    // by position further down rather than trying to fuzzy-match names.
+    // by position further down rather than trying to fuzzy-match names. Located by searching for
+    // the "LOB" header text (not assumed to be column A) since frozen panes/hidden columns can
+    // shift it in real files.
     let budgetProvided = 0;
     const deptTable = [];
-    for(let i = 0; i < headerIdx; i++) {
-      const row = rows[i] || [];
-      const lobRaw = row[0];
-      const lob = String(lobRaw || '').trim();
-      if(!lob || lob.toUpperCase() === 'LOB') continue;
-      const val = row[1];
-      if(lob.toUpperCase() === 'TOTAL') { if(typeof val === 'number' || val != null) budgetProvided = _mktNum(val); continue; }
-      const allocNum = _mktNum(val);
-      if(!allocNum) continue;
-      deptTable.push({ name: lob, allocation: allocNum, budgetNumber: row[2] != null ? String(row[2]).trim() : '' });
+    const lobFound = _mktFindLobHeaderRow(rows);
+    if(lobFound) {
+      const { idx: lobIdx, lobCol } = lobFound;
+      for(let i = lobIdx + 1; i < headerIdx; i++) {
+        const row = rows[i] || [];
+        const lob = String(row[lobCol] || '').trim();
+        if(!lob) continue;
+        const val = row[lobCol + 1];
+        if(lob.toUpperCase() === 'TOTAL') { budgetProvided = _mktNum(val); continue; }
+        const allocNum = _mktNum(val);
+        if(!allocNum) continue;
+        deptTable.push({ name: lob, allocation: allocNum, budgetNumber: row[lobCol + 2] != null ? String(row[lobCol + 2]).trim() : '' });
+      }
+    } else {
+      // Fallback: no "LOB" table found — just grab the total from column A if present (old behavior).
+      for(let i = 0; i < headerIdx; i++) {
+        const row = rows[i] || [];
+        const lob = String(row[0] || '').trim().toUpperCase();
+        if(lob === 'TOTAL' && row[1] != null) { budgetProvided = _mktNum(row[1]); break; }
+      }
     }
 
     // Department usage columns run from right after "Intel POE" up to (not including) the
