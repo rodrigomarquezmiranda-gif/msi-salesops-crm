@@ -1486,7 +1486,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '10.09.26.5';
+const APP_VERSION = '10.09.26.6';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9081,6 +9081,14 @@ function _mktRowLabel(row) {
   return null;
 }
 // Handles both "1,234.56" (US) and "1.234,56" (AR/ES) formatted numbers-as-text, not just plain numbers.
+// Normalizes a department name for matching a LOB budget-table row (e.g. "CND CUST Regular")
+// against its usage-table column header (e.g. "CND-CUST") — hyphens/spaces are equivalent, and
+// the column header for the "Regular" variant of a department omits the word "Regular" entirely.
+function _mktDeptMatchKey(name) {
+  let s = String(name || '').toUpperCase().replace(/[-–—]/g, ' ').replace(/\s+/g, ' ').trim();
+  s = s.replace(/\s+REGULAR$/, '');
+  return s;
+}
 function _mktNum(v) {
   if(v == null) return 0;
   if(typeof v === 'number') return v;
@@ -9166,15 +9174,22 @@ function parseMktBudgetFile(wb) {
       else if(label === 'budgetProvided' && !providedRow) providedRow = row;
     }
 
-    // Merge the two blocks by position (deptTable row i ↔ deptCols[i]) into one department list
-    // with allocation, expense planned, remaining and % — used by the "Uso de Presupuesto" view.
-    const departments = deptTable.map((d, i) => {
-      const dc = deptCols[i];
-      const exp  = dc && expenseRow   ? _mktNum(expenseRow[dc.col])   : 0;
-      const rem  = dc && remainingRow ? _mktNum(remainingRow[dc.col]) : Math.max(0, d.allocation - exp);
-      const prov = dc && providedRow  ? _mktNum(providedRow[dc.col])  : d.allocation;
-      return { name: d.name, columnName: dc ? dc.name : d.name, allocation: d.allocation, budgetNumber: d.budgetNumber,
-        expensePlanned: exp, remainingBudget: rem, budgetProvided: prov || d.allocation };
+    // Merge the two blocks by NAME (not position) — matching by row order broke as soon as a
+    // department got added out of parallel order between the budget table and the usage columns
+    // (e.g. "Computex 40 aniv"), which silently attributed one department's usage to another.
+    const departments = deptTable.map(d => {
+      const key = _mktDeptMatchKey(d.name);
+      const dc = deptCols.find(c => _mktDeptMatchKey(c.name) === key);
+      const exp  = dc && expenseRow   ? _mktNum(expenseRow[dc.col])   : null;
+      const rem  = dc && remainingRow ? _mktNum(remainingRow[dc.col]) : null;
+      const prov = dc && providedRow  ? _mktNum(providedRow[dc.col])  : null;
+      return {
+        name: d.name, columnName: dc ? dc.name : null, allocation: d.allocation, budgetNumber: d.budgetNumber,
+        expensePlanned: exp != null ? exp : (rem != null ? Math.max(0, d.allocation - rem) : null),
+        remainingBudget: rem != null ? rem : (exp != null ? Math.max(0, d.allocation - exp) : null),
+        budgetProvided: prov ?? d.allocation,
+        matched: !!dc
+      };
     });
 
     const dataRows = [];
@@ -9203,10 +9218,13 @@ function parseMktBudgetFile(wb) {
       const activity = _mktClean(row[activityCol]);
       dataRows.push({ term: currentTerm, customer, activity, total });
     }
-    // Prefer sums straight from the per-department rows when we found them — more reliable
-    // than the old heuristic (first two unlabeled total-only rows after the activity table).
-    const deptExpenseSum   = departments.length ? departments.reduce((s,d) => s + d.expensePlanned, 0)   : null;
-    const deptRemainingSum = departments.length ? departments.reduce((s,d) => s + d.remainingBudget, 0)  : null;
+    // Only use the per-department sums for the top KPI totals when EVERY department matched its
+    // usage column — a partial match would silently understate the totals for the ones that
+    // didn't match. Otherwise keep the old heuristic (reads the sheet's own aggregate row), which
+    // doesn't depend on name-matching at all.
+    const allMatched = departments.length > 0 && departments.every(d => d.matched);
+    const deptExpenseSum   = allMatched ? departments.reduce((s,d) => s + d.expensePlanned, 0)  : null;
+    const deptRemainingSum = allMatched ? departments.reduce((s,d) => s + d.remainingBudget, 0) : null;
     quarters.push({
       q: qNum, rows: dataRows, budgetProvided, departments,
       expensePlanned: deptExpenseSum ?? expensePlanned ?? 0,
@@ -9435,18 +9453,26 @@ function renderMktTab() {
   // ── USAGE MODE (Uso de Presupuesto por departamento) ──────
   if(mktViewMode === 'usage') {
     // Aggregate departments by LOB name across the selected quarters (a name can repeat every
-    // quarter with a different $ amount — sum when more than one quarter is selected).
+    // quarter with a different $ amount — sum when more than one quarter is selected). A
+    // department keeps `matched=true` only if EVERY quarter contributing to it found its usage
+    // column — otherwise we don't know its real usage and must not guess or partially sum it.
     const deptMap = new Map();
     for(const qObj of activeQs) {
       for(const d of (qObj.departments || [])) {
-        if(!deptMap.has(d.name)) deptMap.set(d.name, { name: d.name, allocation: 0, expensePlanned: 0, remainingBudget: 0 });
+        if(!deptMap.has(d.name)) deptMap.set(d.name, { name: d.name, allocation: 0, expensePlanned: 0, remainingBudget: 0, matched: true });
         const e = deptMap.get(d.name);
         e.allocation += d.allocation;
-        e.expensePlanned += d.expensePlanned;
-        e.remainingBudget += d.remainingBudget;
+        if(d.matched && d.expensePlanned != null && d.remainingBudget != null) {
+          e.expensePlanned += d.expensePlanned;
+          e.remainingBudget += d.remainingBudget;
+        } else {
+          e.matched = false;
+        }
       }
     }
-    const depts = Array.from(deptMap.values()).sort((a,b) => b.allocation - a.allocation);
+    const depts = Array.from(deptMap.values())
+      .map(d => ({ ...d, expensePlanned: d.matched ? d.expensePlanned : null, remainingBudget: d.matched ? d.remainingBudget : null }))
+      .sort((a,b) => b.allocation - a.allocation);
 
     if(!depts.length) {
       wrap.innerHTML = summaryHtml + `<div style="font-size:13px;color:var(--text3);padding:2rem;text-align:center">
@@ -9455,9 +9481,25 @@ function renderMktTab() {
     }
 
     const grandTotal = depts.reduce((s,d) => s + d.allocation, 0) || 1;
+    const unmatched = depts.filter(d => !d.matched);
+    const matchedDepts = depts.filter(d => d.matched);
+
+    const warningHtml = unmatched.length ? `<div style="margin-bottom:1rem;padding:10px 14px;background:rgba(235,203,139,0.1);border:0.5px solid rgba(235,203,139,0.3);border-radius:8px;font-size:12px;color:var(--text2)">
+      <i class="ti ti-alert-triangle" style="color:#EBCB8B;margin-right:6px"></i>
+      No pude encontrar la columna de uso para: <b>${unmatched.map(d=>esc(d.name)).join(', ')}</b> — revisá que el nombre en el cuadro de departamentos (LOB) coincida con el encabezado de su columna en la solapa. Quedan marcados como "sin datos" y no entran en los totales de uso.
+    </div>` : '';
 
     const rowsHtml = depts.map(d => {
       const pctOfTotal = d.allocation / grandTotal * 100;
+      if(!d.matched) {
+        return `<tr>
+          <td style="font-weight:500">${esc(d.name)}</td>
+          <td style="text-align:right">${fmtAmt(d.allocation)}</td>
+          <td style="text-align:right;color:var(--text3)">${pctOfTotal.toFixed(1)}%</td>
+          <td colspan="4" style="text-align:center;color:var(--text3);font-style:italic">sin datos de uso</td>
+          <td></td>
+        </tr>`;
+      }
       const pctUsed = d.allocation > 0 ? (d.expensePlanned / d.allocation * 100) : 0;
       const pctRem = d.allocation > 0 ? (d.remainingBudget / d.allocation * 100) : 0;
       const barColor = pctUsed >= 99.5 ? '#BF616A' : pctUsed >= 75 ? '#EBCB8B' : 'var(--green-text)';
@@ -9477,13 +9519,15 @@ function renderMktTab() {
       </tr>`;
     }).join('');
 
-    const totalExp = depts.reduce((s,d)=>s+d.expensePlanned,0);
-    const totalRem = depts.reduce((s,d)=>s+d.remainingBudget,0);
+    const totalExp = matchedDepts.reduce((s,d)=>s+d.expensePlanned,0);
+    const totalRem = matchedDepts.reduce((s,d)=>s+d.remainingBudget,0);
+    const matchedTotal = matchedDepts.reduce((s,d)=>s+d.allocation,0) || 1;
 
     // Narrative summary — group by the first word of the LOB name (CND, GNP, AMD, DP, NVIDIA, CORP…)
     // so "CND CUST Regular/Extra" + "CND S&D Regular/Extra" + "CND Corp" roll up into one "CND" line.
+    // Only built from matched departments — unmatched ones are called out in the warning instead.
     const groupMap = new Map();
-    depts.forEach(d => {
+    matchedDepts.forEach(d => {
       const key = d.name.split(/\s+/)[0].toUpperCase();
       if(!groupMap.has(key)) groupMap.set(key, { key, allocation:0, expensePlanned:0, remainingBudget:0 });
       const g = groupMap.get(key);
@@ -9499,10 +9543,10 @@ function renderMktTab() {
       return `El área de <b>${esc(g.key)}</b> nos facilitó ${fmtAmt(g.allocation)}, el ${pctTotal}% del presupuesto de ${qLabel}. Estamos utilizando el ${pctUsed}%, y queda ${fmtAmt(g.remainingBudget)} en reserva para futuras actividades.`;
     }).join('<br><br>');
 
-    wrap.innerHTML = summaryHtml + `
+    wrap.innerHTML = summaryHtml + warningHtml + `
       <div class="ai-box" style="margin-bottom:1rem">
         <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-file-text"></i> Resumen</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.6">${narrative}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6">${narrative || 'Sin departamentos con datos de uso completos.'}</div>
       </div>
       <div class="table-scroll"><table class="data-table" style="font-size:12px">
         <thead><tr>
@@ -9512,9 +9556,9 @@ function renderMktTab() {
         </tr></thead>
         <tbody>${rowsHtml}</tbody>
         <tfoot><tr style="font-weight:700;background:var(--bg3)">
-          <td>TOTAL</td><td style="text-align:right">${fmtAmt(grandTotal)}</td><td style="text-align:right">100%</td>
-          <td style="text-align:right">${fmtAmt(totalExp)}</td><td style="text-align:right">${(totalExp/grandTotal*100).toFixed(1)}%</td>
-          <td style="text-align:right">${fmtAmt(totalRem)}</td><td style="text-align:right">${(totalRem/grandTotal*100).toFixed(1)}%</td><td></td>
+          <td>TOTAL${unmatched.length?' (con datos)':''}</td><td style="text-align:right">${fmtAmt(matchedTotal)}</td><td style="text-align:right">${(matchedTotal/grandTotal*100).toFixed(1)}%</td>
+          <td style="text-align:right">${fmtAmt(totalExp)}</td><td style="text-align:right">${(totalExp/matchedTotal*100).toFixed(1)}%</td>
+          <td style="text-align:right">${fmtAmt(totalRem)}</td><td style="text-align:right">${(totalRem/matchedTotal*100).toFixed(1)}%</td><td></td>
         </tr></tfoot>
       </table></div>`;
     return;
