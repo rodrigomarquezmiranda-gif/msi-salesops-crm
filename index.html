@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.20';
+const APP_VERSION = '10.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -5899,10 +5899,16 @@ function buildSemaforoData() {
     const msLeft = _piTransitExpiresInMs(pi);
     const isExpiring = msLeft < 24 * 3600000 && msLeft !== Infinity;
     if(isExpiring) transitData[dk].expiringPIs.push(pi);
-    const srcItems = (pi.invoiceItems && pi.invoiceItems.length > 0)
-      ? pi.invoiceItems
-      : (pi.lineItems && pi.lineItems.length > 0 ? pi.lineItems : null);
-    if(srcItems) {
+    // Union of both sources (not either/or): invoiceItems and lineItems can be updated
+    // independently (uploading the PI PDF only refreshes lineItems, uploading the Invoice
+    // only refreshes invoiceItems), so one can go stale while the other has the correct,
+    // more complete data. Merging both means a model is never hidden just because the
+    // other source happened to be uploaded more recently or with fewer items.
+    const srcItems = [
+      ...(pi.invoiceItems && pi.invoiceItems.length > 0 ? pi.invoiceItems : []),
+      ...(pi.lineItems && pi.lineItems.length > 0 ? pi.lineItems : [])
+    ];
+    if(srcItems.length > 0) {
       srcItems.forEach(li => {
         const k = extractMSIModelKey(li.marketingName || li.model || li.itemCode || '');
         if(k) {
