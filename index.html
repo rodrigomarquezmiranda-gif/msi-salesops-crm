@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.17';
+const APP_VERSION = '09.09.26.19';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -2977,6 +2977,13 @@ const _SEMAFORO_NOISE = new Set([
   'COOLER','WATERCOOLER','WATERCOOLING','WATER','COOLING','AIO','WC','AIR',
   'BOX','ALL','SERIES','SERIE',
   'BAREBONE','FICHA','USA','RAM','SATA',  // config/spec noise
+  'NB',                                   // Non-Box/Bulk packaging marker (see _isNBVariant, used
+                                           // separately in Comparador de Rotación to exclude bulk rows
+                                           // from rotation comparisons — NOT touched here). For Semáforo
+                                           // model-key matching, models sold only as bulk (e.g. A520M-A
+                                           // PRO) need MSI's plain invoice name ("A520M-A PRO") to match
+                                           // the canonical bulk-suffixed price-list name ("...M-ATX NB"),
+                                           // so NB is treated as noise here — display text is unaffected.
   'MODULAR',                              // PSU descriptor
   'MAG',                                 // MSI tier prefix (omitted by some distributors)
   'BLACK',                               // default color (inconsistently included)

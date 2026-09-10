@@ -1,6 +1,6 @@
 // MSI SalesOps CRM — Service Worker
 // Cache name includes version — changing it forces old cache eviction on next activate.
-const CACHE = 'salesops-09.09.26.17';
+const CACHE = 'salesops-09.09.26.19';
 const SHELL = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-apple.png', './favicon.svg', './favicon.png'];
 
 self.addEventListener('install', e => {
