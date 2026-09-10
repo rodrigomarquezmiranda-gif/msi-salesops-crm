@@ -1484,7 +1484,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '09.09.26.19';
+const APP_VERSION = '09.09.26.20';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -3264,8 +3264,11 @@ function pdfDateToISO(s) {
   return m ? `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}` : null;
 }
 const COO_LIST = ['VIETNAM','CHINA','INDIA','TAIWAN','U\\.S\\.A\\.?','USA','MEXICO','PHILIPPINES','MALAYSIA','INDONESIA','THAILAND','KOREA','JAPAN','GERMANY','POLAND','BRAZIL','CZECH REPUBLIC'];
-const PI_ITEM_RE_STRICT = new RegExp('^(\\S+)\\s+(.+?)\\s+(' + COO_LIST.join('|') + ')\\s+(\\d+)\\s+(\\d+)\\s+Tax\\s+(\\d+)%\\s+([\\d,]+\\.\\d{2})\\s+([\\d,]+\\.\\d{2})\\s+\\d+\\s*$', 'i');
-const PI_ITEM_RE_FALLBACK = /^(\S+)\s+(.+?)\s+(\d+)\s+(\d+)\s+Tax\s+(\d+)%\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+\d+\s*$/i;
+// Ordered/Shipped qty groups use [\d,]+ (not \d+) — items with qty >= 1,000 (e.g. "3,060")
+// render with a thousands separator in the PDF and would otherwise fail to match, silently
+// dropping the whole line item (this caused A520M-A PRO, qty 3,060, to vanish from a PI).
+const PI_ITEM_RE_STRICT = new RegExp('^(\\S+)\\s+(.+?)\\s+(' + COO_LIST.join('|') + ')\\s+([\\d,]+)\\s+([\\d,]+)\\s+Tax\\s+(\\d+)%\\s+([\\d,]+\\.\\d{2})\\s+([\\d,]+\\.\\d{2})\\s+\\d+\\s*$', 'i');
+const PI_ITEM_RE_FALLBACK = /^(\S+)\s+(.+?)\s+([\d,]+)\s+([\d,]+)\s+Tax\s+(\d+)%\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+\d+\s*$/i;
 function parsePILineItems(lines) {
   // Detect header — "Item Code" and "Marketing Name" may be on the same line (normal PDFs)
   // or on separate consecutive lines (column-per-line PDFs like SMART CENTER PI).
@@ -3292,13 +3295,13 @@ function parsePILineItems(lines) {
     let m = l.match(PI_ITEM_RE_STRICT);
     if(m) {
       let name = m[2].trim().replace(/\s*\bCOO\b\s*.*$/i,'').replace(/\s*\b(?:Ordered|Shipped|Unit\s+Price|Amount)\b.*$/i,'').trim();
-      items.push({ itemCode:m[1], marketingName:name, coo:m[3].trim(), ordered:parseInt(m[4]), unitPrice:parseFloat(m[7].replace(/,/g,'')), amount:parseFloat(m[8].replace(/,/g,'')) });
+      items.push({ itemCode:m[1], marketingName:name, coo:m[3].trim(), ordered:parseInt(m[4].replace(/,/g,'')), unitPrice:parseFloat(m[7].replace(/,/g,'')), amount:parseFloat(m[8].replace(/,/g,'')) });
       continue;
     }
     m = l.match(PI_ITEM_RE_FALLBACK);
     if(m) {
       let name = m[2].trim().replace(/\s*\bCOO\b\s*.*$/i,'').replace(/\s*\b(?:Ordered|Shipped|Unit\s+Price|Amount)\b.*$/i,'').trim();
-      items.push({ itemCode:m[1], marketingName:name, coo:'', ordered:parseInt(m[3]), unitPrice:parseFloat(m[6].replace(/,/g,'')), amount:parseFloat(m[7].replace(/,/g,'')) });
+      items.push({ itemCode:m[1], marketingName:name, coo:'', ordered:parseInt(m[3].replace(/,/g,'')), unitPrice:parseFloat(m[6].replace(/,/g,'')), amount:parseFloat(m[7].replace(/,/g,'')) });
     }
   }
   if(items.length > 0) return items;
@@ -3329,15 +3332,15 @@ function parsePILineItems(lines) {
       case 'name': p.marketingName = l; p._st = 'coo'; break;
       case 'coo':
         if(COO_DETECT.test(l))         { p.coo = l.toUpperCase(); p._st = 'qty'; }
-        else if(/^\d+$/.test(l))       { p.ordered = parseInt(l); p._st = 'shipped'; }
+        else if(/^[\d,]+$/.test(l))    { p.ordered = parseInt(l.replace(/,/g,'')); p._st = 'shipped'; }
         else if(/^Tax\s+\d+%$/i.test(l)){ p._st = 'price'; }
         // else: noise label — skip
         break;
       case 'qty':
-        if(/^\d+$/.test(l)) { p.ordered = parseInt(l); p._st = 'shipped'; }
+        if(/^[\d,]+$/.test(l)) { p.ordered = parseInt(l.replace(/,/g,'')); p._st = 'shipped'; }
         break;
       case 'shipped':
-        if(/^\d+$/.test(l)) p._st = 'tax';
+        if(/^[\d,]+$/.test(l)) p._st = 'tax';
         break;
       case 'tax':
         if(/^Tax\s+\d+%$/i.test(l)) p._st = 'price';
@@ -3443,11 +3446,11 @@ function parseInvoiceLineItems(lines) {
         // (PDF columns: ItemCode | Marketing Name | Qty — all at same Y).
         // e.g. "S10-43G0170-EC4 FORCE GC30 V2 150" → name="FORCE GC30 V2", qty=150
         const afterCode = l.slice(codePos + firstToken.length).trim();
-        const trailingQty = afterCode.match(/^(.*?)\s+(\d{1,5})\s*$/);
+        const trailingQty = afterCode.match(/^(.*?)\s+([\d,]{1,7})\s*$/);
         if(trailingQty && !/[A-Z]/.test(trailingQty[2])) {
-          // Last token is a pure integer — treat as qty
+          // Last token is a pure integer (comma-thousands allowed) — treat as qty
           marketingName = trailingQty[1].split(/\s{2,}/)[0].trim();
-          qtyShipped = parseInt(trailingQty[2]);
+          qtyShipped = parseInt(trailingQty[2].replace(/,/g,''));
         } else {
           marketingName = afterCode.split(/\s{2,}/)[0].trim();
         }
