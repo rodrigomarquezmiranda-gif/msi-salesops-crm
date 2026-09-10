@@ -1286,10 +1286,11 @@
       </div>
     </div>
     <div style="overflow-x:auto;margin:4px 0 10px;position:relative">
-      <table class="data-table" id="ob-table" style="min-width:620px">
+      <table class="data-table" id="ob-table" style="min-width:700px">
         <thead>
           <tr>
             <th style="width:72px;text-align:center">Cant.</th>
+            <th style="width:100px;text-align:center">Caja / Palet</th>
             <th>Modelo</th>
             <th style="width:112px;text-align:right">Precio USD</th>
             <th>Remark</th>
@@ -1484,7 +1485,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '10.09.26.1';
+const APP_VERSION = '10.09.26.2';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -5493,6 +5494,9 @@ function _renderObRows() {
           onchange="_obUpdateQty(${i},this.value)"
           style="width:62px;padding:5px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-size:12px;text-align:center" />
       </td>
+      <td style="padding:5px 6px;text-align:center;font-size:11px;color:var(--text3);white-space:nowrap">
+        ${row.qtyCtn || row.qtyPlt ? `<div>Caja: ${row.qtyCtn ?? '—'}</div><div>Palet: ${row.qtyPlt ?? '—'}</div>` : '—'}
+      </td>
       <td style="padding:5px 6px">
         <input type="text" value="${esc(row.desc||'')}" placeholder="Buscar modelo..." autocomplete="off"
           oninput="_obShowSuggest(${i},this)" onblur="_obHideSuggest()"
@@ -5517,7 +5521,7 @@ function _renderObRows() {
 
   const tfoot = document.getElementById('ob-footer');
   tfoot.innerHTML = total > 0 ? `<tr>
-    <td colspan="4" style="text-align:right;font-size:12px;font-weight:600;letter-spacing:.5px;padding:8px 10px 4px;border-top:1px solid var(--border2);color:var(--text3)">TOTAL</td>
+    <td colspan="5" style="text-align:right;font-size:12px;font-weight:600;letter-spacing:.5px;padding:8px 10px 4px;border-top:1px solid var(--border2);color:var(--text3)">TOTAL</td>
     <td style="text-align:right;font-size:14px;font-weight:700;color:var(--brand,#FF6600);padding:8px 10px 4px;border-top:1px solid var(--border2)">${fmtUSD(total)}</td>
     <td style="border-top:1px solid var(--border2)"></td>
   </tr>` : '';
