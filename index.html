@@ -1013,6 +1013,7 @@
           <div id="mkt-q-pills" style="display:flex;gap:6px;flex-wrap:wrap"></div>
           <div style="margin-left:auto;display:flex;gap:6px">
             <button type="button" class="filter-pill active" id="mkt-btn-charts" onclick="setMktViewMode('charts')"><i class="ti ti-chart-pie-2"></i> Por Categoría</button>
+            <button type="button" class="filter-pill" id="mkt-btn-usage" onclick="setMktViewMode('usage')"><i class="ti ti-building-bank"></i> Uso de Presupuesto</button>
             <button type="button" class="filter-pill" id="mkt-btn-compare" onclick="setMktViewMode('compare')"><i class="ti ti-arrows-diff"></i> Comparativa Q vs Q</button>
           </div>
         </div>
@@ -1485,7 +1486,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '10.09.26.2';
+const APP_VERSION = '10.09.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9034,7 +9035,7 @@ const MKT_SLICE_COLORS = [
 
 let mktSelectedQs = new Set([1, 2, 3]);
 let mktExpandedTerm = null;
-let mktViewMode = 'charts'; // 'charts' | 'compare'
+let mktViewMode = 'charts'; // 'charts' | 'usage' | 'compare'
 
 function _mktClean(raw) {
   if(raw == null) return '';
@@ -9049,6 +9050,28 @@ function _mktFindHeaderRow(rows) {
     }
   }
   return null;
+}
+
+// Identifies summary rows in the per-department usage block (below the main activity table) —
+// labels can sit in any column (the block isn't at a fixed row/col across quarter tabs), so we
+// scan every cell of the row for the label text instead of assuming a fixed offset.
+function _mktRowLabel(row) {
+  for(let c = 0; c < row.length; c++) {
+    const v = row[c];
+    if(v && typeof v === 'string') {
+      const s = v.trim().toLowerCase();
+      if(s.includes('expense planned')) return 'expensePlanned';
+      if(s.includes('remaining budget') || s.includes('remaing budget')) return 'remainingBudget';
+      if(s.includes('budget provided')) return 'budgetProvided';
+      if(s.includes('budget number')) return 'budgetNumber';
+    }
+  }
+  return null;
+}
+function _mktNum(v) {
+  if(v == null) return 0;
+  if(typeof v === 'number') return v;
+  return parseFloat(String(v).replace(/[^0-9.\-]/g, '')) || 0;
 }
 
 function parseMktBudgetFile(wb) {
@@ -9068,14 +9091,54 @@ function parseMktBudgetFile(wb) {
     const totalCol = header.findIndex(v => v && String(v).toLowerCase().includes('total amount'));
     if(totalCol === -1) continue;
 
-    // Parse budget header (rows before the main table) — use the "Total" row value
+    // Parse budget header (rows before the main table): per-department allocation (LOB name,
+    // $ amount, budget number) plus the overall "Total" row. Row order here matches the column
+    // order of the department columns below 1:1 (confirmed against real files), so we zip them
+    // by position further down rather than trying to fuzzy-match names.
     let budgetProvided = 0;
+    const deptTable = [];
     for(let i = 0; i < headerIdx; i++) {
       const row = rows[i] || [];
-      const lob = String(row[0] || '').trim().toUpperCase();
+      const lobRaw = row[0];
+      const lob = String(lobRaw || '').trim();
+      if(!lob || lob.toUpperCase() === 'LOB') continue;
       const val = row[1];
-      if(lob === 'TOTAL' && typeof val === 'number') { budgetProvided = val; break; }
+      if(lob.toUpperCase() === 'TOTAL') { if(typeof val === 'number' || val != null) budgetProvided = _mktNum(val); continue; }
+      const allocNum = _mktNum(val);
+      if(!allocNum) continue;
+      deptTable.push({ name: lob, allocation: allocNum, budgetNumber: row[2] != null ? String(row[2]).trim() : '' });
     }
+
+    // Department usage columns run from right after "Intel POE" up to (not including) the
+    // "Total amount" column. Header labels here are the short names (CND-CUST, GNP, AMD CAP…).
+    const deptColStart = mktCol + 6;
+    const deptCols = [];
+    for(let c = deptColStart; c < totalCol; c++) {
+      const label = header[c] != null ? String(header[c]).trim() : '';
+      if(label) deptCols.push({ col: c, name: label });
+    }
+
+    // Locate the "Expense planned / Remaining budget / Budget provided" summary rows — they can
+    // be anywhere below the activity table and their label can sit in any column, so scan by text.
+    let expenseRow = null, remainingRow = null, providedRow = null;
+    for(let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i] || [];
+      const label = _mktRowLabel(row);
+      if(label === 'expensePlanned' && !expenseRow) expenseRow = row;
+      else if(label === 'remainingBudget' && !remainingRow) remainingRow = row;
+      else if(label === 'budgetProvided' && !providedRow) providedRow = row;
+    }
+
+    // Merge the two blocks by position (deptTable row i ↔ deptCols[i]) into one department list
+    // with allocation, expense planned, remaining and % — used by the "Uso de Presupuesto" view.
+    const departments = deptTable.map((d, i) => {
+      const dc = deptCols[i];
+      const exp  = dc && expenseRow   ? _mktNum(expenseRow[dc.col])   : 0;
+      const rem  = dc && remainingRow ? _mktNum(remainingRow[dc.col]) : Math.max(0, d.allocation - exp);
+      const prov = dc && providedRow  ? _mktNum(providedRow[dc.col])  : d.allocation;
+      return { name: d.name, columnName: dc ? dc.name : d.name, allocation: d.allocation, budgetNumber: d.budgetNumber,
+        expensePlanned: exp, remainingBudget: rem, budgetProvided: prov || d.allocation };
+    });
 
     const dataRows = [];
     let currentTerm = null;
@@ -9103,7 +9166,15 @@ function parseMktBudgetFile(wb) {
       const activity = _mktClean(row[activityCol]);
       dataRows.push({ term: currentTerm, customer, activity, total });
     }
-    quarters.push({ q: qNum, rows: dataRows, budgetProvided, expensePlanned: expensePlanned ?? 0, remainingBudget: remainingBudget ?? 0 });
+    // Prefer sums straight from the per-department rows when we found them — more reliable
+    // than the old heuristic (first two unlabeled total-only rows after the activity table).
+    const deptExpenseSum   = departments.length ? departments.reduce((s,d) => s + d.expensePlanned, 0)   : null;
+    const deptRemainingSum = departments.length ? departments.reduce((s,d) => s + d.remainingBudget, 0)  : null;
+    quarters.push({
+      q: qNum, rows: dataRows, budgetProvided, departments,
+      expensePlanned: deptExpenseSum ?? expensePlanned ?? 0,
+      remainingBudget: deptRemainingSum ?? remainingBudget ?? 0
+    });
   }
   return quarters.sort((a, b) => a.q - b.q);
 }
@@ -9179,6 +9250,7 @@ function _mktBuildDonut(slices) {
 function setMktViewMode(mode) {
   mktViewMode = mode;
   document.getElementById('mkt-btn-charts')?.classList.toggle('active', mode === 'charts');
+  document.getElementById('mkt-btn-usage')?.classList.toggle('active', mode === 'usage');
   document.getElementById('mkt-btn-compare')?.classList.toggle('active', mode === 'compare');
   renderMktTab();
 }
@@ -9206,6 +9278,7 @@ function renderMktTab() {
 
   // View mode toggle sync
   document.getElementById('mkt-btn-charts')?.classList.toggle('active', mktViewMode === 'charts');
+  document.getElementById('mkt-btn-usage')?.classList.toggle('active', mktViewMode === 'usage');
   document.getElementById('mkt-btn-compare')?.classList.toggle('active', mktViewMode === 'compare');
 
   if(!data) {
@@ -9317,6 +9390,94 @@ function renderMktTab() {
         <tbody>${bodyRows}</tbody>
         <tfoot><tr style="font-weight:700;background:var(--bg3)">
           <td>TOTAL</td>${totalCells}${totalDeltas.join('')}<td style="text-align:right;color:var(--brand-text)">${fmtAmt(overallTotal)}</td>
+        </tr></tfoot>
+      </table></div>`;
+    return;
+  }
+
+  // ── USAGE MODE (Uso de Presupuesto por departamento) ──────
+  if(mktViewMode === 'usage') {
+    // Aggregate departments by LOB name across the selected quarters (a name can repeat every
+    // quarter with a different $ amount — sum when more than one quarter is selected).
+    const deptMap = new Map();
+    for(const qObj of activeQs) {
+      for(const d of (qObj.departments || [])) {
+        if(!deptMap.has(d.name)) deptMap.set(d.name, { name: d.name, allocation: 0, expensePlanned: 0, remainingBudget: 0 });
+        const e = deptMap.get(d.name);
+        e.allocation += d.allocation;
+        e.expensePlanned += d.expensePlanned;
+        e.remainingBudget += d.remainingBudget;
+      }
+    }
+    const depts = Array.from(deptMap.values()).sort((a,b) => b.allocation - a.allocation);
+
+    if(!depts.length) {
+      wrap.innerHTML = summaryHtml + `<div style="font-size:13px;color:var(--text3);padding:2rem;text-align:center">
+        No se pudo leer el cuadro de departamentos (LOB) ni el desglose de uso por columna en este archivo — puede ser un formato de solapa distinto al esperado.</div>`;
+      return;
+    }
+
+    const grandTotal = depts.reduce((s,d) => s + d.allocation, 0) || 1;
+
+    const rowsHtml = depts.map(d => {
+      const pctOfTotal = d.allocation / grandTotal * 100;
+      const pctUsed = d.allocation > 0 ? (d.expensePlanned / d.allocation * 100) : 0;
+      const pctRem = d.allocation > 0 ? (d.remainingBudget / d.allocation * 100) : 0;
+      const barColor = pctUsed >= 99.5 ? '#BF616A' : pctUsed >= 75 ? '#EBCB8B' : 'var(--green-text)';
+      return `<tr>
+        <td style="font-weight:500">${esc(d.name)}</td>
+        <td style="text-align:right">${fmtAmt(d.allocation)}</td>
+        <td style="text-align:right;color:var(--text3)">${pctOfTotal.toFixed(1)}%</td>
+        <td style="text-align:right">${fmtAmt(d.expensePlanned)}</td>
+        <td style="text-align:right;color:${barColor}">${pctUsed.toFixed(1)}%</td>
+        <td style="text-align:right">${fmtAmt(d.remainingBudget)}</td>
+        <td style="text-align:right;color:var(--text3)">${pctRem.toFixed(1)}%</td>
+        <td style="min-width:80px">
+          <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden">
+            <div style="width:${Math.min(100,pctUsed).toFixed(1)}%;height:100%;background:${barColor}"></div>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    const totalExp = depts.reduce((s,d)=>s+d.expensePlanned,0);
+    const totalRem = depts.reduce((s,d)=>s+d.remainingBudget,0);
+
+    // Narrative summary — group by the first word of the LOB name (CND, GNP, AMD, DP, NVIDIA, CORP…)
+    // so "CND CUST Regular/Extra" + "CND S&D Regular/Extra" + "CND Corp" roll up into one "CND" line.
+    const groupMap = new Map();
+    depts.forEach(d => {
+      const key = d.name.split(/\s+/)[0].toUpperCase();
+      if(!groupMap.has(key)) groupMap.set(key, { key, allocation:0, expensePlanned:0, remainingBudget:0 });
+      const g = groupMap.get(key);
+      g.allocation += d.allocation; g.expensePlanned += d.expensePlanned; g.remainingBudget += d.remainingBudget;
+    });
+    const groups = Array.from(groupMap.values()).sort((a,b) => b.allocation - a.allocation);
+    const narrative = groups.map(g => {
+      const pctTotal = (g.allocation/grandTotal*100).toFixed(0);
+      const pctUsed = g.allocation>0 ? (g.expensePlanned/g.allocation*100).toFixed(0) : '0';
+      if(g.remainingBudget <= 0.01) {
+        return `El área de <b>${esc(g.key)}</b> nos facilitó ${fmtAmt(g.allocation)} (${pctTotal}% del presupuesto de ${qLabel}) y ya lo tenemos completamente agotado.`;
+      }
+      return `El área de <b>${esc(g.key)}</b> nos facilitó ${fmtAmt(g.allocation)}, el ${pctTotal}% del presupuesto de ${qLabel}. Estamos utilizando el ${pctUsed}%, y queda ${fmtAmt(g.remainingBudget)} en reserva para futuras actividades.`;
+    }).join('<br><br>');
+
+    wrap.innerHTML = summaryHtml + `
+      <div class="ai-box" style="margin-bottom:1rem">
+        <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-file-text"></i> Resumen</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.6">${narrative}</div>
+      </div>
+      <div class="table-scroll"><table class="data-table" style="font-size:12px">
+        <thead><tr>
+          <th>Departamento</th><th style="text-align:right">Asignado</th><th style="text-align:right">% del total</th>
+          <th style="text-align:right">Usado</th><th style="text-align:right">% usado</th>
+          <th style="text-align:right">Sobra</th><th style="text-align:right">% sobra</th><th></th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot><tr style="font-weight:700;background:var(--bg3)">
+          <td>TOTAL</td><td style="text-align:right">${fmtAmt(grandTotal)}</td><td style="text-align:right">100%</td>
+          <td style="text-align:right">${fmtAmt(totalExp)}</td><td style="text-align:right">${(totalExp/grandTotal*100).toFixed(1)}%</td>
+          <td style="text-align:right">${fmtAmt(totalRem)}</td><td style="text-align:right">${(totalRem/grandTotal*100).toFixed(1)}%</td><td></td>
         </tr></tfoot>
       </table></div>`;
     return;
