@@ -19,7 +19,7 @@
     "name": "GeForce RTX 5090 32G SUPRIM LIQUID SOC",
     "category": "VGA",
     "miamiStock": 0,
-    "miamiPrice": 4250.0,
+    "miamiPrice": 4350.0,
     "miamiEta": "",
     "bondedStock": 0
   },
@@ -27,7 +27,7 @@
     "name": "GeForce RTX 5090 32G SUPRIM SOC",
     "category": "VGA",
     "miamiStock": 0,
-    "miamiPrice": 4150.0,
+    "miamiPrice": 4250.0,
     "miamiEta": "",
     "bondedStock": 0
   },
@@ -35,7 +35,7 @@
     "name": "GeForce RTX 5090 32G GAMING TRIO OC",
     "category": "VGA",
     "miamiStock": 0,
-    "miamiPrice": 4050.0,
+    "miamiPrice": 4150.0,
     "miamiEta": "",
     "bondedStock": 0
   },
@@ -43,7 +43,7 @@
     "name": "GeForce RTX 5090 32G VENTUS 3X OC",
     "category": "VGA",
     "miamiStock": 0,
-    "miamiPrice": 3900.0,
+    "miamiPrice": 4000.0,
     "miamiEta": "",
     "bondedStock": 0
   },
@@ -60,14 +60,6 @@
     "category": "VGA",
     "miamiStock": 0,
     "miamiPrice": 1565.0,
-    "miamiEta": "",
-    "bondedStock": 0
-  },
-  "G5080-16V3CW": {
-    "name": "GeForce RTX 5080 16G VENTUS 3X OC WHITE",
-    "category": "VGA",
-    "miamiStock": 0,
-    "miamiPrice": 1510.0,
     "miamiEta": "",
     "bondedStock": 0
   },
@@ -1274,7 +1266,7 @@
   "MPG491CQPXQD-OLED": {
     "name": "MPG 491CQPX QD-OLED",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 15,
+    "miamiStock": 9,
     "miamiPrice": 891.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1330,7 +1322,7 @@
   "MAG271QPXQDOLED": {
     "name": "MAG 271QPX QD-OLED",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 160,
+    "miamiStock": 96,
     "miamiPrice": 542.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1338,7 +1330,7 @@
   "MAG271QPQDOLEDX28": {
     "name": "MAG 271QP QD-OLED X28",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 64,
+    "miamiStock": 32,
     "miamiPrice": 494.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1402,7 +1394,7 @@
   "MAG275UPDE14": {
     "name": "MAG 275UPD E14",
     "category": "4K Monitors - Gaming",
-    "miamiStock": 228,
+    "miamiStock": 38,
     "miamiPrice": 198.0,
     "miamiEta": "ETA 10/26 798 pcs",
     "bondedStock": 0
@@ -1418,7 +1410,7 @@
   "MAG274CQPDFX32": {
     "name": "MAG 274CQPDF X32",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 76,
+    "miamiStock": 108,
     "miamiPrice": 192.0,
     "miamiEta": "ETA 09/25 456 pcs + ETA 09/30 114 pcs",
     "bondedStock": 0
@@ -1426,7 +1418,7 @@
   "MAG274QPFX32": {
     "name": "MAG 274QPF X32",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 428,
+    "miamiStock": 542,
     "miamiPrice": 192.0,
     "miamiEta": "ETA 10/08 152 pcs + ETA 10/26 798 pcs",
     "bondedStock": 0
@@ -1466,7 +1458,7 @@
   "MAG32C6X": {
     "name": "MAG 32C6X",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 333,
+    "miamiStock": 237,
     "miamiPrice": 149.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1482,7 +1474,7 @@
   "MAG274CFX24": {
     "name": "MAG 274CF X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 948,
+    "miamiStock": 994,
     "miamiPrice": 115.0,
     "miamiEta": "",
     "bondedStock": 554
@@ -1498,7 +1490,7 @@
   "MAG272FX24": {
     "name": "MAG 272F X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 489,
+    "miamiStock": 435,
     "miamiPrice": 125.0,
     "miamiEta": "ETA 09/25 54pcs",
     "bondedStock": 0
@@ -1514,7 +1506,7 @@
   "MAG272F": {
     "name": "MAG 272F",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 0,
+    "miamiStock": 324,
     "miamiPrice": 112.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1522,7 +1514,7 @@
   "MAG255FX24": {
     "name": "MAG 255F X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 108,
+    "miamiStock": 38,
     "miamiPrice": 102.0,
     "miamiEta": "ETA 09/06 1470pcs + ETA 10/01 70pcs + ETA 10/22 700pcs",
     "bondedStock": 0
@@ -1530,7 +1522,7 @@
   "MAG245PFX24": {
     "name": "MAG 245PF X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 887,
+    "miamiStock": 1503,
     "miamiPrice": 108.0,
     "miamiEta": "ETA 09/07 616pcs",
     "bondedStock": 0
@@ -1538,7 +1530,7 @@
   "MAG245FX24": {
     "name": "MAG 245F X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 60,
+    "miamiStock": 700,
     "miamiPrice": 102.0,
     "miamiEta": "ETA 09/07 800pcs + 09/28 480pcs + 10/22 480pcs",
     "bondedStock": 0
@@ -1554,7 +1546,7 @@
   "MAG245CX24": {
     "name": "MAG 245C X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 0,
+    "miamiStock": 140,
     "miamiPrice": 102.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1562,7 +1554,7 @@
   "G242LE14": {
     "name": "G242L E14",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 0,
+    "miamiStock": 320,
     "miamiPrice": 70.0,
     "miamiEta": "ETA 09/25 640pcs + ETA 10/22 960pcs + ETA 10/23 160pcs",
     "bondedStock": 0
@@ -1586,7 +1578,7 @@
   "PROMAX271QPX14G": {
     "name": "PRO MAX 271QPX14G",
     "category": "PRO MAX",
-    "miamiStock": 2,
+    "miamiStock": 44,
     "miamiPrice": 326.0,
     "miamiEta": "Pedir para Transferir a Miami",
     "bondedStock": 0
@@ -1650,7 +1642,7 @@
   "PROMP271E14A": {
     "name": "PRO MP271 E14A",
     "category": "PRO MNT 27\" Flat",
-    "miamiStock": 24,
+    "miamiStock": 1209,
     "miamiPrice": 87.0,
     "miamiEta": "ETA 09/11 1134pcs",
     "bondedStock": 1096
@@ -1690,7 +1682,7 @@
   "PROMP245PGE14": {
     "name": "PRO MP245PG E14",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 0,
+    "miamiStock": 64,
     "miamiPrice": 84.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1722,7 +1714,7 @@
   "ProMP225E12VL": {
     "name": "PRO MP225 E12VL",
     "category": "PRO MNT 22\"/16\" Flat",
-    "miamiStock": 1625,
+    "miamiStock": 95,
     "miamiPrice": 55.0,
     "miamiEta": "ETA 09/10 1890pcs +  ETA 09/27 1890pcs",
     "bondedStock": 0
@@ -1762,7 +1754,7 @@
   "MPGMT201DRV2": {
     "name": "MPG MT201DR V2",
     "category": "Monitor ARM",
-    "miamiStock": 63,
+    "miamiStock": 59,
     "miamiPrice": 128.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1770,7 +1762,7 @@
   "MPGMT201RV2": {
     "name": "MPG MT201R V2",
     "category": "Monitor ARM",
-    "miamiStock": 72,
+    "miamiStock": 69,
     "miamiPrice": 104.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1778,7 +1770,7 @@
   "MPGMT161DR": {
     "name": "MPG MT161DR",
     "category": "Monitor ARM",
-    "miamiStock": 25,
+    "miamiStock": 21,
     "miamiPrice": 95.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1786,7 +1778,7 @@
   "MPGMT161R": {
     "name": "MPG MT161R",
     "category": "Monitor ARM",
-    "miamiStock": 50,
+    "miamiStock": 47,
     "miamiPrice": 70.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1794,7 +1786,7 @@
   "MAGMT201DW": {
     "name": "MAG MT201DW",
     "category": "Monitor ARM",
-    "miamiStock": 40,
+    "miamiStock": 36,
     "miamiPrice": 64.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1802,7 +1794,7 @@
   "MAGMT201W": {
     "name": "MAG MT201W",
     "category": "Monitor ARM",
-    "miamiStock": 52,
+    "miamiStock": 49,
     "miamiPrice": 49.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1810,7 +1802,7 @@
   "MAGMT201D": {
     "name": "MAG MT201D",
     "category": "Monitor ARM",
-    "miamiStock": 215,
+    "miamiStock": 193,
     "miamiPrice": 59.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1826,7 +1818,7 @@
   "MAGMT101DG": {
     "name": "MAG MT101DG",
     "category": "Monitor ARM",
-    "miamiStock": 296,
+    "miamiStock": 290,
     "miamiPrice": 35.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1834,7 +1826,7 @@
   "MAGMT101G": {
     "name": "MAG MT101G",
     "category": "Monitor ARM",
-    "miamiStock": 42,
+    "miamiStock": 36,
     "miamiPrice": 22.0,
     "miamiEta": "",
     "bondedStock": 0
