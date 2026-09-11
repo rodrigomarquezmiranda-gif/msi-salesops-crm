@@ -1486,7 +1486,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '10.09.26.6';
+const APP_VERSION = '11.09.26.2';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -3427,7 +3427,7 @@ function parseInvoiceLineItems(lines) {
       // Try to parse full row on one line:
       // [Category]  ItemCode  MarketingName  [Description]  COO  QtyShipped  Tax%  UnitPrice  Amount
       const cooMatch = l.match(new RegExp('\\b(' + COO_LIST.join('|') + ')\\b(.*)$', 'i'));
-      let marketingName = '', qtyShipped = 0, category = categoryLabel;
+      let marketingName = '', qtyShipped = 0, unitPrice = null, category = categoryLabel;
       if(cooMatch) {
         let before = l.slice(codePos + firstToken.length, cooMatch.index).trim();
         // Strip "Description" column when present.
@@ -3440,9 +3440,9 @@ function parseInvoiceLineItems(lines) {
         const after = cooMatch[2].trim();
         const parts = before.split(/\s{2,}/);
         marketingName = parts[0] || before;
-        // Match "QTY 0% PRICE" or "QTY TAX PRICE" patterns
+        // Match "QTY 0% PRICE" or "QTY TAX PRICE" patterns — group 2 is the unit price
         const nums = after.match(/([\d,]+)\s+(?:\d+\s+Tax\s+)?\d+%\s+([\d,]+\.\d{2})/i);
-        if(nums) qtyShipped = parseInt(nums[1].replace(/,/g,''));
+        if(nums) { qtyShipped = parseInt(nums[1].replace(/,/g,'')); unitPrice = parseFloat(nums[2].replace(/,/g,'')); }
       } else {
         // COO not on same line. The qty may appear as a trailing integer on this line
         // (PDF columns: ItemCode | Marketing Name | Qty — all at same Y).
@@ -3457,7 +3457,7 @@ function parseInvoiceLineItems(lines) {
           marketingName = afterCode.split(/\s{2,}/)[0].trim();
         }
       }
-      pending = { itemCode: firstToken, marketingName: marketingName.trim(), qtyShipped, category };
+      pending = { itemCode: firstToken, marketingName: marketingName.trim(), qtyShipped, unitPrice, category };
     } else if(pending) {
       // Continuation line processing.
       // Extract model-name tokens from the front of the line, stopping at Description column content
@@ -3501,7 +3501,10 @@ function parseInvoiceLineItems(lines) {
         if(cooMatch) {
           const after = cooMatch[2].trim();
           const nums = after.match(/([\d,]+)\s+(?:\d+\s+Tax\s+)?\d+%\s+([\d,]+\.\d{2})/i);
-          if(nums && !pending.qtyShipped) pending.qtyShipped = parseInt(nums[1].replace(/,/g,''));
+          if(nums) {
+            if(!pending.qtyShipped) pending.qtyShipped = parseInt(nums[1].replace(/,/g,''));
+            if(pending.unitPrice == null) pending.unitPrice = parseFloat(nums[2].replace(/,/g,''));
+          }
           items.push(pending); pending = null;
         } else if(!pending.qtyShipped) {
           // qty-only continuation (legacy format: QTY TAX% PRICE)
@@ -3826,7 +3829,8 @@ async function handleInvoicePDF(parsed, file) {
   const invoiceItems = (parsed.lineItems || []).map(li => ({
     itemCode: li.itemCode,
     marketingName: li.marketingName,
-    qtyShipped: li.qtyShipped || 0
+    qtyShipped: li.qtyShipped || 0,
+    unitPrice: li.unitPrice != null ? li.unitPrice : null
   }));
 
   let existing = piNo ? db.pi.find(x => x.name === piNo) : null;
@@ -5202,9 +5206,35 @@ fileInputPrice.addEventListener('change', e => { if(e.target.files[0]) handlePri
 function getSalesPriceRows() {
   const rows = [];
   db.pi.forEach(pi => {
+    // Only "Entregado" represents a real, closed sale at a confirmed price — a PI still
+    // "Enviado al cliente" or "Firmado" is a quote/negotiation, not a completed transaction.
+    // Once delivered, the Invoice and the PI are the same underlying sale (same status).
+    if(pi.status !== 'Entregado') return;
+    // Merge lineItems (from the PI PDF) and invoiceItems (from the Invoice PDF) — a PI created
+    // straight from an Invoice upload only ever has invoiceItems, never lineItems, and used to be
+    // invisible here entirely. Dedupe by itemCode (falling back to marketingName) so a product
+    // updated by both uploads doesn't show twice; prefer the invoiceItems price/qty when present
+    // since it reflects what was actually shipped/invoiced, falling back to lineItems otherwise.
+    const byKey = new Map();
     (pi.lineItems || []).forEach(li => {
+      const k = li.itemCode || li.marketingName;
+      if(!k) return;
+      byKey.set(k, { itemCode: li.itemCode, marketingName: li.marketingName, ordered: li.ordered, unitPrice: li.unitPrice });
+    });
+    (pi.invoiceItems || []).forEach(li => {
+      const k = li.itemCode || li.marketingName;
+      if(!k) return;
+      const prev = byKey.get(k);
+      byKey.set(k, {
+        itemCode: li.itemCode || prev?.itemCode,
+        marketingName: li.marketingName || prev?.marketingName,
+        ordered: li.qtyShipped != null ? li.qtyShipped : prev?.ordered,
+        unitPrice: li.unitPrice != null ? li.unitPrice : prev?.unitPrice
+      });
+    });
+    byKey.forEach(li => {
       rows.push({
-        date: pi.salesOrderDate || (pi.createdAt || '').slice(0,10),
+        date: pi.salesOrderDate || pi.invoiceDate || (pi.createdAt || '').slice(0,10),
         client: pi.client || '-',
         itemCode: li.itemCode,
         marketingName: li.marketingName,
