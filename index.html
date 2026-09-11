@@ -939,7 +939,7 @@
         </div>
         <div id="imports-summary"></div>
         <div id="imports-charts"></div>
-        <div class="export-row"><button class="btn" onclick="exportImportsExcel()"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</button> <button class="btn" onclick="exportImportsPDF()"><i class="ti ti-file-type-pdf" style="font-size:14px"></i> PDF</button> <button class="btn btn-primary" onclick="exportImportsFullReport()"><i class="ti ti-chart-pie" style="font-size:14px"></i> Informe completo (gráficos + trimestral)</button></div>
+        <div class="export-row"><button class="btn" onclick="exportImportsExcel()"><i class="ti ti-file-spreadsheet" style="font-size:14px"></i> Excel</button> <button class="btn" onclick="exportImportsPDF()"><i class="ti ti-file-type-pdf" style="font-size:14px"></i> PDF</button> <button class="btn btn-primary" onclick="_impShowExportModal()"><i class="ti ti-chart-pie" style="font-size:14px"></i> Exportar Análisis</button></div>
         <div id="imports-wrap"></div>
         <div id="imports-supplement" style="margin-top:1.5rem"></div>
         <div class="alert-section" style="margin-top:1.5rem">
@@ -1486,7 +1486,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '11.09.26.8';
+const APP_VERSION = '11.09.26.9';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13465,7 +13465,10 @@ function normBrandName(b) {
 function _groupImporterBrand(txs) {
   const byImporter = new Map();
   txs.forEach(t => {
-    const brand = normBrandName(t.brand) || normBrandName(t.model) || '—';
+    // normDesc (mayúsculas + espacios colapsados) evita que "GIGABYTE" y "Gigabyte " (u otra
+    // variante de mayúsculas/espacios del archivo fuente) terminen como dos columnas de marca
+    // distintas en el pivot Por Importador.
+    const brand = normDesc(normBrandName(t.brand) || normBrandName(t.model) || '—');
     if(!byImporter.has(t.importer)) byImporter.set(t.importer, { importer: t.importer, brands: new Map() });
     const im = byImporter.get(t.importer);
     im.brands.set(brand, (im.brands.get(brand)||0) + t.qty);
@@ -13696,13 +13699,16 @@ function _impGroupByQuarter(months) {
 }
 
 // Trimestral por marca: usa batch.monthly (siempre disponible).
-function computeImportsBrandQuarterly(batch) {
-  const months = batch.monthly.map(m => m.month).sort();
+// monthFilterSet opcional: si viene con elementos, solo se incluyen esos meses en la grilla.
+function computeImportsBrandQuarterly(batch, monthFilterSet) {
+  const isFiltered = monthFilterSet && monthFilterSet.size > 0;
+  const monthlyScoped = isFiltered ? batch.monthly.filter(m => monthFilterSet.has(m.month)) : batch.monthly;
+  const months = monthlyScoped.map(m => m.month).sort();
   if(!months.length) return null;
   const activeBrands = importsGlobalOnly ? batch.brands.filter(b => isGlobalBrand(b)) : batch.brands;
   const totals = {};
   activeBrands.forEach(b => totals[b] = 0);
-  batch.monthly.forEach(m => activeBrands.forEach(b => totals[b] += (m.values[b]||0)));
+  monthlyScoped.forEach(m => activeBrands.forEach(b => totals[b] += (m.values[b]||0)));
   const ranked = activeBrands.map(b => ({ brand:b, total: totals[b] })).filter(b => b.total > 0).sort((a,b) => b.total - a.total);
   const TOPN = 10;
   const top = ranked.slice(0, TOPN);
@@ -13710,7 +13716,7 @@ function computeImportsBrandQuarterly(batch) {
   const rows = top.map(b => ({ label: b.brand, byMonth:{}, total:0 }));
   const restSet = new Set(rest.map(r => r.brand));
   if(rest.length) rows.push({ label:'Otras marcas', byMonth:{}, total:0, isOther:true });
-  batch.monthly.forEach(m => {
+  monthlyScoped.forEach(m => {
     activeBrands.forEach(b => {
       const v = m.values[b] || 0;
       if(v <= 0) return;
@@ -13724,10 +13730,13 @@ function computeImportsBrandQuarterly(batch) {
 }
 
 // Trimestral por importador: requiere que las transacciones traigan etiqueta de mes por operación.
-function computeImportsImporterQuarterly(batch) {
+// monthFilterSet opcional: si viene con elementos, solo se incluyen esos meses.
+function computeImportsImporterQuarterly(batch, monthFilterSet) {
   if(!batch.transactions || !batch.transactions.length) return null;
-  const withMonth = batch.transactions.filter(t => t.month);
+  const isFiltered = monthFilterSet && monthFilterSet.size > 0;
+  let withMonth = batch.transactions.filter(t => t.month);
   if(withMonth.length < batch.transactions.length * 0.5) return null; // sin cobertura suficiente de mes → no es confiable
+  if(isFiltered) withMonth = withMonth.filter(t => monthFilterSet.has(t.month));
   const months = Array.from(new Set(withMonth.map(t => t.month))).sort();
   if(!months.length) return null;
   const byImporter = new Map();
@@ -13751,9 +13760,263 @@ function computeImportsImporterQuarterly(batch) {
   return { months, quarterGroups: _impGroupByQuarter(months), rows };
 }
 
-// Escribe una hoja completa (banner + torta + ranking + grilla trimestral) en el workbook.
+// Pivot Importador × Marca (misma data que la vista "Por Importador" en pantalla):
+// filas = importadores, columnas = top marcas, celda = % + unidades de esa marca dentro del importador.
+function computeImporterBrandPivot(batch, monthFilterSet) {
+  const importerData = computeImporterBrandBreakdown(batch, monthFilterSet);
+  if(!importerData || !importerData.length) return null;
+  const brandTotals = new Map();
+  importerData.forEach(im => im.brands.forEach(b => { brandTotals.set(b.brand, (brandTotals.get(b.brand)||0) + b.qty); }));
+  let allBrands = Array.from(brandTotals.entries()).sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+  if(importsGlobalOnly) allBrands = allBrands.filter(b => isGlobalBrand(b) || normDesc(b)==='MSI');
+  const MAX_COLS = 8;
+  const topBrands = allBrands.slice(0, MAX_COLS);
+  const hasOthers = allBrands.length > MAX_COLS;
+  const rows = importerData.map(im => {
+    const brandMap = new Map(im.brands.map(b=>[b.brand, b]));
+    const othersQty = hasOthers ? allBrands.slice(MAX_COLS).reduce((s,b)=>s+(brandMap.get(b)?.qty||0),0) : 0;
+    const cells = topBrands.map(b => brandMap.get(b) || { brand:b, qty:0, pct:0 });
+    return { importer: im.importer, totalQty: im.totalQty, cells, othersQty, othersPct: im.totalQty>0 ? othersQty/im.totalQty*100 : 0 };
+  });
+  // Participación de MSI por importador (para la torta de esta solapa)
+  const msiByImporter = importerData.map(im => {
+    const msiEntry = im.brands.find(b => normDesc(b.brand)==='MSI');
+    return { importer: im.importer, qty: msiEntry ? msiEntry.qty : 0 };
+  }).filter(x => x.qty > 0).sort((a,b) => b.qty - a.qty);
+  return { topBrands, hasOthers, rows, isEstimated: importerData._isEstimated, msiByImporter };
+}
+
+// Escala a miles de unidades (redondeado a 1 decimal) — Excel se queda con el número real,
+// no texto, para que siga siendo ordenable/filtrable.
+function _impK(n) { return (n == null) ? null : Math.round((n/1000)*10)/10; }
+
+async function _impRunExport(batch, monthFilterSet) {
+  if(!window.ExcelJS) { _alert('ExcelJS no cargó. Revisá la conexión a internet.', {type:'error'}); return; }
+  if(!batch) { toast('Elegí una categoría con datos cargados primero.'); return; }
+
+  const NAVY = 'FF1F2A44', ORANGE = 'FFFF6600', WHITE = 'FFFFFFFF', GRAY = 'FFF5F5F5', ACCENT = 'FFFFF0E6';
+  const BORDER = { top:{style:'thin',color:{argb:'FFCCCCCC'}}, left:{style:'thin',color:{argb:'FFCCCCCC'}}, bottom:{style:'thin',color:{argb:'FFCCCCCC'}}, right:{style:'thin',color:{argb:'FFCCCCCC'}} };
+  const sf = (argb) => ({ type:'pattern', pattern:'solid', fgColor:{argb} });
+  const styles = { NAVY, ORANGE, WHITE, GRAY, ACCENT, BORDER, sf };
+
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('es-AR');
+  const isFiltered = monthFilterSet && monthFilterSet.size > 0;
+  const periodLabel = isFiltered ? Array.from(monthFilterSet).sort().map(getMonthLabel).join(', ') : 'Todo el período del archivo';
+  const filterNote = (importsGlobalOnly ? 'Solo marcas globales (excluye marcas locales del ranking y la torta). ' : 'Incluye todas las marcas del archivo, incluyendo locales. ') + 'Las columnas de unidades están expresadas en miles.';
+
+  const wb = new ExcelJS.Workbook();
+
+  // ── Hoja 1: Por Marca ──────────────────────────────────────
+  const monthlyScoped = isFiltered ? batch.monthly.filter(m => monthFilterSet.has(m.month)) : batch.monthly;
+  const brandRanking = computeBrandTotals(batch, monthlyScoped);
+  const brandQuarterly = computeImportsBrandQuarterly(batch, monthFilterSet);
+  _impBuildSheet(wb, 'Por Marca', {
+    title: `MSI — Importaciones · ${batch.category}`,
+    subtitle: `Archivo: ${batch.sourceFile || '-'}   ·   Período: ${periodLabel}   ·   Generado: ${dateStr}`,
+    ranking: brandRanking, rankingLabelKey:'brand', rankingValueKey:'units',
+    pieTitle: 'Participación por marca',
+    quarterly: brandQuarterly,
+    filterNote
+  }, styles);
+
+  // ── Hoja 2: Por Importador (ranking + trimestral) ───────────
+  const importerData = computeImporterBrandBreakdown(batch, monthFilterSet);
+  if(importerData && importerData.length) {
+    const grandImp = importerData.reduce((s,im) => s+im.totalQty, 0);
+    const importerRanking = importerData.map(im => ({ importer: im.importer, units: im.totalQty, pct: grandImp>0 ? im.totalQty/grandImp*100 : 0 })).sort((a,b)=>b.units-a.units);
+    const importerQuarterly = computeImportsImporterQuarterly(batch, monthFilterSet);
+    _impBuildSheet(wb, 'Por Importador', {
+      title: `MSI — Importaciones por Importador · ${batch.category}`,
+      subtitle: `Archivo: ${batch.sourceFile || '-'}   ·   Período: ${periodLabel}   ·   Generado: ${dateStr}`,
+      ranking: importerRanking, rankingLabelKey:'importer', rankingValueKey:'units',
+      pieTitle: 'Participación por importador',
+      quarterly: importerQuarterly,
+      quarterlyNote: 'Este archivo no tiene etiqueta de mes por operación en suficientes filas como para desglosar el trimestral por importador de forma confiable. Se muestra solo el ranking del período elegido.',
+      filterNote: (importerData._isEstimated ? 'Nota: algunos valores de importador son una estimación (el archivo no trae etiqueta de mes por operación). ' : '') + filterNote
+    }, styles);
+
+    // ── Hoja 3: Importador × Marca (el pivot de la vista "Por Importador" en pantalla) ──
+    const pivot = computeImporterBrandPivot(batch, monthFilterSet);
+    if(pivot) _impBuildPivotSheet(wb, pivot, batch, periodLabel, dateStr, styles);
+  } else {
+    const ws2 = wb.addWorksheet('Por Importador');
+    ws2.getCell('A1').value = `Este archivo (${batch.category}) no tiene hoja de detalle por operación (columnas Importador · Marca · Modelo · Cantidad), así que no se puede armar el desglose por importador.`;
+    ws2.getCell('A1').font = { size:12, name:'Calibri' };
+    ws2.getColumn(1).width = 100;
+  }
+
+  const fname = `Importaciones_${batch.category.replace(/[^a-zA-Z0-9_-]/g,'_')}_${today.toISOString().slice(0,10)}.xlsx`;
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Análisis exportado.');
+}
+
+// ── Modal de selección: categoría + período (todo / trimestre / meses puntuales) ──
+let _impExpState = null;
+function _impShowExportModal() {
+  if(!db.imports.length) { toast('No hay análisis de importaciones cargados.'); return; }
+  const state = { category: getCurrentImportBatch()?.category || db.imports[0].category, months: new Set() };
+  _impExpState = state;
+
+  const modal = document.createElement('div');
+  modal.id = 'imp-export-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const renderModal = () => {
+    const batch = db.imports.find(b => b.category === state.category);
+    const months = batch ? batch.monthly.map(m=>m.month).sort() : [];
+    const quarters = Array.from(new Set(months.map(quarterOf))).sort();
+    const allActive = state.months.size === 0;
+    modal.innerHTML = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:28px;width:min(560px,95vw);max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div style="font-weight:700;font-size:15px"><i class="ti ti-chart-pie" style="color:var(--brand-text)"></i> Exportar Análisis de Importaciones</div>
+        <button onclick="document.getElementById('imp-export-modal').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#888">×</button>
+      </div>
+      <div style="margin-bottom:16px">
+        <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:5px">Categoría</label>
+        <select id="imp-exp-cat" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);font-size:13px" onchange="_impExpState.category=this.value;_impExpState.months=new Set();_impRenderExportModal()">
+          ${db.imports.map(b => `<option value="${esc(b.category)}" ${b.category===state.category?'selected':''}>${esc(b.category)}</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:12px;color:var(--text3);display:block;margin-bottom:6px">Período a incluir (elegí un trimestre, meses puntuales, o dejalo en "Todo")</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button type="button" class="filter-pill ${allActive?'active':''}" onclick="_impExpState.months=new Set();_impRenderExportModal()">Todo el período</button>
+          ${quarters.map(q => `<button type="button" class="filter-pill" onclick="_impExpSelectQuarter(${q})">Trimestre ${q}</button>`).join('')}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          ${months.map(mk => `<button type="button" class="filter-pill ${state.months.has(mk)?'active':''}" onclick="_impExpToggleMonth('${mk}')">${esc(getMonthLabel(mk))}</button>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+        <button class="btn btn-primary" onclick="_impExpRun()"><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> Exportar Excel</button>
+      </div>
+    </div>`;
+  };
+
+  window._impRenderExportModal = renderModal;
+  window._impExpToggleMonth = (mk) => {
+    if(state.months.has(mk)) state.months.delete(mk); else state.months.add(mk);
+    renderModal();
+  };
+  window._impExpSelectQuarter = (q) => {
+    const batch = db.imports.find(b => b.category === state.category);
+    if(!batch) return;
+    state.months = new Set(batch.monthly.map(m=>m.month).filter(mk => quarterOf(mk)===q));
+    renderModal();
+  };
+  window._impExpRun = () => {
+    const batch = db.imports.find(b => b.category === state.category);
+    modal.remove();
+    if(batch) _impRunExport(batch, state.months);
+  };
+
+  renderModal();
+  document.getElementById('imp-export-modal')?.remove();
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+// Hoja del pivot Importador × Marca (espejo de la vista "Por Importador" en pantalla) + torta de MSI por importador.
+function _impBuildPivotSheet(wb, pivot, batch, periodLabel, dateStr, styles) {
+  const { NAVY, ORANGE, WHITE, GRAY, ACCENT, BORDER, sf } = styles;
+  const nCols = 1 + pivot.topBrands.length + (pivot.hasOthers?1:0) + 1;
+  const ws = wb.addWorksheet('Importador x Marca');
+  ws.columns = [{ width:28 }].concat(Array.from({length: nCols-1}, () => ({ width:14 })));
+
+  ws.addRow([]); ws.mergeCells(1,1,1,nCols);
+  const t1 = ws.getCell('A1');
+  t1.value = `MSI — Importador × Marca · ${batch.category}`;
+  t1.fill = sf(NAVY); t1.font = { bold:true, size:16, color:{argb:WHITE}, name:'Calibri' };
+  t1.alignment = { horizontal:'left', vertical:'middle' };
+  ws.getRow(1).height = 30;
+
+  ws.addRow([]); ws.mergeCells(2,1,2,nCols);
+  const t2 = ws.getCell('A2');
+  t2.value = `Archivo: ${batch.sourceFile || '-'}   ·   Período: ${periodLabel}   ·   Generado: ${dateStr}`;
+  t2.fill = sf('FF2C3E6B'); t2.font = { size:11, color:{argb:WHITE}, name:'Calibri' };
+  t2.alignment = { horizontal:'left', vertical:'middle' };
+  ws.getRow(2).height = 18;
+
+  ws.addRow([]); ws.mergeCells(3,1,3,nCols); ws.getCell('A3').fill = sf(ORANGE); ws.getRow(3).height = 4;
+  ws.addRow([]); ws.getRow(4).height = 8;
+
+  ws.addRow(['Participación de MSI por importador — cuánto de cada importador es MSI']);
+  const rh = ws.lastRow.number;
+  ws.mergeCells(rh,1,rh,nCols);
+  ws.getCell(rh,1).font = { bold:true, size:12, color:{argb:'FF1F2A44'}, name:'Calibri' };
+  ws.getRow(rh).height = 20;
+
+  const pieSlices = _impTopNPlusOther(pivot.msiByImporter, 8, 'importer', 'qty');
+  const pie = _impBuildPieImage(pieSlices, 'MSI por importador (unidades)');
+  const pieRowStart = ws.lastRow.number + 1;
+  if(pie) {
+    const imgId = wb.addImage({ base64: pie.dataUrl, extension:'png' });
+    ws.addImage(imgId, { tl:{ col:0, row:pieRowStart-1 }, ext:{ width: pie.width, height: pie.height } });
+  }
+  const pieRowsNeeded = pie ? Math.ceil(pie.height/18) + 2 : 1;
+  for(let i=0;i<pieRowsNeeded;i++) ws.addRow([]);
+
+  // Pivot table
+  ws.addRow(['Detalle completo por importador (% y unidades en miles por marca)']);
+  const ph = ws.lastRow.number;
+  ws.mergeCells(ph,1,ph,nCols);
+  ws.getCell(ph,1).font = { bold:true, size:12, color:{argb:'FF1F2A44'}, name:'Calibri' };
+  ws.getRow(ph).height = 20;
+
+  const headerCells = ['Importador', ...pivot.topBrands, ...(pivot.hasOthers?['Otras']:[]), 'Total u. (miles)'];
+  ws.addRow(headerCells);
+  const hr = ws.lastRow.number;
+  headerCells.forEach((_,i) => {
+    const c = ws.getCell(hr, i+1);
+    c.fill = sf(ORANGE); c.font = { bold:true, size:9, color:{argb:WHITE}, name:'Calibri' };
+    c.alignment = { horizontal:'center', vertical:'middle', wrapText:true }; c.border = BORDER;
+  });
+  ws.getRow(hr).height = 24;
+  ws.views = [{ state:'frozen', ySplit: hr }];
+  ws.autoFilter = { from:{row:hr,column:1}, to:{row:hr,column:nCols} };
+
+  pivot.rows.forEach((row, idx) => {
+    const cellVals = row.cells.map(c => c.qty > 0 ? `${c.pct.toFixed(1)}% (${_impK(c.qty)} mil u.)` : '—');
+    const othersVal = pivot.hasOthers ? (row.othersQty > 0 ? `${row.othersPct.toFixed(1)}% (${_impK(row.othersQty)} mil u.)` : '—') : null;
+    const rowData = [row.importer, ...cellVals, ...(othersVal!=null?[othersVal]:[]), _impK(row.totalQty)];
+    ws.addRow(rowData);
+    const rn = ws.lastRow.number;
+    const fill = sf(idx % 2 === 0 ? GRAY : 'FFFFFFFF');
+    rowData.forEach((_,i) => {
+      const c = ws.getCell(rn, i+1);
+      c.fill = fill; c.border = BORDER; c.font = { size:9, name:'Calibri' };
+      c.alignment = i===0 ? { horizontal:'left', vertical:'middle' } : { horizontal:'center', vertical:'middle' };
+    });
+    // Resaltar la columna MSI si está entre las columnas mostradas
+    const msiColIdx = pivot.topBrands.findIndex(b => normDesc(b)==='MSI');
+    if(msiColIdx > -1) {
+      const cell = ws.getCell(rn, msiColIdx+2);
+      cell.fill = sf(ACCENT);
+      cell.font = { size:9, name:'Calibri', bold:true, color:{argb:'FFB35A00'} };
+    }
+    const totalCell = ws.getCell(rn, headerCells.length);
+    totalCell.font = { size:9, name:'Calibri', bold:true };
+    totalCell.numFmt = '#,##0.0';
+  });
+
+  ws.addRow([]);
+  const fn = ws.lastRow.number;
+  ws.mergeCells(fn,1,fn,nCols);
+  ws.getCell(fn,1).value = 'Las unidades están expresadas en miles. El % es la participación de la marca dentro de ese importador.' + (pivot.isEstimated ? ' Algunos valores son una estimación (el archivo no trae etiqueta de mes por operación).' : '');
+  ws.getCell(fn,1).font = { italic:true, size:9, color:{argb:'FF888888'}, name:'Calibri' };
+}
+
+// Escribe una hoja completa (banner + KPIs + torta + ranking + grilla trimestral) en el workbook.
 function _impBuildSheet(wb, wsName, opts, styles) {
-  const { NAVY, ORANGE, WHITE, GRAY, BORDER, sf } = styles;
+  const { NAVY, ORANGE, WHITE, GRAY, ACCENT, BORDER, sf } = styles;
   const { title, subtitle, ranking, rankingLabelKey, rankingValueKey, pieTitle, quarterly, quarterlyNote, filterNote } = opts;
   const ws = wb.addWorksheet(wsName.slice(0,31));
 
@@ -13764,7 +14027,7 @@ function _impBuildSheet(wb, wsName, opts, styles) {
   const t1 = ws.getCell('A1');
   t1.value = title; t1.fill = sf(NAVY); t1.font = { bold:true, size:16, color:{argb:WHITE}, name:'Calibri' };
   t1.alignment = { horizontal:'left', vertical:'middle' };
-  ws.getRow(1).height = 30;
+  ws.getRow(1).height = 32;
 
   ws.addRow([]); ws.mergeCells(2,1,2,nCols);
   const t2 = ws.getCell('A2');
@@ -13772,14 +14035,42 @@ function _impBuildSheet(wb, wsName, opts, styles) {
   t2.alignment = { horizontal:'left', vertical:'middle' };
   ws.getRow(2).height = 18;
 
-  ws.addRow([]); ws.mergeCells(3,1,3,nCols); ws.getCell('A3').fill = sf(NAVY); ws.getRow(3).height = 5;
-  ws.addRow([]); ws.getRow(4).height = 8;
+  ws.addRow([]); ws.mergeCells(3,1,3,nCols); ws.getCell('A3').fill = sf(ORANGE); ws.getRow(3).height = 4;
+  ws.addRow([]); ws.getRow(4).height = 10;
+
+  // ── Tarjetas KPI (look moderno tipo dashboard) ────────────────
+  const grandTotal = ranking.reduce((s,r) => s+(r[rankingValueKey]||0), 0);
+  const leader = ranking[0];
+  const nEntities = ranking.filter(r => (r[rankingValueKey]||0) > 0).length;
+  const entityLabel = rankingLabelKey === 'brand' ? 'marcas activas' : 'importadores activos';
+  const kpis = [
+    { label: 'Unidades totales (miles)', value: _impK(grandTotal) != null ? _impK(grandTotal).toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1}) : '-' },
+    { label: 'Líder', value: leader ? `${leader[rankingLabelKey]} (${leader.pct?leader.pct.toFixed(1):((leader[rankingValueKey]/grandTotal*100)||0).toFixed(1)}%)` : '-' },
+    { label: entityLabel, value: String(nEntities) },
+  ];
+  const kpiColW = Math.max(2, Math.floor(nCols / kpis.length));
+  let kc = 1;
+  kpis.forEach((k, i) => {
+    const span = (i === kpis.length-1) ? (nCols - kc + 1) : kpiColW;
+    ws.mergeCells(5, kc, 6, kc+span-1);
+    const cell = ws.getCell(5, kc);
+    cell.fill = sf(ACCENT);
+    cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    cell.value = { richText: [
+      { font:{ bold:true, size:15, color:{argb:'FF1F2A44'}, name:'Calibri' }, text: k.value + '\n' },
+      { font:{ size:9, color:{argb:'FF8A6A55'}, name:'Calibri' }, text: k.label }
+    ]};
+    kc += span;
+  });
+  ws.getRow(5).height = 20; ws.getRow(6).height = 20;
+  ws.addRow([]); ws.getRow(7).height = 10;
 
   // ── Ranking + torta ──────────────────────────────────────────
-  ws.addRow(['Ranking — período completo del archivo']);
+  ws.addRow(['Ranking del período elegido']);
   const rh = ws.lastRow.number;
   ws.mergeCells(rh,1,rh,nCols);
   ws.getCell(rh,1).font = { bold:true, size:12, color:{argb:'FF1F2A44'}, name:'Calibri' };
+  ws.getCell(rh,1).border = { bottom:{style:'medium',color:{argb:ORANGE}} };
   ws.getRow(rh).height = 20;
 
   const pieSlices = _impTopNPlusOther(ranking, 8, rankingLabelKey, rankingValueKey);
@@ -13793,7 +14084,7 @@ function _impBuildSheet(wb, wsName, opts, styles) {
   const pieRowsNeeded = pie ? Math.ceil(pie.height/18) + 2 : 1;
   for(let i=0;i<pieRowsNeeded;i++) ws.addRow([]);
 
-  const headerRow = ['#', rankingLabelKey==='brand'?'Marca':'Importador', 'Unidades', '% del total'];
+  const headerRow = ['#', rankingLabelKey==='brand'?'Marca':'Importador', 'Unidades (miles)', '% del total'];
   ws.addRow(headerRow);
   const hr2 = ws.lastRow.number;
   headerRow.forEach((_,i) => {
@@ -13801,25 +14092,29 @@ function _impBuildSheet(wb, wsName, opts, styles) {
     c.fill = sf(ORANGE); c.font = { bold:true, size:10, color:{argb:WHITE}, name:'Calibri' };
     c.alignment = { horizontal:'center', vertical:'middle' }; c.border = BORDER;
   });
-  const grand = ranking.reduce((s,r) => s+(r[rankingValueKey]||0), 0);
+  ws.getRow(hr2).height = 20;
+  const grand = grandTotal;
   ranking.slice(0, 25).forEach((r, idx) => {
-    const rowData = [idx+1, r[rankingLabelKey], r[rankingValueKey], grand>0 ? (r[rankingValueKey]/grand*100).toFixed(1)+'%' : '-'];
+    const rowData = [idx+1, r[rankingLabelKey], _impK(r[rankingValueKey]), grand>0 ? (r[rankingValueKey]/grand*100).toFixed(1)+'%' : '-'];
     ws.addRow(rowData);
     const rn = ws.lastRow.number;
-    const fill = sf(idx % 2 === 0 ? GRAY : 'FFFFFFFF');
+    const isLeader = idx === 0;
+    const fill = sf(isLeader ? ACCENT : (idx % 2 === 0 ? GRAY : 'FFFFFFFF'));
     rowData.forEach((_,i) => {
       const c = ws.getCell(rn, i+1);
-      c.fill = fill; c.border = BORDER; c.font = { size:10, name:'Calibri' };
+      c.fill = fill; c.border = BORDER; c.font = { size:10, name:'Calibri', bold: isLeader };
       c.alignment = i===0 ? { horizontal:'center', vertical:'middle' } : (i>=2 ? { horizontal:'right', vertical:'middle' } : { horizontal:'left', vertical:'middle' });
+      if(i===2 && c.value != null) c.numFmt = '#,##0.0';
     });
   });
 
   // ── Grilla trimestral ────────────────────────────────────────
   ws.addRow([]); ws.addRow([]);
-  ws.addRow(['Análisis trimestral']);
+  ws.addRow(['Análisis trimestral (unidades en miles)']);
   const qh = ws.lastRow.number;
   ws.mergeCells(qh,1,qh,nCols);
   ws.getCell(qh,1).font = { bold:true, size:12, color:{argb:'FF1F2A44'}, name:'Calibri' };
+  ws.getCell(qh,1).border = { bottom:{style:'medium',color:{argb:ORANGE}} };
   ws.getRow(qh).height = 20;
 
   if(!quarterly) {
@@ -13843,14 +14138,16 @@ function _impBuildSheet(wb, wsName, opts, styles) {
       c.alignment = { horizontal:'center', vertical:'middle', wrapText:true }; c.border = BORDER;
     });
     ws.getRow(hr).height = 26;
+    ws.views = [{ state:'frozen', ySplit: hr }];
+    ws.autoFilter = { from:{row:hr,column:1}, to:{row:hr,column:headerCells.length} };
     quarterly.rows.forEach((row, idx) => {
       const rowData = [row.label];
       quarterly.quarterGroups.forEach(q => {
         let qSum = 0;
-        q.months.forEach(mk => { const v = row.byMonth[mk]||0; qSum += v; rowData.push(v || null); });
-        rowData.push(qSum || null);
+        q.months.forEach(mk => { const v = row.byMonth[mk]||0; qSum += v; rowData.push(v ? _impK(v) : null); });
+        rowData.push(qSum ? _impK(qSum) : null);
       });
-      rowData.push(row.total || null);
+      rowData.push(row.total ? _impK(row.total) : null);
       ws.addRow(rowData);
       const rn = ws.lastRow.number;
       const fill = sf(row.isOther ? 'FFEFEFEF' : (idx % 2 === 0 ? GRAY : 'FFFFFFFF'));
@@ -13859,6 +14156,7 @@ function _impBuildSheet(wb, wsName, opts, styles) {
         c.fill = fill; c.border = BORDER;
         c.font = { size:9, name:'Calibri', bold: i===0 && row.isOther };
         c.alignment = i===0 ? { horizontal:'left', vertical:'middle' } : { horizontal:'right', vertical:'middle' };
+        if(i>0 && v!=null) c.numFmt = '#,##0.0';
       });
       ws.getRow(rn).height = 16;
     });
@@ -13871,67 +14169,6 @@ function _impBuildSheet(wb, wsName, opts, styles) {
     ws.getCell(fn,1).value = filterNote;
     ws.getCell(fn,1).font = { italic:true, size:9, color:{argb:'FF888888'}, name:'Calibri' };
   }
-}
-
-async function exportImportsFullReport() {
-  if(!window.ExcelJS) { _alert('ExcelJS no cargó. Revisá la conexión a internet.', {type:'error'}); return; }
-  const batch = getCurrentImportBatch();
-  if(!batch) { toast('Elegí una categoría con datos cargados primero.'); return; }
-
-  const NAVY = 'FF1F2A44', ORANGE = 'FFFF6600', WHITE = 'FFFFFFFF', GRAY = 'FFF5F5F5';
-  const BORDER = { top:{style:'thin',color:{argb:'FFCCCCCC'}}, left:{style:'thin',color:{argb:'FFCCCCCC'}}, bottom:{style:'thin',color:{argb:'FFCCCCCC'}}, right:{style:'thin',color:{argb:'FFCCCCCC'}} };
-  const sf = (argb) => ({ type:'pattern', pattern:'solid', fgColor:{argb} });
-  const styles = { NAVY, ORANGE, WHITE, GRAY, BORDER, sf };
-
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('es-AR');
-  const filterNote = importsGlobalOnly ? 'Solo marcas globales (excluye marcas locales del ranking y la torta).' : 'Incluye todas las marcas del archivo, incluyendo locales.';
-
-  const wb = new ExcelJS.Workbook();
-
-  // ── Hoja 1: Por Marca ──────────────────────────────────────
-  const brandRanking = computeBrandTotals(batch, batch.monthly); // período completo, no filtrado por pills
-  const brandQuarterly = computeImportsBrandQuarterly(batch);
-  _impBuildSheet(wb, 'Por Marca', {
-    title: `MSI — Importaciones · ${batch.category}`,
-    subtitle: `Archivo: ${batch.sourceFile || '-'}   ·   Cargado: ${batch.uploadedAt ? new Date(batch.uploadedAt).toLocaleDateString('es-AR') : '-'}   ·   Generado: ${dateStr}`,
-    ranking: brandRanking, rankingLabelKey:'brand', rankingValueKey:'units',
-    pieTitle: 'Participación por marca',
-    quarterly: brandQuarterly,
-    filterNote
-  }, styles);
-
-  // ── Hoja 2: Por Importador ───────────────────────────────────
-  const importerData = computeImporterBrandBreakdown(batch, new Set());
-  if(importerData && importerData.length) {
-    const grandImp = importerData.reduce((s,im) => s+im.totalQty, 0);
-    const importerRanking = importerData.map(im => ({ importer: im.importer, units: im.totalQty, pct: grandImp>0 ? im.totalQty/grandImp*100 : 0 })).sort((a,b)=>b.units-a.units);
-    const importerQuarterly = computeImportsImporterQuarterly(batch);
-    _impBuildSheet(wb, 'Por Importador', {
-      title: `MSI — Importaciones por Importador · ${batch.category}`,
-      subtitle: `Archivo: ${batch.sourceFile || '-'}   ·   Cargado: ${batch.uploadedAt ? new Date(batch.uploadedAt).toLocaleDateString('es-AR') : '-'}   ·   Generado: ${dateStr}`,
-      ranking: importerRanking, rankingLabelKey:'importer', rankingValueKey:'units',
-      pieTitle: 'Participación por importador',
-      quarterly: importerQuarterly,
-      quarterlyNote: 'Este archivo no tiene etiqueta de mes por operación en suficientes filas como para desglosar el trimestral por importador de forma confiable. Se muestra solo el ranking del período completo.',
-      filterNote: importerData._isEstimated ? 'Nota: algunos valores de importador son una estimación (el archivo no trae etiqueta de mes por operación).' : ''
-    }, styles);
-  } else {
-    const ws2 = wb.addWorksheet('Por Importador');
-    ws2.getCell('A1').value = `Este archivo (${batch.category}) no tiene hoja de detalle por operación (columnas Importador · Marca · Modelo · Cantidad), así que no se puede armar el desglose por importador.`;
-    ws2.getCell('A1').font = { size:12, name:'Calibri' };
-    ws2.getColumn(1).width = 100;
-  }
-
-  const fname = `Importaciones_${batch.category.replace(/[^a-zA-Z0-9_-]/g,'_')}_${today.toISOString().slice(0,10)}.xlsx`;
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = fname;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast('Informe exportado.');
 }
 
 // ─── IA FILE ANALYSIS (fallback para archivos no estándar) ───
