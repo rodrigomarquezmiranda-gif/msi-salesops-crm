@@ -1487,7 +1487,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '11.09.26.10';
+const APP_VERSION = '11.09.26.11';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -4548,10 +4548,22 @@ async function renderStockUpdatePanel() {
 async function refreshStockPanel() {
   const panel = document.getElementById('stock-update-panel');
   if(!panel) return;
-  panel.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0"><i class="ti ti-refresh" style="font-size:12px"></i> Actualizando desde Firebase...</div>`;
+  panel.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0"><i class="ti ti-refresh" style="font-size:12px"></i> Actualizando...</div>`;
   try {
-    const snap = await _fbDB.ref(STOCK_DIFF_FB_KEY).get();
-    const data = snap.exists() ? JSON.parse(snap.val()) : null;
+    // Antes esta función solo releía Firebase (STOCK_DIFF_FB_KEY, con sufijo de año) — pero el
+    // GitHub Action escribe en la clave "salesops_stock_diff" (SIN sufijo), así que nunca coinciden
+    // directamente. El único lugar que reconciliaba ambas era la carga inicial de la página
+    // (renderStockUpdatePanel, vía el archivo stock_diff_latest.json commiteado por el Action).
+    // Por eso "Refrescar" nunca mostraba nada nuevo si el Action corrió con la página ya abierta.
+    // Ahora repetimos la misma reconciliación acá.
+    let data = null;
+    try {
+      const snap = await _fbDB.ref(STOCK_DIFF_FB_KEY).get();
+      if(snap.exists()) data = JSON.parse(snap.val());
+    } catch(e) {}
+    const local = await _fetchLocalStockDiff();
+    if(local && (!data || local.checkedAt > data.checkedAt)) data = local;
+
     if(data) {
       const user = firebase.auth ? firebase.auth().currentUser : null;
       data.triggeredBy = user ? (user.displayName || user.email || 'usuario') : 'usuario';
@@ -4573,7 +4585,7 @@ function _renderStockPanel(panel, data) {
         <i class="ti ti-brand-google-drive" style="font-size:20px;color:#4285f4"></i>
         <div style="flex:1">
           <div style="font-weight:600;font-size:13px">Stock Update MSI — Google Drive</div>
-          <div style="font-size:12px;color:var(--text3);margin-top:2px">Sin datos todavía. El chequeo automático corre a las 9:30 y 18:30 hs.</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">Sin datos todavía. El chequeo automático corre lunes a viernes a las 15:00 hs (ART).</div>
         </div>
         <button class="btn" style="font-size:11px;flex-shrink:0" onclick="refreshStockPanel()">
           <i class="ti ti-refresh" style="font-size:12px"></i> Refrescar
