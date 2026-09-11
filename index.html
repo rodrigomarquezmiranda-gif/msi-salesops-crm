@@ -1007,6 +1007,7 @@
             </button>
             <input type="file" id="file-input-mkt" accept=".xlsx,.xls" style="display:none" onchange="handleMktFile(this.files[0]);this.value=''" />
             <span id="mkt-last-upload" style="font-size:11px;color:var(--text3)"></span>
+            <button class="btn" style="padding:6px 16px;font-size:13px;margin-left:auto" onclick="_mktShowExportModal()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button>
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:1.25rem">
@@ -1486,7 +1487,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '11.09.26.9';
+const APP_VERSION = '11.09.26.10';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9840,6 +9841,299 @@ function renderMktTab() {
   })() : '';
 
   wrap.innerHTML = summaryHtml + overviewHtml + cardsHtml + detailPanelHtml;
+}
+
+// ── Export Marketing Budget → Excel (mismo look/paleta que Importaciones) ──
+function _mktShowExportModal() {
+  const data = (db.mkt || [])[0];
+  if(!data || !data.quarters.length) { toast('No hay Marketing Budget cargado.'); return; }
+  const availableQs = data.quarters.map(q => q.q).sort();
+  const state = { qs: new Set(availableQs) }; // por defecto: todos
+
+  const modal = document.createElement('div');
+  modal.id = 'mkt-export-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+
+  const renderModal = () => {
+    const allActive = state.qs.size === availableQs.length;
+    modal.innerHTML = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:28px;width:min(480px,95vw);max-height:85vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+        <div style="font-weight:700;font-size:15px"><i class="ti ti-file-spreadsheet" style="color:var(--brand-text)"></i> Exportar Marketing Budget</div>
+        <button onclick="document.getElementById('mkt-export-modal').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#888">×</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Elegí qué trimestre(s) exportar. Si elegís "Todos", se genera una solapa por cada trimestre, más una solapa de comparativa Q vs Q.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button type="button" class="filter-pill ${allActive?'active':''}" onclick="_mktExpSetAll()">Todos</button>
+        ${availableQs.map(q => `<button type="button" class="filter-pill ${state.qs.has(q)?'active':''}" onclick="_mktExpToggleQ(${q})">Q${q}</button>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">
+        <button class="btn btn-primary" onclick="_mktExpRun()" ${state.qs.size===0?'disabled':''}><i class="ti ti-file-spreadsheet" style="font-size:13px"></i> Exportar Excel</button>
+      </div>
+    </div>`;
+  };
+
+  window._mktExpSetAll = () => { state.qs = new Set(availableQs); renderModal(); };
+  window._mktExpToggleQ = (q) => { if(state.qs.has(q)) state.qs.delete(q); else state.qs.add(q); renderModal(); };
+  window._mktExpRun = () => {
+    if(!state.qs.size) return;
+    modal.remove();
+    _mktRunExport(data, Array.from(state.qs).sort((a,b)=>a-b));
+  };
+
+  renderModal();
+  document.getElementById('mkt-export-modal')?.remove();
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
+}
+
+async function _mktRunExport(data, qsList) {
+  if(!window.ExcelJS) { _alert('ExcelJS no cargó. Revisá la conexión a internet.', {type:'error'}); return; }
+  const NAVY = 'FF1F2A44', ORANGE = 'FFFF6600', WHITE = 'FFFFFFFF', GRAY = 'FFF5F5F5', ACCENT = 'FFFFF0E6';
+  const BORDER = { top:{style:'thin',color:{argb:'FFCCCCCC'}}, left:{style:'thin',color:{argb:'FFCCCCCC'}}, bottom:{style:'thin',color:{argb:'FFCCCCCC'}}, right:{style:'thin',color:{argb:'FFCCCCCC'}} };
+  const sf = (argb) => ({ type:'pattern', pattern:'solid', fgColor:{argb} });
+  const styles = { NAVY, ORANGE, WHITE, GRAY, ACCENT, BORDER, sf };
+  const dateStr = new Date().toLocaleDateString('es-AR');
+
+  const wb = new ExcelJS.Workbook();
+  qsList.forEach(q => {
+    const qObj = data.quarters.find(x => x.q === q);
+    if(qObj) _mktBuildQuarterSheet(wb, qObj, dateStr, styles);
+  });
+  // Con más de un trimestre elegido, agregamos la comparativa (no tiene sentido con uno solo).
+  if(qsList.length > 1) _mktBuildCompareSheet(wb, data.quarters, qsList, dateStr, styles);
+
+  const fname = `MarketingBudget_${qsList.map(q=>'Q'+q).join('-')}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = fname;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Marketing Budget exportado.');
+}
+
+// Una solapa por trimestre: KPIs + Distribución por Departamento (torta) + Uso de Presupuesto por LOB.
+function _mktBuildQuarterSheet(wb, qObj, dateStr, styles) {
+  const { NAVY, ORANGE, WHITE, GRAY, ACCENT, BORDER, sf } = styles;
+  const nCols = 8;
+  const ws = wb.addWorksheet(`Q${qObj.q}`);
+  ws.columns = [{ width:26 }].concat(Array.from({length:nCols-1}, () => ({ width:14 })));
+
+  ws.addRow([]); ws.mergeCells(1,1,1,nCols);
+  const t1 = ws.getCell('A1');
+  t1.value = `MSI — Marketing Budget · Q${qObj.q}`;
+  t1.fill = sf(NAVY); t1.font = { bold:true, size:16, color:{argb:WHITE}, name:'Calibri' };
+  t1.alignment = { horizontal:'left', vertical:'middle' };
+  ws.getRow(1).height = 32;
+
+  ws.addRow([]); ws.mergeCells(2,1,2,nCols);
+  const t2 = ws.getCell('A2');
+  t2.value = `Generado: ${dateStr}`;
+  t2.fill = sf('FF2C3E6B'); t2.font = { size:11, color:{argb:WHITE}, name:'Calibri' };
+  t2.alignment = { horizontal:'left', vertical:'middle' };
+  ws.getRow(2).height = 18;
+
+  ws.addRow([]); ws.mergeCells(3,1,3,nCols); ws.getCell('A3').fill = sf(ORANGE); ws.getRow(3).height = 4;
+  ws.addRow([]); ws.getRow(4).height = 10;
+
+  // ── Tarjetas KPI ───────────────────────────────────────────
+  const usedPct = qObj.budgetProvided > 0 ? (qObj.expensePlanned / qObj.budgetProvided * 100) : 0;
+  const kpis = [
+    { label:'Budget Provided', value: fmtAmt(qObj.budgetProvided) },
+    { label:`Expense Planned · ${usedPct.toFixed(1)}%`, value: fmtAmt(qObj.expensePlanned) },
+    { label:'Remaining Budget', value: fmtAmt(qObj.remainingBudget) },
+  ];
+  const kpiColW = Math.floor(nCols / kpis.length);
+  let kc = 1;
+  kpis.forEach((k, i) => {
+    const span = (i === kpis.length-1) ? (nCols - kc + 1) : kpiColW;
+    ws.mergeCells(5, kc, 6, kc+span-1);
+    const cell = ws.getCell(5, kc);
+    cell.fill = sf(ACCENT);
+    cell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+    cell.value = { richText: [
+      { font:{ bold:true, size:14, color:{argb:'FF1F2A44'}, name:'Calibri' }, text: k.value + '\n' },
+      { font:{ size:9, color:{argb:'FF8A6A55'}, name:'Calibri' }, text: k.label }
+    ]};
+    kc += span;
+  });
+  ws.getRow(5).height = 20; ws.getRow(6).height = 20;
+  ws.addRow([]); ws.getRow(7).height = 10;
+
+  // ── Distribución por Departamento (Categoría) — torta + tabla ──
+  const termMap = new Map();
+  qObj.rows.forEach(r => { termMap.set(r.term, (termMap.get(r.term)||0) + r.total); });
+  const termRanking = Array.from(termMap.entries()).map(([term,total]) => ({ term, total })).filter(t => t.total > 0).sort((a,b) => b.total - a.total);
+
+  ws.addRow(['Distribución por Departamento (Categoría)']);
+  const rh = ws.lastRow.number;
+  ws.mergeCells(rh,1,rh,nCols);
+  ws.getCell(rh,1).font = { bold:true, size:12, color:{argb:'FF1F2A44'}, name:'Calibri' };
+  ws.getCell(rh,1).border = { bottom:{style:'medium',color:{argb:ORANGE}} };
+  ws.getRow(rh).height = 20;
+
+  const pieSlices = _impTopNPlusOther(termRanking, 8, 'term', 'total');
+  const pie = _impBuildPieImage(pieSlices, `Q${qObj.q} — por categoría`);
+  const pieRowStart = ws.lastRow.number + 1;
+  if(pie) {
+    const imgId = wb.addImage({ base64: pie.dataUrl, extension:'png' });
+    ws.addImage(imgId, { tl:{ col:0, row:pieRowStart-1 }, ext:{ width: pie.width, height: pie.height } });
+  }
+  const pieRowsNeeded = pie ? Math.ceil(pie.height/18) + 2 : 1;
+  for(let i=0;i<pieRowsNeeded;i++) ws.addRow([]);
+
+  const termHeader = ['Categoría', 'Monto', '% del budget'];
+  ws.addRow(termHeader);
+  const thr = ws.lastRow.number;
+  termHeader.forEach((_,i) => {
+    const c = ws.getCell(thr, i+1);
+    c.fill = sf(ORANGE); c.font = { bold:true, size:10, color:{argb:WHITE}, name:'Calibri' };
+    c.alignment = { horizontal:'center', vertical:'middle' }; c.border = BORDER;
+  });
+  ws.getRow(thr).height = 20;
+  termRanking.forEach((t, idx) => {
+    const rowData = [t.term, t.total, qObj.budgetProvided > 0 ? (t.total/qObj.budgetProvided*100).toFixed(1)+'%' : '-'];
+    ws.addRow(rowData);
+    const rn = ws.lastRow.number;
+    const fill = sf(idx % 2 === 0 ? GRAY : 'FFFFFFFF');
+    rowData.forEach((_,i) => {
+      const c = ws.getCell(rn, i+1);
+      c.fill = fill; c.border = BORDER; c.font = { size:10, name:'Calibri' };
+      c.alignment = i===0 ? { horizontal:'left', vertical:'middle' } : { horizontal:'right', vertical:'middle' };
+      if(i===1) c.numFmt = '"$"#,##0';
+    });
+  });
+
+  // ── Uso de Presupuesto por Departamento (LOB) ─────────────────
+  ws.addRow([]); ws.addRow([]);
+  ws.addRow(['Uso de Presupuesto por Departamento']);
+  const uh = ws.lastRow.number;
+  ws.mergeCells(uh,1,uh,nCols);
+  ws.getCell(uh,1).font = { bold:true, size:12, color:{argb:'FF1F2A44'}, name:'Calibri' };
+  ws.getCell(uh,1).border = { bottom:{style:'medium',color:{argb:ORANGE}} };
+  ws.getRow(uh).height = 20;
+
+  const deptHeader = ['Departamento', 'Asignado', '% del total', 'Usado', '% usado', 'Sobra', '% sobra'];
+  ws.addRow(deptHeader);
+  const dh = ws.lastRow.number;
+  deptHeader.forEach((_,i) => {
+    const c = ws.getCell(dh, i+1);
+    c.fill = sf(ORANGE); c.font = { bold:true, size:9, color:{argb:WHITE}, name:'Calibri' };
+    c.alignment = { horizontal:'center', vertical:'middle', wrapText:true }; c.border = BORDER;
+  });
+  ws.getRow(dh).height = 22;
+  ws.views = [{ state:'frozen', ySplit: dh }];
+  ws.autoFilter = { from:{row:dh,column:1}, to:{row:dh,column:deptHeader.length} };
+
+  const depts = (qObj.departments || []).slice().sort((a,b) => b.allocation - a.allocation);
+  const grandAlloc = depts.reduce((s,d) => s+d.allocation, 0) || 1;
+  depts.forEach((d, idx) => {
+    const pctTotal = d.allocation / grandAlloc * 100;
+    const rowData = d.matched
+      ? [d.name, d.allocation, pctTotal.toFixed(1)+'%', d.expensePlanned, (d.allocation>0?(d.expensePlanned/d.allocation*100):0).toFixed(1)+'%', d.remainingBudget, (d.allocation>0?(d.remainingBudget/d.allocation*100):0).toFixed(1)+'%']
+      : [d.name, d.allocation, pctTotal.toFixed(1)+'%', 'sin datos', '', '', ''];
+    ws.addRow(rowData);
+    const rn = ws.lastRow.number;
+    const fill = sf(idx % 2 === 0 ? GRAY : 'FFFFFFFF');
+    rowData.forEach((v,i) => {
+      const c = ws.getCell(rn, i+1);
+      c.fill = fill; c.border = BORDER; c.font = { size:9, name:'Calibri' };
+      c.alignment = i===0 ? { horizontal:'left', vertical:'middle' } : { horizontal:'right', vertical:'middle' };
+      if((i===1||i===3||i===5) && typeof v === 'number') c.numFmt = '"$"#,##0';
+    });
+  });
+
+  ws.addRow([]);
+  const fn = ws.lastRow.number;
+  ws.mergeCells(fn,1,fn,nCols);
+  ws.getCell(fn,1).value = 'Montos en la moneda original del archivo (sin conversión). Los departamentos sin columna de uso encontrada figuran como "sin datos".';
+  ws.getCell(fn,1).font = { italic:true, size:9, color:{argb:'FF888888'}, name:'Calibri' };
+}
+
+// Comparativa Q vs Q — solo se agrega cuando se exporta más de un trimestre.
+function _mktBuildCompareSheet(wb, quarters, qsList, dateStr, styles) {
+  const { NAVY, ORANGE, WHITE, GRAY, BORDER, sf } = styles;
+  const nCols = 1 + qsList.length + Math.max(0, qsList.length-1) + 1;
+  const ws = wb.addWorksheet('Comparativa Q vs Q');
+  ws.columns = [{ width:26 }].concat(Array.from({length: nCols-1}, () => ({ width:14 })));
+
+  ws.addRow([]); ws.mergeCells(1,1,1,nCols);
+  const t1 = ws.getCell('A1');
+  t1.value = `MSI — Marketing Budget · Comparativa ${qsList.map(q=>'Q'+q).join(' vs ')}`;
+  t1.fill = sf(NAVY); t1.font = { bold:true, size:16, color:{argb:WHITE}, name:'Calibri' };
+  t1.alignment = { horizontal:'left', vertical:'middle' };
+  ws.getRow(1).height = 32;
+
+  ws.addRow([]); ws.mergeCells(2,1,2,nCols);
+  ws.getCell('A2').value = `Generado: ${dateStr}`;
+  ws.getCell('A2').fill = sf('FF2C3E6B'); ws.getCell('A2').font = { size:11, color:{argb:WHITE}, name:'Calibri' };
+  ws.getCell('A2').alignment = { horizontal:'left', vertical:'middle' };
+  ws.getRow(2).height = 18;
+  ws.addRow([]); ws.mergeCells(3,1,3,nCols); ws.getCell('A3').fill = sf(ORANGE); ws.getRow(3).height = 4;
+  ws.addRow([]); ws.getRow(4).height = 10;
+
+  const allTerms = new Set();
+  const matrix = {};
+  quarters.filter(q => qsList.includes(q.q)).forEach(qObj => {
+    qObj.rows.forEach(r => {
+      if(!r.customer && r.total <= 0) return;
+      allTerms.add(r.term);
+      if(!matrix[r.term]) matrix[r.term] = {};
+      matrix[r.term][qObj.q] = (matrix[r.term][qObj.q]||0) + r.total;
+    });
+  });
+  const termList = Array.from(allTerms).sort((a,b) => {
+    const tA = qsList.reduce((s,q) => s+(matrix[a][q]||0), 0);
+    const tB = qsList.reduce((s,q) => s+(matrix[b][q]||0), 0);
+    return tB - tA;
+  });
+
+  const headerCells = ['Categoría'];
+  qsList.forEach(q => headerCells.push('Q'+q));
+  for(let i=1;i<qsList.length;i++) headerCells.push(`Q${qsList[i-1]}→Q${qsList[i]}`);
+  headerCells.push('Total');
+  ws.addRow(headerCells);
+  const hr = ws.lastRow.number;
+  headerCells.forEach((_,i) => {
+    const c = ws.getCell(hr, i+1);
+    c.fill = sf(ORANGE); c.font = { bold:true, size:9, color:{argb:WHITE}, name:'Calibri' };
+    c.alignment = { horizontal:'center', vertical:'middle', wrapText:true }; c.border = BORDER;
+  });
+  ws.getRow(hr).height = 22;
+  ws.views = [{ state:'frozen', ySplit: hr }];
+  ws.autoFilter = { from:{row:hr,column:1}, to:{row:hr,column:headerCells.length} };
+
+  termList.forEach((term, idx) => {
+    const rowData = [term];
+    qsList.forEach(q => rowData.push(matrix[term][q] || 0));
+    for(let i=1;i<qsList.length;i++) rowData.push((matrix[term][qsList[i]]||0) - (matrix[term][qsList[i-1]]||0));
+    const rowTotal = qsList.reduce((s,q) => s+(matrix[term][q]||0), 0);
+    rowData.push(rowTotal);
+    ws.addRow(rowData);
+    const rn = ws.lastRow.number;
+    const fill = sf(idx % 2 === 0 ? GRAY : 'FFFFFFFF');
+    rowData.forEach((v,i) => {
+      const c = ws.getCell(rn, i+1);
+      c.fill = fill; c.border = BORDER; c.font = { size:9, name:'Calibri', bold: i===rowData.length-1 };
+      c.alignment = i===0 ? { horizontal:'left', vertical:'middle' } : { horizontal:'right', vertical:'middle' };
+      if(i>0 && typeof v === 'number') c.numFmt = '"$"#,##0';
+    });
+  });
+
+  const qTotals = qsList.map(q => (quarters.find(qq=>qq.q===q)?.rows||[]).reduce((s,r)=>s+r.total,0));
+  const totalRowData = ['TOTAL', ...qTotals];
+  for(let i=1;i<qsList.length;i++) totalRowData.push(qTotals[i]-qTotals[i-1]);
+  totalRowData.push(qTotals.reduce((s,v)=>s+v,0));
+  ws.addRow(totalRowData);
+  const trn = ws.lastRow.number;
+  totalRowData.forEach((v,i) => {
+    const c = ws.getCell(trn, i+1);
+    c.font = { bold:true, size:10, color:{argb:WHITE}, name:'Calibri' };
+    c.fill = sf(NAVY);
+    if(i>0 && typeof v === 'number') c.numFmt = '"$"#,##0';
+  });
 }
 
 // ─── ESTADO DE CUENTAS (AR) ───────────────────────────────
