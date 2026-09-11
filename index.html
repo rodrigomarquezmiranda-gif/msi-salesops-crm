@@ -1486,7 +1486,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '11.09.26.4';
+const APP_VERSION = '11.09.26.5';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13257,7 +13257,25 @@ function renderImportsTab() {
       </table></div>
       <div style="font-size:11px;color:var(--text3)"><i class="ti ti-info-circle"></i> Este archivo no tiene detalle de importadores para ${esc(importsSelectedBrand)}.</div>` : ''}
     ${isMsiBrand ? (() => {
-      // Show model rows: use filtered msiDetail.modelRows if available, else full msi.modelTable
+      // Preferí el detalle transaccional real (Cantidad.1/Unitario Divisa/FOB Divisa) sobre la
+      // hoja resumen del Excel, que en algunos archivos calcula mal U$S FOB / Precio Unit.
+      const txModel = computeMsiModelRowsFromTransactions(batch, importsSelectedMonths);
+      if(txModel && txModel.rows.length) {
+        const periodNote = txModel.usedFallback ? ' <span style="font-weight:400;font-size:11px;color:var(--text3)">(período completo del archivo — sin coincidencias de mes)</span>' : '';
+        return `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;margin-top:8px">Modelos MSI importados${periodNote}</div>
+          <div class="table-scroll"><table class="data-table" style="font-size:12px">
+            <thead><tr><th>Importador</th><th>Mes</th><th>Modelo</th><th>Unidades</th><th>U$S FOB</th><th>Precio Unit. USD</th></tr></thead>
+            <tbody>${txModel.rows.map(r => `<tr>
+              <td>${esc(r.importer)}</td>
+              <td>${r.month ? esc(getMonthLabel(r.month)) : '-'}</td>
+              <td>${esc(r.model)}</td>
+              <td>${r.qty.toLocaleString('es-AR')}</td>
+              <td>${r.fob ? 'USD ' + r.fob.toLocaleString('es-AR',{maximumFractionDigits:0}) : '-'}</td>
+              <td>${r.unitPrice != null ? r.unitPrice.toLocaleString('es-AR',{maximumFractionDigits:2}) : '-'}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>`;
+      }
+      // Fallback: archivos sin detalle transaccional — usar la hoja resumen tal cual (menos confiable).
       const modelRows = (msiDetail && msiDetail.modelRows) ? msiDetail.modelRows : (msi.modelTable ? msi.modelTable.dataRows : null);
       const modelHeader = msi.modelTable ? msi.modelTable.header : null;
       if(!modelRows || !modelHeader) return '';
@@ -13278,6 +13296,34 @@ function selectImportBrand(brand) {
 function setImportsViewMode(mode) {
   importsViewMode = mode;
   renderImportsTab();
+}
+// La hoja-resumen "MSI" del Excel (msi.modelTable) a veces trae U$S FOB / Precio Unit. calculados
+// mal por el propio archivo (referencian las columnas de valor A NIVEL DECLARACIÓN, ej. "U$S FOB"
+// col N, que da 0 para la mayoría de los sub-ítems). El detalle transaccional real por sub-ítem
+// (Cantidad.1 / Unitario Divisa / FOB Divisa, más al fondo — típicamente cols AC/AD/AE) SÍ es
+// confiable porque lo parsea parseAduanaDetailSheet(). Por eso, si el archivo trae ese detalle
+// (batch.transactions), reconstruimos la tabla de modelos MSI desde ahí en vez de confiar en la
+// hoja resumen.
+function computeMsiModelRowsFromTransactions(batch, monthFilterSet) {
+  if(!batch.transactions || !batch.transactions.length) return null;
+  const txsMsi = batch.transactions.filter(t => normDesc(t.brand) === 'MSI' && t.model && t.qty > 0);
+  if(!txsMsi.length) return null;
+  const isFiltered = monthFilterSet && monthFilterSet.size > 0;
+  const filtered = isFiltered ? txsMsi.filter(t => monthMatchesFilter(t.month, monthFilterSet)) : txsMsi;
+  const usedFallback = isFiltered && filtered.length === 0;
+  const source = usedFallback ? txsMsi : filtered;
+  const byKey = new Map();
+  source.forEach(t => {
+    const key = [t.importer, t.model, t.month||''].join('||');
+    if(!byKey.has(key)) byKey.set(key, { importer:t.importer, model:t.model, month:t.month, qty:0, fob:0 });
+    const r = byKey.get(key);
+    r.qty += t.qty;
+    r.fob += (t.fob || 0);
+  });
+  const rows = Array.from(byKey.values())
+    .map(r => ({ importer:r.importer, month:r.month, model:r.model, qty:Math.round(r.qty), fob:r.fob, unitPrice: r.qty>0 ? r.fob/r.qty : null }))
+    .sort((a,b) => (b.month||'').localeCompare(a.month||'') || b.qty - a.qty);
+  return { rows, usedFallback, hasMonthCol: txsMsi.some(t => t.month) };
 }
 // Build filtered MSI importer + model detail from msi.modelTable rows (has MES column)
 function computeMsiDetailFromModelTable(modelTable, monthFilterSet) {
