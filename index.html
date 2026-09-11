@@ -1486,7 +1486,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '11.09.26.2';
+const APP_VERSION = '11.09.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -7245,13 +7245,16 @@ function _pbmParseXLSX(arrayBuffer) {
   const iDesc   = headers.findIndex(h => h.includes('config') || h.includes('vendida') || h.includes('descripci'));
   const iVend   = headers.findIndex(h => h.includes('vendedor'));
   const iClaim  = headers.findIndex(h => h.includes('rebate') || h.includes('monto') || h.includes('reclamado'));
+  // Some sources report one row = one bundle with an explicit quantity column (e.g. "Cantidad: 5")
+  // instead of one row per unit — expand those into `qty` numbered unit-rows, same as FullHard's
+  // multi-line format does, so the PBM totals aren't silently undercounted.
+  const iQty    = headers.findIndex(h => h.includes('cantidad') || h === 'qty' || h.includes('unidades'));
 
   const parsed = [];
   for (let i = headerRow+1; i < rows.length; i++) {
     const r = rows[i];
     const desc = String(r[iDesc]||'').trim();
     if (!desc || desc.toLowerCase().includes('ejemplo')) continue;
-    const num = parsed.length + 1;
     const dateRaw = r[iDate];
     let dateStr = '';
     if (dateRaw instanceof Date) dateStr = dateRaw.toLocaleDateString('es-AR');
@@ -7262,7 +7265,10 @@ function _pbmParseXLSX(arrayBuffer) {
 
     const claimed = parseFloat(r[iClaim]) || 0;
     const cls = _pbmClassifyRow(desc);
-    parsed.push({ num, date:dateStr, invoice:String(r[iInv]||''), desc, vendedor:String(r[iVend]||''), claimed, ...cls });
+    const qty = iQty >= 0 ? (parseInt(r[iQty]) || 1) : 1;
+    for (let u = 0; u < qty; u++) {
+      parsed.push({ num: parsed.length + 1, date:dateStr, invoice:String(r[iInv]||''), desc, vendedor:String(r[iVend]||''), claimed, ...cls });
+    }
   }
   return parsed;
 }
