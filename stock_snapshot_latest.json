@@ -1306,7 +1306,7 @@
   "MPG272URXQD-OLED": {
     "name": "MPG 272URX QD-OLED",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 63,
+    "miamiStock": 35,
     "miamiPrice": 782.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1322,7 +1322,7 @@
   "MAG271QPXQDOLED": {
     "name": "MAG 271QPX QD-OLED",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 96,
+    "miamiStock": 64,
     "miamiPrice": 542.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1346,7 +1346,7 @@
   "MAG272QPQD-OLEDX24": {
     "name": "MAG 272QP QD-OLED X24",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 795,
+    "miamiStock": 251,
     "miamiPrice": 448.0,
     "miamiEta": "",
     "bondedStock": 10
@@ -1354,7 +1354,7 @@
   "MAG274QPQD-OLEDX24": {
     "name": "MAG 274QP QD-OLED X24",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 141,
+    "miamiStock": 85,
     "miamiPrice": 448.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1394,7 +1394,7 @@
   "MAG275UPDE14": {
     "name": "MAG 275UPD E14",
     "category": "4K Monitors - Gaming",
-    "miamiStock": 38,
+    "miamiStock": 0,
     "miamiPrice": 198.0,
     "miamiEta": "ETA 10/26 798 pcs",
     "bondedStock": 0
@@ -1418,7 +1418,7 @@
   "MAG274QPFX32": {
     "name": "MAG 274QPF X32",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 542,
+    "miamiStock": 428,
     "miamiPrice": 192.0,
     "miamiEta": "ETA 10/08 152 pcs + ETA 10/26 798 pcs",
     "bondedStock": 0
@@ -1426,7 +1426,7 @@
   "MAG274QRFWX32": {
     "name": "MAG 274QRFW X32",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 99,
+    "miamiStock": 23,
     "miamiPrice": 192.0,
     "miamiEta": "ETA 09/19 798 pcs + ETA 10/08 418 pcs",
     "bondedStock": 0
@@ -1474,7 +1474,7 @@
   "MAG274CFX24": {
     "name": "MAG 274CF X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 994,
+    "miamiStock": 948,
     "miamiPrice": 115.0,
     "miamiEta": "",
     "bondedStock": 554
@@ -1492,7 +1492,7 @@
     "category": "FHD Monitors - Gaming",
     "miamiStock": 435,
     "miamiPrice": 125.0,
-    "miamiEta": "ETA 09/25 54pcs",
+    "miamiEta": "ETA 09/25 54pcs + ETA 10/20 594pcs",
     "bondedStock": 0
   },
   "MAG276CFE20": {
@@ -1516,7 +1516,7 @@
     "category": "FHD Monitors - Gaming",
     "miamiStock": 38,
     "miamiPrice": 102.0,
-    "miamiEta": "ETA 09/06 1470pcs + ETA 10/01 70pcs + ETA 10/22 700pcs",
+    "miamiEta": "ETA 09/06 1470pcs + ETA 09/30 70pcs + ETA 10/22 700pcs",
     "bondedStock": 0
   },
   "MAG245PFX24": {
@@ -1524,7 +1524,7 @@
     "category": "FHD Monitors - Gaming",
     "miamiStock": 1503,
     "miamiPrice": 108.0,
-    "miamiEta": "ETA 09/07 616pcs",
+    "miamiEta": "",
     "bondedStock": 0
   },
   "MAG245FX24": {
@@ -1532,7 +1532,7 @@
     "category": "FHD Monitors - Gaming",
     "miamiStock": 700,
     "miamiPrice": 102.0,
-    "miamiEta": "ETA 09/07 800pcs + 09/28 480pcs + 10/22 480pcs",
+    "miamiEta": "ETA 10/03 480Pcs + ETA 10/09 80Pcs + ETA 10/22 480Pcs",
     "bondedStock": 0
   },
   "MAG255FE20": {
@@ -1540,13 +1540,13 @@
     "category": "FHD Monitors - Gaming",
     "miamiStock": 0,
     "miamiPrice": 95.0,
-    "miamiEta": "ETA 09/28 350pcs + ETA 10/01 1820pcs",
+    "miamiEta": "ETA 09/30 1820pcs + ETA 10/03 350pcs",
     "bondedStock": 0
   },
   "MAG245CX24": {
     "name": "MAG 245C X24",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 140,
+    "miamiStock": 0,
     "miamiPrice": 102.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1556,7 +1556,7 @@
     "category": "FHD Monitors - Gaming",
     "miamiStock": 320,
     "miamiPrice": 70.0,
-    "miamiEta": "ETA 09/25 640pcs + ETA 10/22 960pcs + ETA 10/23 160pcs",
+    "miamiEta": "ETA 09/25 640pcs + ETA 10/22 960pcs + ETA 10/20 160pcs",
     "bondedStock": 0
   },
   "PROMAX271UPXW12G": {
@@ -1578,7 +1578,7 @@
   "PROMAX271QPX14G": {
     "name": "PRO MAX 271QPX14G",
     "category": "PRO MAX",
-    "miamiStock": 44,
+    "miamiStock": 2,
     "miamiPrice": 326.0,
     "miamiEta": "Pedir para Transferir a Miami",
     "bondedStock": 0
@@ -1644,8 +1644,8 @@
     "category": "PRO MNT 27\" Flat",
     "miamiStock": 1209,
     "miamiPrice": 87.0,
-    "miamiEta": "ETA 09/11 1134pcs",
-    "bondedStock": 1096
+    "miamiEta": "",
+    "bondedStock": 664
   },
   "PROMP273WE14A": {
     "name": "PRO MP273W E14A",
@@ -1666,7 +1666,7 @@
   "PROMP251E14L": {
     "name": "PRO MP251 E14L",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 1120,
+    "miamiStock": 480,
     "miamiPrice": 72.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1682,7 +1682,7 @@
   "PROMP245PGE14": {
     "name": "PRO MP245PG E14",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 64,
+    "miamiStock": 0,
     "miamiPrice": 84.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1690,15 +1690,15 @@
   "PROMP242E14A": {
     "name": "PRO MP242 E14A",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 470,
+    "miamiStock": 390,
     "miamiPrice": 74.0,
-    "miamiEta": "ETA 09/27 320pcs",
+    "miamiEta": "ETA 09/30 320pcs + ETA 10/20 640pcs",
     "bondedStock": 0
   },
   "PROMP243WE14": {
     "name": "PRO MP243W E14",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 1570,
+    "miamiStock": 1010,
     "miamiPrice": 72.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1716,7 +1716,7 @@
     "category": "PRO MNT 22\"/16\" Flat",
     "miamiStock": 95,
     "miamiPrice": 55.0,
-    "miamiEta": "ETA 09/10 1890pcs +  ETA 09/27 1890pcs",
+    "miamiEta": "ETA 09/19 1890pcs +  ETA 09/30 1890pcs + ETA 10/22 1260pcs",
     "bondedStock": 0
   },
   "PROMP225E12L": {
@@ -1724,7 +1724,7 @@
     "category": "PRO MNT 22\"/16\" Flat",
     "miamiStock": 0,
     "miamiPrice": 56.0,
-    "miamiEta": "ETA 09/27 1890pcs",
+    "miamiEta": "ETA 09/30 1890pcs",
     "bondedStock": 0
   },
   "ProMP225V": {
@@ -1885,22 +1885,6 @@
     "miamiStock": 0,
     "miamiPrice": 293.0,
     "miamiEta": "",
-    "bondedStock": 0
-  },
-  "CUBI Z AI 8M-023B": {
-    "name": "Cubi Z AI 8M-023BUS",
-    "category": "CUBI",
-    "miamiStock": 140,
-    "miamiPrice": 545.0,
-    "miamiEta": "<---- Last Stock",
-    "bondedStock": 0
-  },
-  "CUBI Z AI 8M-024B": {
-    "name": "Cubi Z AI 8M-024BUS",
-    "category": "CUBI",
-    "miamiStock": 90,
-    "miamiPrice": 495.0,
-    "miamiEta": "<---- Last Stock",
     "bondedStock": 0
   },
   "CUBINUC1M010B": {

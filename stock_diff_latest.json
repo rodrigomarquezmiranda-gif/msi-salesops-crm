@@ -1,49 +1,23 @@
 {
-  "checkedAt": "2026-09-10T20:34:28.330092+00:00",
-  "productCount": 300,
+  "checkedAt": "2026-09-11T20:39:37.393762+00:00",
+  "productCount": 298,
   "hasChanges": true,
-  "changeCount": 5,
+  "changeCount": 2,
   "changes": [
     {
       "type": "removed",
-      "partNo": "G5080-16V3CW",
-      "name": "GeForce RTX 5080 16G VENTUS 3X OC WHITE",
-      "category": "VGA"
+      "partNo": "CUBI Z AI 8M-023B",
+      "name": "Cubi Z AI 8M-023BUS",
+      "category": "CUBI"
     },
     {
-      "type": "price",
-      "partNo": "G5090-32GTC",
-      "name": "GeForce RTX 5090 32G GAMING TRIO OC",
-      "category": "VGA",
-      "oldPrice": 4050.0,
-      "newPrice": 4150.0
-    },
-    {
-      "type": "price",
-      "partNo": "G5090-32SLS",
-      "name": "GeForce RTX 5090 32G SUPRIM LIQUID SOC",
-      "category": "VGA",
-      "oldPrice": 4250.0,
-      "newPrice": 4350.0
-    },
-    {
-      "type": "price",
-      "partNo": "G5090-32SPS",
-      "name": "GeForce RTX 5090 32G SUPRIM SOC",
-      "category": "VGA",
-      "oldPrice": 4150.0,
-      "newPrice": 4250.0
-    },
-    {
-      "type": "price",
-      "partNo": "G5090-32V3C",
-      "name": "GeForce RTX 5090 32G VENTUS 3X OC",
-      "category": "VGA",
-      "oldPrice": 3900.0,
-      "newPrice": 4000.0
+      "type": "removed",
+      "partNo": "CUBI Z AI 8M-024B",
+      "name": "Cubi Z AI 8M-024BUS",
+      "category": "CUBI"
     }
   ],
-  "summary": "5 cambio(s) detectado(s)",
+  "summary": "2 cambio(s) detectado(s)",
   "triggeredBy": "github-actions",
   "triggerMode": "schedule"
 }
