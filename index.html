@@ -1486,7 +1486,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '11.09.26.5';
+const APP_VERSION = '11.09.26.6';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13256,13 +13256,14 @@ function renderImportsTab() {
         <tr style="font-weight:600;border-top:2px solid var(--border2)"><td>Total</td><td>${brandMonthlyTotal.toLocaleString('es-AR')}</td></tr></tbody>
       </table></div>
       <div style="font-size:11px;color:var(--text3)"><i class="ti ti-info-circle"></i> Este archivo no tiene detalle de importadores para ${esc(importsSelectedBrand)}.</div>` : ''}
-    ${isMsiBrand ? (() => {
+    ${(() => {
       // Preferí el detalle transaccional real (Cantidad.1/Unitario Divisa/FOB Divisa) sobre la
       // hoja resumen del Excel, que en algunos archivos calcula mal U$S FOB / Precio Unit.
-      const txModel = computeMsiModelRowsFromTransactions(batch, importsSelectedMonths);
+      // Esto vale para CUALQUIER marca con detalle transaccional, no solo MSI.
+      const txModel = computeBrandModelRowsFromTransactions(batch, importsSelectedBrand, importsSelectedMonths);
       if(txModel && txModel.rows.length) {
         const periodNote = txModel.usedFallback ? ' <span style="font-weight:400;font-size:11px;color:var(--text3)">(período completo del archivo — sin coincidencias de mes)</span>' : '';
-        return `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;margin-top:8px">Modelos MSI importados${periodNote}</div>
+        return `<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;margin-top:8px">Modelos de ${esc(importsSelectedBrand)} importados${periodNote}</div>
           <div class="table-scroll"><table class="data-table" style="font-size:12px">
             <thead><tr><th>Importador</th><th>Mes</th><th>Modelo</th><th>Unidades</th><th>U$S FOB</th><th>Precio Unit. USD</th></tr></thead>
             <tbody>${txModel.rows.map(r => `<tr>
@@ -13275,7 +13276,8 @@ function renderImportsTab() {
             </tr>`).join('')}</tbody>
           </table></div>`;
       }
-      // Fallback: archivos sin detalle transaccional — usar la hoja resumen tal cual (menos confiable).
+      // Fallback (solo MSI): archivos sin detalle transaccional — usar la hoja resumen tal cual (menos confiable).
+      if(!isMsiBrand) return '';
       const modelRows = (msiDetail && msiDetail.modelRows) ? msiDetail.modelRows : (msi.modelTable ? msi.modelTable.dataRows : null);
       const modelHeader = msi.modelTable ? msi.modelTable.header : null;
       if(!modelRows || !modelHeader) return '';
@@ -13285,7 +13287,7 @@ function renderImportsTab() {
           <thead><tr>${modelHeader.filter(h=>h!=null&&String(h).trim()!=='').map(h=>`<th>${esc(String(h||''))}</th>`).join('')}</tr></thead>
           <tbody>${modelRows.map(r=>`<tr>${modelHeader.map((h,i)=>h!=null&&String(h).trim()!==''?`<td>${esc(formatImportValue(h, r[i]))}</td>`:'').join('')}</tr>`).join('')}</tbody>
         </table></div>`;
-    })() : ''}
+    })()}
   ` : '';
 }
 function selectImportBrand(brand) {
@@ -13304,9 +13306,9 @@ function setImportsViewMode(mode) {
 // confiable porque lo parsea parseAduanaDetailSheet(). Por eso, si el archivo trae ese detalle
 // (batch.transactions), reconstruimos la tabla de modelos MSI desde ahí en vez de confiar en la
 // hoja resumen.
-function computeMsiModelRowsFromTransactions(batch, monthFilterSet) {
+function computeBrandModelRowsFromTransactions(batch, brand, monthFilterSet) {
   if(!batch.transactions || !batch.transactions.length) return null;
-  const txsMsi = batch.transactions.filter(t => normDesc(t.brand) === 'MSI' && t.model && t.qty > 0);
+  const txsMsi = batch.transactions.filter(t => normDesc(t.brand) === normDesc(brand) && t.model && t.qty > 0);
   if(!txsMsi.length) return null;
   const isFiltered = monthFilterSet && monthFilterSet.size > 0;
   const filtered = isFiltered ? txsMsi.filter(t => monthMatchesFilter(t.month, monthFilterSet)) : txsMsi;
