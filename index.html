@@ -1330,13 +1330,16 @@
       <button class="modal-close" onclick="closeOverlay('modal-order-email')"><i class="ti ti-x"></i></button>
     </div>
     <div id="ob-email-preview" style="border:1px solid var(--border2);border-radius:8px;padding:0;overflow:hidden;margin-bottom:4px;background:#fff"></div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">
+      <i class="ti ti-info-circle" style="font-size:12px"></i> "Copiar para pegar en mail" mantiene el formato con tabla y colores. "Abrir en cliente de correo" usa un link <code>mailto:</code>, que por protocolo <b>solo admite texto plano</b> (ningún cliente de correo puede mostrar HTML ahí) — se ve como lista simple, no como la vista previa de arriba. Para mandar el mail con el formato de la tabla, copiá y pegá.
+    </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeOverlay('modal-order-email')">Cerrar</button>
       <button class="btn" onclick="_obCopyEmailHtml()" id="ob-copy-btn" style="color:var(--brand,#FF6600);border-color:var(--brand,#FF6600)">
         <i class="ti ti-clipboard" style="font-size:13px"></i> Copiar para pegar en mail
       </button>
-      <button class="btn btn-primary" onclick="_obSendMailto()">
-        <i class="ti ti-mail-forward" style="font-size:13px"></i> Abrir en cliente de correo
+      <button class="btn btn-primary" onclick="_obSendMailto()" title="Abre tu cliente de correo con el texto en formato plano (sin tabla) — limitación del protocolo mailto">
+        <i class="ti ti-mail-forward" style="font-size:13px"></i> Abrir en cliente de correo (texto plano)
       </button>
     </div>
   </div>
@@ -1487,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '11.09.26.11';
+const APP_VERSION = '11.09.26.12';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -5749,7 +5752,7 @@ function _obBuildEmailHtml() {
   const rowsHtml = rows.map((r, i) => {
     const sub = (r.qty && r.price) ? r.qty * r.price : 0;
     const bg  = i % 2 === 0 ? '#f9f9f9' : '#ffffff';
-    return `<tr style="background:${bg}">
+    return `<tr bgcolor="${bg}" style="background-color:${bg}">
       <td style="padding:8px 10px;text-align:center;border:1px solid #ddd;font-weight:600">${r.qty}</td>
       <td style="padding:8px 10px;border:1px solid #ddd;font-size:12px;color:#666">${esc(r.code||'—')}</td>
       <td style="padding:8px 10px;border:1px solid #ddd;font-weight:500">${esc(r.desc)}</td>
@@ -5759,35 +5762,47 @@ function _obBuildEmailHtml() {
     </tr>`;
   }).join('');
 
-  const totalRow = total > 0 ? `<tr style="background:#FF6600">
-    <td colspan="5" style="padding:10px 14px;text-align:right;font-weight:700;color:#fff;border:1px solid #e55a00;font-size:13px">TOTAL</td>
-    <td style="padding:10px 14px;text-align:right;font-weight:700;color:#fff;border:1px solid #e55a00;font-size:14px">$${total.toFixed(2)}</td>
+  const totalRow = total > 0 ? `<tr>
+    <td colspan="5" bgcolor="#FF6600" style="background-color:#FF6600;padding:10px 14px;text-align:right;border:1px solid #e55a00;font-size:13px"><font color="#ffffff" style="color:#ffffff"><b>TOTAL</b></font></td>
+    <td bgcolor="#FF6600" style="background-color:#FF6600;padding:10px 14px;text-align:right;border:1px solid #e55a00;font-size:14px"><font color="#ffffff" style="color:#ffffff"><b>$${total.toFixed(2)}</b></font></td>
   </tr>` : '';
 
-  return `<div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto">
-    <div style="background:#1F2A44;padding:18px 24px;border-radius:6px 6px 0 0">
-      <div style="color:#fff;font-size:18px;font-weight:700;letter-spacing:0.5px">MSI — Orden de Compra</div>
-      <div style="color:rgba(255,255,255,0.75);font-size:12px;margin-top:4px">${headerInfo}</div>
-    </div>
-    <div style="background:#FF6600;height:4px"></div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif">
-      <thead>
-        <tr style="background:#FF6600">
-          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:center;font-size:11px">CANT.</th>
-          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:left;font-size:11px">CÓDIGO</th>
-          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:left;font-size:11px">PRODUCTO / MODELO</th>
-          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:right;font-size:11px">PRECIO</th>
-          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:left;font-size:11px">REMARK</th>
-          <th style="padding:9px 10px;color:#fff;border:1px solid #e55a00;text-align:right;font-size:11px">SUBTOTAL</th>
-        </tr>
-      </thead>
-      <tbody>${rowsHtml}</tbody>
-      <tfoot>${totalRow}</tfoot>
-    </table>
-    <div style="background:#f5f5f5;padding:10px 16px;border-radius:0 0 6px 6px;font-size:11px;color:#999;text-align:right;border-top:1px solid #ddd">
-      Generado por SalesOps CRM · ${today}
-    </div>
-  </div>`;
+  // Outlook clásico (Word) ignora casi todo el CSS en <div> — solo respeta estilos en
+  // <table>/<tr>/<td>. Por eso TODO el layout (banners de color incluidos) va en tablas
+  // anidadas con bgcolor + background-color (nunca el shorthand "background") y <font color>
+  // además del style, para que el texto blanco sobreviva el pegado en Word/Outlook.
+  return `<table role="presentation" width="640" cellpadding="0" cellspacing="0" border="0" style="width:640px;max-width:100%;font-family:Arial,sans-serif;border-collapse:collapse">
+    <tr>
+      <td bgcolor="#1F2A44" style="background-color:#1F2A44;padding:18px 24px">
+        <font color="#ffffff" style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:0.5px">MSI — Orden de Compra</font><br>
+        <font color="#cccccc" style="color:#cccccc;font-size:12px">${headerInfo}</font>
+      </td>
+    </tr>
+    <tr><td bgcolor="#FF6600" style="background-color:#FF6600;font-size:1px;line-height:4px">&nbsp;</td></tr>
+    <tr>
+      <td>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif">
+          <thead>
+            <tr>
+              <th bgcolor="#FF6600" style="background-color:#FF6600;padding:9px 10px;border:1px solid #e55a00;text-align:center;font-size:11px"><font color="#ffffff" style="color:#ffffff">CANT.</font></th>
+              <th bgcolor="#FF6600" style="background-color:#FF6600;padding:9px 10px;border:1px solid #e55a00;text-align:left;font-size:11px"><font color="#ffffff" style="color:#ffffff">CÓDIGO</font></th>
+              <th bgcolor="#FF6600" style="background-color:#FF6600;padding:9px 10px;border:1px solid #e55a00;text-align:left;font-size:11px"><font color="#ffffff" style="color:#ffffff">PRODUCTO / MODELO</font></th>
+              <th bgcolor="#FF6600" style="background-color:#FF6600;padding:9px 10px;border:1px solid #e55a00;text-align:right;font-size:11px"><font color="#ffffff" style="color:#ffffff">PRECIO</font></th>
+              <th bgcolor="#FF6600" style="background-color:#FF6600;padding:9px 10px;border:1px solid #e55a00;text-align:left;font-size:11px"><font color="#ffffff" style="color:#ffffff">REMARK</font></th>
+              <th bgcolor="#FF6600" style="background-color:#FF6600;padding:9px 10px;border:1px solid #e55a00;text-align:right;font-size:11px"><font color="#ffffff" style="color:#ffffff">SUBTOTAL</font></th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+          <tfoot>${totalRow}</tfoot>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td bgcolor="#f5f5f5" style="background-color:#f5f5f5;padding:10px 16px;border-top:1px solid #ddd;text-align:right">
+        <font color="#999999" style="color:#999999;font-size:11px">Generado por SalesOps CRM · ${today}</font>
+      </td>
+    </tr>
+  </table>`;
 }
 
 function sendOrderByEmail() {
