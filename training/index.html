@@ -341,11 +341,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <!-- Per-user summary -->
   <div class="card" id="admin-user-cards" style="margin-bottom:10px;display:none">
-    <div class="label" style="margin-bottom:8px">Ranking de usuarios</div>
-    <div id="admin-user-list"></div>
+    <div class="label" style="margin-bottom:8px">Participación por usuario</div>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      <div id="admin-user-pie" style="flex:0 0 auto"></div>
+      <div id="admin-user-list" style="flex:1;min-width:200px"></div>
+    </div>
   </div>
 
-  <!-- Results table -->
+  <!-- Results table (grouped by user) -->
   <div class="card" id="admin-results-card">
     <div class="label" style="margin-bottom:8px">Historial de quizzes <span id="admin-count" style="font-weight:400;color:var(--text3);font-size:11px"></span></div>
     <div id="admin-table"><div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div></div>
@@ -379,6 +382,8 @@ let quizCatProducts = []; // products used in category quiz
 let currentUser = null;
 let isAdmin = false;
 let adminAllRows = []; // all quiz results loaded for admin panel
+let userNameOverrides = {}; // uid -> nombre editado por el admin
+const USER_PIE_PALETTE = ['#5E81AC','#88C0D0','#81A1C1','#B48EAD','#EBCB8B','#D08770','#A3BE8C','#8FBCBB','#BF616A','#9EA8BA'];
 
 const LETTERS = [
   {l:'A', sel:'sel-a', ltr:'ltr-a'},
@@ -846,12 +851,12 @@ async function saveQuizResult(correct,total,pct){
     record={ts:Date.now(),mode:'category',
       product:`Quiz de ${catLbl(selectedCat)}`,
       code:'',category:selectedCat||'',
-      correct,total,pct,email:currentUser.email||''};
+      correct,total,pct,email:currentUser.email||'',name:currentUser.displayName||''};
   }else{
     if(!selectedProd){console.warn('saveQuizResult: no selectedProd');return;}
     record={ts:Date.now(),mode:'product',
       product:selectedProd.desc,code:selectedProd.code||'',
-      category:selectedProd.category||'',correct,total,pct,email:currentUser.email||''};
+      category:selectedProd.category||'',correct,total,pct,email:currentUser.email||'',name:currentUser.displayName||''};
   }
   try{
     await fbDB.ref(`quiz_results/${currentUser.uid}`).push(record);
@@ -917,7 +922,11 @@ async function loadAdminData(){
   document.getElementById('admin-table').innerHTML='<div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div>';
   adminAllRows=[];
   try{
-    const snap=await fbDB.ref('quiz_results').get();
+    const [snap,namesSnap]=await Promise.all([
+      fbDB.ref('quiz_results').get(),
+      fbDB.ref('msi_quiz_config/userNames').get()
+    ]);
+    userNameOverrides=namesSnap.exists()?namesSnap.val():{};
     if(snap.exists()){
       snap.forEach(userSnap=>{
         userSnap.forEach(r=>{
@@ -930,13 +939,63 @@ async function loadAdminData(){
     return;
   }
   adminAllRows.sort((a,b)=>b.ts-a.ts);
-  // Populate user filter
-  const emails=[...new Set(adminAllRows.map(r=>r.email).filter(Boolean))].sort();
+  // Populate user filter (por uid, mostrando el nombre)
+  const byUid={};
+  adminAllRows.forEach(r=>{if(!byUid[r.uid])byUid[r.uid]=r;});
+  const uidList=Object.keys(byUid).sort((a,b)=>displayNameFor(byUid[a]).localeCompare(displayNameFor(byUid[b])));
   const userSel=document.getElementById('admin-filter-user');
   userSel.innerHTML='<option value="">Todos los usuarios</option>'+
-    emails.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
-  document.getElementById('admin-summary').textContent=`${adminAllRows.length} quizzes · ${emails.length} usuarios`;
+    uidList.map(uid=>`<option value="${esc(uid)}">${esc(displayNameFor(byUid[uid]))}</option>`).join('');
+  document.getElementById('admin-summary').textContent=`${adminAllRows.length} quizzes · ${uidList.length} usuarios`;
   renderAdminTable();
+}
+
+// Nombre a mostrar: override del admin > nombre de Google guardado en el registro > email > uid
+function displayNameFor(r){
+  if(!r)return '—';
+  return userNameOverrides[r.uid]||r.name||r.email||r.uid;
+}
+
+async function editUserName(uid,currentLabel){
+  const val=prompt('Nombre para mostrar (dejalo vacío para volver al nombre/mail original):',currentLabel||'');
+  if(val===null)return;
+  try{
+    if(val.trim()===''){
+      await fbDB.ref(`msi_quiz_config/userNames/${uid}`).remove();
+      delete userNameOverrides[uid];
+    }else{
+      await fbDB.ref(`msi_quiz_config/userNames/${uid}`).set(val.trim());
+      userNameOverrides[uid]=val.trim();
+    }
+    renderAdminTable();
+  }catch(e){alert('No se pudo guardar el nombre: '+e.message);}
+}
+
+async function resetUserResults(uid,label){
+  if(!confirm(`¿Borrar TODOS los resultados de "${label}"? Esta acción no se puede deshacer.`))return;
+  try{
+    await fbDB.ref(`quiz_results/${uid}`).remove();
+    adminAllRows=adminAllRows.filter(r=>r.uid!==uid);
+    document.getElementById('admin-summary').textContent=`${adminAllRows.length} quizzes · ${new Set(adminAllRows.map(r=>r.uid)).size} usuarios`;
+    renderAdminTable();
+  }catch(e){alert('No se pudo borrar: '+e.message);}
+}
+
+// Donut SVG estilo Nord (mismo criterio de paleta que Mi Participación / Marketing Budget)
+function buildDonutSVG(slices,size){
+  size=size||140;
+  const total=slices.reduce((s,d)=>s+d.value,0)||1;
+  const r=size/2,cx=r,cy=r,strokeW=r*0.38,radius=r-strokeW/2;
+  const circumference=2*Math.PI*radius;
+  let offset=0,svg=`<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`;
+  slices.forEach(d=>{
+    const frac=d.value/total;
+    const dash=frac*circumference;
+    svg+=`<circle cx="${cx}" cy="${cy}" r="${radius}" fill="none" stroke="${d.color}" stroke-width="${strokeW}" stroke-dasharray="${dash} ${circumference-dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"><title>${esc(d.label)}: ${d.value}</title></circle>`;
+    offset+=dash;
+  });
+  svg+=`<circle cx="${cx}" cy="${cy}" r="${radius-strokeW/2-1}" fill="none"/></svg>`;
+  return svg;
 }
 
 function renderAdminTable(){
@@ -946,51 +1005,69 @@ function renderAdminTable(){
   const filterMode=document.getElementById('admin-filter-mode').value;
   let rows=adminAllRows.filter(r=>
     (!filterCat||r.category===filterCat)&&
-    (!filterUser||r.email===filterUser)&&
+    (!filterUser||r.uid===filterUser)&&
     (!filterMode||r.mode===filterMode||(!r.mode&&filterMode==='product'))
   );
   document.getElementById('admin-count').textContent=`(${rows.length})`;
 
-  // Per-user summary card
+  // Agrupar por usuario (uid)
   const byUser={};
   rows.forEach(r=>{
-    const k=r.email||r.uid;
-    if(!byUser[k])byUser[k]={email:k,total:0,sumPct:0,best:0};
-    byUser[k].total++;byUser[k].sumPct+=r.pct;
-    if(r.pct>byUser[k].best)byUser[k].best=r.pct;
+    if(!byUser[r.uid])byUser[r.uid]={uid:r.uid,sample:r,total:0,sumPct:0,best:0,rows:[]};
+    const u=byUser[r.uid];
+    u.total++;u.sumPct+=r.pct;
+    if(r.pct>u.best)u.best=r.pct;
+    u.rows.push(r);
+    if(r.ts>u.sample.ts)u.sample=r; // registro más reciente → mejor fuente para el nombre de Google
   });
   const userArr=Object.values(byUser).sort((a,b)=>(b.sumPct/b.total)-(a.sumPct/a.total));
+
+  // Pie chart: participación (cantidad de quizzes) por usuario
   const ucEl=document.getElementById('admin-user-cards');
   ucEl.style.display=userArr.length?'block':'none';
-  document.getElementById('admin-user-list').innerHTML=userArr.map(u=>{
+  const slices=userArr.map((u,i)=>({label:displayNameFor(u.sample),value:u.total,color:USER_PIE_PALETTE[i%USER_PIE_PALETTE.length]}));
+  document.getElementById('admin-user-pie').innerHTML=userArr.length?buildDonutSVG(slices,140):'';
+
+  document.getElementById('admin-user-list').innerHTML=userArr.map((u,i)=>{
     const avg=Math.round(u.sumPct/u.total);
     const c=avg>=80?'#A3BE8C':avg>=60?'#EBCB8B':'#BF616A';
+    const name=displayNameFor(u.sample);
+    const pieColor=USER_PIE_PALETTE[i%USER_PIE_PALETTE.length];
     return `<div class="hist-row">
+      <div style="width:9px;height:9px;border-radius:50%;background:${pieColor};flex:0 0 auto"></div>
       <div class="hist-score" style="color:${c};border-color:${c}">${avg}%</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.email)}</div>
+        <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">${u.total} quizzes · mejor: ${u.best}%</div>
       </div>
+      <button class="icon-btn" style="padding:4px" title="Editar nombre" onclick="editUserName('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-pencil" style="font-size:14px;color:var(--text3)"></i></button>
+      <button class="icon-btn" style="padding:4px" title="Borrar resultados de este usuario" onclick="resetUserResults('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-trash" style="font-size:14px;color:#BF616A"></i></button>
     </div>`;
   }).join('');
 
-  // Results table
-  document.getElementById('admin-table').innerHTML=rows.slice(0,100).map(r=>{
-    const color=r.pct>=80?'#A3BE8C':r.pct>=60?'#EBCB8B':'#BF616A';
-    const d=new Date(r.ts);
-    const dateStr=`${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-    const short=(r.product||'').length>36?(r.product).slice(0,36)+'…':r.product||'—';
-    const modeIcon=r.mode==='category'?'<i class="ti ti-layers" style="font-size:10px;color:var(--brand)"></i> ':'';
-    return `<div class="hist-row">
-      <div class="hist-score" style="color:${color};border-color:${color};font-size:12px">${r.pct}%</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${modeIcon}${esc(short)}</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:1px">
-          <span style="color:var(--text2)">${esc(r.email||'—')}</span>
-          · <span style="color:${catColor(r.category)}">${catLbl(r.category)}</span>
-          · ${r.correct}/${r.total} · ${dateStr}
+  // Results table — agrupado por usuario con subtítulo
+  document.getElementById('admin-table').innerHTML=userArr.map(u=>{
+    const name=displayNameFor(u.sample);
+    const rowsHtml=u.rows.slice(0,100).map(r=>{
+      const color=r.pct>=80?'#A3BE8C':r.pct>=60?'#EBCB8B':'#BF616A';
+      const d=new Date(r.ts);
+      const dateStr=`${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const short=(r.product||'').length>36?(r.product).slice(0,36)+'…':r.product||'—';
+      const modeIcon=r.mode==='category'?'<i class="ti ti-layers" style="font-size:10px;color:var(--brand)"></i> ':'';
+      return `<div class="hist-row">
+        <div class="hist-score" style="color:${color};border-color:${color};font-size:12px">${r.pct}%</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${modeIcon}${esc(short)}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px">
+            <span style="color:${catColor(r.category)}">${catLbl(r.category)}</span>
+            · ${r.correct}/${r.total} · ${dateStr}
+          </div>
         </div>
-      </div>
+      </div>`;
+    }).join('');
+    return `<div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);padding:6px 2px;border-bottom:1px solid var(--border2);margin-bottom:4px">${esc(name)} <span style="font-weight:400;color:var(--text3)">(${u.rows.length})</span></div>
+      ${rowsHtml}
     </div>`;
   }).join('')||(rows.length?'':'<div class="hist-empty">Sin resultados con ese filtro</div>');
 }
