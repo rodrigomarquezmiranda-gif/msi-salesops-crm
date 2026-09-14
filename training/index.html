@@ -349,11 +349,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
   </div>
 
-  <!-- Results table (grouped by user) -->
-  <div class="card" id="admin-results-card">
-    <div class="label" style="margin-bottom:8px">Historial de quizzes <span id="admin-count" style="font-weight:400;color:var(--text3);font-size:11px"></span></div>
-    <div id="admin-table"><div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div></div>
-  </div>
+  <!-- Results table — un cajón (card) separado por usuario -->
+  <div class="label" style="margin-bottom:8px">Historial de quizzes <span id="admin-count" style="font-weight:400;color:var(--text3);font-size:11px"></span></div>
+  <div id="admin-table" style="display:flex;flex-direction:column;gap:10px"><div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div></div>
 </div>
 
 <!-- Settings modal removed: API key managed server-side via Cloudflare Worker -->
@@ -388,7 +386,7 @@ let knownUsers = {}; // uid -> {email,name,lastSeen} directorio de logins
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='14.09.26.1';
+const QUIZ_APP_VERSION='14.09.26.2';
 document.addEventListener('DOMContentLoaded',()=>{
   const v=document.getElementById('quiz-version');
   if(v)v.textContent='v'+QUIZ_APP_VERSION;
@@ -1106,8 +1104,8 @@ function renderAdminTable(){
         <button class="icon-btn" style="padding:3px" title="Borrar este quiz" onclick="deleteSingleResult('${esc(r.uid)}','${esc(r._key)}',${JSON.stringify(short).replace(/"/g,'&quot;')})"><i class="ti ti-trash" style="font-size:13px;color:#BF616A"></i></button>
       </div>`;
     }).join('');
-    return `<div style="margin-bottom:14px">
-      <div style="font-size:12px;font-weight:700;color:var(--text2);padding:6px 2px;border-bottom:1px solid var(--border2);margin-bottom:4px">${esc(name)} <span style="font-weight:400;color:var(--text3)">(${u.rows.length})</span></div>
+    return `<div class="card" style="padding:0.9rem">
+      <div style="font-size:13px;font-weight:700;color:var(--text);padding-bottom:8px;border-bottom:1px solid var(--border2);margin-bottom:6px">${esc(name)} <span style="font-weight:400;color:var(--text3)">(${u.rows.length})</span></div>
       ${rowsHtml}
     </div>`;
   }).join('')||(rows.length?'':'<div class="hist-empty">Sin resultados con ese filtro</div>');
