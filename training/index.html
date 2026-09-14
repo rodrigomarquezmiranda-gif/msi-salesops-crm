@@ -11,29 +11,33 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <style>
 :root{
-  --brand:#FF6600;--brand2:#cc4400;
-  --bg:#1A1A22;--bg2:#22222E;--bg3:#16161E;--bg4:#28283A;
-  --text:#E8EAF0;--text2:#9EA8BA;--text3:#6B7585;
-  --border:#2A3148;--border2:#33405A;
-  --green:#A3BE8C;--red:#BF616A;--blue:#5E81AC;--yellow:#EBCB8B;
+  /* Nord (versión clara) — mismos tokens que el CRM (Mi Participación, Marketing Budget, etc.) */
+  --brand:#5E81AC;--brand2:#4C6E96;
+  --bg:#FFFFFF;--bg2:#ECEFF4;--bg3:#E5E9F0;--bg4:#E5E9F0;
+  --text:#2E3440;--text2:#4C566A;--text3:#7C8CA5;
+  --border:rgba(46,52,64,0.09);--border2:rgba(46,52,64,0.16);
+  --green:#436035;--red:#A5414B;--blue:#5E81AC;--yellow:#735817;
+  --shadow:0 1px 3px rgba(46,52,64,0.08);
 }
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;padding:1rem}
 
-.screen{display:none;width:100%;max-width:460px}
+.screen{display:none;width:100%;max-width:640px}
 .screen.active{display:block;animation:fadeUp .25s ease}
+#screen-admin.screen{max-width:1180px}
+#screen-home.screen,#screen-quiz.screen,#screen-results.screen{max-width:600px}
 
 /* MSI mark */
-.msi-mark{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--brand);font-weight:900;font-size:13px;color:#fff;letter-spacing:-.5px;box-shadow:0 2px 8px rgba(255,102,0,.35)}
+.msi-mark{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--brand);font-weight:900;font-size:13px;color:#fff;letter-spacing:-.5px;box-shadow:0 2px 8px rgba(94,129,172,.35)}
 .msi-mark-lg{width:62px;height:62px;border-radius:14px;font-size:19px}
 
 /* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;width:100%}
 .btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important}
-.btn-primary{background:var(--brand);color:#fff;box-shadow:0 3px 14px rgba(255,102,0,.3)}
-.btn-primary:not(:disabled):hover{opacity:.9;transform:translateY(-1px);box-shadow:0 5px 18px rgba(255,102,0,.4)}
+.btn-primary{background:var(--brand);color:#fff;box-shadow:0 3px 14px rgba(94,129,172,.3)}
+.btn-primary:not(:disabled):hover{opacity:.9;transform:translateY(-1px);box-shadow:0 5px 18px rgba(94,129,172,.4)}
 .btn-ghost{background:transparent;color:var(--text2);border:1.5px solid var(--border2)}
 .btn-ghost:hover{background:var(--bg2)}
 
@@ -53,13 +57,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 /* Progress */
 .prog-wrap{display:flex;align-items:center;gap:10px;margin-bottom:1.1rem}
 .prog-bar{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;flex:1}
-.prog-fill{height:100%;background:linear-gradient(90deg,var(--brand),#ff8c3a);border-radius:3px;transition:width .4s ease}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--brand),#88C0D0);border-radius:3px;transition:width .4s ease}
 .prog-pct{font-size:12px;color:var(--text2);font-weight:600;min-width:30px;text-align:right}
 
 /* Option cards */
 .opt{display:flex;align-items:flex-start;gap:10px;width:100%;padding:12px 14px;margin-bottom:9px;background:var(--bg2);border:2px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;line-height:1.4;cursor:pointer;text-align:left;transition:border-color .15s,background .15s,transform .1s}
-.opt:not(:disabled):hover{border-color:#444E6A;transform:translateX(3px)}
+.opt:not(:disabled):hover{border-color:var(--brand);transform:translateX(3px)}
 .opt:disabled{cursor:default}
+
+/* Opciones con imagen (pregunta visual "¿cuál de estas 3 es...?") */
+.opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.opt-visual{flex-direction:column;align-items:stretch;gap:8px;margin-bottom:0;padding:8px}
+.opt-img{width:100%;height:110px;object-fit:contain;border-radius:6px;background:var(--bg3);display:block}
+@media(max-width:640px){.opt-grid{grid-template-columns:1fr}}
 /* Pending select */
 .opt.sel-a{border-color:var(--blue);background:rgba(94,129,172,.12)}
 .opt.sel-b{border-color:var(--green);background:rgba(163,190,140,.1)}
@@ -70,13 +80,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* Letter badges */
 .ltr{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;flex-shrink:0;margin-top:1px;transition:background .15s,color .15s}
-.ltr-a{background:rgba(94,129,172,.25);color:#88B0D4}
-.ltr-b{background:rgba(163,190,140,.22);color:#A3BE8C}
-.ltr-c{background:rgba(235,203,139,.22);color:#C9A84C}
+.ltr-a{background:rgba(94,129,172,.18);color:var(--blue)}
+.ltr-b{background:rgba(163,190,140,.22);color:var(--green)}
+.ltr-c{background:rgba(235,203,139,.28);color:var(--yellow)}
 .opt.sel-a .ltr-a{background:var(--blue);color:#fff}
-.opt.sel-b .ltr-b{background:var(--green);color:#1A2510}
-.opt.sel-c .ltr-c{background:var(--yellow);color:#2C1E00}
-.opt.opt-correct .ltr{background:var(--green)!important;color:#1A2510!important}
+.opt.sel-b .ltr-b{background:var(--green);color:#fff}
+.opt.sel-c .ltr-c{background:var(--yellow);color:#fff}
+.opt.opt-correct .ltr{background:var(--green)!important;color:#fff!important}
 .opt.opt-wrong .ltr{background:var(--red)!important;color:#fff!important}
 
 /* Correct label badge */
@@ -91,7 +101,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .q-image{width:100%;max-height:180px;object-fit:contain;border-radius:8px;margin-bottom:10px;background:var(--bg3);display:block}
 
 /* Result */
-.res-circle{width:148px;height:148px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 1.25rem;border:4px solid var(--brand);box-shadow:0 0 28px rgba(255,102,0,.25)}
+.res-circle{width:148px;height:148px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 1.25rem;border:4px solid var(--brand);box-shadow:0 0 28px rgba(94,129,172,.25)}
 .res-pct{font-size:46px;font-weight:900;line-height:1;color:var(--brand)}
 .res-lbl{font-size:10px;letter-spacing:.07em;font-weight:700;color:var(--text3);margin-top:3px}
 
@@ -128,7 +138,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cat-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
 .cat-pill{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;border:1.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;letter-spacing:.02em}
 .cat-pill:hover{border-color:#5E81AC;color:var(--text)}
-.cat-pill.active{border-color:var(--brand);background:rgba(255,102,0,.12);color:var(--brand)}
+.cat-pill.active{border-color:var(--brand);background:rgba(94,129,172,.12);color:var(--brand)}
 
 /* History screen */
 .hist-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
@@ -143,7 +153,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 @media(max-width:520px){
   body{align-items:stretch;justify-content:flex-start}
-  .screen{max-width:100%}
+  .screen{max-width:100%!important}
 }
 </style>
 </head>
@@ -192,7 +202,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div style="display:flex;gap:4px">
-      <button class="icon-btn" id="admin-btn" onclick="showScreen('admin')" title="Panel Admin" style="display:none"><i class="ti ti-shield" style="font-size:19px;color:#EBCB8B"></i></button>
+      <button class="icon-btn" id="admin-btn" onclick="showScreen('admin')" title="Panel Admin" style="display:none"><i class="ti ti-shield" style="font-size:19px;color:#735817"></i></button>
       <button class="icon-btn" onclick="showScreen('history')" title="Mi historial"><i class="ti ti-chart-bar" style="font-size:19px"></i></button>
       <!-- settings btn removed: API key managed server-side via Cloudflare Worker -->
       <button class="icon-btn" onclick="doLogout()" title="Cerrar sesión"><i class="ti ti-logout" style="font-size:19px"></i></button>
@@ -203,7 +213,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="label" style="margin-bottom:8px">Elegí un producto o categoría</div>
     <div class="cat-pills" id="cat-pills"></div>
     <!-- Category-mode banner (shows when cat selected, no product) -->
-    <div id="cat-mode-banner" style="display:none;padding:10px 12px;background:rgba(255,102,0,.08);border:1px solid rgba(255,102,0,.25);border-radius:8px;margin-bottom:10px">
+    <div id="cat-mode-banner" style="display:none;padding:10px 12px;background:rgba(94,129,172,.08);border:1px solid rgba(94,129,172,.25);border-radius:8px;margin-bottom:10px">
       <div style="font-size:12px;font-weight:700;color:var(--brand)" id="cat-mode-title"></div>
       <div style="font-size:11px;color:var(--text3);margin-top:2px">Quiz con preguntas sobre toda la categoría · o buscá un producto específico abajo</div>
     </div>
@@ -218,7 +228,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           <div id="prod-name" style="font-weight:700;font-size:13px;line-height:1.3"></div>
           <div id="prod-code" style="font-size:11px;color:var(--text3);font-family:monospace;margin-top:2px"></div>
         </div>
-        <span style="display:inline-flex;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(94,129,172,.18);color:#88B0D4" id="prod-cat"></span>
+        <span style="display:inline-flex;padding:2px 9px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(94,129,172,.18);color:var(--blue-text,#3B6193)" id="prod-cat"</span>
       </div>
       <div id="prod-link" style="margin-top:7px"></div>
     </div>
@@ -310,7 +320,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="hdr">
     <div style="display:flex;align-items:center;gap:10px">
       <button class="icon-btn" onclick="showScreen('home')" style="padding:5px"><i class="ti ti-arrow-left" style="font-size:19px"></i></button>
-      <div style="font-size:17px;font-weight:800"><i class="ti ti-shield" style="color:#EBCB8B"></i> Panel Admin</div>
+      <div style="font-size:17px;font-weight:800"><i class="ti ti-shield" style="color:#735817"></i> Panel Admin</div>
     </div>
     <div id="admin-summary" style="font-size:12px;color:var(--text2)"></div>
   </div>
@@ -351,7 +361,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <!-- Results table — un cajón (card) separado por usuario -->
   <div class="label" style="margin-bottom:8px">Historial de quizzes <span id="admin-count" style="font-weight:400;color:var(--text3);font-size:11px"></span></div>
-  <div id="admin-table" style="display:flex;flex-direction:column;gap:10px"><div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div></div>
+  <div id="admin-table" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;align-items:start"><div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div></div>
 </div>
 
 <!-- Settings modal removed: API key managed server-side via Cloudflare Worker -->
@@ -387,7 +397,7 @@ let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='14.09.26.4';
+const QUIZ_APP_VERSION='14.09.26.5';
 // El script está al final del <body>, así que el DOM ya existe acá — DOMContentLoaded
 // ya disparó antes de llegar a esta línea, por eso un addEventListener nunca se ejecutaba.
 (function(){
@@ -395,7 +405,7 @@ const QUIZ_APP_VERSION='14.09.26.4';
   if(v)v.textContent='v'+QUIZ_APP_VERSION;
   console.log('MSI Quiz v'+QUIZ_APP_VERSION);
 })();
-const USER_PIE_PALETTE = ['#5E81AC','#88C0D0','#81A1C1','#B48EAD','#EBCB8B','#D08770','#A3BE8C','#8FBCBB','#BF616A','#9EA8BA'];
+const USER_PIE_PALETTE = ['#5E81AC','#2E6B75','#395C7D','#7C5876','#735817','#A85A3D','#436035','#3E7873','#A5414B','#4C566A'];
 
 const LETTERS = [
   {l:'A', sel:'sel-a', ltr:'ltr-a'},
@@ -403,7 +413,7 @@ const LETTERS = [
   {l:'C', sel:'sel-c', ltr:'ltr-c'}
 ];
 const CAT_LABEL = {vga:'GPU',motherboard:'Motherboard',monitor:'Monitor',minipc:'Mini PC',ssd:'SSD',psu:'PSU',gabinete:'Gabinete',cooling:'Cooling',accesorios:'Accesorios'};
-const CAT_COLOR = {vga:'#5E81AC',motherboard:'#88C0D0',monitor:'#81A1C1',minipc:'#B48EAD',ssd:'#EBCB8B',psu:'#D08770',gabinete:'#A3BE8C',cooling:'#8FBCBB',accesorios:'#9EA8BA'};
+const CAT_COLOR = {vga:'#5E81AC',motherboard:'#2E6B75',monitor:'#395C7D',minipc:'#7C5876',ssd:'#735817',psu:'#A85A3D',gabinete:'#436035',cooling:'#3E7873',accesorios:'#4C566A'};
 function catLbl(c){return CAT_LABEL[c]||c||'Otro'}
 function catColor(c){return CAT_COLOR[c]||'var(--text3)'}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -637,6 +647,17 @@ function showSaveToast(msg){
 }
 
 // ── Generate ──────────────────────────────────────────────────────────────────
+// Arma hasta 3 productos "candidatos" para la pregunta visual (el correcto + 2 distractores
+// de la misma categoría) — el TEXTO de la pregunta y las opciones los armamos nosotros acá
+// mismo (100% confiables); lo único que le pedimos a la IA son las URLs de imagen reales de
+// esos 3 productos puntuales, y solo si está segura — así la parte fiable no depende de la IA.
+function _pickVisualCandidates(correctProd,pool){
+  const others=pool.filter(p=>p!==correctProd && p.category===correctProd.category);
+  if(others.length<2)return null;
+  const shuffledOthers=[...others].sort(()=>Math.random()-.5).slice(0,2);
+  return [correctProd,...shuffledOthers].sort(()=>Math.random()-.5);
+}
+
 async function generateQuiz(){
   if(currentMode==='category')return generateCatQuiz();
   if(!selectedProd)return;
@@ -644,6 +665,9 @@ async function generateQuiz(){
   document.getElementById('load-prod').textContent=selectedProd.desc;
 
   const fichaLine=selectedProd.ficha?`URL ficha técnica: ${selectedProd.ficha}`:'';
+  const visualCandidates=_pickVisualCandidates(selectedProd,products);
+  const imgAskLine=visualCandidates?`\n\nAdemás, para estos 3 productos puntuales (para armar una pregunta visual "¿cuál de estas 3 imágenes es...?"), si conocés con certeza la URL real de una foto de cada uno en el CDN de MSI (asset.msi.com), agregá al final del JSON un campo "productImages" con ese mapeo — SOLO los que sepas con certeza, omití el resto:\n${visualCandidates.map(p=>`- código "${p.code||p.desc}": ${p.desc}`).join('\n')}`:'';
+
   const prompt=`Sos un experto en productos MSI. Generá exactamente 10 preguntas de opción múltiple sobre este producto para vendedores de distribuidores MSI Argentina.
 
 Producto: ${selectedProd.desc}
@@ -659,13 +683,12 @@ Reglas:
 5. Español argentino, natural y directo
 6. Opciones incorrectas plausibles pero claramente incorrectas para alguien que conoce el producto
 7. Variá el índice correcto aleatoriamente entre las 10 preguntas
-8. Para 2 o 3 preguntas donde sea relevante, incluí "imageUrl" con la URL real de una imagen del producto en el CDN de MSI (asset.msi.com) si la conocés con certeza; omitilo si no estás seguro
-9. Tipos de preguntas: ¿Para qué usuario? ¿Principal ventaja? ¿Por qué este vs la competencia? ¿Qué característica lo destaca?
+8. Tipos de preguntas: ¿Para qué usuario? ¿Principal ventaja? ¿Por qué este vs la competencia? ¿Qué característica lo destaca?${imgAskLine}
 
 Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
-{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0,"imageUrl":"opcional-url-o-omitir"}]}`;
+{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0}]${visualCandidates?',"productImages":{"codigo":"url-o-omitir"}':''}}`;
 
-  await _callApiAndStart(prompt,`Generando quiz: ${selectedProd.desc}`);
+  await _callApiAndStart(prompt,`Generando quiz: ${selectedProd.desc}`,visualCandidates,selectedProd);
 }
 
 async function generateCatQuiz(){
@@ -679,6 +702,10 @@ async function generateCatQuiz(){
   document.getElementById('load-prod').textContent=`Quiz de ${catLbl(selectedCat)} — ${quizCatProducts.length} productos`;
 
   const prodList=quizCatProducts.map((p,i)=>`${i+1}. ${p.desc}${p.code?' ('+p.code+')':''}`).join('\n');
+  const visualCorrect=quizCatProducts[Math.floor(Math.random()*quizCatProducts.length)];
+  const visualCandidates=_pickVisualCandidates(visualCorrect,pool);
+  const imgAskLine=visualCandidates?`\n\nAdemás, para estos 3 productos puntuales (para armar una pregunta visual "¿cuál de estas 3 imágenes es...?"), si conocés con certeza la URL real de una foto de cada uno en el CDN de MSI (asset.msi.com), agregá al final del JSON un campo "productImages" con ese mapeo — SOLO los que sepas con certeza, omití el resto:\n${visualCandidates.map(p=>`- código "${p.code||p.desc}": ${p.desc}`).join('\n')}`:'';
+
   const prompt=`Sos un experto en productos MSI. Generá exactamente 10 preguntas de opción múltiple sobre la categoría "${catLbl(selectedCat)}" para vendedores de distribuidores MSI Argentina.
 
 Productos del portfolio MSI Argentina en esta categoría:
@@ -692,16 +719,44 @@ Reglas:
 5. NO specs técnicas muy específicas (MHz, nm de proceso, etc.)
 6. Las preguntas deben ayudar al vendedor a RECOMENDAR correctamente
 7. Español argentino, natural y directo
-8. Variá el índice correcto aleatoriamente
-9. Para preguntas de un producto específico, podés incluir "imageUrl" si conocés la URL del CDN de MSI con certeza
+8. Variá el índice correcto aleatoriamente${imgAskLine}
 
 Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
-{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0,"imageUrl":"opcional-o-omitir"}]}`;
+{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0}]${visualCandidates?',"productImages":{"codigo":"url-o-omitir"}':''}}`;
 
-  await _callApiAndStart(prompt,`Quiz de ${catLbl(selectedCat)}`);
+  await _callApiAndStart(prompt,`Quiz de ${catLbl(selectedCat)}`,visualCandidates,visualCorrect);
 }
 
-async function _callApiAndStart(prompt,loadingLabel){
+// Precarga una imagen y resuelve true/false según si carga bien — así solo mostramos la
+// pregunta visual cuando las 3 fotos realmente existen (las URLs las "recuerda" la IA, no
+// están verificadas, así que a veces van a fallar — en ese caso simplemente no se arma la
+// pregunta visual y el quiz queda con las 10 preguntas de texto normales).
+function _preloadImg(url){
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>res(true);
+    img.onerror=()=>res(false);
+    img.src=url;
+  });
+}
+
+async function _buildVisualQuestion(visualCandidates,visualCorrect,productImages){
+  if(!visualCandidates||!productImages)return null;
+  const urls=visualCandidates.map(p=>productImages[p.code||p.desc]);
+  if(urls.some(u=>!u||typeof u!=='string'||!u.startsWith('http')))return null;
+  const oks=await Promise.all(urls.map(_preloadImg));
+  if(oks.some(ok=>!ok))return null;
+  const correctIdx=visualCandidates.indexOf(visualCorrect);
+  if(correctIdx<0)return null;
+  return {
+    q:`¿Cuál de estas 3 imágenes corresponde a "${visualCorrect.desc}"?`,
+    options:visualCandidates.map(p=>p.desc),
+    optionImages:urls,
+    correct:correctIdx
+  };
+}
+
+async function _callApiAndStart(prompt,loadingLabel,visualCandidates,visualCorrect){
   document.getElementById('load-prod').textContent=loadingLabel;
   try{
     const res=await fetch(QUIZ_WORKER_URL,{
@@ -716,10 +771,19 @@ async function _callApiAndStart(prompt,loadingLabel){
     if(!match)throw new Error('Respuesta inválida de la IA');
     const parsed=JSON.parse(match[0]);
     if(!Array.isArray(parsed.questions)||parsed.questions.length<5)throw new Error('Se generaron pocas preguntas. Intentá de nuevo.');
-    questions=parsed.questions.slice(0,10).map(q=>{
+    let baseQuestions=parsed.questions.slice(0,10);
+    const visualQ=await _buildVisualQuestion(visualCandidates,visualCorrect,parsed.productImages);
+    if(visualQ){
+      // Reemplaza la última pregunta de texto por la visual, así el total se mantiene en 10.
+      baseQuestions=baseQuestions.slice(0,Math.min(9,baseQuestions.length));
+      baseQuestions.push(visualQ);
+    }
+    questions=baseQuestions.map(q=>{
       const idx=[0,1,2];
       for(let i=2;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
-      return{...q,options:idx.map(i=>q.options[i]),correct:idx.indexOf(q.correct)};
+      const shuffled={...q,options:idx.map(i=>q.options[i]),correct:idx.indexOf(q.correct)};
+      if(q.optionImages)shuffled.optionImages=idx.map(i=>q.optionImages[i]);
+      return shuffled;
     });
     currentQ=0;answers=[];chosenAnswer=null;quizPhase='selecting';
     // Update retry button label
@@ -754,11 +818,21 @@ function renderQ(){
     imgEl.onerror=()=>{imgEl.style.display='none'};
   }else{imgEl.style.display='none';imgEl.src=''}
 
+  const hasOptImgs=Array.isArray(q.optionImages)&&q.optionImages.length===q.options.length;
+  document.getElementById('q-opts').className=hasOptImgs?'opt-grid':'';
   document.getElementById('q-opts').innerHTML=q.options.map((o,i)=>
-    `<button class="opt" id="opt${i}" onclick="pickOpt(${i})">
-      <div class="ltr ${LETTERS[i].ltr}">${LETTERS[i].l}</div>
-      <span>${esc(o)}</span>
-    </button>`
+    hasOptImgs
+    ? `<button class="opt opt-visual" id="opt${i}" onclick="pickOpt(${i})">
+        <img class="opt-img" src="${esc(q.optionImages[i])}" alt="" onerror="this.style.display='none'"/>
+        <div style="display:flex;align-items:center;gap:8px;width:100%">
+          <div class="ltr ${LETTERS[i].ltr}">${LETTERS[i].l}</div>
+          <span>${esc(o)}</span>
+        </div>
+      </button>`
+    : `<button class="opt" id="opt${i}" onclick="pickOpt(${i})">
+        <div class="ltr ${LETTERS[i].ltr}">${LETTERS[i].l}</div>
+        <span>${esc(o)}</span>
+      </button>`
   ).join('');
 
   quizPhase='selecting';chosenAnswer=null;
@@ -769,7 +843,8 @@ function renderQ(){
 
 function pickOpt(i){
   if(quizPhase!=='selecting')return;
-  document.querySelectorAll('.opt').forEach(o=>o.className='opt');
+  const isVisual=document.getElementById('opt0')?.classList.contains('opt-visual');
+  document.querySelectorAll('.opt').forEach(o=>o.className=isVisual?'opt opt-visual':'opt');
   document.getElementById('opt'+i).classList.add(LETTERS[i].sel);
   chosenAnswer=i;
   document.getElementById('q-next').disabled=false;
@@ -787,11 +862,12 @@ function revealAnswer(){
   const correctIdx=questions[currentQ].correct;
   const wrong=chosenAnswer!==correctIdx;
 
+  const isVisual=questions[currentQ].optionImages;
   for(let i=0;i<3;i++){
     const el=document.getElementById('opt'+i);
     if(!el)continue;
     el.disabled=true;
-    el.className='opt';
+    el.className=isVisual?'opt opt-visual':'opt';
     if(i===correctIdx){
       el.classList.add('opt-correct');
       // Add "Correcta" badge to the label span
@@ -828,7 +904,7 @@ function showResults(){
   const pct=Math.round((correct/total)*100);
 
   document.getElementById('res-pct').textContent=pct+'%';
-  const color=pct>=80?'#A3BE8C':pct>=60?'#EBCB8B':'#BF616A';
+  const color=pct>=80?'#436035':pct>=60?'#735817':'#A5414B';
   const circle=document.getElementById('res-circle');
   circle.style.borderColor=color;circle.style.boxShadow=`0 0 28px ${color}44`;
   document.getElementById('res-pct').style.color=color;
@@ -845,9 +921,9 @@ function showResults(){
     const q=questions[i];
     const short=q.q.length>58?q.q.slice(0,58)+'…':q.q;
     return `<div class="score-row">
-      <div class="score-dot" style="background:${ok?'#A3BE8C':'#BF616A'}"></div>
+      <div class="score-dot" style="background:${ok?'#436035':'#A5414B'}"></div>
       <span style="flex:1;font-size:12px;color:var(--text2)">${esc(short)}</span>
-      <span style="font-size:13px;font-weight:700;color:${ok?'#A3BE8C':'#BF616A'}">${ok?'✓':'✗'}</span>
+      <span style="font-size:13px;font-weight:700;color:${ok?'#436035':'#A5414B'}">${ok?'✓':'✗'}</span>
     </div>`;
   }).join('');
 
@@ -914,7 +990,7 @@ async function loadHistory(){
     sparkCard.style.display='block';
     document.getElementById('hist-spark').innerHTML=sparkData.map(r=>{
       const h=Math.max(4,Math.round((r.pct/100)*32));
-      const c=r.pct>=80?'#A3BE8C':r.pct>=60?'#EBCB8B':'#BF616A';
+      const c=r.pct>=80?'#436035':r.pct>=60?'#735817':'#A5414B';
       return `<div class="spark-bar" style="height:${h}px;background:${c};flex:1" title="${r.pct}% — ${r.product.slice(0,30)}"></div>`;
     }).join('');
     const mid=Math.floor(sparkData.length/2);
@@ -930,7 +1006,7 @@ async function loadHistory(){
     return;
   }
   listEl.innerHTML=rows.map(r=>{
-    const color=r.pct>=80?'#A3BE8C':r.pct>=60?'#EBCB8B':'#BF616A';
+    const color=r.pct>=80?'#436035':r.pct>=60?'#735817':'#A5414B';
     const d=new Date(r.ts);
     const dateStr=`${d.getDate()}/${d.getMonth()+1} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
     const short=r.product.length>34?r.product.slice(0,34)+'…':r.product;
@@ -967,7 +1043,7 @@ async function loadAdminData(){
       });
     }
   }catch(e){
-    document.getElementById('admin-table').innerHTML=`<div class="hist-empty" style="color:#BF616A">Error: ${e.message}<br><small>Verificá las reglas de Firebase</small></div>`;
+    document.getElementById('admin-table').innerHTML=`<div class="hist-empty" style="color:#A5414B">Error: ${e.message}<br><small>Verificá las reglas de Firebase</small></div>`;
     return;
   }
   adminAllRows.sort((a,b)=>b.ts-a.ts);
@@ -1089,7 +1165,7 @@ function renderAdminTable(){
 
   document.getElementById('admin-user-list').innerHTML=userArr.map((u,i)=>{
     const avg=Math.round(u.sumPct/u.total);
-    const c=avg>=80?'#A3BE8C':avg>=60?'#EBCB8B':'#BF616A';
+    const c=avg>=80?'#436035':avg>=60?'#735817':'#A5414B';
     const name=displayNameFor(u.sample);
     const pieColor=USER_PIE_PALETTE[i%USER_PIE_PALETTE.length];
     return `<div class="hist-row">
@@ -1099,9 +1175,9 @@ function renderAdminTable(){
         <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">${u.total} quizzes · mejor: ${u.best}%</div>
       </div>
-      <button class="icon-btn" style="padding:4px" title="${adminUids[u.uid]?'Sacar admin del Quiz':'Dar admin del Quiz'}" onclick="toggleUserAdmin('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-shield${adminUids[u.uid]?'-check':''}" style="font-size:14px;color:${adminUids[u.uid]?'#EBCB8B':'var(--text3)'}"></i></button>
+      <button class="icon-btn" style="padding:4px" title="${adminUids[u.uid]?'Sacar admin del Quiz':'Dar admin del Quiz'}" onclick="toggleUserAdmin('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-shield${adminUids[u.uid]?'-check':''}" style="font-size:14px;color:${adminUids[u.uid]?'#735817':'var(--text3)'}"></i></button>
       <button class="icon-btn" style="padding:4px" title="Editar nombre" onclick="editUserName('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-pencil" style="font-size:14px;color:var(--text3)"></i></button>
-      <button class="icon-btn" style="padding:4px" title="Borrar resultados de este usuario" onclick="resetUserResults('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-trash" style="font-size:14px;color:#BF616A"></i></button>
+      <button class="icon-btn" style="padding:4px" title="Borrar resultados de este usuario" onclick="resetUserResults('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-trash" style="font-size:14px;color:#A5414B"></i></button>
     </div>`;
   }).join('');
 
@@ -1109,7 +1185,7 @@ function renderAdminTable(){
   document.getElementById('admin-table').innerHTML=userArr.map(u=>{
     const name=displayNameFor(u.sample);
     const rowsHtml=u.rows.slice(0,100).map(r=>{
-      const color=r.pct>=80?'#A3BE8C':r.pct>=60?'#EBCB8B':'#BF616A';
+      const color=r.pct>=80?'#436035':r.pct>=60?'#735817':'#A5414B';
       const d=new Date(r.ts);
       const dateStr=`${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
       const short=(r.product||'').length>36?(r.product).slice(0,36)+'…':r.product||'—';
@@ -1123,7 +1199,7 @@ function renderAdminTable(){
             · ${r.correct}/${r.total} · ${dateStr}
           </div>
         </div>
-        <button class="icon-btn" style="padding:3px" title="Borrar este quiz" onclick="deleteSingleResult('${esc(r.uid)}','${esc(r._key)}',${JSON.stringify(short).replace(/"/g,'&quot;')})"><i class="ti ti-trash" style="font-size:13px;color:#BF616A"></i></button>
+        <button class="icon-btn" style="padding:3px" title="Borrar este quiz" onclick="deleteSingleResult('${esc(r.uid)}','${esc(r._key)}',${JSON.stringify(short).replace(/"/g,'&quot;')})"><i class="ti ti-trash" style="font-size:13px;color:#A5414B"></i></button>
       </div>`;
     }).join('');
     return `<div class="card" style="padding:0.9rem">
