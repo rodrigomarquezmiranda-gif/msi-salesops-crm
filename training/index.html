@@ -13,7 +13,7 @@
 :root{
   /* Nord (versión clara) — mismos tokens que el CRM (Mi Participación, Marketing Budget, etc.) */
   --brand:#5E81AC;--brand2:#4C6E96;
-  --bg:#FFFFFF;--bg2:#ECEFF4;--bg3:#E5E9F0;--bg4:#E5E9F0;
+  --bg:#F7F9FC;--bg2:#ECEFF4;--bg3:#E5E9F0;--bg4:#E5E9F0;
   --text:#2E3440;--text2:#4C566A;--text3:#7C8CA5;
   --border:rgba(46,52,64,0.09);--border2:rgba(46,52,64,0.16);
   --green:#436035;--red:#A5414B;--blue:#5E81AC;--yellow:#735817;
@@ -397,7 +397,7 @@ let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='14.09.26.5';
+const QUIZ_APP_VERSION='14.09.26.6';
 // El script está al final del <body>, así que el DOM ya existe acá — DOMContentLoaded
 // ya disparó antes de llegar a esta línea, por eso un addEventListener nunca se ejecutaba.
 (function(){
