@@ -1106,15 +1106,30 @@ function renderAdminTable(){
 // ── Google Login ───────────────────────────────────────────────────────────────
 async function doGoogleLogin(){
   const btn=document.getElementById('google-btn');
-  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Redirigiendo…';
+  const resetBtn=()=>{btn.disabled=false;btn.innerHTML='<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px"> Continuar con Google';};
+  btn.disabled=true;btn.innerHTML='<i class="ti ti-loader-2"></i> Conectando…';
+  const err=document.getElementById('login-err');
+  err.style.display='none';
   try{
     const provider=new firebase.auth.GoogleAuthProvider();
-    await fbAuth.signInWithRedirect(provider);
+    // signInWithPopup en vez de signInWithRedirect: el flujo de redirect depende de que el
+    // navegador conserve el estado de IndexedDB entre msicrm.com y el authDomain
+    // (msi-crm.firebaseapp.com) a través de una navegación completa — si el navegador bloquea
+    // almacenamiento de terceros (Safari ITP, Chrome storage partitioning, etc.) el resultado
+    // nunca vuelve y la pantalla se queda "colgada" sin loguear. El popup evita ese problema
+    // porque la comunicación vuelve por postMessage dentro de la misma pestaña.
+    await fbAuth.signInWithPopup(provider);
+    // onAuthStateChanged se encarga de mostrar la pantalla siguiente.
   }catch(e){
-    const err=document.getElementById('login-err');
-    err.textContent=e.message;
+    if(e.code==='auth/popup-blocked'){
+      err.textContent='El navegador bloqueó la ventana de Google. Permití popups para este sitio e intentá de nuevo.';
+    }else if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'){
+      err.textContent='Se cerró la ventana de Google antes de terminar. Probá de nuevo.';
+    }else{
+      err.textContent=e.message;
+    }
     err.style.display='block';
-    btn.disabled=false;btn.innerHTML='<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px"> Continuar con Google';
+    resetBtn();
   }
 }
 </script>
