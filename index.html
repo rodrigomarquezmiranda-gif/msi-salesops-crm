@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '14.09.26.2';
+const APP_VERSION = '14.09.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -14976,9 +14976,21 @@ async function renderUsersTab() {
 
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
-  _fbAuth.signInWithRedirect(provider).catch(e => {
+  // signInWithPopup en vez de signInWithRedirect: el flujo de redirect depende de que el
+  // navegador conserve el estado de IndexedDB entre este dominio y el authDomain de Firebase
+  // durante toda la ida-y-vuelta a Google — si el navegador bloquea almacenamiento de
+  // terceros (Safari ITP, Chrome storage partitioning, etc.) el resultado nunca vuelve y la
+  // pantalla de login se queda dando vueltas sin loguear, sin ningún error visible. El popup
+  // evita eso porque la respuesta vuelve por postMessage dentro de la misma pestaña.
+  _fbAuth.signInWithPopup(provider).catch(e => {
     console.error('Google sign-in error:', e.code, e.message);
-    alert('Error al iniciar sesión (' + e.code + '): ' + e.message);
+    if (e.code === 'auth/popup-blocked') {
+      alert('El navegador bloqueó la ventana de Google. Permití popups para este sitio e intentá de nuevo.');
+    } else if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') {
+      // Usuario cerró el popup antes de terminar — no hace falta alertar.
+    } else {
+      alert('Error al iniciar sesión (' + e.code + '): ' + e.message);
+    }
   });
 }
 
