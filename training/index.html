@@ -400,7 +400,7 @@ let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='14.09.26.8';
+const QUIZ_APP_VERSION='14.09.26.9';
 // El script está al final del <body>, así que el DOM ya existe acá — DOMContentLoaded
 // ya disparó antes de llegar a esta línea, por eso un addEventListener nunca se ejecutaba.
 (function(){
@@ -956,7 +956,7 @@ async function _loadMemeManifest(){
 }
 
 function _memeBucketOf(filename){
-  const m=/-([0-9]{2,3})\.[a-zA-Z0-9]+$/.exec(filename);
+  const m=/-\s*([0-9]{2,3})\.[a-zA-Z0-9]+$/.exec(filename);
   if(!m)return null;
   const n=parseInt(m[1],10);
   if(n===100)return '100';
@@ -982,7 +982,7 @@ async function showResultMeme(pct){
   const file=matches[Math.floor(Math.random()*matches.length)];
   img.onerror=()=>{wrap.style.display='none'};
   img.onload=()=>{wrap.style.display='block'};
-  img.src=`memes/${file}`;
+  img.src=`memes/${encodeURIComponent(file)}`;
 }
 
 // ── Save result to Firebase ────────────────────────────────────────────────────
