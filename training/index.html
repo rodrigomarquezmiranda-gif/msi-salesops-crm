@@ -383,10 +383,11 @@ let isAdmin = false;
 let adminAllRows = []; // all quiz results loaded for admin panel
 let userNameOverrides = {}; // uid -> nombre editado por el admin
 let knownUsers = {}; // uid -> {email,name,lastSeen} directorio de logins
+let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='14.09.26.2';
+const QUIZ_APP_VERSION='14.09.26.3';
 document.addEventListener('DOMContentLoaded',()=>{
   const v=document.getElementById('quiz-version');
   if(v)v.textContent='v'+QUIZ_APP_VERSION;
@@ -947,13 +948,15 @@ async function loadAdminData(){
   document.getElementById('admin-table').innerHTML='<div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div>';
   adminAllRows=[];
   try{
-    const [snap,namesSnap,knownSnap]=await Promise.all([
+    const [snap,namesSnap,knownSnap,adminsSnap]=await Promise.all([
       fbDB.ref('quiz_results').get(),
       fbDB.ref('msi_quiz_config/userNames').get(),
-      fbDB.ref('msi_quiz_config/knownUsers').get()
+      fbDB.ref('msi_quiz_config/knownUsers').get(),
+      fbDB.ref('msi_quiz_config/admins').get()
     ]);
     userNameOverrides=namesSnap.exists()?namesSnap.val():{};
     knownUsers=knownSnap.exists()?knownSnap.val():{};
+    adminUids=adminsSnap.exists()?adminsSnap.val():{};
     if(snap.exists()){
       snap.forEach(userSnap=>{
         userSnap.forEach(r=>{
@@ -997,6 +1000,22 @@ async function editUserName(uid,currentLabel){
     }
     renderAdminTable();
   }catch(e){alert('No se pudo guardar el nombre: '+e.message);}
+}
+
+async function toggleUserAdmin(uid,label){
+  const isNowAdmin=!!adminUids[uid];
+  const verb=isNowAdmin?'sacarle':'darle';
+  if(!confirm(`¿${verb.charAt(0).toUpperCase()+verb.slice(1)} el permiso admin del Quiz a "${label}"?`))return;
+  try{
+    if(isNowAdmin){
+      await fbDB.ref(`msi_quiz_config/admins/${uid}`).remove();
+      delete adminUids[uid];
+    }else{
+      await fbDB.ref(`msi_quiz_config/admins/${uid}`).set(true);
+      adminUids[uid]=true;
+    }
+    renderAdminTable();
+  }catch(e){alert('No se pudo actualizar: '+e.message);}
 }
 
 async function resetUserResults(uid,label){
@@ -1078,6 +1097,7 @@ function renderAdminTable(){
         <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">${u.total} quizzes · mejor: ${u.best}%</div>
       </div>
+      <button class="icon-btn" style="padding:4px" title="${adminUids[u.uid]?'Sacar admin del Quiz':'Dar admin del Quiz'}" onclick="toggleUserAdmin('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-shield${adminUids[u.uid]?'-check':''}" style="font-size:14px;color:${adminUids[u.uid]?'#EBCB8B':'var(--text3)'}"></i></button>
       <button class="icon-btn" style="padding:4px" title="Editar nombre" onclick="editUserName('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-pencil" style="font-size:14px;color:var(--text3)"></i></button>
       <button class="icon-btn" style="padding:4px" title="Borrar resultados de este usuario" onclick="resetUserResults('${esc(u.uid)}',${JSON.stringify(name).replace(/"/g,'&quot;')})"><i class="ti ti-trash" style="font-size:14px;color:#BF616A"></i></button>
     </div>`;
