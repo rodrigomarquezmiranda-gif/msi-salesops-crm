@@ -285,6 +285,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div style="font-size:21px;font-weight:800;margin-bottom:5px" id="res-title"></div>
     <div class="ts" id="res-sub"></div>
   </div>
+  <div class="tc" id="res-meme-wrap" style="display:none;margin-bottom:12px">
+    <img id="res-meme" style="max-width:100%;max-height:220px;border-radius:10px;box-shadow:var(--shadow)" alt=""/>
+  </div>
   <div class="card" id="res-score" style="margin-bottom:12px"></div>
   <div class="gap">
     <button class="btn btn-primary" id="res-retry-btn" onclick="generateQuiz()"><i class="ti ti-refresh"></i> Nuevo quiz</button>
@@ -397,7 +400,7 @@ let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='14.09.26.6';
+const QUIZ_APP_VERSION='14.09.26.7';
 // El script está al final del <body>, así que el DOM ya existe acá — DOMContentLoaded
 // ya disparó antes de llegar a esta línea, por eso un addEventListener nunca se ejecutaba.
 (function(){
@@ -928,7 +931,36 @@ function showResults(){
   }).join('');
 
   showScreen('results');
+  showResultMeme(pct);
   saveQuizResult(correct,total,pct);
+}
+
+// ── Memes/GIFs por rango de puntaje ─────────────────────────────────────────────
+// manifest.json vive en training/memes/manifest.json y lista, por bucket de a 10 puntos
+// ("100","90","80",...,"0"), los nombres de archivo disponibles en training/memes/<bucket>/.
+// Si el bucket no tiene nada (o el archivo no existe todavía), simplemente no se muestra nada.
+let _memeManifest=null;
+async function _loadMemeManifest(){
+  if(_memeManifest)return _memeManifest;
+  try{
+    const res=await fetch('memes/manifest.json',{cache:'no-store'});
+    _memeManifest=res.ok?await res.json():{};
+  }catch(e){_memeManifest={};}
+  return _memeManifest;
+}
+
+async function showResultMeme(pct){
+  const wrap=document.getElementById('res-meme-wrap');
+  const img=document.getElementById('res-meme');
+  wrap.style.display='none';
+  const manifest=await _loadMemeManifest();
+  const bucket=String(Math.min(100,Math.max(0,Math.floor(pct/10)*10)));
+  const files=manifest[bucket];
+  if(!Array.isArray(files)||!files.length)return;
+  const file=files[Math.floor(Math.random()*files.length)];
+  img.onerror=()=>{wrap.style.display='none'};
+  img.onload=()=>{wrap.style.display='block'};
+  img.src=`memes/${bucket}/${file}`;
 }
 
 // ── Save result to Firebase ────────────────────────────────────────────────────
