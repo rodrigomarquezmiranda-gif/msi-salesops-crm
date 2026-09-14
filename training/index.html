@@ -387,12 +387,14 @@ let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='14.09.26.3';
-document.addEventListener('DOMContentLoaded',()=>{
+const QUIZ_APP_VERSION='14.09.26.4';
+// El script está al final del <body>, así que el DOM ya existe acá — DOMContentLoaded
+// ya disparó antes de llegar a esta línea, por eso un addEventListener nunca se ejecutaba.
+(function(){
   const v=document.getElementById('quiz-version');
   if(v)v.textContent='v'+QUIZ_APP_VERSION;
   console.log('MSI Quiz v'+QUIZ_APP_VERSION);
-});
+})();
 const USER_PIE_PALETTE = ['#5E81AC','#88C0D0','#81A1C1','#B48EAD','#EBCB8B','#D08770','#A3BE8C','#8FBCBB','#BF616A','#9EA8BA'];
 
 const LETTERS = [
