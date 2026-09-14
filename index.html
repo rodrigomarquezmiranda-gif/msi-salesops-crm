@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '14.09.26.3';
+const APP_VERSION = '14.09.26.4';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9851,12 +9851,12 @@ function renderMktTab() {
       </div>
       <div class="table-scroll"><table class="data-table" style="font-size:12px">
         <thead><tr><th>Cliente</th><th>Detalle</th><th>Q</th><th style="text-align:right">%</th><th style="text-align:right">Monto</th></tr></thead>
-        <tbody>${trows.map(r=>`<tr>
+        <tbody>${trows.filter(r=>r.total>0).map(r=>`<tr>
           <td style="font-weight:500">${esc(r.customer||'—')}</td>
           <td style="color:var(--text3);font-size:11px">${esc(r.activity||'—')}</td>
           <td style="color:var(--text3)">Q${r.q}</td>
-          <td style="text-align:right;color:var(--text3);font-size:11px">${r.total>0&&total>0?(r.total/total*100).toFixed(1)+'%':'—'}</td>
-          <td style="text-align:right;font-weight:${r.total>0?'600':'400'};color:${r.total>0?'var(--text)':'var(--text3)'}">${r.total>0?fmtAmt(r.total):'—'}</td>
+          <td style="text-align:right;color:var(--text3);font-size:11px">${total>0?(r.total/total*100).toFixed(1)+'%':'—'}</td>
+          <td style="text-align:right;font-weight:600;color:var(--text)">${fmtAmt(r.total)}</td>
         </tr>`).join('')}</tbody>
         <tfoot><tr>
           <td colspan="3" style="font-weight:700">Total</td>
