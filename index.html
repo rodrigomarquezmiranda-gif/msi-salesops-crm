@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '11.09.26.13';
+const APP_VERSION = '14.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -12103,6 +12103,8 @@ function buildResellerBlock(reseller, tier, idx, data, year, months, quarters, a
     });
     thMonths += `<th class="th-q">${q}</th><th class="th-target">Target ${q} <i class="ti ti-pencil" style="font-size:9px;opacity:0.6"></i></th>`;
   });
+  // Total anual: suma de todos los Q activos — se arma solo, sin tocar nada acá cuando aparezca Q4.
+  thMonths += `<th class="th-q" style="background:var(--brand-bg,rgba(255,102,0,0.08))">Total Anual</th>`;
 
   let bodyRows = '';
   RESELLER_LINES.forEach(line => {
@@ -12128,12 +12130,14 @@ function buildResellerBlock(reseller, tier, idx, data, year, months, quarters, a
       rowCells += `<td class="q-col">${qtot || '—'}</td>`;
       rowCells += `<td class="target-col"><span id="rtgt_${reseller.id}_${line.key}_${year}${q}">${target !== '' ? target : '<span style="color:var(--text3)">—</span>'}</span><i class="ti ti-pencil edit-pencil" onclick="editResellerTarget('${reseller.id}','${line.key}','${year}${q}','${tier}')"></i></td>`;
     });
+    rowCells += `<td class="q-col" style="font-weight:700;background:var(--brand-bg,rgba(255,102,0,0.08))">${totalByLine[line.key] || '—'}</td>`;
 
     bodyRows += `<tr><td class="line-label">${esc(line.label)}</td>${rowCells}</tr>`;
   });
 
   // TTL row
   let ttlCells = '';
+  let ttlAnnualTotal = 0;
   activeQuarters.forEach(q => {
     let qSum = 0;
     quarters[q].forEach(m => {
@@ -12148,7 +12152,9 @@ function buildResellerBlock(reseller, tier, idx, data, year, months, quarters, a
     const target = db.resellerTargets[targetKey] ?? '';
     ttlCells += `<td class="q-col">${qSum || '—'}</td>`;
     ttlCells += `<td class="target-col"><span id="rtgt_${reseller.id}_ttl_${year}${q}">${target !== '' ? target : '<span style="color:var(--text3)">—</span>'}</span><i class="ti ti-pencil edit-pencil" onclick="editResellerTarget('${reseller.id}','ttl','${year}${q}','${tier}')"></i></td>`;
+    ttlAnnualTotal += qSum;
   });
+  ttlCells += `<td class="q-col" style="font-weight:700;background:var(--brand-bg,rgba(255,102,0,0.08))">${ttlAnnualTotal || '—'}</td>`;
 
   const matchInfo = _getResellerMatchInfo(reseller);
 
