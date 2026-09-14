@@ -383,6 +383,7 @@ let currentUser = null;
 let isAdmin = false;
 let adminAllRows = []; // all quiz results loaded for admin panel
 let userNameOverrides = {}; // uid -> nombre editado por el admin
+let knownUsers = {}; // uid -> {email,name,lastSeen} directorio de logins
 const USER_PIE_PALETTE = ['#5E81AC','#88C0D0','#81A1C1','#B48EAD','#EBCB8B','#D08770','#A3BE8C','#8FBCBB','#BF616A','#9EA8BA'];
 
 const LETTERS = [
@@ -406,7 +407,7 @@ function showScreen(id){
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 fbAuth.onAuthStateChanged(user=>{
-  if(user){currentUser=user;loadProducts();checkAdmin();showScreen('home');}
+  if(user){currentUser=user;loadProducts();checkAdmin();syncKnownUser();showScreen('home');}
   else{currentUser=null;isAdmin=false;showScreen('login');}
 });
 
@@ -851,19 +852,35 @@ async function saveQuizResult(correct,total,pct){
     record={ts:Date.now(),mode:'category',
       product:`Quiz de ${catLbl(selectedCat)}`,
       code:'',category:selectedCat||'',
-      correct,total,pct,email:currentUser.email||'',name:currentUser.displayName||''};
+      correct,total,pct,email:currentUser.email||''};
   }else{
     if(!selectedProd){console.warn('saveQuizResult: no selectedProd');return;}
     record={ts:Date.now(),mode:'product',
       product:selectedProd.desc,code:selectedProd.code||'',
-      category:selectedProd.category||'',correct,total,pct,email:currentUser.email||'',name:currentUser.displayName||''};
+      category:selectedProd.category||'',correct,total,pct,email:currentUser.email||''};
   }
   try{
     await fbDB.ref(`quiz_results/${currentUser.uid}`).push(record);
     console.log('✓ Resultado guardado:',pct+'%',record.product);
   }catch(e){
     console.error('✗ Error guardando resultado:',e.code,e.message);
+    alert('Tu resultado se mostró pero NO se pudo guardar en el historial.\n('+(e.message||e.code||'error desconocido')+')\nAvisale al admin.');
   }
+  syncKnownUser();
+}
+
+// Directorio liviano de usuarios conocidos (para que el admin vea nombres reales).
+// Separado de quiz_results para no arriesgar el guardado del resultado si las reglas
+// de Firebase validan la forma exacta de ese registro.
+async function syncKnownUser(){
+  if(!currentUser)return;
+  try{
+    await fbDB.ref(`msi_quiz_config/knownUsers/${currentUser.uid}`).set({
+      email:currentUser.email||'',
+      name:currentUser.displayName||'',
+      lastSeen:Date.now()
+    });
+  }catch(e){console.warn('syncKnownUser falló (no crítico):',e.message);}
 }
 
 // ── History screen ─────────────────────────────────────────────────────────────
@@ -922,11 +939,13 @@ async function loadAdminData(){
   document.getElementById('admin-table').innerHTML='<div class="hist-empty"><i class="ti ti-loader-2" style="font-size:24px;display:block;margin-bottom:6px"></i>Cargando…</div>';
   adminAllRows=[];
   try{
-    const [snap,namesSnap]=await Promise.all([
+    const [snap,namesSnap,knownSnap]=await Promise.all([
       fbDB.ref('quiz_results').get(),
-      fbDB.ref('msi_quiz_config/userNames').get()
+      fbDB.ref('msi_quiz_config/userNames').get(),
+      fbDB.ref('msi_quiz_config/knownUsers').get()
     ]);
     userNameOverrides=namesSnap.exists()?namesSnap.val():{};
+    knownUsers=knownSnap.exists()?knownSnap.val():{};
     if(snap.exists()){
       snap.forEach(userSnap=>{
         userSnap.forEach(r=>{
@@ -950,10 +969,11 @@ async function loadAdminData(){
   renderAdminTable();
 }
 
-// Nombre a mostrar: override del admin > nombre de Google guardado en el registro > email > uid
+// Nombre a mostrar: override del admin > nombre de Google (directorio de logins) > email del resultado > uid
 function displayNameFor(r){
   if(!r)return '—';
-  return userNameOverrides[r.uid]||r.name||r.email||r.uid;
+  const known=knownUsers[r.uid];
+  return userNameOverrides[r.uid]||(known&&known.name)||r.name||r.email||(known&&known.email)||r.uid;
 }
 
 async function editUserName(uid,currentLabel){
