@@ -1,23 +1,49 @@
 {
-  "checkedAt": "2026-09-11T20:39:37.393762+00:00",
-  "productCount": 298,
+  "checkedAt": "2026-09-14T21:37:52.031846+00:00",
+  "productCount": 296,
   "hasChanges": true,
-  "changeCount": 2,
+  "changeCount": 6,
   "changes": [
     {
-      "type": "removed",
-      "partNo": "CUBI Z AI 8M-023B",
-      "name": "Cubi Z AI 8M-023BUS",
-      "category": "CUBI"
+      "type": "new",
+      "partNo": "MAG 274QF E20",
+      "name": "MAG 274QF E20",
+      "category": "2K Monitors - Gaming",
+      "newPrice": 128.0
     },
     {
       "type": "removed",
-      "partNo": "CUBI Z AI 8M-024B",
-      "name": "Cubi Z AI 8M-024BUS",
-      "category": "CUBI"
+      "partNo": "MAG346CQ",
+      "name": "MAG 346CQ",
+      "category": "Ultra Wide Monitors - Gaming"
+    },
+    {
+      "type": "new",
+      "partNo": "PRO MP161E6T",
+      "name": "PRO MP161E6T",
+      "category": "PRO MNT 22\"/16\" Flat",
+      "newPrice": 107.0
+    },
+    {
+      "type": "removed",
+      "partNo": "ProMP225",
+      "name": "PRO MP225",
+      "category": "PRO MNT 22\"/16\" Flat"
+    },
+    {
+      "type": "removed",
+      "partNo": "ProMP225V",
+      "name": "PRO MP225V",
+      "category": "PRO MNT 22\"/16\" Flat"
+    },
+    {
+      "type": "removed",
+      "partNo": "ProMP341CQW",
+      "name": "PRO MP341CQW",
+      "category": "PRO MNT 34\" Curved"
     }
   ],
-  "summary": "2 cambio(s) detectado(s)",
+  "summary": "6 cambio(s) detectado(s)",
   "triggeredBy": "github-actions",
   "triggerMode": "schedule"
 }
