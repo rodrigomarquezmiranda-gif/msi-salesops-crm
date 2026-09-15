@@ -1,49 +1,18 @@
 {
-  "checkedAt": "2026-09-14T21:37:52.031846+00:00",
-  "productCount": 296,
+  "checkedAt": "2026-09-15T20:59:24.707688+00:00",
+  "productCount": 297,
   "hasChanges": true,
-  "changeCount": 6,
+  "changeCount": 1,
   "changes": [
     {
       "type": "new",
-      "partNo": "MAG 274QF E20",
-      "name": "MAG 274QF E20",
-      "category": "2K Monitors - Gaming",
-      "newPrice": 128.0
-    },
-    {
-      "type": "removed",
-      "partNo": "MAG346CQ",
-      "name": "MAG 346CQ",
-      "category": "Ultra Wide Monitors - Gaming"
-    },
-    {
-      "type": "new",
-      "partNo": "PRO MP161E6T",
-      "name": "PRO MP161E6T",
-      "category": "PRO MNT 22\"/16\" Flat",
-      "newPrice": 107.0
-    },
-    {
-      "type": "removed",
-      "partNo": "ProMP225",
-      "name": "PRO MP225",
-      "category": "PRO MNT 22\"/16\" Flat"
-    },
-    {
-      "type": "removed",
-      "partNo": "ProMP225V",
-      "name": "PRO MP225V",
-      "category": "PRO MNT 22\"/16\" Flat"
-    },
-    {
-      "type": "removed",
-      "partNo": "ProMP341CQW",
-      "name": "PRO MP341CQW",
-      "category": "PRO MNT 34\" Curved"
+      "partNo": "MAG 272UPQDOLEDX24",
+      "name": "MAG 272UP QD-OLED X24",
+      "category": "OLED Monitors - Gaming",
+      "newPrice": 665.0
     }
   ],
-  "summary": "6 cambio(s) detectado(s)",
+  "summary": "1 cambio(s) detectado(s)",
   "triggeredBy": "github-actions",
   "triggerMode": "schedule"
 }
