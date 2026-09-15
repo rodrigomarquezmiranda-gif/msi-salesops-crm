@@ -1000,7 +1000,7 @@
       <div id="tab-mkt" class="tab-pane">
         <div class="ai-box" style="margin-top:0;margin-bottom:1rem">
           <div class="ai-box-header" style="color:var(--text)"><i class="ti ti-speakerphone" style="color:#EBCB8B"></i> Marketing Budget Argentina</div>
-          <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">Subí el archivo Excel de Marketing Budget. Se leen las solapas <b>AR Q1</b>, <b>AR Q2</b> y <b>AR Q3</b> automáticamente.</div>
+          <div style="font-size:13px;color:var(--text2);margin-bottom:1rem">Subí el archivo Excel de Marketing Budget. Se leen las solapas <b>AR Q1</b>, <b>AR Q2</b>, <b>AR Q3</b> y <b>AR Q4</b> automáticamente.</div>
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <button class="btn btn-primary" style="padding:6px 16px;font-size:13px" onclick="document.getElementById('file-input-mkt').click()">
               <i class="ti ti-upload"></i> Subir Marketing Budget (.xlsx)
@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '14.09.26.4';
+const APP_VERSION = '15.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -9237,7 +9237,7 @@ function _mktNum(v) {
 
 function parseMktBudgetFile(wb) {
   const quarters = [];
-  const arSheets = wb.SheetNames.filter(n => /^AR\s*Q[123]$/i.test(n.trim()));
+  const arSheets = wb.SheetNames.filter(n => /^AR\s*Q[1234]$/i.test(n.trim()));
   for(const sheetName of arSheets) {
     const qMatch = sheetName.match(/Q(\d)/i);
     if(!qMatch) continue;
