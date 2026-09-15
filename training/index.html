@@ -400,7 +400,7 @@ let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='14.09.26.9';
+const QUIZ_APP_VERSION='15.09.26.1';
 // El script está al final del <body>, así que el DOM ya existe acá — DOMContentLoaded
 // ya disparó antes de llegar a esta línea, por eso un addEventListener nunca se ejecutaba.
 (function(){
@@ -650,12 +650,36 @@ function showSaveToast(msg){
 }
 
 // ── Generate ──────────────────────────────────────────────────────────────────
+// Fotos de producto para las preguntas visuales: vienen de product-images.json, un catálogo
+// chico que armamos a mano con URLs REALES verificadas (sacadas de la página oficial de cada
+// producto en msi.com, no adivinadas). Antes le pedíamos a la IA que "recordara" la URL de
+// memoria — pero una IA casi nunca tiene memorizada la URL real de una foto puntual, así que
+// básicamente nunca salía una pregunta visual. Ahora es 100% determinístico: si el producto
+// está en el catálogo, hay foto; si no está, no se arma pregunta visual para ese quiz.
+let _productImageManifest=null;
+async function _loadProductImageManifest(){
+  if(_productImageManifest)return _productImageManifest;
+  try{
+    const res=await fetch('product-images.json',{cache:'no-store'});
+    _productImageManifest=res.ok?await res.json():[];
+  }catch(e){_productImageManifest=[];}
+  return _productImageManifest;
+}
+function _normDesc(s){return String(s||'').toUpperCase().replace(/[™®]/g,'').replace(/\s+/g,' ').trim();}
+function _imgLookupIn(manifest,desc){
+  const n=_normDesc(desc);
+  const hit=manifest.find(e=>_normDesc(e.desc)===n);
+  return hit?hit.img:null;
+}
+
 // Arma hasta 3 productos "candidatos" para la pregunta visual (el correcto + 2 distractores
-// de la misma categoría) — el TEXTO de la pregunta y las opciones los armamos nosotros acá
-// mismo (100% confiables); lo único que le pedimos a la IA son las URLs de imagen reales de
-// esos 3 productos puntuales, y solo si está segura — así la parte fiable no depende de la IA.
-function _pickVisualCandidates(correctProd,pool){
-  const others=pool.filter(p=>p!==correctProd && p.category===correctProd.category);
+// de la misma categoría), pero SOLO entre los que tienen foto verificada en el catálogo — si
+// el producto elegido no está ahí, o no hay 2 distractores de su categoría con foto, se
+// devuelve null y el quiz sigue solo con las 10 preguntas de texto normales.
+async function _pickVisualCandidates(correctProd,pool){
+  const manifest=await _loadProductImageManifest();
+  if(!manifest.length || !_imgLookupIn(manifest,correctProd.desc))return null;
+  const others=pool.filter(p=>p!==correctProd && p.category===correctProd.category && _imgLookupIn(manifest,p.desc));
   if(others.length<2)return null;
   const shuffledOthers=[...others].sort(()=>Math.random()-.5).slice(0,2);
   return [correctProd,...shuffledOthers].sort(()=>Math.random()-.5);
@@ -668,8 +692,7 @@ async function generateQuiz(){
   document.getElementById('load-prod').textContent=selectedProd.desc;
 
   const fichaLine=selectedProd.ficha?`URL ficha técnica: ${selectedProd.ficha}`:'';
-  const visualCandidates=_pickVisualCandidates(selectedProd,products);
-  const imgAskLine=visualCandidates?`\n\nAdemás, para estos 3 productos puntuales (para armar una pregunta visual "¿cuál de estas 3 imágenes es...?"), si conocés con certeza la URL real de una foto de cada uno en el CDN de MSI (asset.msi.com), agregá al final del JSON un campo "productImages" con ese mapeo — SOLO los que sepas con certeza, omití el resto:\n${visualCandidates.map(p=>`- código "${p.code||p.desc}": ${p.desc}`).join('\n')}`:'';
+  const visualCandidates=await _pickVisualCandidates(selectedProd,products);
 
   const prompt=`Sos un experto en productos MSI. Generá exactamente 10 preguntas de opción múltiple sobre este producto para vendedores de distribuidores MSI Argentina.
 
@@ -686,10 +709,10 @@ Reglas:
 5. Español argentino, natural y directo
 6. Opciones incorrectas plausibles pero claramente incorrectas para alguien que conoce el producto
 7. Variá el índice correcto aleatoriamente entre las 10 preguntas
-8. Tipos de preguntas: ¿Para qué usuario? ¿Principal ventaja? ¿Por qué este vs la competencia? ¿Qué característica lo destaca?${imgAskLine}
+8. Tipos de preguntas: ¿Para qué usuario? ¿Principal ventaja? ¿Por qué este vs la competencia? ¿Qué característica lo destaca?
 
 Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
-{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0}]${visualCandidates?',"productImages":{"codigo":"url-o-omitir"}':''}}`;
+{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0}]}`;
 
   await _callApiAndStart(prompt,`Generando quiz: ${selectedProd.desc}`,visualCandidates,selectedProd);
 }
@@ -706,8 +729,7 @@ async function generateCatQuiz(){
 
   const prodList=quizCatProducts.map((p,i)=>`${i+1}. ${p.desc}${p.code?' ('+p.code+')':''}`).join('\n');
   const visualCorrect=quizCatProducts[Math.floor(Math.random()*quizCatProducts.length)];
-  const visualCandidates=_pickVisualCandidates(visualCorrect,pool);
-  const imgAskLine=visualCandidates?`\n\nAdemás, para estos 3 productos puntuales (para armar una pregunta visual "¿cuál de estas 3 imágenes es...?"), si conocés con certeza la URL real de una foto de cada uno en el CDN de MSI (asset.msi.com), agregá al final del JSON un campo "productImages" con ese mapeo — SOLO los que sepas con certeza, omití el resto:\n${visualCandidates.map(p=>`- código "${p.code||p.desc}": ${p.desc}`).join('\n')}`:'';
+  const visualCandidates=await _pickVisualCandidates(visualCorrect,pool);
 
   const prompt=`Sos un experto en productos MSI. Generá exactamente 10 preguntas de opción múltiple sobre la categoría "${catLbl(selectedCat)}" para vendedores de distribuidores MSI Argentina.
 
@@ -722,18 +744,18 @@ Reglas:
 5. NO specs técnicas muy específicas (MHz, nm de proceso, etc.)
 6. Las preguntas deben ayudar al vendedor a RECOMENDAR correctamente
 7. Español argentino, natural y directo
-8. Variá el índice correcto aleatoriamente${imgAskLine}
+8. Variá el índice correcto aleatoriamente
 
 Respondé ÚNICAMENTE con JSON válido, sin texto adicional:
-{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0}]${visualCandidates?',"productImages":{"codigo":"url-o-omitir"}':''}}`;
+{"questions":[{"q":"pregunta","options":["A","B","C"],"correct":0}]}`;
 
   await _callApiAndStart(prompt,`Quiz de ${catLbl(selectedCat)}`,visualCandidates,visualCorrect);
 }
 
-// Precarga una imagen y resuelve true/false según si carga bien — así solo mostramos la
-// pregunta visual cuando las 3 fotos realmente existen (las URLs las "recuerda" la IA, no
-// están verificadas, así que a veces van a fallar — en ese caso simplemente no se arma la
-// pregunta visual y el quiz queda con las 10 preguntas de texto normales).
+// Precarga una imagen y resuelve true/false según si carga bien. Las URLs ya vienen
+// verificadas del catálogo (product-images.json), pero igual se precargan antes de mostrar
+// la pregunta por si algún link se cae con el tiempo — en ese caso no se arma la pregunta
+// visual y el quiz queda con las 10 preguntas de texto normales, sin romper nada.
 function _preloadImg(url){
   return new Promise(res=>{
     const img=new Image();
@@ -743,10 +765,11 @@ function _preloadImg(url){
   });
 }
 
-async function _buildVisualQuestion(visualCandidates,visualCorrect,productImages){
-  if(!visualCandidates||!productImages)return null;
-  const urls=visualCandidates.map(p=>productImages[p.code||p.desc]);
-  if(urls.some(u=>!u||typeof u!=='string'||!u.startsWith('http')))return null;
+async function _buildVisualQuestion(visualCandidates,visualCorrect){
+  if(!visualCandidates)return null;
+  const manifest=await _loadProductImageManifest();
+  const urls=visualCandidates.map(p=>_imgLookupIn(manifest,p.desc));
+  if(urls.some(u=>!u))return null;
   const oks=await Promise.all(urls.map(_preloadImg));
   if(oks.some(ok=>!ok))return null;
   const correctIdx=visualCandidates.indexOf(visualCorrect);
@@ -775,7 +798,7 @@ async function _callApiAndStart(prompt,loadingLabel,visualCandidates,visualCorre
     const parsed=JSON.parse(match[0]);
     if(!Array.isArray(parsed.questions)||parsed.questions.length<5)throw new Error('Se generaron pocas preguntas. Intentá de nuevo.');
     let baseQuestions=parsed.questions.slice(0,10);
-    const visualQ=await _buildVisualQuestion(visualCandidates,visualCorrect,parsed.productImages);
+    const visualQ=await _buildVisualQuestion(visualCandidates,visualCorrect);
     if(visualQ){
       // Reemplaza la última pregunta de texto por la visual, así el total se mantiene en 10.
       baseQuestions=baseQuestions.slice(0,Math.min(9,baseQuestions.length));
