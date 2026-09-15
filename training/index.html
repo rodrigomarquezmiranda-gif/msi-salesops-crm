@@ -22,10 +22,15 @@
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:14px;padding:1rem}
+/* Sin overflow-y:auto + justify-content:center, un contenido más alto que la ventana (como el
+   panel admin con muchas tarjetas) queda con el borde de arriba clippeado e imposible de
+   scrollear — es un bug conocido de flexbox al centrar contenido que desborda. Se soluciona
+   sacando justify-content:center del body y centrando cada pantalla con margin:auto en su
+   lugar (abajo, en .screen.active) — eso sí deja el contenido scrolleable de punta a punta. */
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;font-size:14px;padding:1rem;overflow-y:auto}
 
 .screen{display:none;width:100%;max-width:640px}
-.screen.active{display:block;animation:fadeUp .25s ease}
+.screen.active{display:block;animation:fadeUp .25s ease;margin:auto 0}
 #screen-admin.screen{max-width:1180px}
 #screen-home.screen,#screen-quiz.screen,#screen-results.screen{max-width:600px}
 
@@ -400,7 +405,7 @@ let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='15.09.26.1';
+const QUIZ_APP_VERSION='15.09.26.2';
 // El script está al final del <body>, así que el DOM ya existe acá — DOMContentLoaded
 // ya disparó antes de llegar a esta línea, por eso un addEventListener nunca se ejecutaba.
 (function(){
@@ -1261,7 +1266,12 @@ function renderAdminTable(){
   // Results table — agrupado por usuario con subtítulo
   document.getElementById('admin-table').innerHTML=userArr.map(u=>{
     const name=displayNameFor(u.sample);
-    const rowsHtml=u.rows.slice(0,100).map(r=>{
+    // Solo los últimos 5 por tarjeta — las estadísticas totales (cantidad, mejor puntaje,
+    // promedio) ya están arriba en el resumen por usuario, así que acá no hace falta listar
+    // el historial completo y las tarjetas se mantienen cortas.
+    const sortedRows=[...u.rows].sort((a,b)=>b.ts-a.ts);
+    const shownRows=sortedRows.slice(0,5);
+    const rowsHtml=shownRows.map(r=>{
       const color=r.pct>=80?'#436035':r.pct>=60?'#735817':'#A5414B';
       const d=new Date(r.ts);
       const dateStr=`${d.getDate()}/${d.getMonth()+1} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -1279,8 +1289,9 @@ function renderAdminTable(){
         <button class="icon-btn" style="padding:3px" title="Borrar este quiz" onclick="deleteSingleResult('${esc(r.uid)}','${esc(r._key)}',${JSON.stringify(short).replace(/"/g,'&quot;')})"><i class="ti ti-trash" style="font-size:13px;color:#A5414B"></i></button>
       </div>`;
     }).join('');
+    const countLabel=u.rows.length>5?`últimos 5 de ${u.rows.length}`:`${u.rows.length}`;
     return `<div class="card" style="padding:0.9rem">
-      <div style="font-size:13px;font-weight:700;color:var(--text);padding-bottom:8px;border-bottom:1px solid var(--border2);margin-bottom:6px">${esc(name)} <span style="font-weight:400;color:var(--text3)">(${u.rows.length})</span></div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);padding-bottom:8px;border-bottom:1px solid var(--border2);margin-bottom:6px">${esc(name)} <span style="font-weight:400;color:var(--text3)">(${countLabel})</span></div>
       ${rowsHtml}
     </div>`;
   }).join('')||(rows.length?'':'<div class="hist-empty">Sin resultados con ese filtro</div>');
