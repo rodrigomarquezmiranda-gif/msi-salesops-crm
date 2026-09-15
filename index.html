@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '15.09.26.2';
+const APP_VERSION = '15.09.26.4';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -3391,7 +3391,10 @@ function parsePIPdfLines(lines) {
 // Category | Item Code | Marketing Name | Description | COO | Qty Shipped | Tax | Unit Price | Amount
 // Matches MSI invoice item codes: two-segment or three-segment dash-separated alphanumeric
 // e.g. S10-43G0170-EC4, 306-7G34R13-004, MS-7E42-030, 912-7D12-001
-const INVOICE_ITEM_CODE_RE = /^[A-Z0-9]{2,6}-[A-Z0-9]{3,10}(?:-[A-Z0-9]{2,7})?$/;
+// Requires at least one digit somewhere in the code (real MSI item codes always have one) —
+// without this, all-letter model suffixes like "QD-OLED" also match the shape and get
+// mistaken for a brand-new item code mid-row, splitting one product into two bogus rows.
+const INVOICE_ITEM_CODE_RE = /^(?=[A-Z0-9-]*\d)[A-Z0-9]{2,6}-[A-Z0-9]{3,10}(?:-[A-Z0-9]{2,7})?$/;
 function parseInvoiceLineItems(lines) {
   // Header may be on one line or split across adjacent lines by pdfjs
   let headerIdx = lines.findIndex(l => /Item\s+Code/i.test(l) && /Marketing\s+Name/i.test(l));
@@ -3441,6 +3444,11 @@ function parseInvoiceLineItems(lines) {
         // or color/spec like "ID1/Color-Color,size,..." — strip from that point.
         before = before.replace(/\s+MS-[A-Z0-9]+[, ].*/i, '').trim();
         before = before.replace(/\s+ID\d+\/\S+.*/i, '').trim();
+        // pdf.js a veces devuelve el texto del encabezado/membrete (letterhead "MSI COMPUTER
+        // CORP." + dirección del comprador "<Distribuidor> LATAM CORP", "CORAL GABLES, FL"…)
+        // fuera de orden, intercalado en la misma línea que un ítem de la tabla. Ese bloque
+        // siempre arranca con "MSI COMPUTER" — nunca es parte de un nombre de producto real.
+        before = before.replace(/\s+MSI\s+COMPUTER\b.*/i, '').trim();
         const after = cooMatch[2].trim();
         const parts = before.split(/\s{2,}/);
         marketingName = parts[0] || before;
@@ -3451,7 +3459,13 @@ function parseInvoiceLineItems(lines) {
         // COO not on same line. The qty may appear as a trailing integer on this line
         // (PDF columns: ItemCode | Marketing Name | Qty — all at same Y).
         // e.g. "S10-43G0170-EC4 FORCE GC30 V2 150" → name="FORCE GC30 V2", qty=150
-        const afterCode = l.slice(codePos + firstToken.length).trim();
+        let afterCode = l.slice(codePos + firstToken.length).trim();
+        // Same Description-column junk stripping as the cooMatch branch above — without this,
+        // rows where COO lands on a continuation line (not this one) kept the "MS-code,MSI,ID1/
+        // Black-" spec tail glued onto the marketing name (no double-space to split on).
+        afterCode = afterCode.replace(/\s+MS-[A-Z0-9]+[, ].*/i, '').trim();
+        afterCode = afterCode.replace(/\s+ID\d+\/\S+.*/i, '').trim();
+        afterCode = afterCode.replace(/\s+MSI\s+COMPUTER\b.*/i, '').trim();
         const trailingQty = afterCode.match(/^(.*?)\s+([\d,]{1,7})\s*$/);
         if(trailingQty && !/[A-Z]/.test(trailingQty[2])) {
           // Last token is a pure integer (comma-thousands allowed) — treat as qty
