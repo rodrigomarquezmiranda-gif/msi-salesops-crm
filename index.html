@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '15.09.26.1';
+const APP_VERSION = '15.09.26.2';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -10002,7 +10002,9 @@ function _mktBuildQuarterSheet(wb, qObj, dateStr, styles) {
   ws.getRow(rh).height = 20;
 
   const pieSlices = _impTopNPlusOther(termRanking, 8, 'term', 'total');
-  const pie = _impBuildPieImage(pieSlices, `Q${qObj.q} — por categoría`);
+  const pie = _impBuildPieImage(pieSlices, `Q${qObj.q} — por categoría`, {
+    fmtValue: v => '$' + v.toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 })
+  });
   const pieRowStart = ws.lastRow.number + 1;
   if(pie) {
     const imgId = wb.addImage({ base64: pie.dataUrl, extension:'png' });
@@ -13967,10 +13969,14 @@ function _impTopNPlusOther(arr, n, labelKey, valueKey, otherLabel) {
 }
 
 // Dibuja un gráfico de torta + referencias en un canvas y devuelve un PNG en base64 (sin prefijo data:).
-function _impBuildPieImage(slices, title) {
+// opts.fmtValue: formatea el valor de cada slice en la leyenda (default: unidades, "1.234 u.").
+// Pasar opts.fmtValue para otros formatos (ej. montos en $) — no asumir unidades siempre.
+function _impBuildPieImage(slices, title, opts) {
+  opts = opts || {};
+  const fmtValue = opts.fmtValue || (v => `${v.toLocaleString('es-AR')} u.`);
   const total = slices.reduce((s,x) => s+x.value, 0);
   if(total <= 0) return null;
-  const W = 520, H = Math.max(260, 40 + slices.length * 22);
+  const W = 640, H = Math.max(260, 40 + slices.length * 22);
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d');
@@ -13994,18 +14000,28 @@ function _impBuildPieImage(slices, title) {
     start += sweep;
   });
 
-  // Leyenda a la derecha
+  // Leyenda a la derecha — el texto se acorta con "…" según el ancho real disponible
+  // (medido con measureText), no con un largo de caracteres fijo, para que nunca se corte
+  // el número/porcentaje del final.
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+  const legendX = 300, legendMaxW = W - legendX - 18 - 10;
   let ly = 34;
   slices.forEach((s, i) => {
     ctx.fillStyle = _impColorForIndex(i);
-    ctx.fillRect(300, ly - 6, 12, 12);
+    ctx.fillRect(legendX, ly - 6, 12, 12);
     ctx.fillStyle = '#1F2A44';
     ctx.font = '12px Arial';
     const pct = (s.value/total*100).toFixed(1);
-    const label = `${s.label} — ${s.value.toLocaleString('es-AR')} u. (${pct}%)`;
-    ctx.fillText(label.length > 38 ? label.slice(0,36)+'…' : label, 318, ly);
+    const full = `${s.label} — ${fmtValue(s.value)} (${pct}%)`;
+    let label = full;
+    if(ctx.measureText(label).width > legendMaxW) {
+      while(label.length > 1 && ctx.measureText(label + '…').width > legendMaxW) {
+        label = label.slice(0, -1);
+      }
+      label += '…';
+    }
+    ctx.fillText(label, legendX + 18, ly);
     ly += 22;
   });
 
