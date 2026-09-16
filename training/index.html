@@ -405,7 +405,7 @@ let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='15.09.26.2';
+const QUIZ_APP_VERSION='16.09.26.1';
 // El script está al final del <body>, así que el DOM ya existe acá — DOMContentLoaded
 // ya disparó antes de llegar a esta línea, por eso un addEventListener nunca se ejecutaba.
 (function(){
@@ -857,7 +857,7 @@ function renderQ(){
         <img class="opt-img" src="${esc(q.optionImages[i])}" alt="" onerror="this.style.display='none'"/>
         <div style="display:flex;align-items:center;gap:8px;width:100%">
           <div class="ltr ${LETTERS[i].ltr}">${LETTERS[i].l}</div>
-          <span>${esc(o)}</span>
+          <span class="opt-visual-label" style="display:none">${esc(o)}</span>
         </div>
       </button>`
     : `<button class="opt" id="opt${i}" onclick="pickOpt(${i})">
@@ -899,6 +899,12 @@ function revealAnswer(){
     if(!el)continue;
     el.disabled=true;
     el.className=isVisual?'opt opt-visual':'opt';
+    // En preguntas visuales el nombre del producto estaba oculto para que haya que mirar
+    // la foto; recién acá, al revelar la respuesta, lo mostramos para que se sepa qué era cada imagen.
+    if(isVisual){
+      const lbl=el.querySelector('.opt-visual-label');
+      if(lbl)lbl.style.display='';
+    }
     if(i===correctIdx){
       el.classList.add('opt-correct');
       // Add "Correcta" badge to the label span
