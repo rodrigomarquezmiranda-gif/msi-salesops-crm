@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '15.09.26.4';
+const APP_VERSION = '16.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -11793,7 +11793,9 @@ const RESELLER_LINES = [
   { key:'psu',     label:'PSU',           catKey:'psu',         kwStartsWith:null,  kwRequire:null,    kwExclude:null },
   { key:'chassis', label:'Chassis',       catKey:'gabinete',    kwStartsWith:null,  kwRequire:null,    kwExclude:null },
   { key:'lc',      label:'LC',            catKey:'cooling',     kwStartsWith:null,  kwRequire:null,    kwExclude:null },
-  { key:'pro_mon', label:'Pro Monitor',   catKey:'monitor',     kwStartsWith:'PRO', kwRequire:null,    kwExclude:['PRO DT','CUBI'] },
+  // Antes existía una línea "Pro Monitor" (kwStartsWith:'PRO') separada de "Monitor", pero en la
+  // práctica nunca hay modelos de monitor que arranquen con "PRO" en la lista de precios — todo
+  // cae en "Monitor" y la línea Pro Monitor queda siempre vacía. Se sacó, no se separan.
   { key:'monitor', label:'Monitor',       catKey:'monitor',     kwStartsWith:null,  kwRequire:null,    kwExclude:null },
   { key:'arms',    label:'Arms',          catKey:'accesorios',  kwStartsWith:null,  kwRequire:['ARM'], kwExclude:null },
   { key:'ggd',     label:'GGD',           catKey:'accesorios',  kwStartsWith:null,  kwRequire:null,    kwExclude:null },
