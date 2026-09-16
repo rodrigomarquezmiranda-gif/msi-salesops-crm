@@ -1,9 +1,1442 @@
 [
-  { "desc": "MAG X870E GAMING MAX WIFI", "category": "motherboard", "img": "https://storage-asset.msi.com/global/picture/product/product_1760347898822c9142bd6948567571638c92bcfeb5.webp" },
-  { "desc": "MAG X870E TOMAHAWK MAX WIFI", "category": "motherboard", "img": "https://storage-asset.msi.com/global/picture/product/product_1762223530076ad7d2dcdf5e12a7f67f2660c0c4a3.webp" },
-  { "desc": "MAG B860 TOMAHAWK WIFI", "category": "motherboard", "img": "https://storage-asset.msi.com/global/picture/product/product_1736159970e3185c1ac43ff83992fbc20eca986119.webp" },
-  { "desc": "PRO B760M-E", "category": "motherboard", "img": "https://storage-asset.msi.com/global/picture/product/product_16843742634fba61121d355c679b3c87cc589c028f.webp" },
-  { "desc": "GeForce RTX 5070 Ti 16G GAMING TRIO OC", "category": "vga", "img": "https://storage-asset.msi.com/global/picture/product/product_1738567494b5a1a4c58600a87f33be548bb80e081d.webp" },
-  { "desc": "GeForce RTX 5080 16G GAMING TRIO OC", "category": "vga", "img": "https://storage-asset.msi.com/global/picture/product/product_173710004234f04a0f44dd01f025e8bee23592ca90.webp" },
-  { "desc": "GeForce RTX 5060 8G VENTUS 2X OC", "category": "vga", "img": "https://storage-asset.msi.com/global/picture/product/product_17452877802adc1ee82075afaeea7d2a2dcf366cb9.webp" }
+  {
+    "desc": "GeForce RTX 5090 32G SUPRIM LIQUID SOC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1737515580003d220ca72fa793bb3f7dac6dbfb1ff.webp"
+  },
+  {
+    "desc": "GeForce RTX 5090 32G SUPRIM SOC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1737516023f895424b0d960e1866828dbda06123ef.webp"
+  },
+  {
+    "desc": "GeForce RTX 5090 32G GAMING TRIO OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1737081391df0edd81daeead5bd52c24e71abeae13.webp"
+  },
+  {
+    "desc": "GeForce RTX 5090 32G VENTUS 3X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17373640990ca0a03d5837c522f92eb9d1f487b252.webp"
+  },
+  {
+    "desc": "GeForce RTX 5080 16G GAMING TRIO OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173710004234f04a0f44dd01f025e8bee23592ca90.webp"
+  },
+  {
+    "desc": "GeForce RTX 5080 16G INSPIRE 3X OC BLACK",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1737512413b20aec5ed3adb2a2f38b9f135ef0119e.webp"
+  },
+  {
+    "desc": "GeForce RTX 5080 16G VENTUS 3X OC PLUS",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17373516460c62ea0ae817420b1dcae2233b1e6ca1.webp"
+  },
+  {
+    "desc": "GeForce RTX 5080 16G VENTUS 3X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17373636064fcd11cd87f79db1017e31e5a8292a1e.webp"
+  },
+  {
+    "desc": "Geforce RTX 5080 16G SHADOW 3X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17370831134a3d92546c2123c788594ad0222631aa.webp"
+  },
+  {
+    "desc": "GeForce RTX 5070 Ti 16G GAMING TRIO OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1738567494b5a1a4c58600a87f33be548bb80e081d.webp"
+  },
+  {
+    "desc": "GeForce RTX 5070 Ti 16G GAMING TRIO OC WHITE",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17421809804a33390517f3c8c98d5b917bf326f327.webp"
+  },
+  {
+    "desc": "Geforce RTX 5070 TI 16G VENTUS 3X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17375373017f070971309d34e5db4a0cbeed1e55b1.webp"
+  },
+  {
+    "desc": "Geforce RTX 5070 TI 16G SHADOW 3X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1738649851f99734cac740c6f5eba83717cf3dfcc1.webp"
+  },
+  {
+    "desc": "Geforce RTX 5070 12G GAMING TRIO OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1738649526e86a50585ee31273e268bbb486c9a59c.webp"
+  },
+  {
+    "desc": "Geforce RTX 5070 12G VENTUS 3X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173761291547d8b531eb2b3a1f1bf53b14cc6ff999.webp"
+  },
+  {
+    "desc": "Geforce RTX 5070 12G SHADOW 3X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173883115552ef8194db01e2a60523bac9d3e63d2e.webp"
+  },
+  {
+    "desc": "GeForce RTX 5070 12G VENTUS 2X OC BLACK",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173761452833d396c93379ad1ffbfe5367935dd6c2.webp"
+  },
+  {
+    "desc": "Geforce RTX 5070 12G VENTUS 2X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173761452833d396c93379ad1ffbfe5367935dd6c2.webp"
+  },
+  {
+    "desc": "Geforce RTX 5070 12G SHADOW 2X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17388317365a3bb4119c978f87942433220c64a530.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 Ti 16G GAMING TRIO OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1744682874d5006eba1cb79b08639e5ef587b09e45.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 Ti 16G GAMING OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1744697624283950bf56db092606f9203fa9b978f8.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 Ti 16G VENTUS 3X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_174469985997a9b3a0f329a80543ebebd41172fd92.webp"
+  },
+  {
+    "desc": "GeForce RTX 5060 Ti 16G VENTUS 2X OC BLACK PLUS",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_175695208101345d0d76d50209c92f7382259250ef.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 Ti 16G VENTUS 2X OC PLUS",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17446978705c4a377c05bc723aca53c3674ee61c1a.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 Ti 16G SHADOW 2X OC PLUS",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17472073876aaa596b375eb55abd59657834240221.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 Ti 8G GAMING TRIO OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1744684693c00441e66a69c2dd3de39fd9e39270ad.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 Ti 8G GAMING OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1744697766c5c115b4f5fd7151513b1dc4f8a217e7.webp"
+  },
+  {
+    "desc": "GeForce RTX 5060 Ti 8G VENTUS 2X OC WHITE PLUS",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1749805961f0788ec1bd60d55ff922415f55b6c2ff.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 Ti 8G VENTUS 2X OC PLUS",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1744697971ba7f065fc218997c4c088d58b9222c2f.webp"
+  },
+  {
+    "desc": "GeForce RTX 5060 Ti 8G SHADOW 2X OC PLUS",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17472073876aaa596b375eb55abd59657834240221.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 8G GAMING OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1744958450b2cea19d2a536b946dca79b6b9fef70a.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 8G VENTUS 3X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17452145758add3ea4fa24be006996e132aab927fd.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 8G VENTUS 2X OC WHITE",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17453138677a2cdf0bfc989dbcca0053b8eba9d46c.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 8G VENTUS 2X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17453138677a2cdf0bfc989dbcca0053b8eba9d46c.webp"
+  },
+  {
+    "desc": "Geforce RTX 5060 8G SHADOW 2X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1744775268eaa4dffd7a11ab04a9c49ebb9f0fcfa2.webp"
+  },
+  {
+    "desc": "Geforce RTX 5050 8G VENTUS 2X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17507572669b07fa60658ab594055e169d6d6fa74f.webp"
+  },
+  {
+    "desc": "Geforce RTX 5050 8G SHADOW 2X OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1750749094c102e75ee8ba2b7209a9c87b43379a38.webp"
+  },
+  {
+    "desc": "GeForce RTX 3060 VENTUS 2X 12G OC V1",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1610443907b48feb29b4a49834f4b19e35c5511db6.webp"
+  },
+  {
+    "desc": "GeForce RTX 3050 VENTUS 2X 6G OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1706844025ff33dd54b9ebc705a5b841ced5d64768.webp"
+  },
+  {
+    "desc": "GeForce RTX 3050 LP 6G OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_170684429979b29156d732f5c3f14b0545d841a1b1.webp"
+  },
+  {
+    "desc": "GeForce GT 1030 4GD4 LP OC",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1685067856ef93a20577a532bf1660e39d3530bbc8.webp"
+  },
+  {
+    "desc": "GT 710 2GD3 LP",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_2_20180416143722_5ad444a2738db.webp"
+  },
+  {
+    "desc": "N210-MD1G/D3",
+    "category": "vga",
+    "img": "https://storage-asset.msi.com/global/picture/product/five_pictures1_2096_20140409184353.webp"
+  },
+  {
+    "desc": "MAG X870E TOMAHAWK MAX WIFI PZ",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1772526692840c23f751fee0854ef4ad73c6897778.webp"
+  },
+  {
+    "desc": "PRO Z890-S WIFI PZ",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17338007484a6f5396592dffc0bd46fa808c98b27f.webp"
+  },
+  {
+    "desc": "B850 GAMING PLUS WIFI PZ",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17501404167b96380e71cd7e647169efc72131e994.webp"
+  },
+  {
+    "desc": "MEG Z890 GODLIKE",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173259028760dadbf9fcd79ccc0dd70e9e4d511825.webp"
+  },
+  {
+    "desc": "MEG Z890 ACE",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_174900842572c062e540ccc332ae9a05d6887c827d.webp"
+  },
+  {
+    "desc": "MPG Z890 CARBON WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_172845220960631f5fd558bf6201e0010405a8bf5b.webp"
+  },
+  {
+    "desc": "MAG Z890 TOMAHAWK WIFI II",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1768787093d87f0ac92a60c5d78895ca2ebee3b5f8.webp"
+  },
+  {
+    "desc": "MAG Z890 TOMAHAWK WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1728466599887e5893d463035af3a2d2fde81c9fb4.webp"
+  },
+  {
+    "desc": "Z890 GAMING PLUS WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_176767964991000f2274913cc4da3e74815f8b991e.webp"
+  },
+  {
+    "desc": "PRO Z890-P WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17283793206e34fe8ee6f6920a7209938427697db8.webp"
+  },
+  {
+    "desc": "MAG B860 TOMAHAWK WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1736159970e3185c1ac43ff83992fbc20eca986119.webp"
+  },
+  {
+    "desc": "B860 GAMING PLUS WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173615599410bbb69188bbdcd200a8028135cc5f4b.webp"
+  },
+  {
+    "desc": "B860M GAMING PLUS WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1760347898822c9142bd6948567571638c92bcfeb5.webp"
+  },
+  {
+    "desc": "B860M GAMING PLUS WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1736156070c11faa312089b39c645133769a1b56a0.webp"
+  },
+  {
+    "desc": "PRO B860M-E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1758691395bf5c57d17ca43626d71a62ff318f8dcf.webp"
+  },
+  {
+    "desc": "PRO B860M-S",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1770278584ded0612d1cc3f628e02f023c138ccc33.webp"
+  },
+  {
+    "desc": "PRO H810M-E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1766715560d011bf6923c92fda989380468ddb4f07.webp"
+  },
+  {
+    "desc": "PRO Z790-P WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1664263772a2cec962091de0506daa831a99ff110d.webp"
+  },
+  {
+    "desc": "PRO Z790-P WIFI DDR4",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1664262914fd90300eaff724cc9922da4c742e13a1.webp"
+  },
+  {
+    "desc": "B760 GAMING PLUS WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1681119032ad3897f62e91d9c4d3803c2413d1d520.webp"
+  },
+  {
+    "desc": "B760M GAMING PLUS WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1697770219f31a9d623d8f4bf915eae1ce1891b12e.webp"
+  },
+  {
+    "desc": "B760 GAMING PLUS WIFI DDR4",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17337100086cf79cca32080d5dc0a43ea1f30b691b.webp"
+  },
+  {
+    "desc": "B760M GAMING PLUS WIFI DDR4",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1719286483924d8c1914e4ad1f76523ed02bb2e25b.webp"
+  },
+  {
+    "desc": "PRO B760M-P",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1678156200755f8121c606e9a0310815c7ffb03e2e.webp"
+  },
+  {
+    "desc": "PRO B760M-E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_16843742634fba61121d355c679b3c87cc589c028f.webp"
+  },
+  {
+    "desc": "PRO B760M-P DDR4",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_167273674460b46b34fc149101452b7a963bf9b522.webp"
+  },
+  {
+    "desc": "PRO B760M-E DDR4",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1672736801349ca87e1c2655f69918ed4c932c4820.webp"
+  },
+  {
+    "desc": "PRO H610M-B",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_16830131654b4cae5b8e4cb60b0040ada5a7bd3085.webp"
+  },
+  {
+    "desc": "PRO H610M-G",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_16830131654b4cae5b8e4cb60b0040ada5a7bd3085.webp"
+  },
+  {
+    "desc": "PRO H610M-S",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1759200209bcb437596312e649745e9a98e8862a79.webp"
+  },
+  {
+    "desc": "PRO H610M-A DDR4",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1750730887f7f2bc96cc660ec68d95d9f20dd22d29.webp"
+  },
+  {
+    "desc": "PRO H610M-G DDR4",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1653874089f558c1be9da2ebf31bfe259c09522b11.webp"
+  },
+  {
+    "desc": "PRO H610M-S DDR4 II",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17726026992169fb1164e0b2046afe5898477dadef.webp"
+  },
+  {
+    "desc": "PRO H610M-S DDR4",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17043571184500ed09aaf092ab1bb936ab5da7e577.webp"
+  },
+  {
+    "desc": "H410M-A PRO",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_2_20200512093058_5eb9fc523c892.webp"
+  },
+  {
+    "desc": "MEG X870E GODLIKE",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1731051450ac5edc06ffed1827829d47a08abe8258.webp"
+  },
+  {
+    "desc": "MEG X870E ACE MAX",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17633467081e4b9597921af6378c97eb0644fe1c23.webp"
+  },
+  {
+    "desc": "MPG X870E CARBON MAX WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_177569850164454033508e879b318436e03798270e.webp"
+  },
+  {
+    "desc": "MPG X870E CARBON WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1749001928e6424b09510f96180adeb2c88cab561b.webp"
+  },
+  {
+    "desc": "MAG X870E TOMAHAWK MAX WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1772526692840c23f751fee0854ef4ad73c6897778.webp"
+  },
+  {
+    "desc": "MAG X870E TOMAHAWK WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173553972848aa1ffa3b4923f7ff28db8e9e812a88.webp"
+  },
+  {
+    "desc": "X870E GAMING PLUS WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1745566134b0bbdfe76e498736dccff853792d1bc9.webp"
+  },
+  {
+    "desc": "MAG X870E GAMING MAX WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1768809134caad48bd76105a03432347e0273643ed.webp"
+  },
+  {
+    "desc": "PRO X870E-S EVO WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1763445193d5e20487e9e1336fb107a051a59739ae.webp"
+  },
+  {
+    "desc": "PRO X870-P WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17272362843053c6db98164de5c87546aa1a336d82.webp"
+  },
+  {
+    "desc": "MAG B850 TOMAHAWK MAX WIFI II",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1772005686bb13f7fada43965543a1d7dafba9d0ac.webp"
+  },
+  {
+    "desc": "MAG B850 GAMING PLUS MAX WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17621397223c75f7a4b98da62bc56325a3f5109138.webp"
+  },
+  {
+    "desc": "B850 GAMING PLUS WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173615609860d232da4734cfd7de2c45ca2275dd69.webp"
+  },
+  {
+    "desc": "PRO B850-S EVO WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17661323747b6fbf9124639d7daebb0e025d17b598.webp"
+  },
+  {
+    "desc": "PRO B850-P WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17361561345933b002a110f866543c1a23ae90a9b7.webp"
+  },
+  {
+    "desc": "PRO B850-S WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1748920896f2ef42afbc0ecc3f4b5dc3fca2f534da.webp"
+  },
+  {
+    "desc": "B850M GAMING PRO WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_175446862454802d9ba29f71aba2fe0528f55a324e.webp"
+  },
+  {
+    "desc": "B850M GAMING PLUS WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17500636853274f63d007dde13b56f48da765810c7.webp"
+  },
+  {
+    "desc": "PRO B850M-P WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1747276269d3ff82302bebc3210a3afe1b3bf46406.webp"
+  },
+  {
+    "desc": "B850M GAMING WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1755152452fada9dbff4c936094a44b5d75a051d19.webp"
+  },
+  {
+    "desc": "PRO B850M-B GEN4",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1756881529e7378e3fa003b9738a779d36eae57006.webp"
+  },
+  {
+    "desc": "PRO B850M-E EVO",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1750730887f7f2bc96cc660ec68d95d9f20dd22d29.webp"
+  },
+  {
+    "desc": "PRO B840-S EVO WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17588529792d3c4ee2c1e0b60f878c81b38a316d1e.webp"
+  },
+  {
+    "desc": "PRO B840M-P WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_177062241650ec7fc7a9e8e87a5394f54bfd6ad8a4.webp"
+  },
+  {
+    "desc": "B840M GAMING WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1774952798caaf5bcf8ade084baa56e87aac92b093.webp"
+  },
+  {
+    "desc": "PRO B840M-B",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17495468197d2d0e1b3019c6ccdc73c7cc2fd28670.webp"
+  },
+  {
+    "desc": "B650M GAMING WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1703657640de16f70575a616ca6404a936be984d89.webp"
+  },
+  {
+    "desc": "PRO B650M-B",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1695009830a2f78c9729c6bfefba03a052e0669076.webp"
+  },
+  {
+    "desc": "B550 GAMING WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17453847925d171cd654a3d6f72b70af9c39bd94ae.webp"
+  },
+  {
+    "desc": "B550M GAMING PLUS WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1780889132bd0cf6aff1f1b69811b2f0c24e43c9f4.webp"
+  },
+  {
+    "desc": "PRO B550M-P WIFI6E",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17786626088a9b1b6abfab4e557b8aef7d6ea062c9.webp"
+  },
+  {
+    "desc": "PRO B550M-P",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1747616347042d3067969d9aedc8d3f51629cf5178.webp"
+  },
+  {
+    "desc": "PRO B550M-B",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17683649867e4f364e5c51bbc393876894e17756b9.webp"
+  },
+  {
+    "desc": "B550M-A PRO",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1_20200818100208_5f3b36a02389e.webp"
+  },
+  {
+    "desc": "PRO A620AM-G EVO WIFI",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17633655143c785418b96378522ec6c032f6a33ac8.webp"
+  },
+  {
+    "desc": "PRO A620AM-B EVO",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_176153191653b1e6574ee15984197f5371c3d5195d.webp"
+  },
+  {
+    "desc": "A520M-A PRO",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_10_20200818095729_5f3b3589ae480.webp"
+  },
+  {
+    "desc": "A520M PRO",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1_20200818095431_5f3b34d7e8029.webp"
+  },
+  {
+    "desc": "PRO A520M-S",
+    "category": "motherboard",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_177992858620633ee0ea1136f448e05121aa6e95c6.webp"
+  },
+  {
+    "desc": "SPATIUM M371 NVME M.2 500GB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1658223636899db0fe481b0b9cba74024e71e4a2d5.webp"
+  },
+  {
+    "desc": "SPATIUM M450 PCIe 4.0 NVMe M.2 500GB V1",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1642995723ed98239a4324aef29e8ae8c1b8df83ba.webp"
+  },
+  {
+    "desc": "SPATIUM M450 PCIe 4.0 NVMe M.2 1TB V1",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1642995723ed98239a4324aef29e8ae8c1b8df83ba.webp"
+  },
+  {
+    "desc": "SPATIUM M452 PCIe 4.0 NVMe M.2 500GB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_16716814639fe17c7565877083e93d8bc46f70345d.webp"
+  },
+  {
+    "desc": "SPATIUM M470 PRO PCIe 4.0 NVMe M.2 1TB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1737102023fd61c4080a398deab322ad3b1db9be1c.webp"
+  },
+  {
+    "desc": "SPATIUM M470 PRO PCIe 4.0 NVMe M.2 2TB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1737102023fd61c4080a398deab322ad3b1db9be1c.webp"
+  },
+  {
+    "desc": "SPATIUM M480 PRO PCIe 4.0 NVMe M.2 1TB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1683765446803edb0991374789aa82cc332654379c.webp"
+  },
+  {
+    "desc": "SPATIUM M480 PRO PCIe 4.0 NVMe M.2 2TB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1683765446803edb0991374789aa82cc332654379c.webp"
+  },
+  {
+    "desc": "SPATIUM M560 PCIe 5.0 NVMe M.2 1TB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1736395820ee7892e15474289600cd4df2ef665d13.webp"
+  },
+  {
+    "desc": "SPATIUM M560 PCIe 5.0 NVMe M.2 2TB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1736395820ee7892e15474289600cd4df2ef665d13.webp"
+  },
+  {
+    "desc": "SPATIUM S270 SATA 2.5” 240GB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1659590602cf6c33bd0f8fdeb6970fb8609f608c15.webp"
+  },
+  {
+    "desc": "SPATIUM S270 SATA 2.5” 480GB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1659590602cf6c33bd0f8fdeb6970fb8609f608c15.webp"
+  },
+  {
+    "desc": "SPATIUM S270 SATA 2.5” 960GB",
+    "category": "ssd",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1659590602cf6c33bd0f8fdeb6970fb8609f608c15.webp"
+  },
+  {
+    "desc": "FORCE GC300 W WHITE",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1736824633a56ddf9eac8fd2215431b7eb519818dd.webp"
+  },
+  {
+    "desc": "FORCE GC300 W",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1727171553136f1ab1eb297c67a94b99012a6c201a.webp"
+  },
+  {
+    "desc": "FORGE GM320",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1753063937f552d97a7234bbe7a66e0e59a10bd98d.webp"
+  },
+  {
+    "desc": "FORGE GM340 W SKY",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1773126404df6802953ca16d1df2a6ab9874d714f9.webp"
+  },
+  {
+    "desc": "FORGE GM340 W VIOLET",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1773126404df6802953ca16d1df2a6ab9874d714f9.webp"
+  },
+  {
+    "desc": "FORGE GM340 W WHITE",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1773126404df6802953ca16d1df2a6ab9874d714f9.webp"
+  },
+  {
+    "desc": "VERSA 300 W WHITE",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_174132941111e4b15170ab99d6826f5311155e0422.webp"
+  },
+  {
+    "desc": "VERSA 300 W",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17284633569d3bed6c143a29bed17959547c40b839.webp"
+  },
+  {
+    "desc": "VERSA PRO W",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1743498295f23313a97dffeba62e6f39b217c81881.webp"
+  },
+  {
+    "desc": "MAESTRO 500 W BLACK",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1777444931b5c1778f94e85eb721e1d634a02d179d.webp"
+  },
+  {
+    "desc": "MAESTRO 500 W NAVY",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1777444931b5c1778f94e85eb721e1d634a02d179d.webp"
+  },
+  {
+    "desc": "FORGE GK110 US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1751530572abe394901e13bd7cb2b93ceff218f686.webp"
+  },
+  {
+    "desc": "FORGE GK600 TKL W SKY US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1736412881df4710f7003c8d244b486a9882494d4a.webp"
+  },
+  {
+    "desc": "FORGE GK600 TKL W VIOLET US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17459047050e8901f4974f85596cff88399d5fb130.webp"
+  },
+  {
+    "desc": "FORGE GK300 BLUE US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17110909145c49b049ad6d2c10fb9e1f586109ccef.webp"
+  },
+  {
+    "desc": "FORGE GK300 COMBO BLUE US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17110915202f7f8de2a578084b5402b384542e8811.webp"
+  },
+  {
+    "desc": "FORGE GK100 COMBO US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1709716934cc5ed277e8f57ff5b4baa46553595cba.webp"
+  },
+  {
+    "desc": "FORGE GK100 COMBO LS",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1709716934cc5ed277e8f57ff5b4baa46553595cba.webp"
+  },
+  {
+    "desc": "FORGE GK110 COMBO US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17556583755a5e3d73fb5bb278dd5d97ecfb9cc8a0.webp"
+  },
+  {
+    "desc": "FORGE GK320 COMBO RED US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1755057467713a064af294682b06b9c22b1c326989.webp"
+  },
+  {
+    "desc": "FORGE K210 W COMBO WHITE US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_176950168734bbff94c247ddec6796c9949af4db78.webp"
+  },
+  {
+    "desc": "FORGE K210 W COMBO US",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1754986235cfa2fff104976718731716be52635425.webp"
+  },
+  {
+    "desc": "FORGE K210 W COMBO WHITE LS",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_176950168734bbff94c247ddec6796c9949af4db78.webp"
+  },
+  {
+    "desc": "FORGE K210 W COMBO LS",
+    "category": "accesorios",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1754986235cfa2fff104976718731716be52635425.webp"
+  },
+  {
+    "desc": "MPG 491CQPX QD-OLED",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173916979162030ce6596c3a98019324ae63a7e223.webp"
+  },
+  {
+    "desc": "MPG 491CQP QD-OLED",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_172017053813cea30b2642a131ff678936f977000f.webp"
+  },
+  {
+    "desc": "MPG 341CQR QD-OLED X36",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17709541258031a3213d9dc553e333f6c28a3b9603.webp"
+  },
+  {
+    "desc": "MAG 341CQP QD-OLED X28",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_177440653963243e2cc9e3aa53e639695e0499716a.webp"
+  },
+  {
+    "desc": "MPG 341CQPX QD-OLED",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17391693875aaf79ee202c427d9f601dd5a744b522.webp"
+  },
+  {
+    "desc": "MPG 321CURX QD-OLED",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1739176933252f5455e75ca5c7eb466e08da7fbcc7.webp"
+  },
+  {
+    "desc": "MPG 321URX QD-OLED",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173916669988e2fab92184147f18b0b3734e67217f.webp"
+  },
+  {
+    "desc": "MPG 321URXW QD-OLED",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1739167426fd0687187509dc90ba2b10c06888df4d.webp"
+  },
+  {
+    "desc": "MAG 322UP QD-OLED E16",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17459101139f986e56c82c892494bed8de313ab229.webp"
+  },
+  {
+    "desc": "MPG 272URX QD-OLED",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1753432077e0151429347748140afbb17256c0a961.webp"
+  },
+  {
+    "desc": "MAG 272UP QD-OLED X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1741335043c8ebadc0096a1fa41754e91e8900277f.webp"
+  },
+  {
+    "desc": "MAG 272QP QD-OLED X50",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_174668949739d28870453621c3db87729254f70091.webp"
+  },
+  {
+    "desc": "MAG 271QPX QD-OLED",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17201706138ec94514136be778a076018d283575be.webp"
+  },
+  {
+    "desc": "MAG 271QP QD-OLED X28",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_174418007789f8eb109294448233f06a375165ca79.webp"
+  },
+  {
+    "desc": "MAG 272QPW QD-OLED X28",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17452239104c17b5fd6d18d91379353692c8f69c72.webp"
+  },
+  {
+    "desc": "MAG 272QP QD-OLED X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_175738613265ae8f1336fa1d0d2a172acec0f779a1.webp"
+  },
+  {
+    "desc": "MAG 274QP QD-OLED X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1757901025095070f36f853125717a4f9eddf7d820.webp"
+  },
+  {
+    "desc": "MPG 274URDFW E16M",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_174590393635e1022dd8095e48c2385f3de19e4459.webp"
+  },
+  {
+    "desc": "MAG 346CQDF E20",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_176187599119ff6d5c82edb1f846b64b427ddcf7fc.webp"
+  },
+  {
+    "desc": "MAG 321UPD E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1776219834cdc7d9700bd5eff1805b8f1bb35f6512.webp"
+  },
+  {
+    "desc": "MAG 275UPD E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1744014385268f8d4b62f7385970fff89b73372bef.webp"
+  },
+  {
+    "desc": "MAG 321CQF E18",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1745994183fdea5e6c6d957b7e0ca4cd6c3e93b7a1.webp"
+  },
+  {
+    "desc": "MAG 274CQPDF X32",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_177856685285b2ae7d3006cb7d11286a0d08b93b52.webp"
+  },
+  {
+    "desc": "MAG 274QPF X32",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1759826743d23651aa503e4c7614a1523672d36132.webp"
+  },
+  {
+    "desc": "MAG 274QRFW X32",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17503171529cdc230fc95f85d6f423995bc841720d.webp"
+  },
+  {
+    "desc": "MAG 275CQDF X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_177330601013267d22eedc3325e562e72d1e3b9833.webp"
+  },
+  {
+    "desc": "MAG 274QF X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17356309222bf9f35daef297221087c3580714e4e0.webp"
+  },
+  {
+    "desc": "MAG 275CQF E18",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1742539220359640555429a28410c6e854ada33399.webp"
+  },
+  {
+    "desc": "MAG 275QF E20",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1758792990fc0d7eb473f3c853aff121e95f2ceaae.webp"
+  },
+  {
+    "desc": "MAG 32C6X",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1720417114cadfc55b8292d25dfce3bafcd66803b2.webp"
+  },
+  {
+    "desc": "MAG 276CXF",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17230945981179da1d8d7c510738a2109782f6b990.webp"
+  },
+  {
+    "desc": "MAG 274CF X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1752729880d18cead3325e5ef43a431119e8123e3a.webp"
+  },
+  {
+    "desc": "MAG 272PF X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1759468022dace46ce897c5b080a2691e82b305dec.webp"
+  },
+  {
+    "desc": "MAG 272F X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17515269987490bccf0cf2308df5196ee158195220.webp"
+  },
+  {
+    "desc": "MAG 276CF E20",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17370169881c82b8176c825c4fb17209dcd387fa78.webp"
+  },
+  {
+    "desc": "MAG 272F",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17401305113a3fd26a3fb6d77c5e7486440f964aed.webp"
+  },
+  {
+    "desc": "MAG 255F X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17642922042525bfe077618a0c0b14699d49606fc0.webp"
+  },
+  {
+    "desc": "MAG 245PF X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1750818389cccde35eddfb3ee01282ba3a15a5e7aa.webp"
+  },
+  {
+    "desc": "MAG 245F X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_175144332322e2f6365def01caaee321da477ac06b.webp"
+  },
+  {
+    "desc": "MAG 255F E20",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17368457886ad3d95c14df0b53845816c7d9d043ab.webp"
+  },
+  {
+    "desc": "MAG 245C X24",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1764912773dc6bd0af966e00cf2aa116fb977b83d8.webp"
+  },
+  {
+    "desc": "G242L E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1742795709c96b6f0082dc1858e38809be665b76ea.webp"
+  },
+  {
+    "desc": "PRO MAX 341QPXW14G",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17853144015bf7d78c73d4c663c15cb7993a7483c9.webp"
+  },
+  {
+    "desc": "PRO MAX 271UPXW12G",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1782287396b737cb24859999b26cbaa627966b8bbf.webp"
+  },
+  {
+    "desc": "PRO MAX 271UPX12G",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1777272057cae14eb0e496a0059fab8bdfe76eac8a.webp"
+  },
+  {
+    "desc": "PRO MAX 271QPX14G",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17841058071a688aaf28ddcd7d3bd87eb273b58ea7.webp"
+  },
+  {
+    "desc": "PRO MAX 271QPHW E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1773301687088902d30b834a3d45895cc942b53276.webp"
+  },
+  {
+    "desc": "PRO MAX 271PHW E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1770884709eee2863c8688ece8baa1e54d9cbae2a2.webp"
+  },
+  {
+    "desc": "PRO MAX 241PHW E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17731208395a168daea400a71036044f5ecce51be8.webp"
+  },
+  {
+    "desc": "PRO MP341CQ E12",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17645563291bd97a33fac6e8f50245a08346b880a8.webp"
+  },
+  {
+    "desc": "PRO MP341CQW E12",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17664570335b72a7962b0a76f53be80a6e5403ac9a.webp"
+  },
+  {
+    "desc": "PRO MP275PG E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17446019571e7e10bfd713423488d4426790c2c3d4.webp"
+  },
+  {
+    "desc": "PRO MP271 E14A",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17519684968adb4e9331c4dac2fc9aad069841faa6.webp"
+  },
+  {
+    "desc": "PRO MP273W E14A",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1756453557e935b9ee210276ce168319f0bdf0f354.webp"
+  },
+  {
+    "desc": "PRO MP273L E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1747718874a59bff2efa2171e23a48104acd45ea7d.webp"
+  },
+  {
+    "desc": "PRO MP251 E14L",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17657644622d63ab177eb87d225e88ec6df11e3341.webp"
+  },
+  {
+    "desc": "PRO MP251L E2",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_173440600502fb572283cbd7baf565d2587865e024.webp"
+  },
+  {
+    "desc": "PRO MP245PG E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_174461364437c43cd274d76c75dee9b998805f6316.webp"
+  },
+  {
+    "desc": "PRO MP242 E14A",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17544573969c3abf47966750d6f58add948d2a533c.webp"
+  },
+  {
+    "desc": "PRO MP243W E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17554820507af43ae7b8f4c4a046b89fe76fe5760c.webp"
+  },
+  {
+    "desc": "PRO MP243L E14",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1746501721dab87726b2f9e4c05ec0646a36323afc.webp"
+  },
+  {
+    "desc": "PRO MP225 E12VL",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_176777873395455856970b894818badce6d6dfafc7.webp"
+  },
+  {
+    "desc": "PRO MP225 E12L",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1780309169936b9b89003658c8a0cb614f732e454e.webp"
+  },
+  {
+    "desc": "PRO MP161E6T",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1783411570250bfab469d9d7d83d3dcdd56839bed6.webp"
+  },
+  {
+    "desc": "PRO MP165 E6",
+    "category": "monitor",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1745314302f6a8bbba9ea63d523834fa21d7512462.webp"
+  },
+  {
+    "desc": "PRO DP21 14MA-267BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1722915620efe9b6baf204f9e121c1db6f4357d44c.webp"
+  },
+  {
+    "desc": "Cubi NUC AI+ 3MG-006BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17720896902fda9dd98a6606638555cd92944bb971.webp"
+  },
+  {
+    "desc": "Cubi NUC AI+ 3MG-007BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17720896902fda9dd98a6606638555cd92944bb971.webp"
+  },
+  {
+    "desc": "Cubi NUC AI+ 3MG-008BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17720896902fda9dd98a6606638555cd92944bb971.webp"
+  },
+  {
+    "desc": "Cubi 5 1MA-493BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1759201109f3b5950bcf773e48588257ba24b81339.webp"
+  },
+  {
+    "desc": "Cubi 5 1MA-494BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1759201109f3b5950bcf773e48588257ba24b81339.webp"
+  },
+  {
+    "desc": "CUBI 5 1MA-495BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1759201109f3b5950bcf773e48588257ba24b81339.webp"
+  },
+  {
+    "desc": "Cubi Z AI 8M-023BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1749542494171ea8bb4f6c3f6e6cf0fed17bfea813.webp"
+  },
+  {
+    "desc": "Cubi Z AI 8M-024BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1749542494171ea8bb4f6c3f6e6cf0fed17bfea813.webp"
+  },
+  {
+    "desc": "Cubi NUC 1MG-010BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1719557994662d03082e6b98b938fe52063fc18547.webp"
+  },
+  {
+    "desc": "Cubi NUC 1MG-011BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1719557994662d03082e6b98b938fe52063fc18547.webp"
+  },
+  {
+    "desc": "Cubi 5 12M-016BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_16708977283108519e06740cecc56a265b0730da20.webp"
+  },
+  {
+    "desc": "Cubi 5 12M-015BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_16708977283108519e06740cecc56a265b0730da20.webp"
+  },
+  {
+    "desc": "Cubi 5 12M-086BUS",
+    "category": "minipc",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_16708977283108519e06740cecc56a265b0730da20.webp"
+  },
+  {
+    "desc": "MEG MAESTRO 900R",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1782700986633e90a8aaa711a734ab23e27ab36744b.webp"
+  },
+  {
+    "desc": "MPG VIXTA 300R PZ",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17829573024e5c952394542c8f5fd850aa28279520.webp"
+  },
+  {
+    "desc": "MPG VIXTA 300R AIRFLOW PZ",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1782460358f0598647b9358ced305433c27a96d1eb.webp"
+  },
+  {
+    "desc": "MAG PANO 100R PZ",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1719562175b1491078517a79d0d250a67deef1ad0e.webp"
+  },
+  {
+    "desc": "MAG PANO M100R PZ WHITE",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_170176482202cb2bf796516b7a2dfb17ed9c2848c9.webp"
+  },
+  {
+    "desc": "MAG PANO M100R PZ",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_170176482202cb2bf796516b7a2dfb17ed9c2848c9.webp"
+  },
+  {
+    "desc": "MAG PANO 130R PZ WHITE",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1752713157ff46d3a88d706d0ebdded9521f5afd1b.webp"
+  },
+  {
+    "desc": "MAG PANO 130R PZ",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1752713157ff46d3a88d706d0ebdded9521f5afd1b.webp"
+  },
+  {
+    "desc": "MAG PANO 110R PZ WHITE",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1739430577b4e679d59ada082252391ede02671859.webp"
+  },
+  {
+    "desc": "MAG PANO 110R PZ",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1739430577b4e679d59ada082252391ede02671859.webp"
+  },
+  {
+    "desc": "MAG PANO M110R",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1767171998831725501c3f78ee4cde7dff2b7c8737.webp"
+  },
+  {
+    "desc": "MAG FORGE 120A AIRFLOW",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1693979750aa54e20f6f3222a51b6987c1aae7f2ed.webp"
+  },
+  {
+    "desc": "PAG PANO M110A",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1745819002e982f959508b8a497cf905d002ec572c.webp"
+  },
+  {
+    "desc": "PRO FORGE M051A",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1769567578a9d503e0e7102e40906f130ff30ed9fd.webp"
+  },
+  {
+    "desc": "PRO FORGE M050A",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1778549835ee95c2864bf547ef12a8d370a606ed57.webp"
+  },
+  {
+    "desc": "PRO SHIELD M100P",
+    "category": "gabinete",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_174824007111df71737f854ad7f9c2ab8e37d9e77e.webp"
+  },
+  {
+    "desc": "MEG CORELIQUID E15 360",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17829604777a91324109b625aee365f3896973c804.webp"
+  },
+  {
+    "desc": "MPG CORELIQUID P13 360 WHITE",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1753861847c3f00cf975237705687d850c1b78dba2.webp"
+  },
+  {
+    "desc": "MPG CORELIQUID P13 360",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1753861847c3f00cf975237705687d850c1b78dba2.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID I240 WHITE",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1728877443a29a297835c6e5a7633cb7206f043cf0.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID I240",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1728877443a29a297835c6e5a7633cb7206f043cf0.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID E360 WHITE",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1728877407d19f561dc151c3461e3e6648bfca8aca.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID E360",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1728877407d19f561dc151c3461e3e6648bfca8aca.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID E240 WHITE",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1728877372ce6eb1f21cb307299e23b461a2f3688c.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID E240",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1728877372ce6eb1f21cb307299e23b461a2f3688c.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID A15 360",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17351813065941ae4a1c7aeda0e6b4ead04f1f48dc.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID A15 240",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17356155482b83064c9b6d64b3d50dc5e15180acdb.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID A13 360 WHITE",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1729216483ac8b88253abd27a0879ce5609951a631.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID A13 360",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1729216483ac8b88253abd27a0879ce5609951a631.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID A13 240 WHITE",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17292309060b49d7b2f7616b3a4fb7382dc3f2f0bd.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID A13 240",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17292309060b49d7b2f7616b3a4fb7382dc3f2f0bd.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID A12 360",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_174254476737f6befbd9312a84a313500ee3ba94c4.webp"
+  },
+  {
+    "desc": "MAG CORELIQUID A12 240",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1742869964924ae4a700e05d6e2e03e8db06babbed.webp"
+  },
+  {
+    "desc": "MAG COREFROZR AA13",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1773718457658350b4760aa982d59e66c77568dd3f.webp"
+  },
+  {
+    "desc": "MAG COREFROZR AA13 WHITE",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1773718457658350b4760aa982d59e66c77568dd3f.webp"
+  },
+  {
+    "desc": "MPG EZ120 ARGB WHITE-3W",
+    "category": "cooling",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1716276649fc32599571169d91649d714f1483c65e.webp"
+  },
+  {
+    "desc": "MPG Ai1600TS PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1775545475412cc6d77fbe8b6267d2e132b6e50468.webp"
+  },
+  {
+    "desc": "MPG Ai1300TS PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1775545524bbce6639764a8120480bc1f41f319b61.webp"
+  },
+  {
+    "desc": "MAG A1200PLS PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17726831418d548b88c2c8dd39f818d38de846b8af.webp"
+  },
+  {
+    "desc": "MAG A1000PLS PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1772683476f06c0fe5475db90634759307a76f4b43.webp"
+  },
+  {
+    "desc": "PRO A1000PL PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_176604404600c1b34efb0e9934a4f2ccb00e21b863.webp"
+  },
+  {
+    "desc": "PRO A850PL PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1766043855b1b9b27004cc62d4ed61ac86763e3284.webp"
+  },
+  {
+    "desc": "MAG A850GL PCIE5 WHITE",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1729692676d106c7e1983b63ef350a7bcd06dfce53.webp"
+  },
+  {
+    "desc": "MAG A850GL PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17296927006602f4c3b6d358736fc5d1b1d42f4d30.webp"
+  },
+  {
+    "desc": "MAG A750GLS PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_17618919724939fa19fe28faa45b6ab4a0d489addc.webp"
+  },
+  {
+    "desc": "MAG A850GN PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1726809510324cb806b750e9690385bf359f4f2458.webp"
+  },
+  {
+    "desc": "MAG A750GN PCIE5",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1726809510324cb806b750e9690385bf359f4f2458.webp"
+  },
+  {
+    "desc": "MAG A750BN PCIE5 III",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1756173951c5165e825a7763f2ea7bc38849a79c55.webp"
+  },
+  {
+    "desc": "MAG A650BN PCIE5 III",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1756173951c5165e825a7763f2ea7bc38849a79c55.webp"
+  },
+  {
+    "desc": "MAG A650BN",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_16264026911b468295cf2cd594cc57b1ceb5ab5d63.webp"
+  },
+  {
+    "desc": "PRO A650BN",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1782799922415909d548ca0f40a7b281632092c65a.webp"
+  },
+  {
+    "desc": "MAG A550BN",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_16264026911b468295cf2cd594cc57b1ceb5ab5d63.webp"
+  },
+  {
+    "desc": "MAG A700DN II",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1774922605fda176a0d9c42d955db31e3c32c7bf88.webp"
+  },
+  {
+    "desc": "MAG A600DN II",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1774922605fda176a0d9c42d955db31e3c32c7bf88.webp"
+  },
+  {
+    "desc": "MAG A500DN II",
+    "category": "psu",
+    "img": "https://storage-asset.msi.com/global/picture/product/product_1774922562bcaf46a289cacb1d01a201283d8a5211.webp"
+  }
 ]
