@@ -1447,7 +1447,7 @@
     "miamiEta": "ETA 10/06 1134pcs + ETA 10/08 216pcs",
     "bondedStock": 0
   },
-  "MAG 274QF E20": {
+  "MAG274QFE20": {
     "name": "MAG 274QF E20",
     "category": "2K Monitors - Gaming",
     "miamiStock": 0,
@@ -1727,7 +1727,7 @@
     "miamiEta": "ETA 09/30 1890pcs",
     "bondedStock": 0
   },
-  "PRO MP161E6T": {
+  "PROMP161E6T": {
     "name": "PRO MP161E6T",
     "category": "PRO MNT 22\"/16\" Flat",
     "miamiStock": 0,
@@ -1954,7 +1954,7 @@
   "PANO100RPZ": {
     "name": "MAG PANO 100R PZ",
     "category": "Chassis",
-    "miamiStock": 86,
+    "miamiStock": 71,
     "miamiPrice": 70.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1994,7 +1994,7 @@
   "PANO110RPZWHT": {
     "name": "MAG PANO 110R PZ WHITE",
     "category": "Chassis",
-    "miamiStock": 20,
+    "miamiStock": 0,
     "miamiPrice": 65.0,
     "miamiEta": "",
     "bondedStock": 406
@@ -2002,15 +2002,15 @@
   "PANO110RPZ": {
     "name": "MAG PANO 110R PZ",
     "category": "Chassis",
-    "miamiStock": 62,
+    "miamiStock": 1,
     "miamiPrice": 60.0,
-    "miamiEta": "ETA 9/14 48pcs",
+    "miamiEta": "ETA 9/15 48pcs",
     "bondedStock": 0
   },
   "PANOM110R": {
     "name": "MAG PANO M110R",
     "category": "Chassis",
-    "miamiStock": 86,
+    "miamiStock": 0,
     "miamiPrice": 48.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -2018,7 +2018,7 @@
   "FORGE120AAIR": {
     "name": "MAG FORGE 120A AIRFLOW",
     "category": "Chassis",
-    "miamiStock": 317,
+    "miamiStock": 217,
     "miamiPrice": 45.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -2026,7 +2026,7 @@
   "PAGPANOM110A": {
     "name": "PAG PANO M110A",
     "category": "Chassis",
-    "miamiStock": 318,
+    "miamiStock": 60,
     "miamiPrice": 30.0,
     "miamiEta": "",
     "bondedStock": 44
@@ -2034,15 +2034,15 @@
   "PROPANOM120LW": {
     "name": "PRO PANO M120L WHITE",
     "category": "Chassis",
-    "miamiStock": 33,
+    "miamiStock": 0,
     "miamiPrice": 32.0,
-    "miamiEta": "ETA 9/14 48pcs",
+    "miamiEta": "",
     "bondedStock": 0
   },
   "PROFORGEM051A": {
     "name": "PRO FORGE M051A",
     "category": "Chassis",
-    "miamiStock": 180,
+    "miamiStock": 100,
     "miamiPrice": 26.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -2058,7 +2058,7 @@
   "PROSHIELDM100P": {
     "name": "PRO SHIELD M100P",
     "category": "Chassis",
-    "miamiStock": 273,
+    "miamiStock": 173,
     "miamiPrice": 22.0,
     "miamiEta": "",
     "bondedStock": 2563
@@ -2074,7 +2074,7 @@
   "CLP13360W": {
     "name": "MPG CORELIQUID P13 360 WHITE",
     "category": "Liquid Cooling",
-    "miamiStock": 114,
+    "miamiStock": 110,
     "miamiPrice": 124.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -2082,7 +2082,7 @@
   "CLP13360": {
     "name": "MPG CORELIQUID P13 360",
     "category": "Liquid Cooling",
-    "miamiStock": 55,
+    "miamiStock": 51,
     "miamiPrice": 120.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -2154,7 +2154,7 @@
   "CLA13360WT": {
     "name": "MAG CORELIQUID A13 360 WHITE",
     "category": "Liquid Cooling",
-    "miamiStock": 144,
+    "miamiStock": 132,
     "miamiPrice": 56.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -2202,10 +2202,10 @@
   "CFAA13": {
     "name": "MAG COREFROZR AA13",
     "category": "Liquid Cooling",
-    "miamiStock": 1224,
+    "miamiStock": 512,
     "miamiPrice": 13.0,
     "miamiEta": "",
-    "bondedStock": 10850
+    "bondedStock": 10874
   },
   "CFAA13W": {
     "name": "MAG COREFROZR AA13 WHITE",
@@ -2213,7 +2213,7 @@
     "miamiStock": 976,
     "miamiPrice": 13.0,
     "miamiEta": "",
-    "bondedStock": 1664
+    "bondedStock": 1680
   },
   "EZ120ARGB3W": {
     "name": "MPG EZ120 ARGB WHITE-3W",
@@ -2261,7 +2261,7 @@
     "miamiStock": 0,
     "miamiPrice": 95.0,
     "miamiEta": "",
-    "bondedStock": 274
+    "bondedStock": 254
   },
   "PRO850PL": {
     "name": "PRO A850PL PCIE5",
@@ -2285,14 +2285,14 @@
     "miamiStock": 0,
     "miamiPrice": 70.0,
     "miamiEta": "",
-    "bondedStock": 4372
+    "bondedStock": 4376
   },
   "MAGA750GLSPCIE5": {
     "name": "MAG A750GLS PCIE5",
     "category": "PSU",
-    "miamiStock": 0,
+    "miamiStock": 240,
     "miamiPrice": 60.0,
-    "miamiEta": "ETA 9/14 240pcs",
+    "miamiEta": "",
     "bondedStock": 0
   },
   "MAG850GN": {
@@ -2300,7 +2300,7 @@
     "category": "PSU",
     "miamiStock": 0,
     "miamiPrice": 64.0,
-    "miamiEta": "ETA 9/14 51pcs",
+    "miamiEta": "",
     "bondedStock": 0
   },
   "MAG750GN": {
@@ -2308,8 +2308,8 @@
     "category": "PSU",
     "miamiStock": 0,
     "miamiPrice": 56.0,
-    "miamiEta": "",
-    "bondedStock": 1454
+    "miamiEta": "ETA 9/15 30pcs",
+    "bondedStock": 1478
   },
   "MAG650GNII": {
     "name": "MAG A650GN II",
@@ -2341,12 +2341,12 @@
     "miamiStock": 0,
     "miamiPrice": 42.0,
     "miamiEta": "",
-    "bondedStock": 8502
+    "bondedStock": 8034
   },
   "MAGA550BN": {
     "name": "MAG A550BN",
     "category": "PSU",
-    "miamiStock": 139,
+    "miamiStock": 0,
     "miamiPrice": 34.0,
     "miamiEta": "",
     "bondedStock": 1034
@@ -2357,7 +2357,7 @@
     "miamiStock": 0,
     "miamiPrice": 30.0,
     "miamiEta": "",
-    "bondedStock": 660
+    "bondedStock": 680
   },
   "MAGA600DNII": {
     "name": "MAG A600DN II",
@@ -2365,7 +2365,7 @@
     "miamiStock": 0,
     "miamiPrice": 27.0,
     "miamiEta": "",
-    "bondedStock": 880
+    "bondedStock": 900
   },
   "MAGA500DNII": {
     "name": "MAG A500DN II",
@@ -2373,6 +2373,6 @@
     "miamiStock": 0,
     "miamiPrice": 25.0,
     "miamiEta": "",
-    "bondedStock": 292
+    "bondedStock": 312
   }
 }
