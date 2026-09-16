@@ -204,6 +204,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="msi-mark" style="padding:0;overflow:hidden"><img src="../favicon.png" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.textContent='MSI'"></div>
       <div>
         <div style="font-size:17px;font-weight:800">MSI Quiz</div>
+        <div class="ts" id="quiz-version-home" style="opacity:.5;font-size:10px;margin-top:1px"></div>
       </div>
     </div>
     <div style="display:flex;gap:4px">
@@ -405,12 +406,17 @@ let adminUids = {}; // uid -> true, usuarios con permiso admin del Quiz
 
 // Versión de esta app standalone (independiente del CRM). Bumpear en cada cambio
 // para poder confirmar en pantalla (login) y en consola si un deploy llegó o no.
-const QUIZ_APP_VERSION='16.09.26.1';
+const QUIZ_APP_VERSION='16.09.26.2';
 // El script está al final del <body>, así que el DOM ya existe acá — DOMContentLoaded
 // ya disparó antes de llegar a esta línea, por eso un addEventListener nunca se ejecutaba.
 (function(){
-  const v=document.getElementById('quiz-version');
-  if(v)v.textContent='v'+QUIZ_APP_VERSION;
+  // Se muestra en dos lugares: login (#quiz-version, pantalla que pasa rápido si el usuario
+  // ya tiene sesión guardada) y home (#quiz-version-home, fija — siempre visible mientras se usa
+  // el Quiz, así no hace falta pescarla en el login antes de que cambie de pantalla).
+  ['quiz-version','quiz-version-home'].forEach(id=>{
+    const v=document.getElementById(id);
+    if(v)v.textContent='v'+QUIZ_APP_VERSION;
+  });
   console.log('MSI Quiz v'+QUIZ_APP_VERSION);
 })();
 const USER_PIE_PALETTE = ['#5E81AC','#2E6B75','#395C7D','#7C5876','#735817','#A85A3D','#436035','#3E7873','#A5414B','#4C566A'];
