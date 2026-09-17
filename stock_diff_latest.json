@@ -1,18 +1,37 @@
 {
-  "checkedAt": "2026-09-15T20:59:24.707688+00:00",
+  "checkedAt": "2026-09-16T21:01:44.442837+00:00",
   "productCount": 297,
   "hasChanges": true,
-  "changeCount": 1,
+  "changeCount": 4,
   "changes": [
     {
+      "type": "removed",
+      "partNo": "MAG 274QF E20",
+      "name": "MAG 274QF E20",
+      "category": "2K Monitors - Gaming"
+    },
+    {
       "type": "new",
-      "partNo": "MAG 272UPQDOLEDX24",
-      "name": "MAG 272UP QD-OLED X24",
-      "category": "OLED Monitors - Gaming",
-      "newPrice": 665.0
+      "partNo": "MAG274QFE20",
+      "name": "MAG 274QF E20",
+      "category": "2K Monitors - Gaming",
+      "newPrice": 128.0
+    },
+    {
+      "type": "removed",
+      "partNo": "PRO MP161E6T",
+      "name": "PRO MP161E6T",
+      "category": "PRO MNT 22\"/16\" Flat"
+    },
+    {
+      "type": "new",
+      "partNo": "PROMP161E6T",
+      "name": "PRO MP161E6T",
+      "category": "PRO MNT 22\"/16\" Flat",
+      "newPrice": 107.0
     }
   ],
-  "summary": "1 cambio(s) detectado(s)",
+  "summary": "4 cambio(s) detectado(s)",
   "triggeredBy": "github-actions",
   "triggerMode": "schedule"
 }
