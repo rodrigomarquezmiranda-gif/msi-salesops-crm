@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '16.09.26.1';
+const APP_VERSION = '17.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -13397,7 +13397,51 @@ async function parseImportAnalysisFile(file) {
     msi.modelTable = extractImportTable(msiRows, ['Modelo','Unidades']);
   }
   const transactions = extractRawTransactions(wb);
-  return { brands: matrix.brands, monthly: matrix.monthly, unrecognizedMonths: matrix.unrecognizedMonths, msi, transactions, sourceFile: file.name };
+  const fullBrandRanking = parseFullBrandRankingSheet(wb);
+  return { brands: matrix.brands, monthly: matrix.monthly, unrecognizedMonths: matrix.unrecognizedMonths, msi, transactions, fullBrandRanking, sourceFile: file.name };
+}
+// Busca una hoja tipo "Rank | Marca | [Tipo] | Unidades | ..." — algunos reportes de importaciones
+// traen una hoja de "Evolución Mensual" con el detalle mes a mes, pero ESA hoja viene recortada
+// a propósito (ej. "TOP 10 MARCAS + MSI") para que el gráfico mensual no quede ilegible con
+// demasiadas series. El ranking real y completo de marcas (a veces 30+ en vez de 10) vive en una
+// hoja aparte con este formato de tabla — la buscamos por CONTENIDO del header, no por nombre,
+// para que funcione en cualquier categoría (Monitores, VGA, Motherboards…) que siga el mismo
+// template. Si además trae columna "Tipo" (Local/Global), usamos esa clasificación real del
+// archivo en vez de adivinar con nuestra propia lista de marcas globales.
+function _impFindFullBrandSheet(wb) {
+  let best = null;
+  for(const name of wb.SheetNames) {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { header:1, raw:true, defval:null });
+    for(let i=0; i<Math.min(6, rows.length); i++) {
+      const header = (rows[i]||[]).map(c => c==null ? '' : String(c).trim().toUpperCase());
+      const rankIdx = header.indexOf('RANK');
+      const marcaIdx = header.indexOf('MARCA');
+      const unidadesIdx = header.findIndex(h => h.startsWith('UNIDADES'));
+      if(rankIdx===-1 || marcaIdx===-1 || unidadesIdx===-1) continue;
+      const tipoIdx = header.indexOf('TIPO');
+      const hasType = tipoIdx > -1;
+      if(!best || (hasType && !best.hasType)) best = { name, headerRowIdx:i, marcaIdx, tipoIdx, unidadesIdx, hasType };
+    }
+  }
+  return best;
+}
+function parseFullBrandRankingSheet(wb) {
+  const found = _impFindFullBrandSheet(wb);
+  if(!found) return null;
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[found.name], { header:1, raw:true, defval:null });
+  const out = [];
+  for(let i=found.headerRowIdx+1; i<rows.length; i++) {
+    const r = rows[i]||[];
+    const brandRaw = r[found.marcaIdx];
+    if(brandRaw==null || String(brandRaw).trim()==='') continue;
+    const brand = String(brandRaw).trim();
+    if(brand.toUpperCase()==='TOTAL') continue; // fila de total al pie de la tabla
+    const units = importCellToNum(r[found.unidadesIdx]);
+    if(isNaN(units)) continue;
+    const type = found.tipoIdx>-1 && r[found.tipoIdx]!=null ? String(r[found.tipoIdx]).trim() : null;
+    out.push({ brand, units, type });
+  }
+  return out.length ? out : null;
 }
 async function handleImportFile(file) {
   try {
@@ -13406,7 +13450,7 @@ async function handleImportFile(file) {
     const category = await _prompt('¿Qué categoría es este análisis?', guessed, {title:'Categoría del análisis', placeholder:'ej: Fuentes, Monitores, Placas de Video'});
     if(!category) return;
     const existing = db.imports.find(b => normDesc(b.category) === normDesc(category));
-    const batch = { id: existing ? existing.id : Date.now()+Math.random(), category: category.trim(), sourceFile: file.name, uploadedAt: new Date().toISOString(), brands: parsed.brands, monthly: parsed.monthly, msi: parsed.msi, transactions: parsed.transactions };
+    const batch = { id: existing ? existing.id : Date.now()+Math.random(), category: category.trim(), sourceFile: file.name, uploadedAt: new Date().toISOString(), brands: parsed.brands, monthly: parsed.monthly, msi: parsed.msi, transactions: parsed.transactions, fullBrandRanking: parsed.fullBrandRanking||null };
     db.imports = db.imports.filter(b => normDesc(b.category) !== normDesc(category));
     db.imports.push(batch);
     saveDB();
@@ -13489,6 +13533,21 @@ function setImportsGlobalOnly(val) {
   renderImportsTab();
 }
 function computeBrandTotals(batch, monthly) {
+  // Si el archivo trae una hoja de ranking completo de marcas (a veces 30+, no solo las que
+  // aparecen en la hoja de Evolución Mensual — esa suele venir recortada a un top 10+MSI para
+  // que el gráfico mensual no quede ilegible) y no hay filtro de mes activo, usamos ese ranking
+  // completo — incluye marcas que la Evolución Mensual ni siquiera trae. Con filtro de mes
+  // activo no hay forma de saber cuánto correspondió a cada mes para esas marcas extra (esa
+  // hoja no tiene desglose mensual), así que ahí se sigue usando la Evolución Mensual.
+  if(importsSelectedMonths.size === 0 && batch.fullBrandRanking && batch.fullBrandRanking.length) {
+    let rows = batch.fullBrandRanking;
+    if(importsGlobalOnly) {
+      rows = rows.filter(r => r.type ? r.type.toUpperCase()==='GLOBAL' : isGlobalBrand(r.brand));
+    }
+    const grand = rows.reduce((s,r)=>s+r.units,0);
+    return rows.map(r => ({ brand:r.brand, units:r.units, pct: grand>0 ? r.units/grand*100 : 0 }))
+      .sort((a,b) => b.units - a.units);
+  }
   const activeBrands = importsGlobalOnly
     ? batch.brands.filter(b => isGlobalBrand(b))
     : batch.brands;
@@ -13548,7 +13607,10 @@ function renderImportsTab() {
       ${buildBarChartSVG(ranking.slice(0,10).map(r=>({label:r.brand, value:r.units})), 'var(--blue)')}
     </div>`;
 
-  const filterNote = importsGlobalOnly ? 'Solo marcas globales (las locales están excluidas del total). Usá "Todas las marcas" para verlas.' : 'Mostrando todas las marcas del archivo, incluyendo locales.';
+  let filterNote = importsGlobalOnly ? 'Solo marcas globales (las locales están excluidas del total). Usá "Todas las marcas" para verlas.' : 'Mostrando todas las marcas del archivo, incluyendo locales.';
+  if(importsSelectedMonths.size > 0 && batch.fullBrandRanking && batch.fullBrandRanking.length) {
+    filterNote += ' Con un mes filtrado, el ranking se limita a las marcas con desglose mensual en el archivo (el resto solo trae el total del período completo) — sacá el filtro de mes para ver el ranking completo.';
+  }
 
   // Toggle Por Marca / Por Importador
   const toggleHtml = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
