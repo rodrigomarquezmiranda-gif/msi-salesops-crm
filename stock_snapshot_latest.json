@@ -1338,7 +1338,7 @@
   "MAG271QPQDOLEDX28": {
     "name": "MAG 271QP QD-OLED X28",
     "category": "OLED Monitors - Gaming",
-    "miamiStock": 32,
+    "miamiStock": 26,
     "miamiPrice": 494.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1394,7 +1394,7 @@
   "MAG275UPDE14": {
     "name": "MAG 275UPD E14",
     "category": "4K Monitors - Gaming",
-    "miamiStock": 76,
+    "miamiStock": 28,
     "miamiPrice": 198.0,
     "miamiEta": "ETA 10/26 798 pcs",
     "bondedStock": 0
@@ -1410,7 +1410,7 @@
   "MAG274CQPDFX32": {
     "name": "MAG 274CQPDF X32",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 108,
+    "miamiStock": 70,
     "miamiPrice": 192.0,
     "miamiEta": "ETA 09/25 456 pcs + ETA 09/30 114 pcs",
     "bondedStock": 0
@@ -1426,7 +1426,7 @@
   "MAG274QRFWX32": {
     "name": "MAG 274QRFW X32",
     "category": "2K Monitors - Gaming",
-    "miamiStock": 23,
+    "miamiStock": 821,
     "miamiPrice": 192.0,
     "miamiEta": "ETA 09/19 798 pcs + ETA 10/08 418 pcs",
     "bondedStock": 0
@@ -1546,7 +1546,7 @@
   "MAG255FE20": {
     "name": "MAG 255F E20",
     "category": "FHD Monitors - Gaming",
-    "miamiStock": 500,
+    "miamiStock": 10,
     "miamiPrice": 95.0,
     "miamiEta": "ETA 09/30 1820pcs + ETA 10/03 350pcs",
     "bondedStock": 0
@@ -1594,7 +1594,7 @@
   "PROMAX271QPHWE14": {
     "name": "PRO MAX 271QPHW E14",
     "category": "PRO MAX",
-    "miamiStock": 10,
+    "miamiStock": 20,
     "miamiPrice": 202.0,
     "miamiEta": "Pedir para Transferir a Miami",
     "bondedStock": 0
@@ -1642,7 +1642,7 @@
   "PROMP271E14A": {
     "name": "PRO MP271 E14A",
     "category": "PRO MNT 27\" Flat",
-    "miamiStock": 785,
+    "miamiStock": 731,
     "miamiPrice": 87.0,
     "miamiEta": "",
     "bondedStock": 664
@@ -1650,7 +1650,7 @@
   "PROMP273WE14A": {
     "name": "PRO MP273W E14A",
     "category": "PRO MNT 27\" Flat",
-    "miamiStock": 12,
+    "miamiStock": 120,
     "miamiPrice": 85.0,
     "miamiEta": "ETA 09/30 108pcs + ETA 10/03 1134pcs",
     "bondedStock": 0
@@ -1690,7 +1690,7 @@
   "PROMP242E14A": {
     "name": "PRO MP242 E14A",
     "category": "PRO MNT 25\"/24\" Flat",
-    "miamiStock": 190,
+    "miamiStock": 30,
     "miamiPrice": 74.0,
     "miamiEta": "ETA 09/30 320pcs + ETA 10/20 640pcs",
     "bondedStock": 0
@@ -1818,7 +1818,7 @@
   "MAGMT101G": {
     "name": "MAG MT101G",
     "category": "Monitor ARM",
-    "miamiStock": 36,
+    "miamiStock": 210,
     "miamiPrice": 22.0,
     "miamiEta": "",
     "bondedStock": 0
@@ -1997,7 +1997,7 @@
     "miamiStock": 0,
     "miamiPrice": 65.0,
     "miamiEta": "",
-    "bondedStock": 406
+    "bondedStock": 358
   },
   "PANO110RPZ": {
     "name": "MAG PANO 110R PZ",
