@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '18.09.26.3';
+const APP_VERSION = '18.09.26.4';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -2971,6 +2971,22 @@ const _MSI_PRICE_LIST = new Map([
   ['WIFI Z890', ['PRO Z890-P WIFI', 'motherboard']],
 ]);
 
+// ─── KNOWN-BROKEN RAW TEXT CORRECTIONS ─────────────────────────────────────
+// Some old invoice/PI rows lost the actual model code during parsing (multi-line item where the
+// continuation — just a spec fragment like "X24 ID1/Black-Black,26.5," — got stored as the whole
+// marketingName, before the multi-line QD-OLED continuation parser fix). No amount of generic
+// junk-stripping can recover the model code from a fragment that never had it, so these are
+// confirmed by hand and substituted in place of the raw text before any other processing — that
+// way the corrected text still flows through the normal price-list lookup / key extraction so
+// grouping and category detection work exactly as if the source data had been clean.
+const _KNOWN_NAME_CORRECTIONS = new Map([
+  ['24 ID1/BLACK-BLACK, 26.5', 'MAG 274QP QD-OLED X24'],
+]);
+function _applyKnownCorrection(raw) {
+  const key = String(raw || '').toUpperCase().replace(/\s{2,}/g, ' ').replace(/,\s*$/, '').trim();
+  return _KNOWN_NAME_CORRECTIONS.get(key) || raw;
+}
+
 // ─── PRODUCT NAME NORMALIZATION (for Semáforo dedup) ───────────────────────
 const _SEMAFORO_NOISE = new Set([
   'MSI',
@@ -3050,13 +3066,14 @@ function _stripDescJunk(s) {
 // Sales Prices ("Precios de Venta") shows the real product name as MSI writes it (mixed case,
 // e.g. "EdgeXpert-13SUS Active") — same junk patterns as above but WITHOUT forcing uppercase.
 function cleanMarketingName(s) {
-  let out = String(s || '').trim();
+  let out = _applyKnownCorrection(String(s || '').trim());
   out = _collapseRepeatedPhrase(out);
   out = _stripDescJunk(out);
   return out.replace(/\s{2,}/g, ' ').replace(/^[\s,\-\/]+|[\s,\-\/]+$/g, '').trim();
 }
 function extractMSIModelKey(desc, category) {
-  let s = String(desc || '').trim().toUpperCase();
+  desc = _applyKnownCorrection(String(desc || '').trim());  // reassign so downstream checks (e.g. comma-guarded spec-format handling) see the corrected text too
+  let s = desc.toUpperCase();
   s = _collapseRepeatedPhrase(s);
   s = _stripDescJunk(s);
   s = s.replace(/\([^)]*\)/g, ' ');   // strip ALL parenthetical content (configs, specs, etc.)
@@ -3171,7 +3188,8 @@ function extractMSIModelKey(desc, category) {
 
 // ─── SEMÁFORO: CLEAN DISPLAY NAME (structured format per category) ────────────
 function semaforoDisplayName(rawDesc, category) {
-  let s = String(rawDesc || '').trim().toUpperCase();
+  rawDesc = _applyKnownCorrection(String(rawDesc || '').trim());  // reassign so downstream checks (e.g. comma-guarded spec-format fallback) see the corrected text too
+  let s = rawDesc.toUpperCase();
   s = _collapseRepeatedPhrase(s);  // fix duplicated-name junk, e.g. "PRO PANO M120L PRO PANO M120L WHITE"
   s = _stripDescJunk(s);           // strip "COMPUTER <client name>" bleed, MS- codes, qty/tax/amount bleed, trailing ", XX," junk
   // ── Common pre-processing (same transforms as extractMSIModelKey, no sort) ──
