@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '18.09.26.1';
+const APP_VERSION = '18.09.26.2';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -3024,11 +3024,23 @@ const _SEMAFORO_NOISE = new Set([
 // (dedupeRepeatedLine) only catches EXACT full-line duplicates (even word count), not a repeated
 // prefix followed by trailing text, so this handles that case generically.
 function _collapseRepeatedPhrase(s) {
-  return String(s || '').replace(/^(.+?)\s+\1(?=\s|$)/i, '$1');
+  return String(s || '').replace(/^(.+?)\s+\1(?=[\s,]|$)/i, '$1');
+}
+// Strip trailing junk that bleeds into the product name from adjacent invoice columns:
+// - "MAG X870E TOMAHAWK MAX COMPUTER ELIT LATAM CORP CORAL" / "...COMPUTER SMART CENTER LLC"
+//   → PDF letterhead/Bill-To text ("MSI COMPUTER CORP." + buyer name) landing mid-row; "COMPUTER"
+//   never legitimately appears in an MSI product model name, so anything from there on is junk.
+// - "PRO A850PL , US," → trailing ", <short code>," left over from a COO/column bleed.
+function _stripDescJunk(s) {
+  let out = String(s || '');
+  out = out.replace(/\bCOMPUTER\b.*/i, '');
+  out = out.replace(/\s*,\s*[A-Z]{2,4}\s*,\s*$/i, '');
+  return out.trim();
 }
 function extractMSIModelKey(desc, category) {
   let s = String(desc || '').trim().toUpperCase();
   s = _collapseRepeatedPhrase(s);
+  s = _stripDescJunk(s);
   s = s.replace(/[, ]+MS-[A-Z0-9-]+.*/ig, '');  // strip MSI internal part code AND any trailing junk after it (qty/tax/price bleed from invoice columns)
   s = s.replace(/\([^)]*\)/g, ' ');   // strip ALL parenthetical content (configs, specs, etc.)
   s = s.replace(/"/g, '');            // remove inch marks (e.g. 27" → 27, later filtered as 2-digit number)
@@ -3144,6 +3156,7 @@ function extractMSIModelKey(desc, category) {
 function semaforoDisplayName(rawDesc, category) {
   let s = String(rawDesc || '').trim().toUpperCase();
   s = _collapseRepeatedPhrase(s);  // fix duplicated-name junk, e.g. "PRO PANO M120L PRO PANO M120L WHITE"
+  s = _stripDescJunk(s);           // strip "COMPUTER <client name>" bleed and trailing ", XX," junk
   // ── Common pre-processing (same transforms as extractMSIModelKey, no sort) ──
   s = s.replace(/[, ]+MS-[A-Z0-9-]+.*/ig, '');  // strip MSI internal part code AND trailing junk after it (qty/tax/price bleed)
   s = s.replace(/\([^)]*\)/g, ' ');
@@ -3197,6 +3210,8 @@ function semaforoDisplayName(rawDesc, category) {
   const PSU_WATTAGE = {
     'A550BN':'550','A650BN':'650','A750BN':'750','A850BN':'850',
     'A650GL':'650','A750GL':'750','A850GL':'850','A1000GL':'1000',
+    'A650PL':'650','A750PL':'750','A850PL':'850','A1000PL':'1000','A1300PL':'1300',
+    'A850GF':'850','A1000GF':'1000','A1300GF':'1300',
     'B550A':'550','B650A':'650','B750A':'750','B850A':'850','B1000A':'1000',
   };
   if (category === 'psu') {
@@ -8754,6 +8769,12 @@ function classifyProductCategory(description) {
   if(/\b(?:2[0-9]|3[0-9]|4[0-9])\.\d\b/.test(description)) return 'monitor';
   // X24 / X27 / X32 as standalone identifier = LatAm regional monitor variant label
   if(/\bX(?:2[0-9]|3[0-9])\b/i.test(description) && /,/.test(description)) return 'monitor';
+  // PSU model codes: A-series (Axxx + BN/GL/GF/PL suffix = Bronze/Gold Liquid/Gold Full/Platinum)
+  // and B-series (Bxxx + A suffix). These match the SAME "letter+3digits" shape as motherboard
+  // codes below (A650BN, A1000PL, A850PL all start with A+3-4 digits) — must be checked FIRST
+  // or they get misclassified as Motherboards.
+  if(/\bA\d{3,4}(?:BN|GL|GF|PL)\b/.test(norm)) return 'psu';
+  if(/\bB\d{3,4}A\b/.test(norm)) return 'psu';
   // Motherboards: Axxx / Bxxx / Hxxx / Zxxx / Xxxx / PRO Axxx / PRO Bxxx
   if(/\b[ABHZX]\d{3}[A-Z0-9]*\b/.test(norm)) return 'motherboard';
   if(/\bPRO\s+[BHZ]\d{3}\b/.test(norm)) return 'motherboard';
