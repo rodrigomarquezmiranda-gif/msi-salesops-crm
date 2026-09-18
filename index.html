@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '18.09.26.4';
+const APP_VERSION = '18.09.26.5';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -2984,7 +2984,12 @@ const _KNOWN_NAME_CORRECTIONS = new Map([
 ]);
 function _applyKnownCorrection(raw) {
   const key = String(raw || '').toUpperCase().replace(/\s{2,}/g, ' ').replace(/,\s*$/, '').trim();
-  return _KNOWN_NAME_CORRECTIONS.get(key) || raw;
+  if (_KNOWN_NAME_CORRECTIONS.has(key)) return _KNOWN_NAME_CORRECTIONS.get(key);
+  // MSI's flagship 1600W Titanium PSU — invoice text only ever carries the wattage/efficiency
+  // spec ("1600W 80+ TITANIUM"), never the real model code "Ai1600TS" — match on that spec combo
+  // regardless of exact surrounding wording so every raw variant groups under one key.
+  if (/1600/.test(key) && /TITANIUM/.test(key)) return 'MPG Ai1600TS';
+  return raw;
 }
 
 // ─── PRODUCT NAME NORMALIZATION (for Semáforo dedup) ───────────────────────
@@ -3239,21 +3244,31 @@ function semaforoDisplayName(rawDesc, category) {
     return clean;
   }
 
-  // ── PSU: MAG {MODEL} {WATTAGE}W ─────────────────────────────────────────────
-  // Format: MAG A850GL 850W  — wattage fallback for descriptions that omit it
+  // ── PSU: {TIER} {MODEL} {WATTAGE}W ──────────────────────────────────────────
+  // Format: MAG A850GL 850W  — wattage fallback for descriptions that omit it.
+  // Tier prefix varies by suffix: BN (Bronze) / GL (Gold) are MAG; PL (Platinum) is PRO, not MAG.
   const PSU_WATTAGE = {
     'A550BN':'550','A650BN':'650','A750BN':'750','A850BN':'850',
     'A650GL':'650','A750GL':'750','A850GL':'850','A1000GL':'1000',
     'A650PL':'650','A750PL':'750','A850PL':'850','A1000PL':'1000','A1300PL':'1300',
     'A850GF':'850','A1000GF':'1000','A1300GF':'1300',
     'B550A':'550','B650A':'650','B750A':'750','B850A':'850','B1000A':'1000',
+    'A1600TS':'1600',
+  };
+  const PSU_TIER_PREFIX = {
+    'A650PL':'PRO','A750PL':'PRO','A850PL':'PRO','A1000PL':'PRO','A1300PL':'PRO',
+    'A1600TS':'MPG',
   };
   if (category === 'psu') {
+    // MSI's flagship 1600W Titanium PSU — invoice text often only carries the wattage/efficiency
+    // spec ("1600W 80+ TITANIUM"), never the real model code, so match on that spec combo directly.
+    if (/1600/.test(s) && /TITANIUM/.test(s)) return 'MPG Ai1600TS';
     const wattMatch  = s.match(/\b(\d{3,4})W\b/i);
     const modelMatch = s.match(/\b([A-Z]\d{3,4}[A-Z]{1,3})\b/);
     const model = modelMatch ? modelMatch[1] : '';
     const watt  = wattMatch  ? wattMatch[1]  : (PSU_WATTAGE[model] || '');
-    if (model) return ('MAG ' + model + (watt ? ' ' + watt + 'W' : '')).trim();
+    const tier  = PSU_TIER_PREFIX[model] || 'MAG';
+    if (model) return (tier + ' ' + model + (watt ? ' ' + watt + 'W' : '')).trim();
   }
 
   // ── MONITOR: canonical name from price list, fallback to spec-stripped desc ──
@@ -8757,7 +8772,7 @@ const CATEGORY_KEYWORDS = [
   { key:'monitor',     label:'Monitores',           keywords:['MONITORES','MONITOR','MON'] },
   { key:'vga',         label:'Placas de Video',      keywords:['PLACA DE VIDEO','TARJETA GRAFICA','PLACA MSI','GEFORCE','GEFORC','VGA','VIDEO','RTX','GTX','RADEON'] },
   { key:'gabinete',    label:'Gabinetes',            keywords:['GABINETES','GABINETE','CHASSIS','GAB','MAESTRO','MEG MAESTRO','TOWER','COMPUTER CASE','PC CASE','MID TOWER','FULL TOWER','CASE ATX','ATX CASE','PANO'] },
-  { key:'psu',         label:'Fuentes',              keywords:['FUENTE DE ALIMENTACION','FUENTE','PSU'] },
+  { key:'psu',         label:'Fuentes',              keywords:['FUENTE DE ALIMENTACION','FUENTE','PSU','TITANIUM'] },
   { key:'minipc',      label:'Mini PC',              keywords:['MINIPC','MINI PC','CUBI','EDGEXPERT','EDGE XPERT'] },
   { key:'ssd',         label:'Almacenamiento (SSD)', keywords:['DISCO DE ESTADO SOLIDO','SSD','DISCO SOLIDO','DISCO','SOLIDO'] },
   { key:'cooling',     label:'Cooling',              keywords:['WATERCOOLING','WATERCOOLER','WATER COOLING','CORELIQUID','CORE LIQUID','CPU COOLER','AIR COOLER','COOLER','WATER'] },
