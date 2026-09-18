@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '17.09.26.1';
+const APP_VERSION = '18.09.26.1';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -2680,15 +2680,20 @@ const _MSI_PRICE_LIST = new Map([
   ['023BUS 8M AI CUBI', ['Cubi Z AI 8M-023BUS', 'minipc']],
   ['024BUS 8M AI CUBI', ['Cubi Z AI 8M-024BUS', 'minipc']],
   ['086BUS 12M CUBI', ['Cubi 5 12M-086BUS', 'minipc']],
-  ['100R PANO PZ', ['MAG PANO 100R PZ', 'other']],
+  ['100R PANO PZ', ['MAG PANO 100R PZ', 'gabinete']],
   ['1030 4GD4 GT LP OC', ['GeForce GT 1030 4GD4 LP OC', 'vga']],
-  ['110R PANO PZ', ['MAG PANO 110R PZ', 'other']],
-  ['110R PANO PZ WHITE', ['MAG PANO 110R PZ WHITE', 'other']],
-  ['120A AIRFLOW FORGE', ['MAG FORGE 120A AIRFLOW', 'other']],
-  ['120R PANO PZ', ['MAG PANO 120R PZ', 'other']],
-  ['120R PANO PZ WHITE', ['MAG PANO 120R PZ WHITE', 'other']],
-  ['130R PANO PZ', ['MAG PANO 130R PZ', 'other']],
-  ['130R PANO PZ WHITE', ['MAG PANO 130R PZ WHITE', 'other']],
+  ['110R PANO PZ', ['MAG PANO 110R PZ', 'gabinete']],
+  ['110R PANO PZ WHITE', ['MAG PANO 110R PZ WHITE', 'gabinete']],
+  ['120A AIRFLOW FORGE', ['MAG FORGE 120A AIRFLOW', 'gabinete']],
+  ['120R PANO PZ', ['MAG PANO 120R PZ', 'gabinete']],
+  ['120R PANO PZ WHITE', ['MAG PANO 120R PZ WHITE', 'gabinete']],
+  ['130R PANO PZ', ['MAG PANO 130R PZ', 'gabinete']],
+  ['130R PANO PZ WHITE', ['MAG PANO 130R PZ WHITE', 'gabinete']],
+  // GAB MAG FORGE M100A: distributors report both the plain model and the "FAN RGB" variant
+  // description for the same physical case — unify both keys to one canonical display row.
+  ['FORGE M100A', ['MAG FORGE M100A', 'gabinete']],
+  ['FAN FORGE M100A RGB', ['MAG FORGE M100A', 'gabinete']],
+  ['13SUS ACTIVE EDGEXPERT', ['EdgeXpert 13SUS Active', 'minipc']],
   ['240 A12 CORELIQUID', ['MAG CORELIQUID A12 240', 'cooling']],
   ['240 A13 CORELIQUID', ['MAG CORELIQUID A13 240', 'cooling']],
   ['240 A13 CORELIQUID WHITE', ['MAG CORELIQUID A13 240 WHITE', 'cooling']],
@@ -2914,11 +2919,11 @@ const _MSI_PRICE_LIST = new Map([
   ['H810MB', ['PRO H810M-B', 'motherboard']],
   ['H810ME', ['PRO H810M-E', 'motherboard']],
   ['M100P SHIELD', ['PRO SHIELD M100P', 'other']],
-  ['M100R PANO PZ', ['MAG PANO M100R PZ', 'other']],
-  ['M100R PANO PZ WHITE', ['MAG PANO M100R PZ WHITE', 'other']],
-  ['M110A PAG PANO', ['PAG PANO M110A', 'other']],
-  ['M110R PANO', ['MAG PANO M110R', 'other']],
-  ['M120L PANO WHITE', ['PRO PANO M120L WHITE', 'other']],
+  ['M100R PANO PZ', ['MAG PANO M100R PZ', 'gabinete']],
+  ['M100R PANO PZ WHITE', ['MAG PANO M100R PZ WHITE', 'gabinete']],
+  ['M110A PAG PANO', ['PAG PANO M110A', 'gabinete']],
+  ['M110R PANO', ['MAG PANO M110R', 'gabinete']],
+  ['M120L PANO WHITE', ['PRO PANO M120L WHITE', 'gabinete']],
   ['M371 SPATIUM 500G', ['SPATIUM M371 NVME M.2 500GB', 'ssd']],
   ['M450 SPATIUM V1 1T', ['SPATIUM M450 PCIe 4.0 NVMe M.2 1TB V1', 'ssd']],
   ['M450 SPATIUM V1 500G', ['SPATIUM M450 PCIe 4.0 NVMe M.2 500GB V1', 'ssd']],
@@ -3006,10 +3011,25 @@ const _SEMAFORO_NOISE = new Set([
   'PIVOTEABLE','PIVOTABLE','PIVOT',  // ergonomics descriptor
   'MS',                              // response time unit (after number strip)
   'DE','LA','EL','LOS','LAS','CON','SIN','EN','UN','UNA','DEL',
+  // Gabinete prefix variants (distributors inconsistently use "GAB", "GABINETE" or add "CAJA"/
+  // "CHASSIS" in front) — stripped so the same physical case always resolves to the same model key
+  // regardless of which prefix word the distributor used.
+  'GAB','GABINETE','GABINETES','CAJA','CHASSIS',
+  // Monitor resolution/HDR spec noise (spaced-out forms not already covered by FULLHD/etc above)
+  'FULL','HD','HDR','2K','4K',
 ]);
-function extractMSIModelKey(desc) {
+// Collapse an immediately-repeated leading phrase, e.g. "PRO PANO M120L PRO PANO M120L WHITE"
+// → "PRO PANO M120L WHITE". Root cause: some invoice/stock rows duplicate the product name text
+// (distributor export bug) with extra spec words tacked on after — a plain whole-line dedupe
+// (dedupeRepeatedLine) only catches EXACT full-line duplicates (even word count), not a repeated
+// prefix followed by trailing text, so this handles that case generically.
+function _collapseRepeatedPhrase(s) {
+  return String(s || '').replace(/^(.+?)\s+\1(?=\s|$)/i, '$1');
+}
+function extractMSIModelKey(desc, category) {
   let s = String(desc || '').trim().toUpperCase();
-  s = s.replace(/\s+MS-[A-Z0-9-]+/ig, '');  // strip MSI internal part codes (MS-3BC6, MS-3CE8, etc.)
+  s = _collapseRepeatedPhrase(s);
+  s = s.replace(/[, ]+MS-[A-Z0-9-]+.*/ig, '');  // strip MSI internal part code AND any trailing junk after it (qty/tax/price bleed from invoice columns)
   s = s.replace(/\([^)]*\)/g, ' ');   // strip ALL parenthetical content (configs, specs, etc.)
   s = s.replace(/"/g, '');            // remove inch marks (e.g. 27" → 27, later filtered as 2-digit number)
   s = s.replace(/\b\d+\s*HZ\b/g, ''); // strip refresh rates (144HZ, 165HZ, etc.)
@@ -3072,6 +3092,16 @@ function extractMSIModelKey(desc) {
   // replace digit↔digit or digit↔letter-only with space (S270-240→S270 240, I5-1235U→I5 1235U)
   s = s.replace(/([A-Z])-([A-Z])/g, '$1$2');
   s = s.replace(/-/g, ' ');
+  // Monitor-only: strip resolution/refresh-rate variant suffixes that distributors inconsistently
+  // append after the real model code (e.g. "245F FULL HD HDR", "274QF 2K 240H", "276CF 200") so
+  // these variants collapse to the same key as the bare model code. Restricted to category==='monitor'
+  // (callers that don't pass it keep prior behavior) since bare 3-4 digit numbers are legitimate
+  // model differentiators in other categories (PSU wattage, VGA VRAM, etc.)
+  if (category === 'monitor') {
+    s = s.replace(/\bHDR\d*\b/g, '');
+    s = s.replace(/\b\d{3,4}H\b/g, '');   // refresh rate without unit, e.g. "240H"
+    s = s.replace(/\b\d{3,4}\b/g, '');    // bare resolution/refresh numbers, e.g. "200", "1080"
+  }
   const isVGA   = /\b(?:RTX|GTX|RADEON|GEFORCE)\b/.test(s);
   // Detect Mini PC by CUBI keyword OR by "MINI PC" + processor tier (covers descriptions without CUBI)
   const isMinPC = /\bCUBI\b/.test(s) || (/\bMINI\s*PC\b/.test(s) && /\bI[357]\b/.test(s));
@@ -3113,8 +3143,9 @@ function extractMSIModelKey(desc) {
 // ─── SEMÁFORO: CLEAN DISPLAY NAME (structured format per category) ────────────
 function semaforoDisplayName(rawDesc, category) {
   let s = String(rawDesc || '').trim().toUpperCase();
+  s = _collapseRepeatedPhrase(s);  // fix duplicated-name junk, e.g. "PRO PANO M120L PRO PANO M120L WHITE"
   // ── Common pre-processing (same transforms as extractMSIModelKey, no sort) ──
-  s = s.replace(/\s+MS-[A-Z0-9-]+/ig, '');  // strip MSI internal part codes (MS-3BC6, MS-3CE8, etc.)
+  s = s.replace(/[, ]+MS-[A-Z0-9-]+.*/ig, '');  // strip MSI internal part code AND trailing junk after it (qty/tax/price bleed)
   s = s.replace(/\([^)]*\)/g, ' ');
   s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
   s = s.replace(/\bW\b/g, 'WHITE');                           // early: before any strip consumes "240 W"
@@ -3179,7 +3210,7 @@ function semaforoDisplayName(rawDesc, category) {
   // ── MONITOR: canonical name from price list, fallback to spec-stripped desc ──
   if (category === 'monitor') {
     // Price list lookup first — returns the exact marketing name (e.g. "MAG 255F", "MPG 491CQPX QD-OLED")
-    const _plKey = extractMSIModelKey(rawDesc);
+    const _plKey = extractMSIModelKey(rawDesc, 'monitor');
     const _plEntry = _MSI_PRICE_LIST.get(_plKey);
     if (_plEntry && _plEntry[1] === 'monitor') return _plEntry[0];
     // Fallback: strip spec noise manually (products not yet in price list)
@@ -3194,7 +3225,7 @@ function semaforoDisplayName(rawDesc, category) {
     }
     let m = s;
     m = m.replace(/\*+/g, '');                                           // strip asterisks but KEEP text (e.g. CAJA DAÑADA)
-    ['GAMING','GAMER','MSI','MONITOR','MONITORES','PANTALLA','PRO','RAPID','FLAT','PIVOTEABLE','PIVOTABLE'].forEach(w => {
+    ['GAMING','GAMER','MSI','MONITOR','MONITORES','PANTALLA','PRO','RAPID','FLAT','PIVOTEABLE','PIVOTABLE','FULL','HD','HDR','2K','4K'].forEach(w => {
       m = m.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
     });
     m = m.replace(/\b\d+(?:[.,]\d+)?\s*MS\b/ig, ''); // strip response times (0.5MS, 0.03MS, 1MS)
@@ -3207,12 +3238,42 @@ function semaforoDisplayName(rawDesc, category) {
     m = m.replace(/\bFREESYNC\b|\bGSYNC\b/ig, '');                     // sync tech
     m = m.replace(/\bFICHA\b|\bUSA\b|\bFIJO\b/ig, '');                 // misc distributor noise
     m = m.replace(/\b[EX]\d{2}\b/g, ' ');                              // strip packaging codes (X24, E20, etc.)
+    m = m.replace(/\b\d{3,4}H\b/ig, '');                                // refresh rate without unit (240H)
     m = m.replace(/\b\d{2}\b/g, ' ');                                   // strip leftover standalone 2-digit numbers (screen sizes like 24, 27)
+    m = m.replace(/\b\d{3,4}\b/g, ' ');                                 // strip leftover standalone 3-4 digit numbers (bare refresh/resolution, e.g. "200")
     m = m.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
     return m || s;
   }
 
-  // ── General strip (MB, SSD, Cooling, MiniPC, Gabinete, Accesorios) ──────────
+  // ── GABINETE: canonical name from price list, always shown with a single consistent
+  // "Gabinete" prefix (distributors mix "GAB", "GABINETE" and stray "CAJA"/"CHASSIS" —
+  // those are already stripped as noise above/in extractMSIModelKey, so we re-add one
+  // consistent label here instead of passing through whichever word the source used) ──
+  if (category === 'gabinete') {
+    const _plKey = extractMSIModelKey(rawDesc, category);
+    const _plEntry = _MSI_PRICE_LIST.get(_plKey);
+    let name;
+    if (_plEntry && _plEntry[1] === 'gabinete') {
+      name = _plEntry[0];
+    } else {
+      let m = s;
+      ['GABINETES','GABINETE','GAB','CAJA','CHASSIS','MSI','COMPUTER','CASE','PC'].forEach(w => {
+        m = m.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
+      });
+      name = m.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
+    }
+    return ('Gabinete ' + name).trim();
+  }
+
+  // ── Price-list lookup for any other category (MB, SSD, Cooling, MiniPC, Accesorios) —
+  // use the canonical Marketing Name when this exact model is in the price list ──
+  {
+    const _plKey = extractMSIModelKey(rawDesc, category);
+    const _plEntry = _MSI_PRICE_LIST.get(_plKey);
+    if (_plEntry && _plEntry[1] === category) return _plEntry[0];
+  }
+
+  // ── General strip (MB, SSD, Cooling, MiniPC, Accesorios) ──────────
   const DISP_NOISE = [
     'MSI','VGA','MB','MOT','MOTHER','MOTHERBOARD','PLACA','TARJETA','GRAFICA','GEFORCE','NVIDIA',
     'FUENTE','ALIMENTACION','PSU',
@@ -8646,9 +8707,9 @@ const CATEGORY_KEYWORDS = [
   { key:'motherboard', label:'Motherboards',       keywords:['MOTHERBOARDS','MOTHERBOARD','MOTHER BOARD','PLACA MADRE','MB','MOTHER','MOT'] },
   { key:'monitor',     label:'Monitores',           keywords:['MONITORES','MONITOR','MON'] },
   { key:'vga',         label:'Placas de Video',      keywords:['PLACA DE VIDEO','TARJETA GRAFICA','PLACA MSI','GEFORCE','GEFORC','VGA','VIDEO','RTX','GTX','RADEON'] },
-  { key:'gabinete',    label:'Gabinetes',            keywords:['GABINETES','GABINETE','CHASSIS','GAB','MAESTRO','MEG MAESTRO','TOWER','COMPUTER CASE','PC CASE','MID TOWER','FULL TOWER','CASE ATX','ATX CASE'] },
+  { key:'gabinete',    label:'Gabinetes',            keywords:['GABINETES','GABINETE','CHASSIS','GAB','MAESTRO','MEG MAESTRO','TOWER','COMPUTER CASE','PC CASE','MID TOWER','FULL TOWER','CASE ATX','ATX CASE','PANO'] },
   { key:'psu',         label:'Fuentes',              keywords:['FUENTE DE ALIMENTACION','FUENTE','PSU'] },
-  { key:'minipc',      label:'Mini PC',              keywords:['MINIPC','MINI PC','CUBI'] },
+  { key:'minipc',      label:'Mini PC',              keywords:['MINIPC','MINI PC','CUBI','EDGEXPERT','EDGE XPERT'] },
   { key:'ssd',         label:'Almacenamiento (SSD)', keywords:['DISCO DE ESTADO SOLIDO','SSD','DISCO SOLIDO','DISCO','SOLIDO'] },
   { key:'cooling',     label:'Cooling',              keywords:['WATERCOOLING','WATERCOOLER','WATER COOLING','CORELIQUID','CORE LIQUID','CPU COOLER','AIR COOLER','COOLER','WATER'] },
   { key:'accesorios',  label:'Accesorios',           keywords:['TECLADOS','TECLADO','TEC','MOUSE','MOU','AURICULARES','AURICULAR','AURIS','FORGE GK100 COMBO','FORGE GK 100 COMBO','FORGE GK100LS','FORGE GK100 LS','FORGE GK100','FORGE GK 100LS','FORGE GK 100 LS','FORGE GK 100','GAMEPAD','GAME PAD','JOYSTICK','MODULO TPM','TPM','ACC','FORCE GC','FORCE GC30','FORCE GC20','GC30','GC20','HEADSET','HEADPHONE','CONTROLLER','CONTROLADOR','CLUTCH','VIGOR GK','INTERCEPTOR','SPATULA','THUNDERSTRUCK'] },
