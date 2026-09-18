@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '18.09.26.5';
+const APP_VERSION = '18.09.26.6';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -1502,7 +1502,7 @@ const _yk = k => k + '_' + DATA_YEAR; // 'salesops_weekly' → 'salesops_weekly_
 // ─── CONSTANTES Y HELPERS GLOBALES ───────────────────
 const DAY_MS = 86400000; // milisegundos en un día
 // Formateadores de precio — usar en lugar de .toLocaleString inline
-const fmtUSD = v => 'USD ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+const fmtUSD = v => (v == null || v === '' || isNaN(Number(v))) ? '—' : 'USD ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2 });
 const fmtAmt = v => 'USD ' + Number(v).toLocaleString('es-AR', { maximumFractionDigits: 2 });
 
 let db = { pi:[], ber:[], sor:[], sir:[], pp:[], weeklyReports:[], imports:[], ar:[], mkt:[], resellers:{ t1:[], t2:[], t3:[] }, resellerTargets:{}, resellerManual:{} };
@@ -2980,11 +2980,15 @@ const _MSI_PRICE_LIST = new Map([
 // way the corrected text still flows through the normal price-list lookup / key extraction so
 // grouping and category detection work exactly as if the source data had been clean.
 const _KNOWN_NAME_CORRECTIONS = new Map([
-  ['24 ID1/BLACK-BLACK, 26.5', 'MAG 274QP QD-OLED X24'],
 ]);
 function _applyKnownCorrection(raw) {
   const key = String(raw || '').toUpperCase().replace(/\s{2,}/g, ' ').replace(/,\s*$/, '').trim();
   if (_KNOWN_NAME_CORRECTIONS.has(key)) return _KNOWN_NAME_CORRECTIONS.get(key);
+  // MAG 274QP QD-OLED X24: several distinct spec-only continuation fragments have been seen for
+  // this SKU ("X24 ID1/Black-Black,26.5,", "X24 Black,26.5,Anti-Reflective", "24 ID1/Black-Black,
+  // 26.5,") — the model code itself never survived parsing, only the panel-size spec, so match on
+  // the X24-prefix + "26.5" combo (this monitor's panel size) regardless of exact wording.
+  if (/^X?24\b/.test(key) && /26\.5/.test(key)) return 'MAG 274QP QD-OLED X24';
   // MSI's flagship 1600W Titanium PSU — invoice text only ever carries the wattage/efficiency
   // spec ("1600W 80+ TITANIUM"), never the real model code "Ai1600TS" — match on that spec combo
   // regardless of exact surrounding wording so every raw variant groups under one key.
@@ -5518,7 +5522,7 @@ function showPriceHistoryTooltip(evt) {
     <div style="display:flex;flex-direction:column;gap:6px">
       ${rows.length===0?'<div style="color:var(--text3);font-size:11px">Sin historial de ventas</div>':rows.map(r=>`<div style="font-size:11px;border-bottom:0.5px solid var(--border2);padding-bottom:5px">
         <div style="display:flex;justify-content:space-between;gap:8px">
-          <span style="color:var(--text);font-weight:600">USD ${Number(r.unitPrice).toLocaleString('es-AR',{minimumFractionDigits:2})}</span>
+          <span style="color:var(--text);font-weight:600">${fmtUSD(r.unitPrice)}</span>
           <span style="color:var(--text3)">${r.date?r.date.split('-').reverse().join('/'):'-'}</span>
         </div>
         <div style="color:var(--text2);margin-top:2px">${esc(r.client)} · PI: ${esc(r.piName)}</div>
