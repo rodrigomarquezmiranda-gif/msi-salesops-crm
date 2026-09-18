@@ -1490,7 +1490,7 @@ const BADGE_MAP = {
 // ─── STATE ────────────────────────────────────────────
 // Versión: 1.DD.MM.YYYY.N  — DD/MM/YYYY = fecha del cambio, N = contador desde 1 cada día.
 // Al arrancar un día nuevo, el contador vuelve a 1. No continuar desde el N del día anterior.
-const APP_VERSION = '18.09.26.2';
+const APP_VERSION = '18.09.26.3';
 
 // ─── PARTICIÓN POR AÑO ───────────────────────────────
 // Cada año calendario usa sus propias claves en Firebase.
@@ -3018,30 +3018,47 @@ const _SEMAFORO_NOISE = new Set([
   // Monitor resolution/HDR spec noise (spaced-out forms not already covered by FULLHD/etc above)
   'FULL','HD','HDR','2K','4K',
 ]);
-// Collapse an immediately-repeated leading phrase, e.g. "PRO PANO M120L PRO PANO M120L WHITE"
-// → "PRO PANO M120L WHITE". Root cause: some invoice/stock rows duplicate the product name text
-// (distributor export bug) with extra spec words tacked on after — a plain whole-line dedupe
-// (dedupeRepeatedLine) only catches EXACT full-line duplicates (even word count), not a repeated
-// prefix followed by trailing text, so this handles that case generically.
+// Collapse an immediately-repeated word-phrase ANYWHERE in the string, e.g.
+// "PRO PANO M120L PRO PANO M120L WHITE" → "PRO PANO M120L WHITE" and
+// "MAG X870E TOMAHAWK MAX TOMAHAWK MAX WIFI" → "MAG X870E TOMAHAWK MAX WIFI" (the repeat here
+// isn't at the very start of the string, so it isn't just a repeated PREFIX). Root cause: some
+// invoice/stock rows duplicate a chunk of the product name text (distributor export bug), with
+// non-repeated words before and/or after — a plain whole-line dedupe (dedupeRepeatedLine) only
+// catches EXACT full-line duplicates (even word count), so this handles the general case.
 function _collapseRepeatedPhrase(s) {
-  return String(s || '').replace(/^(.+?)\s+\1(?=[\s,]|$)/i, '$1');
+  return String(s || '').replace(/\b(\S+(?:\s+\S+){0,5})\s+\1\b/i, '$1');
 }
-// Strip trailing junk that bleeds into the product name from adjacent invoice columns:
-// - "MAG X870E TOMAHAWK MAX COMPUTER ELIT LATAM CORP CORAL" / "...COMPUTER SMART CENTER LLC"
+// Strip trailing junk that bleeds into the product name from adjacent invoice/PI columns:
+// - "MAG X870E TOMAHAWK MAX MSI COMPUTER SMART CENTER LLC" / "...COMPUTER ELIT LATAM CORP CORAL"
 //   → PDF letterhead/Bill-To text ("MSI COMPUTER CORP." + buyer name) landing mid-row; "COMPUTER"
 //   never legitimately appears in an MSI product model name, so anything from there on is junk.
+// - "PRO MP251 E14L MS-3PD2,MSI,ID1/Black-" → MSI internal part code (MS-xxxx) plus whatever
+//   Description-column junk (color/COO/qty) follows it on the same line.
+// - "EdgeXpert-13SUS Active,MS-C931,MSI,ID1/ 1 0% 5,784.00 5,784.00" / "MEG MAESTRO 900R , All 12
+//   0% 420.00 5,040.00 900R DDP" → qty/tax%/unit-price/amount columns bleeding into the name,
+//   with or without a preceding MS- code to anchor on.
 // - "PRO A850PL , US," → trailing ", <short code>," left over from a COO/column bleed.
 function _stripDescJunk(s) {
   let out = String(s || '');
+  out = out.replace(/\bMSI\s+COMPUTER\b.*/i, '');
   out = out.replace(/\bCOMPUTER\b.*/i, '');
+  out = out.replace(/[, ]+MS-[A-Z0-9-]+.*/i, '');
+  out = out.replace(/,?\s*(?:[A-Za-z]+\s+)?\d+\s+\d+%\s+[\d,]+\.\d{2}\s+[\d,]+\.\d{2}.*$/i, '');
   out = out.replace(/\s*,\s*[A-Z]{2,4}\s*,\s*$/i, '');
   return out.trim();
+}
+// Sales Prices ("Precios de Venta") shows the real product name as MSI writes it (mixed case,
+// e.g. "EdgeXpert-13SUS Active") — same junk patterns as above but WITHOUT forcing uppercase.
+function cleanMarketingName(s) {
+  let out = String(s || '').trim();
+  out = _collapseRepeatedPhrase(out);
+  out = _stripDescJunk(out);
+  return out.replace(/\s{2,}/g, ' ').replace(/^[\s,\-\/]+|[\s,\-\/]+$/g, '').trim();
 }
 function extractMSIModelKey(desc, category) {
   let s = String(desc || '').trim().toUpperCase();
   s = _collapseRepeatedPhrase(s);
   s = _stripDescJunk(s);
-  s = s.replace(/[, ]+MS-[A-Z0-9-]+.*/ig, '');  // strip MSI internal part code AND any trailing junk after it (qty/tax/price bleed from invoice columns)
   s = s.replace(/\([^)]*\)/g, ' ');   // strip ALL parenthetical content (configs, specs, etc.)
   s = s.replace(/"/g, '');            // remove inch marks (e.g. 27" → 27, later filtered as 2-digit number)
   s = s.replace(/\b\d+\s*HZ\b/g, ''); // strip refresh rates (144HZ, 165HZ, etc.)
@@ -3156,9 +3173,8 @@ function extractMSIModelKey(desc, category) {
 function semaforoDisplayName(rawDesc, category) {
   let s = String(rawDesc || '').trim().toUpperCase();
   s = _collapseRepeatedPhrase(s);  // fix duplicated-name junk, e.g. "PRO PANO M120L PRO PANO M120L WHITE"
-  s = _stripDescJunk(s);           // strip "COMPUTER <client name>" bleed and trailing ", XX," junk
+  s = _stripDescJunk(s);           // strip "COMPUTER <client name>" bleed, MS- codes, qty/tax/amount bleed, trailing ", XX," junk
   // ── Common pre-processing (same transforms as extractMSIModelKey, no sort) ──
-  s = s.replace(/[, ]+MS-[A-Z0-9-]+.*/ig, '');  // strip MSI internal part code AND trailing junk after it (qty/tax/price bleed)
   s = s.replace(/\([^)]*\)/g, ' ');
   s = s.replace(/\bNEGRO\b/g, 'BLACK').replace(/\bBLANCO\b/g, 'WHITE');
   s = s.replace(/\bW\b/g, 'WHITE');                           // early: before any strip consumes "240 W"
@@ -3256,7 +3272,7 @@ function semaforoDisplayName(rawDesc, category) {
     m = m.replace(/\b\d{3,4}H\b/ig, '');                                // refresh rate without unit (240H)
     m = m.replace(/\b\d{2}\b/g, ' ');                                   // strip leftover standalone 2-digit numbers (screen sizes like 24, 27)
     m = m.replace(/\b\d{3,4}\b/g, ' ');                                 // strip leftover standalone 3-4 digit numbers (bare refresh/resolution, e.g. "200")
-    m = m.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
+    m = m.replace(/\s{2,}/g, ' ').replace(/^[\s,\-\/]+|[\s,\-\/]+$/g, '').trim();
     return m || s;
   }
 
@@ -3275,7 +3291,7 @@ function semaforoDisplayName(rawDesc, category) {
       ['GABINETES','GABINETE','GAB','CAJA','CHASSIS','MSI','COMPUTER','CASE','PC'].forEach(w => {
         m = m.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
       });
-      name = m.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
+      name = m.replace(/\s{2,}/g, ' ').replace(/^[\s,\-\/]+|[\s,\-\/]+$/g, '').trim();
     }
     return ('Gabinete ' + name).trim();
   }
@@ -3307,7 +3323,7 @@ function semaforoDisplayName(rawDesc, category) {
   DISP_NOISE.forEach(w => {
     s = s.replace(new RegExp('\\b' + w + '\\b', 'g'), ' ');
   });
-  return s.replace(/\s{2,}/g, ' ').replace(/^[\s\-\/]+|[\s\-\/]+$/g, '').trim();
+  return s.replace(/\s{2,}/g, ' ').replace(/^[\s,\-\/]+|[\s,\-\/]+$/g, '').trim();
 }
 
 function buildLinesFromPdfItems(items) {
@@ -5325,7 +5341,7 @@ function getSalesPriceRows() {
     (pi.lineItems || []).forEach(li => {
       const k = li.itemCode || li.marketingName;
       if(!k) return;
-      byKey.set(k, { itemCode: li.itemCode, marketingName: li.marketingName, ordered: li.ordered, unitPrice: li.unitPrice });
+      byKey.set(k, { itemCode: li.itemCode, marketingName: cleanMarketingName(li.marketingName), ordered: li.ordered, unitPrice: li.unitPrice });
     });
     (pi.invoiceItems || []).forEach(li => {
       const k = li.itemCode || li.marketingName;
@@ -5333,7 +5349,7 @@ function getSalesPriceRows() {
       const prev = byKey.get(k);
       byKey.set(k, {
         itemCode: li.itemCode || prev?.itemCode,
-        marketingName: li.marketingName || prev?.marketingName,
+        marketingName: (li.marketingName ? cleanMarketingName(li.marketingName) : null) || prev?.marketingName,
         ordered: li.qtyShipped != null ? li.qtyShipped : prev?.ordered,
         unitPrice: li.unitPrice != null ? li.unitPrice : prev?.unitPrice
       });
